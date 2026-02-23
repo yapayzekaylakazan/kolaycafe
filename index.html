@@ -1674,4 +1674,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ════════════════════════════════════════
 // OTOMATİK GİRİŞ KONTROLÜ
-// ═══════════════
+(async ()=>{
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    if(session) await uygulamaBaslat(session.user);
+  } catch(e) { console.log('Session kontrol hatası:', e); }
+})();
+</script>
+</body>
+</html>
