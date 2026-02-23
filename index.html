@@ -1183,6 +1183,42 @@ function masaTemizle() {
 // ════════════════════════════════════════
 // TAHSİL
 // ════════════════════════════════════════
+function cariGoster() {
+  if(!seciliMasa) return;
+  const m = masalar[seciliMasa-1];
+  if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
+  const ham = masaToplam(m);
+  const son = ham*(1-(m.indirim||0)/100);
+  document.getElementById('cari-tutar-goster').textContent = fmt(son);
+  document.getElementById('cari-musteri-adi').value = '';
+  modalAc('cari-modal');
+}
+
+async function cariKaydet() {
+  const musteriAdi = document.getElementById('cari-musteri-adi').value.trim();
+  if(!musteriAdi){toast('Müşteri adını girin!');return;}
+  modalKapat('cari-modal');
+  if(!seciliMasa) return;
+  const m = masalar[seciliMasa-1];
+  if(garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
+  const ham = masaToplam(m);
+  const son = ham*(1-(m.indirim||0)/100);
+  const kolaycafen = {
+    masa:seciliMasa, masaAd:m.ad,
+    tarih:new Date().toLocaleString('tr-TR'), tarihObj:new Date(),
+    toplam:0, indirim:100, garson:m.garson||'',
+    odeme_tipi:'cari', musteri_adi:musteriAdi,
+    siparisler:m.siparisler.map(s=>({...s})),
+    cari_tutar:son
+  };
+  kapaliKolayCafenlar.unshift(kolaycafen);
+  // Cari ciroya eklenmez
+  m.siparisler=[]; m.indirim=0; m.garson='';
+  kolaycafenGuncelle(); siparisListeRender(); masalarRender();
+  toast('📋 '+musteriAdi+' — '+fmt(son)+' cariye yazıldı');
+  await kolaycafenKaydet(kolaycafen);
+}
+
 async function tahsilEt() {
   if(!seciliMasa) return;
   const m=masalar[seciliMasa-1];
@@ -1670,6 +1706,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Şifre göster
   const btnSifreGoster = document.getElementById('sifre-goster-btn');
   if(btnSifreGoster) btnSifreGoster.addEventListener('click', sifreGoster);
+
+  // Cari modal butonları
+  const btnCariKaydet = document.querySelector('#cari-modal button[onclick="cariKaydet()"]');
+  if(btnCariKaydet){ btnCariKaydet.removeAttribute('onclick'); btnCariKaydet.addEventListener('click', cariKaydet); }
 });
 
 // ════════════════════════════════════════
