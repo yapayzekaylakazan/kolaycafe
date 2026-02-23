@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>KolayCafe — Kafe Adisyon Sistemi</title>
+<title>KolayCafe — Cafe Adisyon Sistemi</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -84,24 +84,25 @@
   .amh-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
   .amh-btn { padding: 6px 9px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .amh-btn:active { transform: scale(0.95); }
-  .kolaycafen-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-  .urun-bolumu { flex: 0 0 52%; display: flex; flex-direction: column; overflow: hidden; border-bottom: 2px solid var(--border); min-height: 0; }
+  .kolaycafen-body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
+  .urun-bolumu { display: flex; flex-direction: column; border-bottom: 2px solid var(--border); flex-shrink: 0; }
   .cat-tabs { display: flex; gap: 6px; padding: 8px 10px 6px; overflow-x: auto; flex-shrink: 0; }
   .cat-tabs::-webkit-scrollbar { height: 0; }
   .cat-tab { padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text2); font-family: 'Nunito', sans-serif; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .cat-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-  .urun-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; padding: 6px 10px; overflow-y: auto; flex: 1; align-content: start; }
-  .urun-kart { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 5px; cursor: pointer; text-align: center; transition: all 0.15s; position: relative; user-select: none; }
+  .urun-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px 10px 8px; align-content: start; }
+  .urun-kart { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 8px 4px; cursor: pointer; text-align: center; transition: all 0.15s; position: relative; user-select: none; }
   .urun-kart:active { transform: scale(0.93); background: var(--surface3); }
-  .urun-kart .ui { font-size: 1.6rem; margin-bottom: 3px; }
-  .urun-kart .un { font-size: 0.72rem; font-weight: 700; line-height: 1.2; margin-bottom: 2px; }
-  .urun-kart .up { font-size: 0.8rem; font-weight: 900; color: var(--accent2); }
+  .urun-kart .ui { font-size: 1.4rem; margin-bottom: 2px; }
+  .urun-kart .un { font-size: 0.65rem; font-weight: 700; line-height: 1.2; margin-bottom: 1px; }
+  .urun-kart .up { font-size: 0.72rem; font-weight: 900; color: var(--accent2); }
   .urun-kart .udel { position: absolute; top: 3px; right: 3px; background: none; border: none; color: var(--muted); font-size: 0.7rem; cursor: pointer; padding: 2px; opacity: 0.5; }
-  .siparis-bolumu { background: var(--surface); flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  .siparis-bolumu { background: var(--surface); flex-shrink: 0; display: flex; flex-direction: column; }
   .siparis-baslik { padding: 6px 12px 3px; font-size: 0.72rem; font-weight: 800; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
-  .siparis-liste { overflow-y: auto; flex: 1; padding: 0 8px; }
+  .siparis-liste { padding: 0 8px; }
   .siparis-item { display: flex; align-items: center; gap: 6px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
   .si-isim { flex: 1; font-size: 0.88rem; font-weight: 700; }
+  .si-meta { font-size: 0.6rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
   .si-miktar { display: flex; align-items: center; gap: 4px; }
   .si-btn { width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .si-btn:active { background: var(--accent); color: var(--bg); }
@@ -114,8 +115,11 @@
   .toplam-onceki { font-size: 0.72rem; color: var(--muted); text-decoration: line-through; display: none; }
   .toplam-tutar { font-size: 1.5rem; font-weight: 900; color: var(--accent2); line-height: 1.1; }
   .odeme-butonlar { display: flex; flex-direction: column; gap: 5px; }
-  .btn-nakit { padding: 11px 16px; border-radius: 11px; border: none; background: var(--success); color: #fff; font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
-  .btn-bol { padding: 7px 12px; border-radius: 11px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.75rem; font-weight: 700; cursor: pointer; text-align: center; }
+  .btn-nakit { padding: 10px 12px; border-radius: 11px; border: none; background: var(--success); color: #fff; font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .btn-kart { padding: 10px 12px; border-radius: 11px; border: none; background: #1a6fb5; color: #fff; font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .btn-cari { padding: 10px 12px; border-radius: 11px; border: none; background: #7c3aed; color: #fff; font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .btn-ikram { padding: 10px 12px; border-radius: 11px; border: none; background: var(--muted); color: #fff; font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .btn-bol { padding: 10px 12px; border-radius: 11px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 700; cursor: pointer; text-align: center; }
   .bos-durum { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--muted); gap: 7px; padding: 16px; }
   .bos-durum .bi { font-size: 2rem; opacity: 0.3; }
   .masa-secilmedi { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 8px; padding: 24px; text-align: center; }
@@ -233,12 +237,12 @@
 <div id="auth-screen">
   <div class="auth-logo">☕</div>
   <div class="auth-title">KolayCafe</div>
-  <div class="auth-sub">Kafe KolayCafen Sistemi</div>
+  <div class="auth-sub">Cafe Adisyon Sistemi</div>
   <div class="auth-card">
     <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-giris" onclick="authTab('giris')">🔑 Sahibi</button>
-      <button class="auth-tab" id="tab-garson" onclick="authTab('garson')">👤 Garson</button>
-      <button class="auth-tab" id="tab-kayit" onclick="authTab('kayit')">✚ Kayıt</button>
+      <button class="auth-tab active" id="tab-giris">🔑 Sahibi</button>
+      <button class="auth-tab" id="tab-garson">👤 Garson</button>
+      <button class="auth-tab" id="tab-kayit">✚ Kayıt</button>
     </div>
     <div id="auth-err" class="auth-err"></div>
 
@@ -246,14 +250,23 @@
     <div id="auth-giris">
       <input class="auth-inp" id="giris-email" type="email" placeholder="E-posta" autocomplete="email">
       <input class="auth-inp" id="giris-sifre" type="password" placeholder="Şifre" autocomplete="current-password">
-      <button class="auth-btn" onclick="girisYap()">Giriş Yap</button>
+      <button class="auth-btn" id="btn-giris-yap">Giriş Yap</button>
+      <button type="button" id="btn-sifre-unut" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
+    </div>
+
+    <!-- ŞİFRE SIFIRLAMA -->
+    <div id="auth-sifre-sifirla" style="display:none;">
+      <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">E-postanıza sıfırlama bağlantısı göndereceğiz</p>
+      <input class="auth-inp" id="sifirla-email" type="email" placeholder="E-posta adresiniz" autocomplete="email">
+      <button class="auth-btn" id="btn-sifirla-gonder" style="margin-bottom:8px;">📧 Sıfırlama Bağlantısı Gönder</button>
+      <button type="button" id="btn-sifirla-geri" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;">← Geri Dön</button>
     </div>
 
     <!-- GARSON GİRİŞİ -->
     <div id="auth-garson" style="display:none;">
-      <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Kafe adını gir, sonra ismini seç:</p>
-      <input class="auth-inp" id="garson-kafe-kodu" type="text" placeholder="Kafe kodu (sahibinden öğren)" autocomplete="off">
-      <button class="auth-btn" style="margin-bottom:10px;" onclick="garsonKafeBul()">Devam →</button>
+      <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Cafe kodunu gir, sonra ismini seç:</p>
+      <input class="auth-inp" id="garson-kafe-kodu" type="text" placeholder="Cafe kodu (sahibinden öğren)" autocomplete="off">
+      <button class="auth-btn" id="btn-garson-devam" style="margin-bottom:10px;">Devam →</button>
       <div id="garson-isim-liste" style="display:none;">
         <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;">Adını seç:</p>
         <div id="garson-butonlar"></div>
@@ -262,10 +275,16 @@
 
     <!-- KAYIT -->
     <div id="auth-kayit" style="display:none;">
-      <input class="auth-inp" id="kayit-kafe" type="text" placeholder="Kafe Adı (örn: Kahve Durağı)">
+      <input class="auth-inp" id="kayit-kafe" type="text" placeholder="Cafe Adı (örn: Kahve Durağı)" autocomplete="organization">
       <input class="auth-inp" id="kayit-email" type="email" placeholder="E-posta" autocomplete="email">
-      <input class="auth-inp" id="kayit-sifre" type="password" placeholder="Şifre (min 6 karakter)" autocomplete="new-password">
-      <button class="auth-btn" onclick="kayitOl()">Hesap Oluştur</button>
+      <input class="auth-inp" id="kayit-tel" type="tel" placeholder="Telefon Numarası" autocomplete="tel" inputmode="tel">
+      <input class="auth-inp" id="kayit-adres" type="text" placeholder="Cafe Adresi" autocomplete="street-address">
+      <div style="position:relative;">
+        <input class="auth-inp" id="kayit-sifre" type="password" placeholder="Şifre (min 6 karakter)" autocomplete="new-password" style="padding-right:44px;">
+        <button type="button" id="sifre-goster-btn" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);">👁</button>
+      </div>
+      <button class="auth-btn" id="btn-kayit-ol">Hesap Oluştur</button>
+      <button type="button" id="btn-sifre-unut-kayit" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
 
     <div id="auth-loading" class="auth-loading">⏳ Lütfen bekleyin...</div>
@@ -279,7 +298,7 @@
   <div class="header-left">
     <div>
       <h1>☕ KolayCafe <span class="sync-dot" id="sync-dot"></span></h1>
-      <div class="header-kafe" id="header-kafe-adi">Yükleniyor...</div>
+      <div class="header-kafe" id="header-cafe-adi">Yükleniyor...</div>
       <div class="header-kafe" id="header-garson-adi" style="display:none;color:var(--accent);"></div>
     </div>
   </div>
@@ -293,7 +312,13 @@
 <!-- PAGES -->
 <div class="page active" id="page-masalar">
   <div class="page-masalar">
-    <div class="page-title">🪑 Masalar</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="page-title" style="margin-bottom:0;">🪑 Masalar</div>
+      <button id="btn-masa-ekle" onclick="ekstraMasaEkle()" 
+        style="display:none;padding:6px 12px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:900;cursor:pointer;">
+        + Masa Ekle
+      </button>
+    </div>
     <div class="masalar-grid" id="masalar-grid"></div>
   </div>
 </div>
@@ -337,9 +362,12 @@
           <div class="toplam-onceki" id="toplam-onceki"></div>
           <div class="toplam-tutar" id="toplam-tutar">0,00 ₺</div>
         </div>
-        <div class="odeme-butonlar">
-          <button class="btn-nakit" onclick="tahsilEt()">💵 Nakit Tahsil</button>
-          <button class="btn-bol" onclick="bolmeGoster()">✂ Hesabı Böl</button>
+        <div class="odeme-butonlar" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+          <button class="btn-nakit" onclick="tahsilEt('nakit')">💵 Nakit</button>
+          <button class="btn-kart" onclick="tahsilEt('kart')">💳 Kart</button>
+          <button class="btn-cari" onclick="cariGoster()">📋 Cari</button>
+          <button class="btn-ikram" onclick="tahsilEt('ikram')">🎁 İkram</button>
+          <button class="btn-bol" style="grid-column:span 2;" onclick="bolmeGoster()">✂ Hesabı Böl</button>
         </div>
       </div>
     </div>
@@ -387,18 +415,18 @@
     <div class="page-title">⚙️ Ayarlar</div>
     <div class="ayar-kart">
       <h3>Hesap</h3>
-      <div class="ayar-row"><span class="ayar-label">Kafe Adı</span><span class="ayar-val" id="ayar-kafe-adi">—</span></div>
+      <div class="ayar-row"><span class="ayar-label">Cafe Adı</span><span class="ayar-val" id="ayar-cafe-adi">—</span></div>
       <div class="ayar-row"><span class="ayar-label">E-posta</span><span class="ayar-val" id="ayar-email">—</span></div>
       <div class="ayar-row">
-        <span class="ayar-label">🔑 Garson Kodu</span>
-        <span class="ayar-val" style="color:var(--accent2);font-weight:800;font-size:1rem;" id="ayar-kafe-kodu">—</span>
+        <span class="ayar-label">🔑 Cafe Kodu</span>
+        <span class="ayar-val" style="color:var(--accent2);font-weight:800;font-size:1rem;" id="ayar-cafe-kodu">—</span>
       </div>
       <div style="font-size:0.72rem;color:var(--muted);padding:4px 0 8px;font-weight:600;">Garsonlar bu kodu kullanarak giriş yapar</div>
       <div class="ayar-row"><span class="ayar-label">Plan</span><span class="plan-badge plan-ucretsiz" id="ayar-plan">Ücretsiz</span></div>
     </div>
     <div class="ayar-kart">
-      <h3>Kafe Adını Değiştir</h3>
-      <input type="text" id="yeni-kafe-adi" placeholder="Yeni kafe adı..." style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:10px;">
+      <h3>Cafe Adını Değiştir</h3>
+      <input type="text" id="yeni-cafe-adi" placeholder="Yeni kafe adı..." style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:10px;">
       <button class="ayar-btn" style="width:100%;" onclick="kafeAdiniGuncelle()">✓ Güncelle</button>
     </div>
     <div class="ayar-kart">
@@ -410,9 +438,48 @@
       </div>
     </div>
     <div class="ayar-kart">
-      <h3>Pro Plan</h3>
-      <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Sınırsız masa, öncelikli destek, gelişmiş raporlar</p>
-      <button style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;" onclick="proPlanAc()">⭐ Pro'ya Geç — 4.990₺/ay</button>
+      <h3>📦 Paket Seçenekleri</h3>
+      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Paket değiştirmek için bizimle iletişime geçin</p>
+
+      <!-- GOLD -->
+      <div id="paket-gold" style="border:1.5px solid #b8860b;border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:900;font-size:0.95rem;">🥇 Gold</span>
+          <span style="font-weight:900;color:var(--accent2);">450₺<span style="font-size:0.72rem;color:var(--muted);font-weight:600;">/ay</span></span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.7;">✓ 6 Masa &nbsp;✓ Garson Takibi &nbsp;✓ Raporlar</div>
+      </div>
+
+      <!-- PLATİN -->
+      <div id="paket-platin" style="border:1.5px solid #1a6fb5;border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:900;font-size:0.95rem;">💎 Platin</span>
+          <span style="font-weight:900;color:var(--accent2);">600₺<span style="font-size:0.72rem;color:var(--muted);font-weight:600;">/ay</span></span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.7;">✓ 10 Masa &nbsp;✓ Garson Takibi &nbsp;✓ Raporlar</div>
+      </div>
+
+      <!-- ULTRA -->
+      <div id="paket-ultra" style="border:1.5px solid var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:900;font-size:0.95rem;">🚀 Ultra</span>
+          <span style="font-weight:900;color:var(--accent2);">750₺<span style="font-size:0.72rem;color:var(--muted);font-weight:600;">/ay</span></span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.7;">✓ 15 Masa &nbsp;✓ Garson Takibi &nbsp;✓ Raporlar</div>
+      </div>
+
+      <!-- PRO -->
+      <div id="paket-pro" style="border:1.5px solid #7c3aed;border-radius:12px;padding:12px 14px;margin-bottom:14px;background:rgba(124,58,237,0.08);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:900;font-size:0.95rem;">⭐ Pro</span>
+          <span style="font-weight:900;color:var(--accent2);">999₺<span style="font-size:0.72rem;color:var(--muted);font-weight:600;">/ay</span></span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.7;">✓ 20+ Masa (sınırsız ekle) &nbsp;✓ Tüm Özellikler<br>🖨️ İndirimli Termal Yazıcı</div>
+      </div>
+
+      <a href="mailto:bilgi@kolaycafe.com?subject=Paket Degisikligi" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
+        📧 Paket Değiştir / İletişim
+      </a>
     </div>
     <div style="text-align:center;margin-top:16px;">
       <button onclick="cikisYap()" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;">Çıkış Yap</button>
@@ -505,8 +572,33 @@
   </div>
 </div>
 
+<!-- CARİ MODAL -->
+<div class="modal-overlay" id="cari-modal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-baslik">📋 Cari Hesap</div>
+    <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Müşteri adını girin, tutarı sonra tahsil edin</p>
+    <input type="text" id="cari-musteri-adi" placeholder="Müşteri adı veya şirketi..." 
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:12px;">
+    <div id="cari-tutar-bilgi" style="background:var(--surface3);border-radius:10px;padding:12px;margin-bottom:12px;text-align:center;">
+      <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">TUTAR</div>
+      <div id="cari-tutar-goster" style="font-size:1.6rem;font-weight:900;color:var(--accent2);">0,00 ₺</div>
+    </div>
+    <button onclick="cariKaydet()" style="width:100%;padding:12px;border-radius:11px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Cariye Yaz</button>
+    <button onclick="modalKapat('cari-modal')" class="modal-kapat">İptal</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div class="yukleniyor" id="yukleniyor"><div class="yukleniyor-ic"><div class="spinner"></div><p>Kaydediliyor...</p></div></div>
+
+<!-- KİLİT EKRANI -->
+<div id="kilit-ekrani" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:998;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+  <div style="font-size:3rem;margin-bottom:12px;">🔒</div>
+  <div style="font-size:1.4rem;font-weight:900;color:var(--accent2);margin-bottom:8px;">Erişim Kısıtlandı</div>
+  <div id="kilit-mesaj" style="font-size:0.9rem;color:var(--text2);font-weight:600;max-width:320px;line-height:1.6;margin-bottom:24px;"></div>
+  <a href="mailto:bilgi@kolaycafe.com" style="padding:13px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;text-decoration:none;display:inline-block;margin-bottom:12px;">📧 İletişime Geç</a>
+  <button onclick="cikisYap()" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;display:block;margin:0 auto;">Çıkış Yap</button>
+</div>
 
 <script>
 // ════════════════════════════════════════
@@ -525,6 +617,17 @@ let aktifGarsonAdi = '';  // giriş yapan garsonun adı
 let garsonKafeId = null;  // garsonun bağlı olduğu kafe
 let kafeId = null;
 let kafeAdi = 'Kafem';
+// ── PAKET TANIMLARI ──
+const PAKETLER = {
+  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:false, fiyat:0,   sure:'3 gün' },
+  gold:   { ad:'🥇 Gold',   masa:6,  garson:true,  rapor:true,  fiyat:450,  sure:'aylık' },
+  platin: { ad:'💎 Platin', masa:10, garson:true,  rapor:true,  fiyat:600,  sure:'aylık' },
+  ultra:  { ad:'🚀 Ultra',  masa:15, garson:true,  rapor:true,  fiyat:750,  sure:'aylık' },
+  pro:    { ad:'⭐ Pro',    masa:999,garson:true,  rapor:true,  fiyat:999,  sure:'aylık' },
+  kilitli:{ ad:'🔒 Kilitli',masa:0,  garson:false, rapor:false, fiyat:0,   sure:'' },
+};
+let aktifPaket = 'deneme'; // cafeVerisiYukle'de güncellenir
+
 let masalar = Array.from({length:20}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0}));
 let garsonlar = [];
 let URUNLER = {
@@ -566,10 +669,18 @@ let _kayitTimeout = null;
 function authTab(tab) {
   ['giris','garson','kayit'].forEach(t=>{
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('auth-'+t).style.display = t===tab?'block':'none';
+    const el = document.getElementById('auth-'+t);
+    if(el) el.style.display = t===tab?'block':'none';
   });
-  document.getElementById('auth-err').style.display = 'none';
-  document.getElementById('garson-isim-liste').style.display = 'none';
+  // Şifre sıfırlama ekranını gizle
+  const sifirlaEl = document.getElementById('auth-sifre-sifirla');
+  if(sifirlaEl) sifirlaEl.style.display = 'none';
+  const girisEl = document.getElementById('auth-giris');
+  if(tab==='giris' && girisEl) girisEl.style.display = 'block';
+  const errEl = document.getElementById('auth-err');
+  if(errEl) errEl.style.display = 'none';
+  const garsonListe = document.getElementById('garson-isim-liste');
+  if(garsonListe) garsonListe.style.display = 'none';
 }
 
 function authHata(msg) {
@@ -592,17 +703,49 @@ async function girisYap() {
 async function kayitOl() {
   const kafe = document.getElementById('kayit-kafe').value.trim();
   const email = document.getElementById('kayit-email').value.trim();
+  const tel = document.getElementById('kayit-tel').value.trim();
+  const adres = document.getElementById('kayit-adres').value.trim();
   const sifre = document.getElementById('kayit-sifre').value;
-  if (!kafe) { authHata('Kafe adı girin!'); return; }
+  if (!kafe) { authHata('Cafe adı girin!'); return; }
   if (!email) { authHata('E-posta girin!'); return; }
+  if (!tel) { authHata('Telefon numarası girin!'); return; }
   if (sifre.length<6) { authHata('Şifre en az 6 karakter olmalı!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
   const {data, error} = await sb.auth.signUp({email, password: sifre});
   if (error) { authHata(error.message); return; }
-  // Kafe profili oluştur
-  await sb.from('kafeler').insert({user_id: data.user.id, kafe_adi: kafe, plan: 'ucretsiz', garsonlar: ['Ali','Ayşe']});
+  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+3);
+  await sb.from('kafeler').insert({
+    user_id: data.user.id, kafe_adi: kafe,
+    plan: 'deneme', plan_bitis: plnBitis.toISOString(),
+    telefon: tel, adres: adres,
+    garsonlar: []
+  });
   await uygulamaBaslat(data.user);
+}
+
+function sifreGoster() {
+  const inp = document.getElementById('kayit-sifre');
+  const btn = document.getElementById('sifre-goster-btn');
+  if(inp.type==='password'){ inp.type='text'; btn.textContent='🙈'; }
+  else { inp.type='password'; btn.textContent='👁'; }
+}
+
+async function sifreSifirla() {
+  const email = document.getElementById('sifirla-email').value.trim();
+  if(!email){ authHata('E-posta girin!'); return; }
+  document.getElementById('auth-loading').style.display='block';
+  const {error} = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href
+  });
+  document.getElementById('auth-loading').style.display='none';
+  if(error){ authHata(error.message); return; }
+  document.getElementById('auth-err').style.display='none';
+  // Başarı mesajı
+  const _srEl = document.getElementById('auth-sifre-sifirla');
+  _srEl.innerHTML = '<div style="text-align:center;padding:16px;"><div style="font-size:2rem;margin-bottom:8px;">\u{1F4E7}</div><div style="font-size:0.9rem;font-weight:700;">S\u0131f\u0131rlama ba\u011flant\u0131s\u0131 g\u00f6nderildi!</div><button id="btn-sifirla-geri2" style="background:none;border:none;color:#f0b830;font-size:0.85rem;font-weight:800;cursor:pointer;margin-top:12px;">&larr; Giri\u015f Yap</button></div>';
+  const _srBtn2 = document.getElementById('btn-sifirla-geri2');
+  if(_srBtn2) _srBtn2.addEventListener('click', ()=>authTab('giris'));
 }
 
 async function cikisYap() {
@@ -617,7 +760,7 @@ function garsonCikis() {
 
 async function garsonKafeBul() {
   const kod = document.getElementById('garson-kafe-kodu').value.trim().toLowerCase();
-  if (!kod) { authHata('Kafe kodunu girin!'); return; }
+  if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   // kafe adını veya kodu ara
   const {data, error} = await sb.from('kafeler')
@@ -625,13 +768,13 @@ async function garsonKafeBul() {
     .or('kafe_kodu.eq.'+kod+',kafe_adi.ilike.'+encodeURIComponent('%'+kod+'%'))
     .limit(1).single();
   document.getElementById('auth-loading').style.display = 'none';
-  if (error || !data) { authHata('Kafe bulunamadı! Kodu kontrol edin.'); return; }
+  if (error || !data) { authHata('Cafe bulunamadı! Kodu kontrol edin.'); return; }
   // Garson listesini göster
   garsonKafeId = data.id;
   const garsonlar = data.garsonlar || [];
   const butonlar = document.getElementById('garson-butonlar');
   butonlar.innerHTML = '';
-  if (garsonlar.length === 0) { authHata('Bu kafede henüz garson eklenmemiş.'); return; }
+  if (garsonlar.length === 0) { authHata('Bu cafede henüz garson eklenmemiş.'); return; }
   garsonlar.forEach(g => {
     const btn = document.createElement('button');
     btn.style.cssText = 'width:100%;padding:13px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;';
@@ -667,14 +810,14 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-ayarlar').style.display = 'none';
   document.getElementById('nav-garson-cikis').style.display = 'flex';
   // Header'da garson adını göster
-  document.getElementById('header-kafe-adi').textContent = kafeAdi;
+  document.getElementById('header-cafe-adi').textContent = kafeAdi;
   // Kafe kodu yoksa oluştur ve kaydet
   if (!data?.kafe_kodu) {
     const kod = (data?.kafe_adi||'kafe').toLowerCase().replace(/\s+/g,'').substring(0,10);
     await sb.from('kafeler').update({kafe_kodu: kod}).eq('user_id', kullanici.id);
-    if (document.getElementById('ayar-kafe-kodu')) document.getElementById('ayar-kafe-kodu').textContent = kod;
+    if (document.getElementById('ayar-cafe-kodu')) document.getElementById('ayar-cafe-kodu').textContent = kod;
   } else {
-    if (document.getElementById('ayar-kafe-kodu')) document.getElementById('ayar-kafe-kodu').textContent = data.kafe_kodu;
+    if (document.getElementById('ayar-cafe-kodu')) document.getElementById('ayar-cafe-kodu').textContent = data.kafe_kodu;
   }
   document.getElementById('header-garson-adi').style.display = 'block';
   document.getElementById('header-garson-adi').textContent = '👤 ' + aktifGarsonAdi;
@@ -722,18 +865,45 @@ async function kafeVerisiYukle() {
     const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'ucretsiz', garsonlar:['Ali','Ayşe']}).select().single();
     if (yeni) { kafeId = yeni.id; garsonlar = ['Ali','Ayşe']; }
   }
-  document.getElementById('header-kafe-adi').textContent = kafeAdi;
+  document.getElementById('header-cafe-adi').textContent = kafeAdi;
   // Kafe kodu yoksa oluştur ve kaydet
   if (!data?.kafe_kodu) {
     const kod = (data?.kafe_adi||'kafe').toLowerCase().replace(/\s+/g,'').substring(0,10);
     await sb.from('kafeler').update({kafe_kodu: kod}).eq('user_id', kullanici.id);
-    if (document.getElementById('ayar-kafe-kodu')) document.getElementById('ayar-kafe-kodu').textContent = kod;
+    if (document.getElementById('ayar-cafe-kodu')) document.getElementById('ayar-cafe-kodu').textContent = kod;
   } else {
-    if (document.getElementById('ayar-kafe-kodu')) document.getElementById('ayar-kafe-kodu').textContent = data.kafe_kodu;
+    if (document.getElementById('ayar-cafe-kodu')) document.getElementById('ayar-cafe-kodu').textContent = data.kafe_kodu;
   }
-  document.getElementById('ayar-kafe-adi').textContent = kafeAdi;
-  document.getElementById('yeni-kafe-adi').value = kafeAdi;
+  document.getElementById('ayar-cafe-adi').textContent = kafeAdi;
+  document.getElementById('yeni-cafe-adi').value = kafeAdi;
   garsonAyarListeRender();
+  // Plan + Yetki kontrolü
+  if (data) {
+    const plan = data.plan || 'deneme';
+    const bitis = data.plan_bitis ? new Date(data.plan_bitis) : null;
+    const simdi = new Date();
+    aktifPaket = plan;
+    const paket = PAKETLER[plan] || PAKETLER.deneme;
+    document.getElementById('ayar-plan').textContent = paket.ad;
+    document.getElementById('ayar-plan').className = 'plan-badge ' + (plan==='pro'||plan==='ultra'||plan==='platin'||plan==='gold'?'plan-pro':'plan-ucretsiz');
+    document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':plan==='pro'?'#7c3aed':plan==='ultra'?'#d4960e':plan==='platin'?'#1a6fb5':plan==='gold'?'#b8860b':'';
+
+    if (plan==='kilitli') {
+      kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');
+      return;
+    }
+    if (plan==='deneme' && bitis && simdi > bitis) {
+      kilitEkraniGoster('3 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
+      return;
+    }
+    if (plan==='deneme' && bitis) {
+      const kalanGun = Math.ceil((bitis-simdi)/(1000*60*60*24));
+      if(kalanGun<=1) toast('⚠️ Deneme süreniz yarın bitiyor! Paket seçin.');
+      else if(kalanGun<=3) toast('⏳ '+kalanGun+' gün deneme hakkınız kaldı');
+    }
+    // Garson raporunu gizle/göster
+    paketYetkiUygula(plan);
+  }
 }
 
 async function kolaycafenVerisiYukle() {
@@ -827,26 +997,42 @@ function masalarRender() {
   const grid = document.getElementById('masalar-grid');
   grid.innerHTML = '';
   let dolu = 0;
+  const paket = PAKETLER[aktifPaket] || PAKETLER.deneme;
   masalar.forEach(m => {
+    const erisim = masaErisimVar(m.id);
     const toplam = masaToplam(m);
     const var_ = m.siparisler.length>0;
-    if (var_) dolu++;
+    if (var_ && erisim) dolu++;
     const btn = document.createElement('button');
-    btn.className = 'masa-kart'+(seciliMasa===m.id?' secili':'')+(var_?' dolu':'');
-    btn.innerHTML = `
-      <div class="mn">${m.id}</div>
-      <div class="mad">${m.ad!=='Masa '+m.id?m.ad:(m.not||'Masa '+m.id)}</div>
-      ${m.garson?`<div class="mgarson">${m.garson}</div>`:''}
-      ${var_?`<div class="mt">${fmt(toplam)}</div>`:''}
-      ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+o.adet,0)}</div>`:''}
-      <button class="masa-not-btn">✏️</button>
-    `;
-    btn.querySelector('.masa-not-btn').addEventListener('click',e=>{e.stopPropagation();masaNotDuzenle(m.id);});
-    btn.addEventListener('click',()=>{seciliMasa=m.id;masalarRender();kolaycafenGuncelle();sayfaGit('kolaycafen');});
+    if (!erisim) {
+      // Kilitli masa
+      btn.className = 'masa-kart';
+      btn.style.opacity = '0.35';
+      btn.style.cursor = 'not-allowed';
+      btn.innerHTML = `
+        <div class="mn" style="opacity:0.4">${m.id}</div>
+        <div style="font-size:0.7rem;color:var(--muted);">🔒</div>
+        <div style="font-size:0.5rem;color:var(--muted);font-weight:700;">Paketi Yükselt</div>`;
+      btn.addEventListener('click', ()=>{ sayfaGit('ayarlar'); toast('Bu masaya erişmek için paketinizi yükseltin!'); });
+    } else {
+      btn.className = 'masa-kart'+(seciliMasa===m.id?' secili':'')+(var_?' dolu':'');
+      btn.innerHTML = `
+        <div class="mn">${m.id}</div>
+        <div class="mad">${m.ad!=='Masa '+m.id?m.ad:(m.not||'Masa '+m.id)}</div>
+        ${m.garson&&paket.garson?`<div class="mgarson">${m.garson}</div>`:''}
+        ${var_?`<div class="mt">${fmt(toplam)}</div>`:''}
+        ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+o.adet,0)}</div>`:''}
+        <button class="masa-not-btn">✏️</button>`;
+      btn.querySelector('.masa-not-btn').addEventListener('click',e=>{e.stopPropagation();masaNotDuzenle(m.id);});
+      btn.addEventListener('click',()=>{seciliMasa=m.id;masalarRender();kolaycafenGuncelle();sayfaGit('kolaycafen');});
+    }
     grid.appendChild(btn);
   });
-  document.getElementById('hstat-dolu').textContent = dolu+'/20';
+  document.getElementById('hstat-dolu').textContent = dolu+'/'+(PAKETLER[aktifPaket]||PAKETLER.deneme).masa;
   document.getElementById('hstat-ciro').textContent = Math.round(gunlukCiro)+'₺';
+  // Pro masa ekle butonu
+  const masaEkleBtn = document.getElementById('btn-masa-ekle');
+  if(masaEkleBtn) masaEkleBtn.style.display = aktifPaket==='pro'?'block':'none';
 }
 
 function masaToplam(m) { return m.siparisler.reduce((s,o)=>s+o.fiyat*o.adet,0); }
@@ -920,9 +1106,16 @@ function urunGridRender() {
 function urunEkle(u) {
   if(!seciliMasa) return;
   const m=masalar[seciliMasa-1];
+  const saat=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  const ekleyenGarson=garsonModu?aktifGarsonAdi:(m.garson||'');
   const v=m.siparisler.find(s=>s.isim===u.isim);
-  if(v) v.adet++;
-  else m.siparisler.push({isim:u.isim,fiyat:u.fiyat,adet:1});
+  if(v){
+    v.adet++;
+    if(!v.eklemeler) v.eklemeler=[];
+    v.eklemeler.push({saat,garson:ekleyenGarson,adet:1});
+  } else {
+    m.siparisler.push({isim:u.isim,fiyat:u.fiyat,adet:1,ilkSaat:saat,ilkGarson:ekleyenGarson,eklemeler:[{saat,garson:ekleyenGarson,adet:1}]});
+  }
   siparisListeRender(); masalarRender();
 }
 
@@ -937,8 +1130,12 @@ function siparisListeRender() {
     m.siparisler.forEach((s,i)=>{
       const item=document.createElement('div');
       item.className='siparis-item';
+      const metaBilgi=s.eklemeler&&s.eklemeler.length>0?[...new Set(s.eklemeler.map(e=>e.saat+(e.garson?' · '+e.garson:'')))].join(' / '):(s.ilkSaat?(s.ilkSaat+(s.ilkGarson?' · '+s.ilkGarson:'')):'');
       item.innerHTML=`
-        <span class="si-isim">${s.isim}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="si-isim">${s.isim}</div>
+          ${metaBilgi?`<div class="si-meta">🕐 ${metaBilgi}</div>`:''}
+        </div>
         <div class="si-miktar">
           <button class="si-btn" onclick="mikDeg(${i},-1)">−</button>
           <span class="si-sayi">${s.adet}</span>
@@ -1020,6 +1217,8 @@ function indirimKaldir(){if(!seciliMasa) return;masalar[seciliMasa-1].indirim=0;
 // ════════════════════════════════════════
 function garsonSec(){
   if(!seciliMasa) return;
+  const paket = PAKETLER[aktifPaket]||PAKETLER.deneme;
+  if(!paket.garson){toast('Garson takibi bu pakette yok. Paketi yükseltin! 📦');sayfaGit('ayarlar');return;}
   const liste=document.getElementById('garson-liste-modal');
   liste.innerHTML='';
   garsonlar.forEach(g=>{
@@ -1225,7 +1424,8 @@ function raporRender(){
           <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${a.indirim}</span>`:''}</span>
         </div>
         ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${a.garson}</div>`:''}
-        <div style="font-size:0.73rem;color:var(--text2);margin-bottom:7px;">${urunOzet}</div>
+        <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
+        ${a.odemeTipi&&a.odemeTipi!=='nakit'?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${a.odemeTipi==='kart'?'#1a6fb5':a.odemeTipi==='cari'?'#7c3aed':a.odemeTipi==='ikram'?'var(--muted)':'var(--text2)'}">${{nakit:'💵 Nakit',kart:'💳 Kart',cari:'📋 Cari',ikram:'🎁 İkram'}[a.odemeTipi]||a.odemeTipi}${a.musteriAdi?' — '+a.musteriAdi:''}</div>`:''}
         <button class="fis-al-btn">🖨 Fiş Al</button>`;
       div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
       kl.appendChild(div);
@@ -1237,9 +1437,36 @@ function raporRender(){
 // AYARLAR
 // ════════════════════════════════════════
 function ayarlarRender(){
-  document.getElementById('ayar-kafe-adi').textContent=kafeAdi;
-  document.getElementById('yeni-kafe-adi').value=kafeAdi;
+  document.getElementById('ayar-cafe-adi').textContent=kafeAdi;
+  document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
+  // Plan + Yetki kontrolü
+  if (data) {
+    const plan = data.plan || 'deneme';
+    const bitis = data.plan_bitis ? new Date(data.plan_bitis) : null;
+    const simdi = new Date();
+    aktifPaket = plan;
+    const paket = PAKETLER[plan] || PAKETLER.deneme;
+    document.getElementById('ayar-plan').textContent = paket.ad;
+    document.getElementById('ayar-plan').className = 'plan-badge ' + (plan==='pro'||plan==='ultra'||plan==='platin'||plan==='gold'?'plan-pro':'plan-ucretsiz');
+    document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':plan==='pro'?'#7c3aed':plan==='ultra'?'#d4960e':plan==='platin'?'#1a6fb5':plan==='gold'?'#b8860b':'';
+
+    if (plan==='kilitli') {
+      kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');
+      return;
+    }
+    if (plan==='deneme' && bitis && simdi > bitis) {
+      kilitEkraniGoster('3 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
+      return;
+    }
+    if (plan==='deneme' && bitis) {
+      const kalanGun = Math.ceil((bitis-simdi)/(1000*60*60*24));
+      if(kalanGun<=1) toast('⚠️ Deneme süreniz yarın bitiyor! Paket seçin.');
+      else if(kalanGun<=3) toast('⏳ '+kalanGun+' gün deneme hakkınız kaldı');
+    }
+    // Garson raporunu gizle/göster
+    paketYetkiUygula(plan);
+  }
 }
 
 function garsonAyarListeRender(){
@@ -1263,17 +1490,26 @@ function garsonEkleAyar(){
 }
 
 async function kafeAdiniGuncelle(){
-  const yeni=document.getElementById('yeni-kafe-adi').value.trim();
+  const yeni=document.getElementById('yeni-cafe-adi').value.trim();
   if(!yeni){toast('Kafe adı girin!');return;}
   kafeAdi=yeni;
-  document.getElementById('header-kafe-adi').textContent=kafeAdi;
-  document.getElementById('ayar-kafe-adi').textContent=kafeAdi;
+  document.getElementById('header-cafe-adi').textContent=kafeAdi;
+  document.getElementById('ayar-cafe-adi').textContent=kafeAdi;
   await sb.from('kafeler').update({kafe_adi:kafeAdi}).eq('id',kafeId);
   toast('✓ Kafe adı güncellendi');
 }
 
 function proPlanAc(){
-  toast('Pro plan yakında! 🚀 bilgi@kolaycafe.com');
+  window.location.href='mailto:bilgi@kolaycafe.com?subject=Pro Paket';
+}
+
+function ekstraMasaEkle() {
+  if(aktifPaket!=='pro'){toast('Bu özellik sadece Pro pakette!');return;}
+  const yeniId = masalar.length+1;
+  masalar.push({id:yeniId, ad:'Masa '+yeniId, siparisler:[], not:'', garson:'', indirim:0});
+  masalarRender();
+  bulutKaydet();
+  toast('✓ Masa '+yeniId+' eklendi!');
 }
 
 // ════════════════════════════════════════
@@ -1369,15 +1605,75 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 
 // Enter tuşu
 document.getElementById('not-input').addEventListener('keydown',e=>{if(e.key==='Enter') document.getElementById('not-modal-kaydet').click();});
-document.getElementById('giris-sifre').addEventListener('keydown',e=>{if(e.key==='Enter') girisYap();});
-document.getElementById('kayit-sifre').addEventListener('keydown',e=>{if(e.key==='Enter') kayitOl();});
+// enter listeners moved to DOMContentLoaded
+
+
+// ══════════════════════════
 
 // ════════════════════════════════════════
-// BAŞLAT — oturum kontrolü
+// BUTON LİSTENER'LAR
 // ════════════════════════════════════════
-sb.auth.getSession().then(({data:{session}})=>{
-  if(session) uygulamaBaslat(session.user);
+document.addEventListener('DOMContentLoaded', function() {
+  // Auth sekme butonları
+  const tabGiris = document.getElementById('tab-giris');
+  const tabGarson = document.getElementById('tab-garson');
+  const tabKayit = document.getElementById('tab-kayit');
+  if(tabGiris) tabGiris.addEventListener('click', ()=>authTab('giris'));
+  if(tabGarson) tabGarson.addEventListener('click', ()=>authTab('garson'));
+  if(tabKayit) tabKayit.addEventListener('click', ()=>authTab('kayit'));
+
+  // Auth form butonları
+  const btnGiris = document.getElementById('btn-giris-yap');
+  const btnGarsonDevam = document.getElementById('btn-garson-devam');
+  const btnKayit = document.getElementById('btn-kayit-ol');
+  if(btnGiris) btnGiris.addEventListener('click', girisYap);
+  if(btnGarsonDevam) btnGarsonDevam.addEventListener('click', garsonKafeBul);
+  if(btnKayit) btnKayit.addEventListener('click', kayitOl);
+
+  // Enter tuşu
+  const girisEmail = document.getElementById('giris-email');
+  const girisSifre = document.getElementById('giris-sifre');
+  const kayitSifre = document.getElementById('kayit-sifre');
+  if(girisEmail) girisEmail.addEventListener('keydown', e=>{if(e.key==='Enter') girisYap();});
+  if(girisSifre) girisSifre.addEventListener('keydown', e=>{if(e.key==='Enter') girisYap();});
+  if(kayitSifre) kayitSifre.addEventListener('keydown', e=>{if(e.key==='Enter') kayitOl();});
+
+  // Şifremi unuttum
+  const btnSifreUnut = document.getElementById('btn-sifre-unut');
+  const btnSifreUnutKayit = document.getElementById('btn-sifre-unut-kayit');
+  const btnSifirlaGonder = document.getElementById('btn-sifirla-gonder');
+  const btnSifirlaGeri = document.getElementById('btn-sifirla-geri');
+  if(btnSifreUnut) btnSifreUnut.addEventListener('click', ()=>{
+    document.getElementById('auth-giris').style.display='none';
+    document.getElementById('auth-sifre-sifirla').style.display='block';
+    const em=document.getElementById('giris-email').value;
+    if(em) document.getElementById('sifirla-email').value=em;
+  });
+  if(btnSifreUnutKayit) btnSifreUnutKayit.addEventListener('click', ()=>{
+    authTab('giris');
+    setTimeout(()=>{
+      document.getElementById('auth-giris').style.display='none';
+      document.getElementById('auth-sifre-sifirla').style.display='block';
+    },50);
+  });
+  if(btnSifirlaGonder) btnSifirlaGonder.addEventListener('click', sifreSifirla);
+  if(btnSifirlaGeri) btnSifirlaGeri.addEventListener('click', ()=>{
+    document.getElementById('auth-sifre-sifirla').style.display='none';
+    document.getElementById('auth-giris').style.display='block';
+  });
+
+  // Şifre göster
+  const btnSifreGoster = document.getElementById('sifre-goster-btn');
+  if(btnSifreGoster) btnSifreGoster.addEventListener('click', sifreGoster);
 });
+
+// ════════════════════════════════════════
+// OTOMATİK GİRİŞ KONTROLÜ
+// ════════════════════════════════════════
+(async ()=>{
+  const {data:{session}} = await sb.auth.getSession();
+  if(session) uygulamaBaslat(session.user);
+})();
 </script>
 </body>
 </html>
