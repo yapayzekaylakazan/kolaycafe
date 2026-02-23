@@ -477,7 +477,7 @@
         <div style="font-size:0.75rem;color:var(--text2);line-height:1.7;">✓ 20+ Masa (sınırsız ekle) &nbsp;✓ Tüm Özellikler<br>🖨️ İndirimli Termal Yazıcı</div>
       </div>
 
-      <a href="mailto:bilgi@kolaycafe.com?subject=Paket Degisikligi" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
+      <a href="/cdn-cgi/l/email-protection#66040f0a010f260d090a071f050700034805090b591513040c0305125b36070d0312462203010f150f0d0a0f010f" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
         📧 Paket Değiştir / İletişim
       </a>
     </div>
@@ -596,11 +596,11 @@
   <div style="font-size:3rem;margin-bottom:12px;">🔒</div>
   <div style="font-size:1.4rem;font-weight:900;color:var(--accent2);margin-bottom:8px;">Erişim Kısıtlandı</div>
   <div id="kilit-mesaj" style="font-size:0.9rem;color:var(--text2);font-weight:600;max-width:320px;line-height:1.6;margin-bottom:24px;"></div>
-  <a href="mailto:bilgi@kolaycafe.com" style="padding:13px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;text-decoration:none;display:inline-block;margin-bottom:12px;">📧 İletişime Geç</a>
+  <a href="/cdn-cgi/l/email-protection#accec5c0cbc5ecc7c3c0cdd5cfcdcac982cfc3c1" style="padding:13px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;text-decoration:none;display:inline-block;margin-bottom:12px;">📧 İletişime Geç</a>
   <button onclick="cikisYap()" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;display:block;margin:0 auto;">Çıkış Yap</button>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ════════════════════════════════════════
 // SUPABASE BAŞLAT
 // ════════════════════════════════════════
@@ -993,6 +993,11 @@ function sayfaGit(sayfa) {
 // ════════════════════════════════════════
 // MASALAR
 // ════════════════════════════════════════
+function masaErisimVar(masaId) {
+  const paket = PAKETLER[aktifPaket] || PAKETLER.deneme;
+  return masaId <= paket.masa;
+}
+
 function masalarRender() {
   const grid = document.getElementById('masalar-grid');
   grid.innerHTML = '';
@@ -1669,11 +1674,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ════════════════════════════════════════
 // OTOMATİK GİRİŞ KONTROLÜ
-// ════════════════════════════════════════
-(async ()=>{
-  const {data:{session}} = await sb.auth.getSession();
-  if(session) uygulamaBaslat(session.user);
-})();
-</script>
-</body>
-</html>
+// ═══════════════
