@@ -292,7 +292,7 @@
 </div>
 
 <!-- ── ANA UYGULAMA ── -->
-<div id="app" style="display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0; display:none;">
+<div id="app" style="display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0;">
 
 <div class="header">
   <div class="header-left">
@@ -365,7 +365,7 @@
         <div class="odeme-butonlar" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
           <button class="btn-nakit" onclick="tahsilEt('nakit')">💵 Nakit</button>
           <button class="btn-kart" onclick="tahsilEt('kart')">💳 Kart</button>
-          <button class="btn-cari" onclick="cariGoster()">📋 Cari</button>
+          <button class="btn-cari" id="btn-cari-goster">📋 Cari</button>
           <button class="btn-ikram" onclick="tahsilEt('ikram')">🎁 İkram</button>
           <button class="btn-bol" style="grid-column:span 2;" onclick="bolmeGoster()">✂ Hesabı Böl</button>
         </div>
@@ -583,7 +583,7 @@
       <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">TUTAR</div>
       <div id="cari-tutar-goster" style="font-size:1.6rem;font-weight:900;color:var(--accent2);">0,00 ₺</div>
     </div>
-    <button onclick="cariKaydet()" style="width:100%;padding:12px;border-radius:11px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Cariye Yaz</button>
+    <button id="btn-cari-kaydet" style="width:100%;padding:12px;border-radius:11px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Cariye Yaz</button>
     <button onclick="modalKapat('cari-modal')" class="modal-kapat">İptal</button>
   </div>
 </div>
@@ -1707,6 +1707,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnSifreGoster = document.getElementById('sifre-goster-btn');
   if(btnSifreGoster) btnSifreGoster.addEventListener('click', sifreGoster);
 
+  // Cari
+  const btnCariGoster = document.getElementById('btn-cari-goster');
+  if(btnCariGoster) btnCariGoster.addEventListener('click', cariGoster);
+  const btnCariKaydet = document.getElementById('btn-cari-kaydet');
+  if(btnCariKaydet) btnCariKaydet.addEventListener('click', cariKaydet);
+
   // Cari modal butonları
   const btnCariKaydet = document.querySelector('#cari-modal button[onclick="cariKaydet()"]');
   if(btnCariKaydet){ btnCariKaydet.removeAttribute('onclick'); btnCariKaydet.addEventListener('click', cariKaydet); }
@@ -1717,8 +1723,15 @@ document.addEventListener('DOMContentLoaded', function() {
 (async ()=>{
   try {
     const {data:{session}} = await sb.auth.getSession();
-    if(session) await uygulamaBaslat(session.user);
-  } catch(e) { console.log('Session kontrol hatası:', e); }
+    if(session) {
+      await uygulamaBaslat(session.user);
+    } else {
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  } catch(e) {
+    console.log('Session kontrol hatası:', e);
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
 })();
 </script>
 </body>
