@@ -1094,22 +1094,25 @@ function bulutKaydet() {
   clearTimeout(_kayitTimeout);
   _kayitTimeout = setTimeout(async () => {
     if (!kafeId) return;
-    const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
-    // Aktif masaları da kaydet (sipariş olan masalar)
+    // Aktif masaları kaydet (tüm modlar)
     const aktifMasalar = masalar.filter(m=>m.siparisler.length>0).map(m=>({
       id:m.id, ad:m.ad, not:m.not||'', siparisler:m.siparisler,
       garson:m.garson||'', indirim:m.indirim||0
     }));
-    await sb.from('kafeler').update({
-      urunler: URUNLER,
-      masalar: masaKayit,
-      garsonlar: garsonlar,
-      aktif_masalar: aktifMasalar
-    }).eq('id', kafeId);
-    // kafe_kodu yoksa oluştur (küçük harf, ilk 3 kelime)
-    if (!document.getElementById('ayar-kafe-kodu-goster')?.dataset?.set) {
-      const kod = kafeAdi.toLowerCase().replace(/\s+/g,'').substring(0,10);
-      await sb.from('kafeler').update({kafe_kodu: kod}).eq('id', kafeId).is('kafe_kodu', null);
+    if (garsonModu) {
+      // Garson: sadece aktif_masalar güncelle
+      await sb.from('kafeler').update({
+        aktif_masalar: aktifMasalar
+      }).eq('id', kafeId);
+    } else {
+      // Sahip: her şeyi güncelle
+      const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
+      await sb.from('kafeler').update({
+        urunler: URUNLER,
+        masalar: masaKayit,
+        garsonlar: garsonlar,
+        aktif_masalar: aktifMasalar
+      }).eq('id', kafeId);
     }
   }, 1200);
 }
