@@ -948,6 +948,43 @@ async function uygulamaBaslat(user) {
       setSyncOnline(true);
     })
     .subscribe();
+
+  // Her 5 saniyede masaları senkronize et
+  setInterval(async () => {
+    if (!kafeId) return;
+    const {data} = await sb.from('kafeler')
+      .select('aktif_masalar')
+      .eq('id', kafeId)
+      .single();
+    if (data?.aktif_masalar) {
+      let degisti = false;
+      data.aktif_masalar.forEach(am => {
+        const m = masalar.find(x=>x.id===am.id);
+        if (m && m.id !== seciliMasa) {
+          const eskiJson = JSON.stringify(m.siparisler);
+          const yeniJson = JSON.stringify(am.siparisler);
+          if (eskiJson !== yeniJson) {
+            m.siparisler = am.siparisler || [];
+            m.garson = am.garson || '';
+            m.indirim = am.indirim || 0;
+            degisti = true;
+          }
+        }
+      });
+      // Kapanmış masaları temizle
+      masalar.forEach(m => {
+        if (m.id === seciliMasa) return;
+        const halaAktif = data.aktif_masalar.find(am=>am.id===m.id);
+        if (!halaAktif && m.siparisler.length > 0) {
+          m.siparisler = [];
+          m.garson = '';
+          m.indirim = 0;
+          degisti = true;
+        }
+      });
+      if (degisti) masalarRender();
+    }
+  }, 5000);
 }
 
 async function kafeVerisiYukle() {
@@ -1179,7 +1216,9 @@ function masalarRender() {
     }
     grid.appendChild(btn);
   });
-  document.getElementById('hstat-dolu').textContent = dolu+'/'+(PAKETLER[aktifPaket]||PAKETLER.deneme).masa;
+  const _paketMasa = (PAKETLER[aktifPaket]||PAKETLER.deneme).masa;
+  const _gosterMasa = _paketMasa >= 999 ? masalar.length : _paketMasa;
+  document.getElementById('hstat-dolu').textContent = dolu+'/'+_gosterMasa;
   document.getElementById('hstat-ciro').textContent = Math.round(gunlukCiro)+'₺';
   // Pro masa ekle butonu
   const masaEkleBtn = document.getElementById('btn-masa-ekle');
