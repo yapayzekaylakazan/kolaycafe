@@ -876,6 +876,43 @@ async function uygulamaBaslat(user) {
   masalarRender();
   urunListesiRender();
   setSyncOnline(true);
+
+  // Realtime: başka cihazdan yapılan değişiklikleri al
+  sb.channel('kafe-'+kafeId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'kolaycafenlar',
+      filter: 'kafe_id=eq.'+kafeId
+    }, (payload) => {
+      const a = payload.new;
+      // Zaten listede var mı kontrol et
+      const varMi = kapaliKolayCafenlar.find(k => k.tarihObj && 
+        new Date(a.created_at).getTime() === k.tarihObj.getTime());
+      if (!varMi) {
+        kapaliKolayCafenlar.unshift({
+          masa: a.masa_no,
+          masaAd: a.masa_ad||'Masa '+a.masa_no,
+          tarih: new Date(a.created_at).toLocaleString('tr-TR'),
+          tarihObj: new Date(a.created_at),
+          toplam: a.toplam,
+          indirim: a.indirim||0,
+          garson: a.garson||'',
+          siparisler: a.siparisler||[],
+          odeme_tipi: a.odeme_tipi||'nakit',
+          musteri_adi: a.musteri_adi||'',
+          cari_tutar: a.cari_tutar||0,
+        });
+        // Günlük ciroyu güncelle
+        const bugun = new Date().toDateString();
+        if (new Date(a.created_at).toDateString() === bugun && a.odeme_tipi !== 'cari') {
+          gunlukCiro += a.toplam || 0;
+        }
+        masalarRender();
+        setSyncOnline(true);
+      }
+    })
+    .subscribe();
 }
 
 async function kafeVerisiYukle() {
@@ -1001,15 +1038,24 @@ function bulutKaydet() {
 
 async function kolaycafenKaydet(kolaycafen) {
   if (!kafeId) return;
-  await sb.from('kolaycafenlar').insert({
-    kafe_id: kafeId,
-    masa_no: kolaycafen.masa,
-    masa_ad: kolaycafen.masaAd,
-    toplam: kolaycafen.toplam,
-    indirim: kolaycafen.indirim||0,
-    garson: kolaycafen.garson||'',
-    siparisler: kolaycafen.siparisler,
-  });
+  try {
+    await sb.from('kolaycafenlar').insert({
+      kafe_id: kafeId,
+      masa_no: kolaycafen.masa,
+      masa_ad: kolaycafen.masaAd,
+      toplam: kolaycafen.toplam,
+      indirim: kolaycafen.indirim||0,
+      garson: kolaycafen.garson||'',
+      siparisler: kolaycafen.siparisler,
+      odeme_tipi: kolaycafen.odeme_tipi||'nakit',
+      musteri_adi: kolaycafen.musteri_adi||null,
+      cari_tutar: kolaycafen.cari_tutar||null,
+    });
+    setSyncOnline(true);
+  } catch(e) {
+    console.error('Kayıt hatası:', e);
+    setSyncOnline(false);
+  }
 }
 
 function setSyncOnline(online) {
