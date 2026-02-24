@@ -913,6 +913,41 @@ async function uygulamaBaslat(user) {
       }
     })
     .subscribe();
+
+  // Kafeler tablosunu da dinle (aktif masalar için)
+  sb.channel('kafeler-'+kafeId)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'kafeler',
+      filter: 'id=eq.'+kafeId
+    }, (payload) => {
+      const aktif = payload.new.aktif_masalar || [];
+      // Diğer cihazların aktif masalarını güncelle
+      aktif.forEach(am => {
+        const m = masalar.find(x=>x.id===am.id);
+        if (m) {
+          // Sadece başka cihazın siparişlerini al (kendi siparişlerini ezme)
+          const benimSiparisVar = m.siparisler.length > 0;
+          if (!benimSiparisVar) {
+            m.siparisler = am.siparisler || [];
+            m.garson = am.garson || '';
+            m.indirim = am.indirim || 0;
+          }
+        }
+      });
+      // Aktif olmayan masaları temizle (başka cihaz kapattı)
+      masalar.forEach(m => {
+        const halaAktif = aktif.find(am=>am.id===m.id);
+        if (!halaAktif && m.siparisler.length > 0) {
+          // Bu masayı başka cihaz kapattı mı? Dikkatli ol
+          // Sadece boş masaları temizle
+        }
+      });
+      masalarRender();
+      setSyncOnline(true);
+    })
+    .subscribe();
 }
 
 async function kafeVerisiYukle() {
@@ -1023,10 +1058,16 @@ function bulutKaydet() {
   _kayitTimeout = setTimeout(async () => {
     if (!kafeId) return;
     const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
+    // Aktif masaları da kaydet (sipariş olan masalar)
+    const aktifMasalar = masalar.filter(m=>m.siparisler.length>0).map(m=>({
+      id:m.id, ad:m.ad, not:m.not||'', siparisler:m.siparisler,
+      garson:m.garson||'', indirim:m.indirim||0
+    }));
     await sb.from('kafeler').update({
       urunler: URUNLER,
       masalar: masaKayit,
-      garsonlar: garsonlar
+      garsonlar: garsonlar,
+      aktif_masalar: aktifMasalar
     }).eq('id', kafeId);
     // kafe_kodu yoksa oluştur (küçük harf, ilk 3 kelime)
     if (!document.getElementById('ayar-kafe-kodu-goster')?.dataset?.set) {
@@ -1226,7 +1267,7 @@ function urunEkle(u) {
   } else {
     m.siparisler.push({isim:u.isim,fiyat:u.fiyat,adet:1,ilkSaat:saat,ilkGarson:ekleyenGarson,eklemeler:[{saat,garson:ekleyenGarson,adet:1}]});
   }
-  siparisListeRender(); masalarRender();
+  siparisListeRender(); masalarRender(); bulutKaydet();
 }
 
 function siparisListeRender() {
@@ -1273,7 +1314,7 @@ function mikDeg(idx,d) {
 function siparisKaldir(idx) {
   if(!seciliMasa) return;
   masalar[seciliMasa-1].siparisler.splice(idx,1);
-  siparisListeRender(); masalarRender();
+  siparisListeRender(); masalarRender(); bulutKaydet();
 }
 
 function masaTemizle() {
