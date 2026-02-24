@@ -1127,30 +1127,51 @@ async function kolaycafenVerisiYukle() {
 // ════════════════════════════════════════
 // BULUT KAYIT
 // ════════════════════════════════════════
+// Tek bir masanın durumunu güncelle
+async function masaSyncYaz(masaId) {
+  if (!kafeId) return;
+  try {
+    const m = masalar.find(x=>x.id===masaId);
+    if (!m) return;
+    
+    // Mevcut aktif_masaları oku
+    const {data} = await sb.from('kafeler')
+      .select('aktif_masalar').eq('id', kafeId).single();
+    let aktif = data?.aktif_masalar || [];
+    
+    if (m.siparisler.length > 0) {
+      // Masada sipariş var - güncelle veya ekle
+      const idx = aktif.findIndex(x=>x.id===masaId);
+      const masaData = {
+        id:m.id, ad:m.ad, not:m.not||'',
+        siparisler:m.siparisler,
+        garson:m.garson||'', indirim:m.indirim||0
+      };
+      if (idx >= 0) aktif[idx] = masaData;
+      else aktif.push(masaData);
+    } else {
+      // Masa boş - listeden çıkar
+      aktif = aktif.filter(x=>x.id!==masaId);
+    }
+    
+    await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+  } catch(e) { console.log('Sync hatası:', e); }
+}
+
 function bulutKaydet() {
   clearTimeout(_kayitTimeout);
   _kayitTimeout = setTimeout(async () => {
     if (!kafeId) return;
-    // Aktif masaları kaydet (tüm modlar)
-    const aktifMasalar = masalar.filter(m=>m.siparisler.length>0).map(m=>({
-      id:m.id, ad:m.ad, not:m.not||'', siparisler:m.siparisler,
-      garson:m.garson||'', indirim:m.indirim||0
-    }));
-    if (garsonModu) {
-      // Garson: sadece aktif_masalar güncelle
-      await sb.from('kafeler').update({
-        aktif_masalar: aktifMasalar
-      }).eq('id', kafeId);
-    } else {
-      // Sahip: her şeyi güncelle
-      const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
-      await sb.from('kafeler').update({
-        urunler: URUNLER,
-        masalar: masaKayit,
-        garsonlar: garsonlar,
-        aktif_masalar: aktifMasalar
-      }).eq('id', kafeId);
-    }
+    try {
+      if (!garsonModu) {
+        const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
+        await sb.from('kafeler').update({
+          urunler: URUNLER,
+          masalar: masaKayit,
+          garsonlar: garsonlar,
+        }).eq('id', kafeId);
+      }
+    } catch(e) { console.log('Kayıt hatası:', e); }
   }, 1200);
 }
 
@@ -1346,7 +1367,7 @@ function urunEkle(u) {
   } else {
     m.siparisler.push({isim:u.isim,fiyat:u.fiyat,adet:1,ilkSaat:saat,ilkGarson:ekleyenGarson,eklemeler:[{saat,garson:ekleyenGarson,adet:1}]});
   }
-  siparisListeRender(); masalarRender(); bulutKaydet();
+  siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
 }
 
 function siparisListeRender() {
@@ -1387,13 +1408,13 @@ function mikDeg(idx,d) {
   const m=masalar[seciliMasa-1];
   m.siparisler[idx].adet+=d;
   if(m.siparisler[idx].adet<=0) m.siparisler.splice(idx,1);
-  siparisListeRender(); masalarRender();
+  siparisListeRender(); masalarRender(); masaSyncYaz(seciliMasa);
 }
 
 function siparisKaldir(idx) {
   if(!seciliMasa) return;
   masalar[seciliMasa-1].siparisler.splice(idx,1);
-  siparisListeRender(); masalarRender(); bulutKaydet();
+  siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
 }
 
 function masaTemizle() {
@@ -1403,7 +1424,7 @@ function masaTemizle() {
   masalar[seciliMasa-1].indirim=0;
   masalar[seciliMasa-1].garson='';
   siparisListeRender(); masalarRender(); kolaycafenGuncelle();
-  bulutKaydet();
+  if(seciliMasa) masaSyncYaz(seciliMasa);
 }
 
 // ════════════════════════════════════════
@@ -1469,7 +1490,7 @@ async function tahsilEt() {
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
   toast('✓ '+m.ad+' — '+fmt(son)+' tahsil edildi');
   await kolaycafenKaydet(kolaycafen);
-  bulutKaydet(); // Aktif masaları güncelle - kapanan masa silinsin
+  masaSyncYaz(seciliMasa); // Kapanan masayı sil
 }
 
 // ════════════════════════════════════════
