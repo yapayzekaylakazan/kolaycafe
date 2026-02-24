@@ -859,6 +859,41 @@ async function garsonGiris(isim, kafeData) {
   masalarRender(); urunListesiRender();
   setSyncOnline(true);
   toast('Hoş geldin, ' + isim + '! ☕');
+  // Garson için de realtime sync başlat
+  setInterval(async () => {
+    if (!kafeId) return;
+    try {
+      const {data} = await sb.from('kafeler')
+        .select('aktif_masalar')
+        .eq('id', kafeId)
+        .single();
+      if (data?.aktif_masalar) {
+        let degisti = false;
+        data.aktif_masalar.forEach(am => {
+          const m = masalar.find(x=>x.id===am.id);
+          if (m && m.id !== seciliMasa) {
+            const eskiJson = JSON.stringify(m.siparisler);
+            const yeniJson = JSON.stringify(am.siparisler);
+            if (eskiJson !== yeniJson) {
+              m.siparisler = am.siparisler || [];
+              m.garson = am.garson || '';
+              m.indirim = am.indirim || 0;
+              degisti = true;
+            }
+          }
+        });
+        masalar.forEach(m => {
+          if (m.id === seciliMasa) return;
+          const halaAktif = data.aktif_masalar.find(am=>am.id===m.id);
+          if (!halaAktif && m.siparisler.length > 0) {
+            m.siparisler = []; m.garson = ''; m.indirim = 0;
+            degisti = true;
+          }
+        });
+        if (degisti) masalarRender();
+      }
+    } catch(e) { console.log('Garson sync hatası:', e); }
+  }, 5000);
 }
 
 // ════════════════════════════════════════
@@ -952,6 +987,7 @@ async function uygulamaBaslat(user) {
   // Her 5 saniyede masaları senkronize et
   setInterval(async () => {
     if (!kafeId) return;
+    try {
     const {data} = await sb.from('kafeler')
       .select('aktif_masalar')
       .eq('id', kafeId)
@@ -984,6 +1020,7 @@ async function uygulamaBaslat(user) {
       });
       if (degisti) masalarRender();
     }
+    } catch(e) { console.log('Sync hatası:', e); }
   }, 5000);
 }
 
@@ -1366,6 +1403,7 @@ function masaTemizle() {
   masalar[seciliMasa-1].indirim=0;
   masalar[seciliMasa-1].garson='';
   siparisListeRender(); masalarRender(); kolaycafenGuncelle();
+  bulutKaydet();
 }
 
 // ════════════════════════════════════════
@@ -1431,6 +1469,7 @@ async function tahsilEt() {
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
   toast('✓ '+m.ad+' — '+fmt(son)+' tahsil edildi');
   await kolaycafenKaydet(kolaycafen);
+  bulutKaydet(); // Aktif masaları güncelle - kapanan masa silinsin
 }
 
 // ════════════════════════════════════════
