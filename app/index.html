@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KolayCafe">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -763,7 +763,7 @@ let kafeId = null;
 let kafeAdi = 'Kafem';
 // ── PAKET TANIMLARI ──
 const PAKETLER = {
-  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:false, fiyat:0,   sure:'3 gün' },
+  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:false, fiyat:0,   sure:'7 gün' },
   gold:   { ad:'🥇 Gold',   masa:6,  garson:true,  rapor:true,  fiyat:450,  sure:'aylık' },
   platin: { ad:'💎 Platin', masa:10, garson:true,  rapor:true,  fiyat:600,  sure:'aylık' },
   ultra:  { ad:'🚀 Ultra',  masa:15, garson:true,  rapor:true,  fiyat:750,  sure:'aylık' },
@@ -881,7 +881,7 @@ async function kayitOl() {
     }
   }
   
-  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+3);
+  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+7);
   await sb.from('kafeler').insert({
     user_id: data.user.id, kafe_adi: kafe,
     plan: 'deneme', plan_bitis: plnBitis.toISOString(),
@@ -1235,7 +1235,7 @@ async function kafeVerisiYukle() {
       return;
     }
     if (plan==='deneme' && bitis && simdi > bitis) {
-      kilitEkraniGoster('3 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
+      kilitEkraniGoster('7 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
       return;
     }
     if (plan==='deneme' && bitis) {
@@ -1438,9 +1438,9 @@ function masalarRender() {
         ${m.garson&&paket.garson?`<div class="mgarson">${m.garson}</div>`:''}
         ${var_?`<div class="mt">${fmt(toplam)}</div>`:''}
         ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+o.adet,0)}</div>`:''}
-        <button class="masa-not-btn">✏️</button>`;
+        <button class="masa-not-btn">✏️</button><button class="masa-qr-btn">📷</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
-      btn.querySelector(".masa-qr-btn").addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
+      const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       btn.addEventListener('click',()=>{seciliMasa=m.id;masalarRender();kolaycafenGuncelle();sayfaGit('kolaycafen');});
     }
     grid.appendChild(btn);
@@ -1978,7 +1978,7 @@ function ayarlarRender(){
       return;
     }
     if (plan==='deneme' && bitis && simdi > bitis) {
-      kilitEkraniGoster('3 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
+      kilitEkraniGoster('7 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
       return;
     }
     if (plan==='deneme' && bitis) {
@@ -2550,7 +2550,7 @@ window.cariKaydet = cariKaydet;
 // PWA Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('../sw.js')
       .then(reg => console.log('SW kayıtlı:', reg.scope))
       .catch(err => console.log('SW hatası:', err));
   });
