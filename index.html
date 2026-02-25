@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>KolayCafe — Cafe Adisyon Sistemi</title>
+<meta name="description" content="KolayCafe - Cafe Yönetim Sistemi">
+<meta name="theme-color" content="#1a1200">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KolayCafe">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -490,6 +497,15 @@
 <div class="page" id="page-ayarlar">
   <div class="page-ayarlar">
     <div class="page-title">⚙️ Ayarlar</div>
+    <div class="ayar-kart" id="pwa-yukle-btn" style="display:none;cursor:pointer;" onclick="pwaYukle()">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.5rem;">📲</span>
+        <div>
+          <div style="font-weight:900;font-size:0.95rem;">Uygulamayı Yükle</div>
+          <div style="font-size:0.75rem;color:var(--muted);font-weight:600;">Ana ekrana ekle — App Store gerekmez</div>
+        </div>
+      </div>
+    </div>
     <div class="ayar-kart">
       <h3>Hesap</h3>
       <div class="ayar-row"><span class="ayar-label">Cafe Adı</span><span class="ayar-val" id="ayar-cafe-adi">—</span></div>
@@ -2503,6 +2519,41 @@ window.cariKaydet = cariKaydet;
     document.getElementById('auth-screen').style.display = 'flex';
   }
 })();
+
+// PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW kayıtlı:', reg.scope))
+      .catch(err => console.log('SW hatası:', err));
+  });
+}
+
+// PWA Yükle butonu
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('pwa-yukle-btn');
+  if (btn) btn.style.display = 'block';
+});
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwa-yukle-btn');
+  if (btn) btn.style.display = 'none';
+  toast('✓ KolayCafe ana ekrana eklendi!');
+});
+
+window.pwaYukle = async function() {
+  if (!deferredPrompt) {
+    toast('Tarayıcı menüsünden "Ana Ekrana Ekle" seçin');
+    return;
+  }
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') toast('✓ KolayCafe yükleniyor!');
+  deferredPrompt = null;
+};
 </script>
 </body>
 </html>
