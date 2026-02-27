@@ -1729,9 +1729,17 @@ function transferGoster(){
 function transferYap(hedefId){
   const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
   if(!k||!h){toast('Masa bulunamadı!');return;}
-  k.siparisler.forEach(s=>{const v=h.siparisler.find(x=>x.isim===s.isim);if(v) v.adet+=s.adet;else h.siparisler.push({...s});});
-  const kid=seciliMasa; k.siparisler=[];
-  modalKapat('transfer-modal'); seciliMasa=hedefId; kolaycafenGuncelle(); masalarRender();
+  k.siparisler.forEach(s=>{
+    const v=h.siparisler.find(x=>x.isim===s.isim);
+    if(v) v.adet+=s.adet; else h.siparisler.push({...s});
+  });
+  const kid=seciliMasa;
+  if(!h.garson&&k.garson) h.garson=k.garson;
+  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0;
+  modalKapat('transfer-modal');
+  seciliMasa=hedefId;
+  kolaycafenGuncelle();
+  masalarRender();
   toast('↔ Masa '+kid+' → Masa '+hedefId);
 }
 
@@ -1749,7 +1757,6 @@ function splitRender(){
   const sayi=parseInt(document.getElementById('split-kisi').value)||2;
   if(!seciliMasa) return;
   const m=masalar.find(x=>x.id===seciliMasa); if(!m) return;
-  const m=masalar[seciliMasa-1];
   const ham=masaToplam(m),ind=m.indirim||0,toplam=ham*(1-ind/100),kb=toplam/sayi;
   const liste=document.getElementById('split-liste');
   liste.innerHTML='';
