@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KolayCafe">
-<link rel="manifest" href="../manifest.json">
-<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -28,9 +28,10 @@
   /* ── GİRİŞ EKRANI ── */
   #auth-screen {
     position: fixed; inset: 0; background: var(--bg); z-index: 999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px;
+    overflow-y: auto;
   }
-  .auth-logo { font-size: 3rem; margin-bottom: 6px; }
+  .auth-logo { font-size: 3rem; margin-bottom: 6px; margin-top: 24px; }
   .auth-title { font-size: 2rem; font-weight: 900; color: var(--accent2); margin-bottom: 4px; }
   .auth-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; font-weight: 600; }
   .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; }
@@ -764,7 +765,7 @@ let kafeId = null;
 let kafeAdi = 'Kafem';
 // ── PAKET TANIMLARI ──
 const PAKETLER = {
-  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:false, fiyat:0,   sure:'7 gün' },
+  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:true,  fiyat:0,   sure:'7 gün' },
   gold:   { ad:'🥇 Gold',   masa:6,  garson:true,  rapor:true,  fiyat:450,  sure:'aylık' },
   platin: { ad:'💎 Platin', masa:10, garson:true,  rapor:true,  fiyat:600,  sure:'aylık' },
   ultra:  { ad:'🚀 Ultra',  masa:15, garson:true,  rapor:true,  fiyat:750,  sure:'aylık' },
@@ -883,11 +884,13 @@ async function kayitOl() {
   }
   
   const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+7);
+  const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
   await sb.from('kafeler').insert({
     user_id: data.user.id, kafe_adi: kafe,
     plan: 'deneme', plan_bitis: plnBitis.toISOString(),
     telefon: tel, adres: adres,
     garsonlar: [],
+    kafe_kodu: kafeKoduYeni,
     kupon_kodu: kuponKodu || null,
     kupon_indirim: kuponIndirim
   });
@@ -1076,7 +1079,7 @@ async function uygulamaBaslat(user) {
       schema: 'public',
       table: 'kolaycafenlar',
       filter: 'kafe_id=eq.'+kafeId
-    }, (payload) => {
+    }, async (payload) => {
       const a = payload.new;
       // Zaten listede var mı kontrol et (çift kayıt önle)
       const created = new Date(a.created_at).getTime();
@@ -1199,7 +1202,8 @@ async function kafeVerisiYukle() {
     }
   } else {
     // İlk giriş, kafe verisi henüz yok
-    const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'ucretsiz', garsonlar:['Ali','Ayşe']}).select().single();
+    const kkYeni = Math.random().toString(36).substring(2,8).toUpperCase();
+    const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'deneme', plan_bitis: new Date(Date.now()+7*24*60*60*1000).toISOString(), garsonlar:['Ali','Ayşe'], kafe_kodu: kkYeni}).select().single();
     if (yeni) { kafeId = yeni.id; garsonlar = ['Ali','Ayşe']; }
   }
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
@@ -1723,7 +1727,8 @@ function transferGoster(){
 }
 
 function transferYap(hedefId){
-  const k=masalar[seciliMasa-1],h=masalar[hedefId-1];
+  const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
+  if(!k||!h){toast('Masa bulunamadı!');return;}
   k.siparisler.forEach(s=>{const v=h.siparisler.find(x=>x.isim===s.isim);if(v) v.adet+=s.adet;else h.siparisler.push({...s});});
   const kid=seciliMasa; k.siparisler=[];
   modalKapat('transfer-modal'); seciliMasa=hedefId; kolaycafenGuncelle(); masalarRender();
@@ -1735,7 +1740,7 @@ function transferYap(hedefId){
 // ════════════════════════════════════════
 function bolmeGoster(){
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m=masalar.find(x=>x.id===seciliMasa);
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   splitOdendi=[]; document.getElementById('split-kisi').value=2; splitRender(); modalAc('split-modal');
 }
@@ -1743,6 +1748,7 @@ function bolmeGoster(){
 function splitRender(){
   const sayi=parseInt(document.getElementById('split-kisi').value)||2;
   if(!seciliMasa) return;
+  const m=masalar.find(x=>x.id===seciliMasa); if(!m) return;
   const m=masalar[seciliMasa-1];
   const ham=masaToplam(m),ind=m.indirim||0,toplam=ham*(1-ind/100),kb=toplam/sayi;
   const liste=document.getElementById('split-liste');
@@ -2555,7 +2561,7 @@ window.cariKaydet = cariKaydet;
 // PWA Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('../sw.js')
+    navigator.serviceWorker.register('/sw.js')
       .then(reg => console.log('SW kayıtlı:', reg.scope))
       .catch(err => console.log('SW hatası:', err));
   });
