@@ -1486,6 +1486,8 @@ function masaNotDuzenle(id) {
 // ════════════════════════════════════════
 // ADİSYON
 // ════════════════════════════════════════
+
+function getMasa(id) { return masalar.find(m=>m.id===(id||seciliMasa)); }
 function kolaycafenGuncelle() {
   if (!seciliMasa) {
     document.getElementById('masa-secilmedi-msg').style.display='flex';
@@ -1494,7 +1496,7 @@ function kolaycafenGuncelle() {
   }
   document.getElementById('masa-secilmedi-msg').style.display='none';
   document.getElementById('kolaycafen-icerik').style.display='flex';
-  const m = masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   document.getElementById('kolaycafen-masa-basligi').textContent = m.ad;
   const gc = document.getElementById('garson-chip');
   gc.textContent = m.garson?'👤 '+m.garson:'👤 Garson';
@@ -1534,7 +1536,7 @@ function urunGridRender() {
 
 function urunEkle(u) {
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   const saat=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   const ekleyenGarson=garsonModu?aktifGarsonAdi:(m.garson||'');
   const v=m.siparisler.find(s=>s.isim===u.isim);
@@ -1551,7 +1553,7 @@ function urunEkle(u) {
 function siparisListeRender() {
   const liste=document.getElementById('siparis-liste');
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0) {
     liste.innerHTML='<div class="bos-durum"><div class="bi">🛒</div><p>Henüz ürün eklenmedi</p></div>';
   } else {
@@ -1583,7 +1585,7 @@ function siparisListeRender() {
 
 function mikDeg(idx,d) {
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   m.siparisler[idx].adet+=d;
   if(m.siparisler[idx].adet<=0) m.siparisler.splice(idx,1);
   siparisListeRender(); masalarRender(); masaSyncYaz(seciliMasa);
@@ -1591,16 +1593,16 @@ function mikDeg(idx,d) {
 
 function siparisKaldir(idx) {
   if(!seciliMasa) return;
-  masalar[seciliMasa-1].siparisler.splice(idx,1);
+  getMasa().siparisler.splice(idx,1);
   siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
 }
 
 function masaTemizle() {
   if(!seciliMasa) return;
   if(!confirm('Masa temizlensin mi?')) return;
-  masalar[seciliMasa-1].siparisler=[];
-  masalar[seciliMasa-1].indirim=0;
-  masalar[seciliMasa-1].garson='';
+  getMasa().siparisler=[];
+  getMasa().indirim=0;
+  getMasa().garson='';
   siparisListeRender(); masalarRender(); kolaycafenGuncelle();
   if(seciliMasa) masaSyncYaz(seciliMasa);
 }
@@ -1610,7 +1612,7 @@ function masaTemizle() {
 // ════════════════════════════════════════
 function cariGoster() {
   if(!seciliMasa) return;
-  const m = masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   const ham = masaToplam(m);
   const son = ham*(1-(m.indirim||0)/100);
@@ -1624,7 +1626,7 @@ async function cariKaydet() {
   if(!musteriAdi){toast('Müşteri adını girin!');return;}
   modalKapat('cari-modal');
   if(!seciliMasa) return;
-  const m = masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham = masaToplam(m);
   const son = ham*(1-(m.indirim||0)/100);
@@ -1649,7 +1651,7 @@ async function cariKaydet() {
 
 async function tahsilEt() {
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
@@ -1679,10 +1681,10 @@ async function tahsilEt() {
 // ════════════════════════════════════════
 // İNDİRİM
 // ════════════════════════════════════════
-function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=masalar[seciliMasa-1].indirim||'';modalAc('indirim-modal');}
-function indirimUygula(oran){if(!seciliMasa) return;masalar[seciliMasa-1].indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
+function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=getMasa().indirim||'';modalAc('indirim-modal');}
+function indirimUygula(oran){if(!seciliMasa) return;getMasa().indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
 function indirimUygulaManuel(){const v=parseInt(document.getElementById('indirim-input').value);if(isNaN(v)||v<0||v>100){toast('0-100 arası girin!');return;}indirimUygula(v);}
-function indirimKaldir(){if(!seciliMasa) return;masalar[seciliMasa-1].indirim=0;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
+function indirimKaldir(){if(!seciliMasa) return;getMasa().indirim=0;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
 
 // ════════════════════════════════════════
 // GARSON
@@ -1695,11 +1697,11 @@ function garsonSec(){
   liste.innerHTML='';
   garsonlar.forEach(g=>{
     const btn=document.createElement('button');
-    const secili=masalar[seciliMasa-1].garson===g;
+    const secili=getMasa().garson===g;
     btn.style.cssText=`width:100%;padding:11px 13px;margin-bottom:6px;border-radius:10px;border:1.5px solid ${secili?'var(--accent2)':'var(--border)'};background:${secili?'var(--surface3)':'var(--surface2)'};color:${secili?'var(--accent2)':'var(--text)'};font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;text-align:left;display:flex;justify-content:space-between;`;
     btn.innerHTML=`<span>👤 ${g}</span>${secili?'<span>✓</span>':''}`;
     btn.addEventListener('click',()=>{
-      masalar[seciliMasa-1].garson=secili?'':g;
+      getMasa().garson=secili?'':g;
       modalKapat('garson-modal'); kolaycafenGuncelle(); masalarRender();
       toast(secili?'Garson kaldırıldı':'✓ Garson: '+g);
     });
@@ -2337,7 +2339,7 @@ function fisKopyala() {
 
 function fisYazdir(){
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   const ham=masaToplam(m),son=ham*(1-(m.indirim||0)/100);
   fisGoster(seciliMasa,new Date().toLocaleString('tr-TR'),m.siparisler,son,m.garson||'',m.indirim||0,m.ad);
