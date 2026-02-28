@@ -1733,9 +1733,10 @@ function transferGoster(){
   modalAc('transfer-modal');
 }
 
-function transferYap(hedefId){
+async function transferYap(hedefId){
   const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
   if(!k||!h){toast('Masa bulunamadı!');return;}
+  _syncYaziliyor = true;
   k.siparisler.forEach(s=>{
     const v=h.siparisler.find(x=>x.isim===s.isim);
     if(v) v.adet+=s.adet; else h.siparisler.push({...s});
@@ -1745,12 +1746,19 @@ function transferYap(hedefId){
   k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0;
   modalKapat('transfer-modal');
   seciliMasa=hedefId;
-  // Her iki masayı da Supabase'e kaydet
-  masaSyncYaz(kid);
-  masaSyncYaz(hedefId);
-  kolaycafenGuncelle();
   masalarRender();
+  kolaycafenGuncelle();
   toast('↔ Masa '+kid+' → Masa '+hedefId);
+  try {
+    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+    let aktif = data?.aktif_masalar || [];
+    aktif = aktif.filter(x=>x.id!==kid);
+    const hidx = aktif.findIndex(x=>x.id===hedefId);
+    const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:h.siparisler,garson:h.garson||'',indirim:h.indirim||0};
+    if(hidx>=0) aktif[hidx]=hData; else aktif.push(hData);
+    await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
+  } catch(e){ console.log('Transfer kayıt hatası:',e); }
+  finally { setTimeout(()=>{ _syncYaziliyor=false; },3000); }
 }
 
 // ════════════════════════════════════════
@@ -1783,11 +1791,18 @@ function splitRender(){
       kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
       m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
       m.siparisler=[]; m.indirim=0; m.garson='';
-      // Masayı Supabase'den temizle
-      masaSyncYaz(seciliMasa);
       siparisListeRender(); masalarRender(); kolaycafenGuncelle();
       modalKapat('split-modal'); toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
       kolaycafenKaydet(kolaycafen);
+      // Masayı Supabase'den temizle
+      _syncYaziliyor = true;
+      try {
+        const {data:sd} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+        let saktif = sd?.aktif_masalar || [];
+        saktif = saktif.filter(x=>x.id!==seciliMasa);
+        await sb.from('kafeler').update({aktif_masalar:saktif}).eq('id',kafeId);
+      } catch(e){ console.log('Split kayıt hatası:',e); }
+      finally { setTimeout(()=>{ _syncYaziliyor=false; },3000); }
     },400);
   }
 }
