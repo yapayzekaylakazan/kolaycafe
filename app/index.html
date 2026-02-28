@@ -1710,8 +1710,7 @@ function transferGoster(){
 async function transferYap(hedefId){
   const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
   if(!k||!h){toast('Masa bulunamadı!');return;}
-  // Interval'i durdur
-  // Siparişleri aktar
+  _syncYaziliyor = true;
   k.siparisler.forEach(s=>{
     const v=h.siparisler.find(x=>x.isim===s.isim);
     if(v) v.adet+=s.adet; else h.siparisler.push({...s});
@@ -1721,22 +1720,19 @@ async function transferYap(hedefId){
   k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0;
   modalKapat('transfer-modal');
   seciliMasa=hedefId;
-  // Supabase'e yaz
+  masalarRender();
+  kolaycafenGuncelle();
   try {
     const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
     let aktif = data?.aktif_masalar || [];
-    // Kaynak masayı sil
     aktif = aktif.filter(x=>x.id!==kid);
-    // Hedef masayı güncelle
     const hidx = aktif.findIndex(x=>x.id===hedefId);
     const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:[...h.siparisler],garson:h.garson||'',indirim:h.indirim||0};
     if(hidx>=0) aktif[hidx]=hData; else aktif.push(hData);
     await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
     toast('↔ Masa '+kid+' → Masa '+hedefId+' ✓');
   } catch(e){ toast('Hata: '+e.message); }
-  masalarRender();
-  kolaycafenGuncelle();
-  // Interval'i yeniden başlat
+  finally { setTimeout(()=>{ _syncYaziliyor=false; }, 5000); }
 }
 
 // ════════════════════════════════════════
@@ -1764,15 +1760,16 @@ function splitRender(){
     liste.appendChild(item);
   }
   if(splitOdendi.length===sayi&&sayi>0){
-    setTimeout(async ()=>{
-      const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
-      kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
-      m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
-      const splitMasaId = seciliMasa;
-      m.siparisler=[]; m.indirim=0; m.garson='';
-          siparisListeRender(); masalarRender(); kolaycafenGuncelle();
-      modalKapat('split-modal');
-      kolaycafenKaydet(kolaycafen);
+    _syncYaziliyor = true;
+    const splitMasaId = seciliMasa;
+    const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
+    kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
+    m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
+    m.siparisler=[]; m.indirim=0; m.garson='';
+    siparisListeRender(); masalarRender(); kolaycafenGuncelle();
+    modalKapat('split-modal');
+    kolaycafenKaydet(kolaycafen);
+    (async()=>{
       try {
         const {data:sd} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
         let saktif = sd?.aktif_masalar || [];
@@ -1780,7 +1777,8 @@ function splitRender(){
         await sb.from('kafeler').update({aktif_masalar:saktif}).eq('id',kafeId);
         toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
       } catch(e){ toast('Kayıt hatası!'); }
-        },400);
+      finally { setTimeout(()=>{ _syncYaziliyor=false; }, 5000); }
+    })();
   }
 }
 
