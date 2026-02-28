@@ -805,6 +805,7 @@ let gunlukCiro = 0;
 let gunlukAdi = 0;
 let gunlukSatis = {};
 let splitOdendi = [];
+let _syncYaziliyor = false;
 let aktifDonem = 'gun';
 let btYazici = null;
 let _kayitTimeout = null;
@@ -1118,6 +1119,7 @@ async function uygulamaBaslat(user) {
       table: 'kafeler',
       filter: 'id=eq.'+kafeId
     }, (payload) => {
+      if (_syncYaziliyor) return; // Kendi yazdığımız güncellemeyi yoksay
       const aktif = payload.new.aktif_masalar || [];
       // Diğer cihazların aktif masalarını güncelle
       aktif.forEach(am => {
@@ -1148,6 +1150,7 @@ async function uygulamaBaslat(user) {
   // Her 5 saniyede masaları senkronize et
   setInterval(async () => {
     if (!kafeId) return;
+    if (_syncYaziliyor) return; // Yazma devam ediyor, okuma yapma
     try {
     const {data} = await sb.from('kafeler')
       .select('aktif_masalar')
@@ -1299,6 +1302,7 @@ async function kolaycafenVerisiYukle() {
 // Tek bir masanın durumunu güncelle
 async function masaSyncYaz(masaId) {
   if (!kafeId) return;
+  _syncYaziliyor = true;
   try {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
@@ -1325,6 +1329,7 @@ async function masaSyncYaz(masaId) {
     
     await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
   } catch(e) { console.log('Sync hatası:', e); }
+  finally { setTimeout(()=>{ _syncYaziliyor = false; }, 2000); }
 }
 
 function bulutKaydet() {
