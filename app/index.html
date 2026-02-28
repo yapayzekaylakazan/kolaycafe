@@ -1740,6 +1740,9 @@ function transferYap(hedefId){
   k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0;
   modalKapat('transfer-modal');
   seciliMasa=hedefId;
+  // Her iki masayı da Supabase'e kaydet
+  masaSyncYaz(kid);
+  masaSyncYaz(hedefId);
   kolaycafenGuncelle();
   masalarRender();
   toast('↔ Masa '+kid+' → Masa '+hedefId);
@@ -1775,6 +1778,8 @@ function splitRender(){
       kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
       m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
       m.siparisler=[]; m.indirim=0; m.garson='';
+      // Masayı Supabase'den temizle
+      masaSyncYaz(seciliMasa);
       siparisListeRender(); masalarRender(); kolaycafenGuncelle();
       modalKapat('split-modal'); toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
       kolaycafenKaydet(kolaycafen);
