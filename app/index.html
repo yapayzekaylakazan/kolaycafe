@@ -805,7 +805,8 @@ let gunlukCiro = 0;
 let gunlukAdi = 0;
 let gunlukSatis = {};
 let splitOdendi = [];
-let _syncYaziliyor = false;
+let _syncYaziliyor = false;  // normal sipariş yazmaları
+let _transferYapiliyor = false; // transfer/split işlemleri
 let aktifDonem = 'gun';
 let btYazici = null;
 let _kayitTimeout = null;
@@ -1119,38 +1120,42 @@ async function uygulamaBaslat(user) {
       table: 'kafeler',
       filter: 'id=eq.'+kafeId
     }, (payload) => {
-      if (_syncYaziliyor) return;
+      // Kendi yazdığımız güncelleme ise yoksay
+      if (_transferYapiliyor) return; // Transfer/split sırasında asla müdahale etme
       const aktif = payload.new.aktif_masalar || [];
-      // Tüm masaları Supabase'deki son hale getir
+      // Sadece başka cihazdan gelen güncellemeleri uygula
+      // Lokal dolu masaları ezme - sadece lokal boş ama Supabase'de dolu olanları güncelle
+      let degisti = false;
       masalar.forEach(m => {
         const am = aktif.find(x=>x.id===m.id);
-        if (am) {
+        if (am && m.siparisler.length === 0) {
+          // Lokal boş, Supabase'de dolu - başka cihaz eklemiş
           m.siparisler = am.siparisler || [];
           m.garson = am.garson || '';
           m.indirim = am.indirim || 0;
-        } else {
-          // Bu masa artık aktif değil - başka cihaz kapattı
+          degisti = true;
+        } else if (!am && m.siparisler.length > 0) {
+          // Supabase'de yok ama lokalde var - başka cihaz kapatmış
           m.siparisler = [];
           m.garson = '';
           m.indirim = 0;
+          degisti = true;
         }
       });
-      masalarRender();
-      siparisListeRender();
+      if (degisti) { masalarRender(); siparisListeRender(); }
       setSyncOnline(true);
     })
     .subscribe();
 
-  // Yedek sync - bağlantı kopması durumunda, sadece boş lokal masaları günceller
+  // Yedek sync - sadece boş lokal masaları günceller
   setInterval(async () => {
-    if (!kafeId || _syncYaziliyor) return;
+    if (!kafeId || _transferYapiliyor) return;
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       if (!data?.aktif_masalar) return;
       let degisti = false;
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
-        // SADECE lokal boşsa Supabase'den al - dolu masaları ezme!
         if (m && m.siparisler.length === 0 && am.siparisler?.length > 0) {
           m.siparisler = am.siparisler;
           m.garson = am.garson || '';
@@ -1710,7 +1715,7 @@ function transferGoster(){
 async function transferYap(hedefId){
   const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
   if(!k||!h){toast('Masa bulunamadı!');return;}
-  _syncYaziliyor = true;
+  _transferYapiliyor = true;
   k.siparisler.forEach(s=>{
     const v=h.siparisler.find(x=>x.isim===s.isim);
     if(v) v.adet+=s.adet; else h.siparisler.push({...s});
@@ -1732,7 +1737,7 @@ async function transferYap(hedefId){
     await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
     toast('↔ Masa '+kid+' → Masa '+hedefId+' ✓');
   } catch(e){ toast('Hata: '+e.message); }
-  finally { setTimeout(()=>{ _syncYaziliyor=false; }, 5000); }
+  finally { setTimeout(()=>{ _transferYapiliyor=false; }, 5000); }
 }
 
 // ════════════════════════════════════════
@@ -1760,7 +1765,7 @@ function splitRender(){
     liste.appendChild(item);
   }
   if(splitOdendi.length===sayi&&sayi>0){
-    _syncYaziliyor = true;
+    _transferYapiliyor = true;
     const splitMasaId = seciliMasa;
     const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
     kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
@@ -1777,7 +1782,7 @@ function splitRender(){
         await sb.from('kafeler').update({aktif_masalar:saktif}).eq('id',kafeId);
         toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
       } catch(e){ toast('Kayıt hatası!'); }
-      finally { setTimeout(()=>{ _syncYaziliyor=false; }, 5000); }
+      finally { setTimeout(()=>{ _transferYapiliyor=false; }, 5000); }
     })();
   }
 }
