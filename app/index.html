@@ -683,7 +683,7 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="transfer-modal">
+<div class="modal-overlay" id="transfer-modal" onclick="if(event.target===this)modalKapat('transfer-modal')">
   <div class="modal">
     <div class="modal-baslik">↔ Masa Aktar</div>
     <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Hangi masaya aktarılsın?</p>
@@ -693,7 +693,7 @@
 </div>
 
 <div class="modal-overlay" id="split-modal">
-  <div class="modal">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-baslik">✂ Hesap Bölme</div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
       <label style="font-size:0.88rem;font-weight:700;color:var(--text2);">Kişi sayısı:</label>
@@ -2398,7 +2398,10 @@ async function yazdir(){
 // ════════════════════════════════════════
 function modalAc(id){document.getElementById(id).classList.add('ac');}
 function modalKapat(id){document.getElementById(id).classList.remove('ac');}
-document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});});
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  if(el.id==='split-modal'||el.id==='transfer-modal') return; // Bu modallarda overlay kapatma
+  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});
+});
 
 function fmt(n){return n.toFixed(2).replace('.',',')+' ₺';}
 let _tt;
