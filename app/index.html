@@ -1791,7 +1791,7 @@ function splitRender(){
     liste.appendChild(item);
   }
   if(splitOdendi.length===sayi&&sayi>0){
-    setTimeout(()=>{
+    setTimeout(async ()=>{
       const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
       kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
       m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
