@@ -2573,6 +2573,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if(btnGiris) btnGiris.addEventListener('click', girisYap);
   if(btnGarsonDevam) btnGarsonDevam.addEventListener('click', garsonKafeBul);
   if(btnKayit) btnKayit.addEventListener('click', kayitOl);
+  const btnGarsonKodDogrula = document.getElementById('btn-garson-kod-dogrula');
+  if(btnGarsonKodDogrula) btnGarsonKodDogrula.addEventListener('click', garsonKodDogrula);
+  const garsonGirisKodu = document.getElementById('garson-giris-kodu');
+  if(garsonGirisKodu) garsonGirisKodu.addEventListener('keydown', e=>{if(e.key==='Enter') garsonKodDogrula();});
 
   // Enter tuşu
   const girisEmail = document.getElementById('giris-email');
