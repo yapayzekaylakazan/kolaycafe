@@ -297,6 +297,25 @@
         <input class="auth-inp" id="kayit-kupon" type="text" placeholder="İndirim Kodu (varsa)" autocomplete="off" style="text-transform:uppercase;">
         <span id="kupon-sonuc" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:0.8rem;font-weight:900;"></span>
       </div>
+      <!-- Fatura Bilgileri -->
+      <div style="margin:8px 0 2px;padding:10px 0 2px;border-top:1px solid var(--border);">
+        <p style="font-size:0.75rem;color:var(--muted);font-weight:800;margin-bottom:8px;letter-spacing:0.5px;">📄 FATURA BİLGİLERİ (İsteğe Bağlı)</p>
+        <input class="auth-inp" id="kayit-vergi-no" type="text" placeholder="Vergi Kimlik No / TC Kimlik No" autocomplete="off" inputmode="numeric" style="margin-bottom:8px;">
+        <input class="auth-inp" id="kayit-fatura-adres" type="text" placeholder="Fatura Adresi" autocomplete="off" style="margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <select class="auth-inp" id="kayit-il" style="flex:1;cursor:pointer;">
+            <option value="">İl Seçin</option>
+            <option>Adana</option><option>Adıyaman</option><option>Afyonkarahisar</option><option>Ağrı</option><option>Amasya</option><option>Ankara</option><option>Antalya</option><option>Artvin</option><option>Aydın</option><option>Balıkesir</option><option>Bilecik</option><option>Bingöl</option><option>Bitlis</option><option>Bolu</option><option>Burdur</option><option>Bursa</option><option>Çanakkale</option><option>Çankırı</option><option>Çorum</option><option>Denizli</option><option>Diyarbakır</option><option>Edirne</option><option>Elazığ</option><option>Erzincan</option><option>Erzurum</option><option>Eskişehir</option><option>Gaziantep</option><option>Giresun</option><option>Gümüşhane</option><option>Hakkari</option><option>Hatay</option><option>Isparta</option><option>Mersin</option><option>İstanbul</option><option>İzmir</option><option>Kars</option><option>Kastamonu</option><option>Kayseri</option><option>Kırklareli</option><option>Kırşehir</option><option>Kocaeli</option><option>Konya</option><option>Kütahya</option><option>Malatya</option><option>Manisa</option><option>Kahramanmaraş</option><option>Mardin</option><option>Muğla</option><option>Muş</option><option>Nevşehir</option><option>Niğde</option><option>Ordu</option><option>Rize</option><option>Sakarya</option><option>Samsun</option><option>Siirt</option><option>Sinop</option><option>Sivas</option><option>Tekirdağ</option><option>Tokat</option><option>Trabzon</option><option>Tunceli</option><option>Şanlıurfa</option><option>Uşak</option><option>Van</option><option>Yozgat</option><option>Zonguldak</option><option>Aksaray</option><option>Bayburt</option><option>Karaman</option><option>Kırıkkale</option><option>Batman</option><option>Şırnak</option><option>Bartın</option><option>Ardahan</option><option>Iğdır</option><option>Yalova</option><option>Karabük</option><option>Kilis</option><option>Osmaniye</option><option>Düzce</option>
+          </select>
+          <input class="auth-inp" id="kayit-ilce" type="text" placeholder="İlçe" style="flex:1;">
+        </div>
+      </div>
+      <!-- Garson Kodu -->
+      <div style="margin:2px 0 8px;padding:10px 0 2px;border-top:1px solid var(--border);">
+        <p style="font-size:0.75rem;color:var(--muted);font-weight:800;margin-bottom:8px;letter-spacing:0.5px;">👨‍🍳 GARSON GİRİŞ KODU (İsteğe Bağlı)</p>
+        <input class="auth-inp" id="kayit-garson-kodu" type="text" placeholder="Garson giriş kodu belirle (örn: 1234)" autocomplete="off" inputmode="numeric">
+        <p style="font-size:0.7rem;color:var(--muted);font-weight:600;margin-top:4px;">Boş bırakırsanız otomatik kod oluşturulur</p>
+      </div>
       <button class="auth-btn" id="btn-kayit-ol">Hesap Oluştur</button>
       <button type="button" id="btn-sifre-unut-kayit" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
@@ -855,6 +874,11 @@ async function kayitOl() {
   const tel = document.getElementById('kayit-tel').value.trim();
   const adres = document.getElementById('kayit-adres').value.trim();
   const sifre = document.getElementById('kayit-sifre').value;
+  const vergiNo = document.getElementById('kayit-vergi-no').value.trim();
+  const faturaAdres = document.getElementById('kayit-fatura-adres').value.trim();
+  const il = document.getElementById('kayit-il').value.trim();
+  const ilce = document.getElementById('kayit-ilce').value.trim();
+  const garsonKoduGiris = document.getElementById('kayit-garson-kodu').value.trim();
   if (!kafe) { authHata('Cafe adı girin!'); return; }
   if (!email) { authHata('E-posta girin!'); return; }
   if (!tel) { authHata('Telefon numarası girin!'); return; }
@@ -895,7 +919,12 @@ async function kayitOl() {
     garsonlar: [],
     kafe_kodu: kafeKoduYeni,
     kupon_kodu: kuponKodu || null,
-    kupon_indirim: kuponIndirim
+    kupon_indirim: kuponIndirim,
+    vergi_no: vergiNo || null,
+    fatura_adres: faturaAdres || null,
+    fatura_il: il || null,
+    fatura_ilce: ilce || null,
+    garson_kodu: garsonKoduGiris || Math.floor(1000+Math.random()*9000).toString()
   });
   await uygulamaBaslat(data.user);
 }
