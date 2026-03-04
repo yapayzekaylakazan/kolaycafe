@@ -281,6 +281,11 @@
         <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;">Adını seç:</p>
         <div id="garson-butonlar"></div>
       </div>
+      <div id="garson-kod-giris" style="display:none;margin-top:10px;">
+        <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:8px;">🔐 Garson giriş kodunu gir:</p>
+        <input class="auth-inp" id="garson-giris-kodu" type="password" placeholder="Garson kodu" inputmode="numeric" autocomplete="off">
+        <button class="auth-btn" id="btn-garson-kod-dogrula" style="margin-top:8px;">Giriş Yap →</button>
+      </div>
     </div>
 
     <!-- KAYIT -->
@@ -970,13 +975,13 @@ async function garsonKafeBul() {
   // kafe adını veya kodu ara
   // Önce kafe_kodu ile ara
   let {data, error} = await sb.from('kafeler')
-    .select('id, kafe_adi, garsonlar, kafe_kodu')
+    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu')
     .eq('kafe_kodu', kod)
     .limit(1).single();
   // Bulunamazsa kafe adıyla ara
   if (error || !data) {
     const res2 = await sb.from('kafeler')
-      .select('id, kafe_adi, garsonlar, kafe_kodu')
+      .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu')
       .ilike('kafe_adi', '%'+kod+'%')
       .limit(1).single();
     data = res2.data;
@@ -990,14 +995,46 @@ async function garsonKafeBul() {
   const butonlar = document.getElementById('garson-butonlar');
   butonlar.innerHTML = '';
   if (garsonlar.length === 0) { authHata('Bu cafede henüz garson eklenmemiş.'); return; }
-  garsonlar.forEach(g => {
+  const garsonListesi = (garsonlar || []).map(g => typeof g === 'string' ? {isim:g, pin:'', aktif:true} : g);
+  const aktifGarsonlar = garsonListesi.filter(g => g.aktif !== false);
+  if(aktifGarsonlar.length === 0){ authHata('Bu cafede aktif garson bulunmuyor.'); return; }
+  aktifGarsonlar.forEach(g => {
     const btn = document.createElement('button');
     btn.style.cssText = 'width:100%;padding:13px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;';
-    btn.textContent = '👤 ' + g;
-    btn.addEventListener('click', () => garsonGiris(g, data));
+    btn.textContent = '👤 ' + g.isim;
+    btn.addEventListener('click', () => {
+      window._seciliGarson = g.isim;
+      window._garsonPin = g.pin || '';
+      window._garsonKafeData = data;
+      // Aktif butonu işaretle
+      butonlar.querySelectorAll('button').forEach(b => b.style.background = 'var(--surface2)');
+      btn.style.background = 'var(--accent)'; btn.style.color = '#1a1205';
+      // PIN varsa kod ekranı göster, yoksa direkt giriş
+      if (g.pin) {
+        document.getElementById('garson-kod-giris').style.display = 'block';
+        document.getElementById('garson-giris-kodu').focus();
+      } else {
+        garsonGiris(g.isim, data);
+      }
+    });
     butonlar.appendChild(btn);
   });
   document.getElementById('garson-isim-liste').style.display = 'block';
+}
+
+async function garsonKodDogrula() {
+  const girilenKod = document.getElementById('garson-giris-kodu').value.trim();
+  const kafeData = window._garsonKafeData;
+  const isim = window._seciliGarson;
+  const garsonPin = window._garsonPin || '';
+  if (!isim || !kafeData) { authHata('Önce adınızı seçin!'); return; }
+  // Bireysel PIN kontrolü
+  if (garsonPin && girilenKod !== garsonPin) {
+    authHata('PIN kodu hatalı!');
+    document.getElementById('garson-giris-kodu').value = '';
+    return;
+  }
+  await garsonGiris(isim, kafeData);
 }
 
 async function garsonGiris(isim, kafeData) {
@@ -2251,22 +2288,68 @@ async function kuponKontrol() {
 
 function garsonAyarListeRender(){
   const el=document.getElementById('garson-ayar-liste'); el.innerHTML='';
+  // garsonlar artık obje array: {id, isim, pin, aktif}
+  // Geriye dönük uyumluluk: string ise objeye çevir
+  garsonlar = garsonlar.map(g => typeof g === 'string' ? {id: Date.now()+Math.random(), isim: g, pin: '', aktif: true} : g);
+  
+  if(garsonlar.length===0){
+    el.innerHTML='<p style="color:var(--muted);font-size:0.82rem;padding:8px 0;">Henüz garson eklenmedi</p>';
+    return;
+  }
   garsonlar.forEach((g,i)=>{
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);';
-    row.innerHTML=`<span style="font-weight:700;font-size:0.88rem;">👤 ${g}</span><button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;">✕</button>`;
-    row.querySelector('button').addEventListener('click',()=>{garsonlar.splice(i,1);garsonAyarListeRender();bulutKaydet();toast('Garson silindi');});
+    row.style.cssText='background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:8px;';
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-weight:800;font-size:0.92rem;">${g.aktif ? '🟢' : '🔴'} ${g.isim}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="gb-toggle" data-i="${i}" style="padding:4px 10px;border-radius:8px;border:none;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;background:${g.aktif ? '#3db85a22' : '#e0404022'};color:${g.aktif ? '#3db85a' : '#e04040'};">${g.aktif ? 'Pasif Yap' : 'Aktif Yap'}</button>
+          <button class="gb-sil" data-i="${i}" style="padding:4px 10px;border-radius:8px;border:none;background:#e0404022;color:#e04040;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">Sil</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="text" class="gb-pin" data-i="${i}" value="${g.pin||''}" placeholder="PIN kodu" inputmode="numeric"
+          style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
+        <button class="gb-pin-kaydet" data-i="${i}" style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">Kaydet</button>
+      </div>`;
     el.appendChild(row);
   });
-  if(garsonlar.length===0) el.innerHTML='<p style="color:var(--muted);font-size:0.82rem;padding:8px 0;">Henüz garson eklenmedi</p>';
+
+  // Event listeners
+  el.querySelectorAll('.gb-toggle').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const i=parseInt(btn.dataset.i);
+      garsonlar[i].aktif = !garsonlar[i].aktif;
+      garsonAyarListeRender(); bulutKaydet();
+      toast(garsonlar[i].aktif ? '✓ '+garsonlar[i].isim+' aktif edildi' : '⛔ '+garsonlar[i].isim+' pasif yapıldı');
+    });
+  });
+  el.querySelectorAll('.gb-sil').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const i=parseInt(btn.dataset.i);
+      const isim=garsonlar[i].isim;
+      garsonlar.splice(i,1); garsonAyarListeRender(); bulutKaydet(); toast('Garson silindi: '+isim);
+    });
+  });
+  el.querySelectorAll('.gb-pin-kaydet').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const i=parseInt(btn.dataset.i);
+      const pin=el.querySelector('.gb-pin[data-i="'+i+'"]').value.trim();
+      garsonlar[i].pin=pin; bulutKaydet(); toast('✓ PIN güncellendi: '+garsonlar[i].isim);
+    });
+  });
 }
 
 function garsonEkleAyar(){
   const inp=document.getElementById('yeni-garson-ayar');
+  const pinInp=document.getElementById('yeni-garson-pin');
   const ad=inp.value.trim();
+  const pin=pinInp.value.trim();
   if(!ad){toast('Garson adı girin!');return;}
-  if(garsonlar.includes(ad)){toast('Bu garson zaten var!');return;}
-  garsonlar.push(ad); inp.value=''; garsonAyarListeRender(); bulutKaydet(); toast('✓ Garson eklendi: '+ad);
+  if(garsonlar.find(g=>(typeof g==='string'?g:g.isim)===ad)){toast('Bu garson zaten var!');return;}
+  garsonlar.push({id: Date.now(), isim: ad, pin: pin, aktif: true});
+  inp.value=''; pinInp.value='';
+  garsonAyarListeRender(); bulutKaydet(); toast('✓ Garson eklendi: '+ad);
 }
 
 async function kafeAdiniGuncelle(){
