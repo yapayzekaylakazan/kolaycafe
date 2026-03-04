@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KolayCafe">
-<link rel="manifest" href="../manifest.json">
-<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -28,9 +28,10 @@
   /* ── GİRİŞ EKRANI ── */
   #auth-screen {
     position: fixed; inset: 0; background: var(--bg); z-index: 999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px;
+    overflow-y: auto;
   }
-  .auth-logo { font-size: 3rem; margin-bottom: 6px; }
+  .auth-logo { font-size: 3rem; margin-bottom: 6px; margin-top: 24px; }
   .auth-title { font-size: 2rem; font-weight: 900; color: var(--accent2); margin-bottom: 4px; }
   .auth-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; font-weight: 600; }
   .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; }
@@ -682,7 +683,7 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="transfer-modal">
+<div class="modal-overlay" id="transfer-modal" onclick="if(event.target===this)modalKapat('transfer-modal')">
   <div class="modal">
     <div class="modal-baslik">↔ Masa Aktar</div>
     <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Hangi masaya aktarılsın?</p>
@@ -692,7 +693,7 @@
 </div>
 
 <div class="modal-overlay" id="split-modal">
-  <div class="modal">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-baslik">✂ Hesap Bölme</div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
       <label style="font-size:0.88rem;font-weight:700;color:var(--text2);">Kişi sayısı:</label>
@@ -764,7 +765,7 @@ let kafeId = null;
 let kafeAdi = 'Kafem';
 // ── PAKET TANIMLARI ──
 const PAKETLER = {
-  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:false, fiyat:0,   sure:'7 gün' },
+  deneme: { ad:'🆓 Deneme', masa:6,  garson:false, rapor:true,  fiyat:0,   sure:'7 gün' },
   gold:   { ad:'🥇 Gold',   masa:6,  garson:true,  rapor:true,  fiyat:450,  sure:'aylık' },
   platin: { ad:'💎 Platin', masa:10, garson:true,  rapor:true,  fiyat:600,  sure:'aylık' },
   ultra:  { ad:'🚀 Ultra',  masa:15, garson:true,  rapor:true,  fiyat:750,  sure:'aylık' },
@@ -804,6 +805,9 @@ let gunlukCiro = 0;
 let gunlukAdi = 0;
 let gunlukSatis = {};
 let splitOdendi = [];
+let _syncYaziliyor = false;  // normal sipariş yazmaları
+let _transferYapiliyor = false; // transfer/split işlemleri
+let _skipSubscriptionCount = 0; // transfer/split sonrası kaç event yoksayılacak
 let aktifDonem = 'gun';
 let btYazici = null;
 let _kayitTimeout = null;
@@ -883,11 +887,13 @@ async function kayitOl() {
   }
   
   const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+7);
+  const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
   await sb.from('kafeler').insert({
     user_id: data.user.id, kafe_adi: kafe,
     plan: 'deneme', plan_bitis: plnBitis.toISOString(),
     telefon: tel, adres: adres,
     garsonlar: [],
+    kafe_kodu: kafeKoduYeni,
     kupon_kodu: kuponKodu || null,
     kupon_indirim: kuponIndirim
   });
@@ -1115,72 +1121,49 @@ async function uygulamaBaslat(user) {
       table: 'kafeler',
       filter: 'id=eq.'+kafeId
     }, (payload) => {
+      // Transfer/split sonrası gelen eventleri yoksay
+      if (_skipSubscriptionCount > 0) {
+        _skipSubscriptionCount--;
+        return;
+      }
+      if (_transferYapiliyor) return;
       const aktif = payload.new.aktif_masalar || [];
-      // Diğer cihazların aktif masalarını güncelle
-      aktif.forEach(am => {
-        const m = masalar.find(x=>x.id===am.id);
-        if (m) {
-          // Sadece başka cihazın siparişlerini al (kendi siparişlerini ezme)
-          const benimSiparisVar = m.siparisler.length > 0;
-          if (!benimSiparisVar) {
-            m.siparisler = am.siparisler || [];
-            m.garson = am.garson || '';
-            m.indirim = am.indirim || 0;
-          }
-        }
-      });
-      // Aktif olmayan masaları temizle (başka cihaz kapattı)
+      let degisti = false;
       masalar.forEach(m => {
-        const halaAktif = aktif.find(am=>am.id===m.id);
-        if (!halaAktif && m.siparisler.length > 0) {
-          // Bu masayı başka cihaz kapattı mı? Dikkatli ol
-          // Sadece boş masaları temizle
+        const am = aktif.find(x=>x.id===m.id);
+        if (am && m.siparisler.length === 0) {
+          m.siparisler = am.siparisler || [];
+          m.garson = am.garson || '';
+          m.indirim = am.indirim || 0;
+          degisti = true;
         }
+        // NOT: "Supabase'de yok ama lokalde var" durumunu subscription'da işleme
+        // Bu sadece interval'de ve sadece transfer/split dışında işlensin
       });
-      masalarRender();
+      if (degisti) { masalarRender(); siparisListeRender(); }
       setSyncOnline(true);
     })
     .subscribe();
 
-  // Her 5 saniyede masaları senkronize et
+  // Yedek sync - sadece boş lokal masaları günceller
   setInterval(async () => {
-    if (!kafeId) return;
+    if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
     try {
-    const {data} = await sb.from('kafeler')
-      .select('aktif_masalar')
-      .eq('id', kafeId)
-      .single();
-    if (data?.aktif_masalar) {
+      const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+      if (!data?.aktif_masalar) return;
       let degisti = false;
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
-        if (m) {
-          const eskiJson = JSON.stringify(m.siparisler);
-          const yeniJson = JSON.stringify(am.siparisler);
-          if (eskiJson !== yeniJson) {
-            m.siparisler = am.siparisler || [];
-            m.garson = am.garson || '';
-            m.indirim = am.indirim || 0;
-            degisti = true;
-          }
-        }
-      });
-      // Kapanmış masaları temizle
-      masalar.forEach(m => {
-        const halaAktif = data.aktif_masalar.find(am=>am.id===m.id);
-        if (!halaAktif && m.siparisler.length > 0) {
-          m.siparisler = [];
-          m.garson = '';
-          m.indirim = 0;
+        if (m && m.siparisler.length === 0 && am.siparisler?.length > 0) {
+          m.siparisler = am.siparisler;
+          m.garson = am.garson || '';
+          m.indirim = am.indirim || 0;
           degisti = true;
         }
       });
       if (degisti) { masalarRender(); siparisListeRender(); }
-    }
-    // Cari işlemleri de güncelle (her 10 saniyede)
-    if (Date.now() % 3000 < 2100) await kolaycafenVerisiYukle();
-    } catch(e) { console.log('Sync hatası:', e); }
-  }, 2000);
+    } catch(e) {}
+  }, 3000);
 }
 
 async function kafeVerisiYukle() {
@@ -1199,7 +1182,8 @@ async function kafeVerisiYukle() {
     }
   } else {
     // İlk giriş, kafe verisi henüz yok
-    const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'ucretsiz', garsonlar:['Ali','Ayşe']}).select().single();
+    const kkYeni = Math.random().toString(36).substring(2,8).toUpperCase();
+    const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'deneme', plan_bitis: new Date(Date.now()+7*24*60*60*1000).toISOString(), garsonlar:['Ali','Ayşe'], kafe_kodu: kkYeni}).select().single();
     if (yeni) { kafeId = yeni.id; garsonlar = ['Ali','Ayşe']; }
   }
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
@@ -1295,6 +1279,7 @@ async function kolaycafenVerisiYukle() {
 // Tek bir masanın durumunu güncelle
 async function masaSyncYaz(masaId) {
   if (!kafeId) return;
+  _syncYaziliyor = true;
   try {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
@@ -1321,6 +1306,7 @@ async function masaSyncYaz(masaId) {
     
     await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
   } catch(e) { console.log('Sync hatası:', e); }
+  finally { setTimeout(()=>{ _syncYaziliyor = false; }, 6000); }
 }
 
 function bulutKaydet() {
@@ -1482,6 +1468,8 @@ function masaNotDuzenle(id) {
 // ════════════════════════════════════════
 // ADİSYON
 // ════════════════════════════════════════
+
+function getMasa(id) { return masalar.find(m=>m.id===(id||seciliMasa)); }
 function kolaycafenGuncelle() {
   if (!seciliMasa) {
     document.getElementById('masa-secilmedi-msg').style.display='flex';
@@ -1490,7 +1478,7 @@ function kolaycafenGuncelle() {
   }
   document.getElementById('masa-secilmedi-msg').style.display='none';
   document.getElementById('kolaycafen-icerik').style.display='flex';
-  const m = masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   document.getElementById('kolaycafen-masa-basligi').textContent = m.ad;
   const gc = document.getElementById('garson-chip');
   gc.textContent = m.garson?'👤 '+m.garson:'👤 Garson';
@@ -1530,7 +1518,7 @@ function urunGridRender() {
 
 function urunEkle(u) {
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   const saat=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   const ekleyenGarson=garsonModu?aktifGarsonAdi:(m.garson||'');
   const v=m.siparisler.find(s=>s.isim===u.isim);
@@ -1547,7 +1535,7 @@ function urunEkle(u) {
 function siparisListeRender() {
   const liste=document.getElementById('siparis-liste');
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0) {
     liste.innerHTML='<div class="bos-durum"><div class="bi">🛒</div><p>Henüz ürün eklenmedi</p></div>';
   } else {
@@ -1579,7 +1567,7 @@ function siparisListeRender() {
 
 function mikDeg(idx,d) {
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   m.siparisler[idx].adet+=d;
   if(m.siparisler[idx].adet<=0) m.siparisler.splice(idx,1);
   siparisListeRender(); masalarRender(); masaSyncYaz(seciliMasa);
@@ -1587,16 +1575,16 @@ function mikDeg(idx,d) {
 
 function siparisKaldir(idx) {
   if(!seciliMasa) return;
-  masalar[seciliMasa-1].siparisler.splice(idx,1);
+  getMasa().siparisler.splice(idx,1);
   siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
 }
 
 function masaTemizle() {
   if(!seciliMasa) return;
   if(!confirm('Masa temizlensin mi?')) return;
-  masalar[seciliMasa-1].siparisler=[];
-  masalar[seciliMasa-1].indirim=0;
-  masalar[seciliMasa-1].garson='';
+  getMasa().siparisler=[];
+  getMasa().indirim=0;
+  getMasa().garson='';
   siparisListeRender(); masalarRender(); kolaycafenGuncelle();
   if(seciliMasa) masaSyncYaz(seciliMasa);
 }
@@ -1606,7 +1594,7 @@ function masaTemizle() {
 // ════════════════════════════════════════
 function cariGoster() {
   if(!seciliMasa) return;
-  const m = masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   const ham = masaToplam(m);
   const son = ham*(1-(m.indirim||0)/100);
@@ -1620,7 +1608,7 @@ async function cariKaydet() {
   if(!musteriAdi){toast('Müşteri adını girin!');return;}
   modalKapat('cari-modal');
   if(!seciliMasa) return;
-  const m = masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham = masaToplam(m);
   const son = ham*(1-(m.indirim||0)/100);
@@ -1645,7 +1633,7 @@ async function cariKaydet() {
 
 async function tahsilEt() {
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
@@ -1675,10 +1663,10 @@ async function tahsilEt() {
 // ════════════════════════════════════════
 // İNDİRİM
 // ════════════════════════════════════════
-function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=masalar[seciliMasa-1].indirim||'';modalAc('indirim-modal');}
-function indirimUygula(oran){if(!seciliMasa) return;masalar[seciliMasa-1].indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
+function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=getMasa().indirim||'';modalAc('indirim-modal');}
+function indirimUygula(oran){if(!seciliMasa) return;getMasa().indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
 function indirimUygulaManuel(){const v=parseInt(document.getElementById('indirim-input').value);if(isNaN(v)||v<0||v>100){toast('0-100 arası girin!');return;}indirimUygula(v);}
-function indirimKaldir(){if(!seciliMasa) return;masalar[seciliMasa-1].indirim=0;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
+function indirimKaldir(){if(!seciliMasa) return;getMasa().indirim=0;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
 
 // ════════════════════════════════════════
 // GARSON
@@ -1691,11 +1679,11 @@ function garsonSec(){
   liste.innerHTML='';
   garsonlar.forEach(g=>{
     const btn=document.createElement('button');
-    const secili=masalar[seciliMasa-1].garson===g;
+    const secili=getMasa().garson===g;
     btn.style.cssText=`width:100%;padding:11px 13px;margin-bottom:6px;border-radius:10px;border:1.5px solid ${secili?'var(--accent2)':'var(--border)'};background:${secili?'var(--surface3)':'var(--surface2)'};color:${secili?'var(--accent2)':'var(--text)'};font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;text-align:left;display:flex;justify-content:space-between;`;
     btn.innerHTML=`<span>👤 ${g}</span>${secili?'<span>✓</span>':''}`;
     btn.addEventListener('click',()=>{
-      masalar[seciliMasa-1].garson=secili?'':g;
+      getMasa().garson=secili?'':g;
       modalKapat('garson-modal'); kolaycafenGuncelle(); masalarRender();
       toast(secili?'Garson kaldırıldı':'✓ Garson: '+g);
     });
@@ -1722,12 +1710,40 @@ function transferGoster(){
   modalAc('transfer-modal');
 }
 
-function transferYap(hedefId){
-  const k=masalar[seciliMasa-1],h=masalar[hedefId-1];
-  k.siparisler.forEach(s=>{const v=h.siparisler.find(x=>x.isim===s.isim);if(v) v.adet+=s.adet;else h.siparisler.push({...s});});
-  const kid=seciliMasa; k.siparisler=[];
-  modalKapat('transfer-modal'); seciliMasa=hedefId; kolaycafenGuncelle(); masalarRender();
-  toast('↔ Masa '+kid+' → Masa '+hedefId);
+async function transferYap(hedefId){
+  const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
+  if(!k||!h){toast('Masa bulunamadı!');return;}
+  _transferYapiliyor = true;
+  _skipSubscriptionCount = 3; // Sonraki 3 subscription event'ini yoksay
+  k.siparisler.forEach(s=>{
+    const v=h.siparisler.find(x=>x.isim===s.isim);
+    if(v) v.adet+=s.adet; else h.siparisler.push({...s});
+  });
+  const kid=seciliMasa;
+  if(!h.garson&&k.garson) h.garson=k.garson;
+  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0;
+  modalKapat('transfer-modal');
+  seciliMasa=hedefId;
+  masalarRender();
+  kolaycafenGuncelle();
+  try {
+    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+    let aktif = data?.aktif_masalar || [];
+    // Kaynak masayı kaldır
+    aktif = aktif.filter(x=>x.id!==kid);
+    // Hedef masayı güncelle
+    const hidx = aktif.findIndex(x=>x.id===hedefId);
+    const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:[...h.siparisler],garson:h.garson||'',indirim:h.indirim||0};
+    if(hidx>=0) aktif[hidx]=hData; else aktif.push(hData);
+    await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
+    toast('↔ Masa '+kid+' → Masa '+hedefId+' ✓');
+  } catch(e){ toast('Hata: '+e.message); }
+  finally { 
+    setTimeout(()=>{ 
+      _transferYapiliyor=false;
+      _skipSubscriptionCount=0;
+    }, 8000); 
+  }
 }
 
 // ════════════════════════════════════════
@@ -1735,7 +1751,7 @@ function transferYap(hedefId){
 // ════════════════════════════════════════
 function bolmeGoster(){
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m=masalar.find(x=>x.id===seciliMasa);
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   splitOdendi=[]; document.getElementById('split-kisi').value=2; splitRender(); modalAc('split-modal');
 }
@@ -1743,7 +1759,7 @@ function bolmeGoster(){
 function splitRender(){
   const sayi=parseInt(document.getElementById('split-kisi').value)||2;
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m=masalar.find(x=>x.id===seciliMasa); if(!m) return;
   const ham=masaToplam(m),ind=m.indirim||0,toplam=ham*(1-ind/100),kb=toplam/sayi;
   const liste=document.getElementById('split-liste');
   liste.innerHTML='';
@@ -1755,15 +1771,26 @@ function splitRender(){
     liste.appendChild(item);
   }
   if(splitOdendi.length===sayi&&sayi>0){
-    setTimeout(()=>{
-      const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
-      kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
-      m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
-      m.siparisler=[]; m.indirim=0; m.garson='';
-      siparisListeRender(); masalarRender(); kolaycafenGuncelle();
-      modalKapat('split-modal'); toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
-      kolaycafenKaydet(kolaycafen);
-    },400);
+    _transferYapiliyor = true;
+    _skipSubscriptionCount = 3;
+    const splitMasaId = seciliMasa;
+    const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
+    kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
+    m.siparisler.forEach(s=>{if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};gunlukSatis[s.isim].adet+=s.adet;gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;});
+    m.siparisler=[]; m.indirim=0; m.garson='';
+    siparisListeRender(); masalarRender(); kolaycafenGuncelle();
+    modalKapat('split-modal');
+    kolaycafenKaydet(kolaycafen);
+    (async()=>{
+      try {
+        const {data:sd} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+        let saktif = sd?.aktif_masalar || [];
+        saktif = saktif.filter(x=>x.id!==splitMasaId);
+        await sb.from('kafeler').update({aktif_masalar:saktif}).eq('id',kafeId);
+        toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
+      } catch(e){ toast('Kayıt hatası!'); }
+      finally { setTimeout(()=>{ _transferYapiliyor=false; _skipSubscriptionCount=0; }, 8000); }
+    })();
   }
 }
 
@@ -2324,7 +2351,7 @@ function fisKopyala() {
 
 function fisYazdir(){
   if(!seciliMasa) return;
-  const m=masalar[seciliMasa-1];
+  const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   const ham=masaToplam(m),son=ham*(1-(m.indirim||0)/100);
   fisGoster(seciliMasa,new Date().toLocaleString('tr-TR'),m.siparisler,son,m.garson||'',m.indirim||0,m.ad);
@@ -2383,7 +2410,10 @@ async function yazdir(){
 // ════════════════════════════════════════
 function modalAc(id){document.getElementById(id).classList.add('ac');}
 function modalKapat(id){document.getElementById(id).classList.remove('ac');}
-document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});});
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  if(el.id==='split-modal'||el.id==='transfer-modal') return; // Bu modallarda overlay kapatma
+  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});
+});
 
 function fmt(n){return n.toFixed(2).replace('.',',')+' ₺';}
 let _tt;
@@ -2555,7 +2585,7 @@ window.cariKaydet = cariKaydet;
 // PWA Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('../sw.js')
+    navigator.serviceWorker.register('/sw.js')
       .then(reg => console.log('SW kayıtlı:', reg.scope))
       .catch(err => console.log('SW hatası:', err));
   });
