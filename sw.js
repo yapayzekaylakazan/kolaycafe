@@ -1,55 +1,12 @@
-const CACHE_NAME = 'kolaycafe-v1';
-const STATIC_ASSETS = [
-  '/kolaycafe/',
-  '/kolaycafe/index.html',
-  '/kolaycafe/manifest.json'
-];
-
-// Kurulum
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+// Service Worker devre dışı
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+    .then(() => self.clients.claim())
   );
-  self.skipWaiting();
 });
-
-// Aktivasyon - eski cache temizle
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(key => caches.delete(key))
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-// Fetch - önce network, hata olursa cache
-self.addEventListener('fetch', (event) => {
-  // Supabase isteklerini cache'leme
-  if (event.request.url.includes('supabase.co')) return;
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Başarılı yanıtı cache'e ekle
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Network hatası - cache'den sun
-        return caches.match(event.request).then((cached) => {
-          return cached || caches.match('/kolaycafe/');
-        });
-      })
-  );
+self.addEventListener('fetch', (e) => {
+  // Cache yok, direkt network
+  e.respondWith(fetch(e.request));
 });
