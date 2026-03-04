@@ -807,6 +807,7 @@ let gunlukSatis = {};
 let splitOdendi = [];
 let _syncYaziliyor = false;  // normal sipariş yazmaları
 let _transferYapiliyor = false; // transfer/split işlemleri
+let _skipSubscriptionCount = 0; // transfer/split sonrası kaç event yoksayılacak
 let aktifDonem = 'gun';
 let btYazici = null;
 let _kayitTimeout = null;
@@ -1120,27 +1121,24 @@ async function uygulamaBaslat(user) {
       table: 'kafeler',
       filter: 'id=eq.'+kafeId
     }, (payload) => {
-      // Kendi yazdığımız güncelleme ise yoksay
-      if (_transferYapiliyor) return; // Transfer/split sırasında asla müdahale etme
+      // Transfer/split sonrası gelen eventleri yoksay
+      if (_skipSubscriptionCount > 0) {
+        _skipSubscriptionCount--;
+        return;
+      }
+      if (_transferYapiliyor) return;
       const aktif = payload.new.aktif_masalar || [];
-      // Sadece başka cihazdan gelen güncellemeleri uygula
-      // Lokal dolu masaları ezme - sadece lokal boş ama Supabase'de dolu olanları güncelle
       let degisti = false;
       masalar.forEach(m => {
         const am = aktif.find(x=>x.id===m.id);
         if (am && m.siparisler.length === 0) {
-          // Lokal boş, Supabase'de dolu - başka cihaz eklemiş
           m.siparisler = am.siparisler || [];
           m.garson = am.garson || '';
           m.indirim = am.indirim || 0;
           degisti = true;
-        } else if (!am && m.siparisler.length > 0) {
-          // Supabase'de yok ama lokalde var - başka cihaz kapatmış
-          m.siparisler = [];
-          m.garson = '';
-          m.indirim = 0;
-          degisti = true;
         }
+        // NOT: "Supabase'de yok ama lokalde var" durumunu subscription'da işleme
+        // Bu sadece interval'de ve sadece transfer/split dışında işlensin
       });
       if (degisti) { masalarRender(); siparisListeRender(); }
       setSyncOnline(true);
@@ -1149,7 +1147,7 @@ async function uygulamaBaslat(user) {
 
   // Yedek sync - sadece boş lokal masaları günceller
   setInterval(async () => {
-    if (!kafeId || _transferYapiliyor) return;
+    if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       if (!data?.aktif_masalar) return;
@@ -1716,6 +1714,7 @@ async function transferYap(hedefId){
   const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
   if(!k||!h){toast('Masa bulunamadı!');return;}
   _transferYapiliyor = true;
+  _skipSubscriptionCount = 3; // Sonraki 3 subscription event'ini yoksay
   k.siparisler.forEach(s=>{
     const v=h.siparisler.find(x=>x.isim===s.isim);
     if(v) v.adet+=s.adet; else h.siparisler.push({...s});
@@ -1730,14 +1729,21 @@ async function transferYap(hedefId){
   try {
     const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
     let aktif = data?.aktif_masalar || [];
+    // Kaynak masayı kaldır
     aktif = aktif.filter(x=>x.id!==kid);
+    // Hedef masayı güncelle
     const hidx = aktif.findIndex(x=>x.id===hedefId);
     const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:[...h.siparisler],garson:h.garson||'',indirim:h.indirim||0};
     if(hidx>=0) aktif[hidx]=hData; else aktif.push(hData);
     await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
     toast('↔ Masa '+kid+' → Masa '+hedefId+' ✓');
   } catch(e){ toast('Hata: '+e.message); }
-  finally { setTimeout(()=>{ _transferYapiliyor=false; }, 5000); }
+  finally { 
+    setTimeout(()=>{ 
+      _transferYapiliyor=false;
+      _skipSubscriptionCount=0;
+    }, 8000); 
+  }
 }
 
 // ════════════════════════════════════════
@@ -1766,6 +1772,7 @@ function splitRender(){
   }
   if(splitOdendi.length===sayi&&sayi>0){
     _transferYapiliyor = true;
+    _skipSubscriptionCount = 3;
     const splitMasaId = seciliMasa;
     const kolaycafen={masa:seciliMasa,masaAd:m.ad,tarih:new Date().toLocaleString('tr-TR'),tarihObj:new Date(),toplam,indirim:ind,garson:m.garson||'',siparisler:m.siparisler.map(s=>({...s}))};
     kapaliKolayCafenlar.unshift(kolaycafen); gunlukAdi++;
@@ -1782,7 +1789,7 @@ function splitRender(){
         await sb.from('kafeler').update({aktif_masalar:saktif}).eq('id',kafeId);
         toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
       } catch(e){ toast('Kayıt hatası!'); }
-      finally { setTimeout(()=>{ _transferYapiliyor=false; }, 5000); }
+      finally { setTimeout(()=>{ _transferYapiliyor=false; _skipSubscriptionCount=0; }, 8000); }
     })();
   }
 }
