@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --bg: #1a1205; --surface: #241a08; --surface2: #2e2210; --surface3: #3a2c18;
@@ -2521,7 +2521,12 @@ async function yazdir(){
 // MODAL & UTILS
 // ════════════════════════════════════════
 function modalAc(id){document.getElementById(id).classList.add('ac');}
-function modalKapat(id){document.getElementById(id).classList.remove('ac');}
+function modalKapat(id){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('ac');
+  el.style.display = 'none';
+}
 document.querySelectorAll('.modal-overlay').forEach(el=>{
   if(el.id==='split-modal'||el.id==='transfer-modal') return; // Bu modallarda overlay kapatma
   el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});
@@ -2751,15 +2756,41 @@ window.qrGoster = async function(masaNo, masaAd) {
   const qrUrl = `${baseUrl}?kafe=${kafeId}&masa=${masaNo}`;
 
   modal.style.display = 'flex';
+  modal.classList.add('ac');
 
+  // Canvas temizle
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  
+  // qrcodejs ile QR oluştur - div içinde render edip canvas'a kopyala
   try {
-    await QRCode.toCanvas(canvas, qrUrl, {
+    const tempDiv = document.createElement('div');
+    tempDiv.style.display = 'none';
+    document.body.appendChild(tempDiv);
+    
+    new QRCode(tempDiv, {
+      text: qrUrl,
       width: 220,
-      margin: 2,
-      color: { dark: '#1a1200', light: '#ffffff' }
+      height: 220,
+      colorDark: '#1a1200',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
     });
+    
+    // QR oluşunca img'yi canvas'a kopyala
+    setTimeout(() => {
+      const img = tempDiv.querySelector('img');
+      if (img) {
+        canvas.width = 220;
+        canvas.height = 220;
+        const ctx = canvas.getContext('2d');
+        const image = new Image();
+        image.onload = () => ctx.drawImage(image, 0, 0, 220, 220);
+        image.src = img.src;
+      }
+      document.body.removeChild(tempDiv);
+    }, 100);
   } catch(e) {
-    toast('QR oluşturulamadı');
+    toast('QR oluşturulamadı: ' + e.message);
   }
 
   // PDF indir butonu
