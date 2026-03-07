@@ -153,21 +153,30 @@ function toast(msg){
   document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
 }
 
+// Ses context'i sayfa yüklenince bir kez oluştur
+let audioCtx = null;
+function sesCtxBaslat() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
 function bildirim(masaAdi,adet){
   const b=document.createElement('div');b.className='bildirim';
   b.innerHTML='🔥 Yeni Sipariş!<br><span style="font-size:.8rem;font-weight:700;">'+masaAdi+' — '+adet+' ürün</span>';
   document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
   if(sesAcik){
     try{
-      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      sesCtxBaslat();
       [523,659,784].forEach((f,i)=>{
-        const o=ctx.createOscillator(),g=ctx.createGain();
-        o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type='sine';
-        g.gain.setValueAtTime(.3,ctx.currentTime+i*.15);
-        g.gain.exponentialRampToValueAtTime(.01,ctx.currentTime+i*.15+.3);
-        o.start(ctx.currentTime+i*.15);o.stop(ctx.currentTime+i*.15+.3);
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(.3,audioCtx.currentTime+i*.15);
+        g.gain.exponentialRampToValueAtTime(.01,audioCtx.currentTime+i*.15+.3);
+        o.start(audioCtx.currentTime+i*.15);o.stop(audioCtx.currentTime+i*.15+.3);
       });
-    }catch(e){}
+    }catch(e){ console.log('Ses hatası:',e); }
   }
 }
 
@@ -309,6 +318,7 @@ function filtrele(f,btn){
 }
 
 function sesToggle(){
+  sesCtxBaslat(); // ilk tıklamada context başlat
   sesAcik=!sesAcik;
   const b=document.getElementById('ses-btn');
   b.textContent=sesAcik?'🔔 Ses':'🔕 Ses';
@@ -316,11 +326,30 @@ function sesToggle(){
 }
 
 function baglan(){
-  if(sub)sub.unsubscribe();
-  sub=sb.channel('mutfak-'+kafeId)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'kafeler',filter:'id=eq.'+kafeId},async()=>await yukle())
-    .subscribe();
-  setInterval(render,30000); // süreleri güncelle
+  if(sub) sub.unsubscribe();
+  
+  sub = sb.channel('mutfak-'+kafeId)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'kafeler',
+      filter: 'id=eq.'+kafeId
+    }, async () => {
+      await yukle();
+    })
+    .subscribe((status) => {
+      console.log('Mutfak realtime:', status);
+      // Bağlantı kopunca 3sn sonra yeniden bağlan
+      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        setTimeout(() => baglan(), 3000);
+      }
+    });
+
+  // Yedek polling - her 5 saniyede bir yükle (realtime çalışmasa bile)
+  if (window._mutfakInterval) clearInterval(window._mutfakInterval);
+  window._mutfakInterval = setInterval(async () => {
+    await yukle();
+  }, 5000);
 }
 
 // Otomatik giriş
