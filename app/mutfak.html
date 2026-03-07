@@ -153,20 +153,20 @@ function toast(msg){
   document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
 }
 
-// Ses context'i sayfa yüklenince bir kez oluştur
+// Ses context - giriş anında başlatılır
 let audioCtx = null;
 function sesCtxBaslat() {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
   }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
 
 function bildirim(masaAdi,adet){
   const b=document.createElement('div');b.className='bildirim';
   b.innerHTML='🔥 Yeni Sipariş!<br><span style="font-size:.8rem;font-weight:700;">'+masaAdi+' — '+adet+' ürün</span>';
   document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
-  if(sesAcik){
+  if(sesAcik && audioCtx){
     try{
       sesCtxBaslat();
       [523,659,784].forEach((f,i)=>{
@@ -181,6 +181,7 @@ function bildirim(masaAdi,adet){
 }
 
 async function giris(){
+  sesCtxBaslat(); // Kullanıcı tıkladı - ses iznini al
   const kod=document.getElementById('kode').value.trim().toLowerCase();
   if(!kod){gosterErr('Cafe kodu girin!');return;}
   const{data,error}=await sb.from('kafeler').select('id,kafe_adi').eq('kafe_kodu',kod).single();
@@ -363,7 +364,17 @@ function baglan(){
       document.getElementById('giris').style.display='none';
       document.getElementById('ana').style.display='block';
       document.getElementById('h-kafe').textContent=data.kafe_adi;
-      await yukle();baglan();
+      await yukle(); baglan();
+      // Ses için kullanıcı etkileşimi gerekli - overlay göster
+      const overlay = document.createElement('div');
+      overlay.id = 'ses-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+      overlay.innerHTML = '<div style="font-size:3rem;margin-bottom:16px;">🔔</div><div style="color:#f0b940;font-family:Nunito,sans-serif;font-weight:900;font-size:1.2rem;">Sesi Etkinleştir</div><div style="color:#888;font-size:0.85rem;margin-top:8px;font-family:Nunito,sans-serif;">Ekrana dokunun</div>';
+      overlay.addEventListener('click', () => {
+        sesCtxBaslat();
+        overlay.remove();
+      });
+      document.body.appendChild(overlay);
     }
   }
 })();
