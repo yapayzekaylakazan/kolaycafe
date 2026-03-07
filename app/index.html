@@ -2886,9 +2886,9 @@ function qrMasaListeRender() {
   masalar.forEach(m => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface3);border-radius:10px;';
-    row.innerHTML = `<span style="font-weight:700;font-size:0.9rem;">${m.ad || 'Masa ' + m.no}</span>
+    row.innerHTML = `<span style="font-weight:700;font-size:0.9rem;">${m.ad || 'Masa ' + m.id}</span>
       <button style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📷 QR Göster</button>`;
-    row.querySelector('button').addEventListener('click', () => qrGoster(m.no, m.ad));
+    row.querySelector('button').addEventListener('click', () => qrGoster(m.id, m.ad));
     div.appendChild(row);
   });
 }
@@ -2906,7 +2906,8 @@ let mmKafeAdi = '';
 
 async function musteriMenuAc(kafeId, masaNo) {
   mmKafeId = kafeId;
-  mmMasaNo = parseInt(masaNo);
+  mmMasaNo = parseInt(masaNo) || 0;
+  mmMasaAdi = 'Masa ' + mmMasaNo; // Önce default ata
 
   // Auth ekranını gizle, müşteri menüyü göster
   document.getElementById('auth-screen').style.display = 'none';
