@@ -2748,6 +2748,17 @@ window.cariGoster = cariGoster;
 window.cariKaydet = cariKaydet;
 
 (async ()=>{
+  // QR ile gelen müşteri ise session kontrolü yapma, direkt menüyü aç
+  const _params = new URLSearchParams(window.location.search);
+  const _qrKafe = _params.get('kafe');
+  const _qrMasa = _params.get('masa');
+  if (_qrKafe && _qrMasa) {
+    // Auth ekranını gizle, müşteri menüsünü aç
+    document.getElementById('auth-screen').style.display = 'none';
+    await musteriMenuAc(_qrKafe, _qrMasa);
+    return;
+  }
+
   try {
     const {data:{session}} = await sb.auth.getSession();
     if(session) {
@@ -2920,17 +2931,14 @@ let mmKafeAdi = '';
 
 async function musteriMenuAc(kafeId, masaNo) {
   mmKafeId = kafeId;
-  // masaNo her zaman integer'a çevir
   const masaNoInt = parseInt(masaNo);
   mmMasaNo = isNaN(masaNoInt) ? masaNo : masaNoInt;
   mmMasaAdi = 'Masa ' + mmMasaNo;
 
-  // Auth ekranını gizle, müşteri menüyü göster
   document.getElementById('auth-screen').style.display = 'none';
   const mm = document.getElementById('musteri-menu');
   mm.style.display = 'flex';
 
-  // Supabase'den kafe verisi al
   const {data} = await sb.from('kafeler')
     .select('kafe_adi, urunler, masalar')
     .eq('id', kafeId)
@@ -2943,11 +2951,9 @@ async function musteriMenuAc(kafeId, masaNo) {
 
   mmKafeAdi = data.kafe_adi || 'Cafe';
   mmUrunler = data.urunler || {};
-  
-  // Masa adını bul - id hem number hem string olabilir
+
   const kayitliMasalar = data.masalar || [];
   const masa = kayitliMasalar.find(m => Number(m.id) === mmMasaNo || String(m.id) === String(mmMasaNo));
-  mmMasaNo = isNaN(masaNoInt) ? mmMasaNo : masaNoInt; // her zaman int
   mmMasaAdi = (masa && masa.ad) ? masa.ad : 'Masa ' + mmMasaNo;
 
   document.getElementById('mm-kafe-adi').textContent = '☕ ' + mmKafeAdi;
@@ -3075,24 +3081,21 @@ async function mmSiparisGonder() {
 
   try {
     const not = document.getElementById('mm-siparis-not').value.trim();
-    const masaNoInt = parseInt(mmMasaNo) || mmMasaNo;
     const saat = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
 
-    // aktif_masalar kolonunu kullan
     const {data: kafeData} = await sb.from('kafeler')
       .select('aktif_masalar')
       .eq('id', mmKafeId)
       .single();
 
     let aktifMasalar = kafeData?.aktif_masalar || [];
-    let masa = aktifMasalar.find(m => Number(m.id) === masaNoInt);
+    let masa = aktifMasalar.find(m => Number(m.id) === mmMasaNo);
     if (!masa) {
-      masa = {id: masaNoInt, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
+      masa = {id: mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
       aktifMasalar.push(masa);
     }
     if (!masa.siparisler) masa.siparisler = [];
 
-    // Müşteri siparişlerini ekle (adet olarak, tek satır)
     mmSepet.forEach(item => {
       const mevcut = masa.siparisler.find(s => s.isim === item.isim && s.musteri);
       if (mevcut) {
@@ -3117,7 +3120,6 @@ async function mmSiparisGonder() {
     const {error} = await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', mmKafeId);
     if (error) throw error;
 
-    // Başarı ekranı
     mmSepetKapat();
     mmSepet = [];
     mmSepetGuncelle();
@@ -3132,10 +3134,10 @@ async function mmSiparisGonder() {
         <button onclick="location.reload()" style="margin-top:24px;padding:12px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">🔄 Yeni Sipariş</button>
       </div>`;
   } catch(e) {
-    console.error('Sipariş gönderme hatası:', e);
+    console.error('Sipariş hatası:', e);
     btn.textContent = '✅ Siparişi Gönder';
     btn.disabled = false;
-    alert('Hata: ' + (e.message || 'Sipariş gönderilemedi. Tekrar deneyin.'));
+    alert('Hata: ' + (e.message || 'Tekrar deneyin'));
   }
 }
 
@@ -3153,18 +3155,7 @@ async function mmGarsonCagir() {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ════════════════════════════════
-// URL PARAM KONTROLÜ — Sayfa yüklenince
-// ════════════════════════════════
-(async function() {
-  const params = new URLSearchParams(window.location.search);
-  const qrKafeId = params.get('kafe');
-  const qrMasaNo = params.get('masa');
-  if (qrKafeId && qrMasaNo) {
-    // Müşteri QR ile geldi — menü modunu aç
-    await musteriMenuAc(qrKafeId, qrMasaNo);
-  }
-})();
+// URL PARAM KONTROLÜ — yukarıdaki session bloğunda hallendi
 
 
 </script>
