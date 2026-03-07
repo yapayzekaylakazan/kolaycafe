@@ -604,6 +604,12 @@
         <button onclick="garsonEkleAyar()" style="padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">+</button>
       </div>
     </div>
+    <!-- Mutfak Ekranı -->
+    <div class="ayar-kart">
+      <h3>🍳 Mutfak Ekranı</h3>
+      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Mutfakta ayrı bir tablet veya ekrana açın. Müşteri siparişleri buraya düşer.</p>
+      <a href="mutfak.html" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;text-align:center;text-decoration:none;">🍳 Mutfak Ekranını Aç →</a>
+    </div>
     <div class="ayar-kart">
       <h3>📦 Paket Seçenekleri</h3>
       <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Paket değiştirmek için bizimle iletişime geçin</p>
@@ -706,6 +712,7 @@
   <button class="bnav-btn" id="nav-gelgid" ><div class="nav-icon">💰</div>Gelir/Gider</button>
   <button class="bnav-btn" id="nav-rapor" ><div class="nav-icon">📊</div>Rapor</button>
   <button class="bnav-btn" id="nav-ayarlar" ><div class="nav-icon">⚙️</div>Ayarlar</button>
+  <button class="bnav-btn" id="nav-mutfak" style="display:none;" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
   <button class="bnav-btn" id="nav-garson-cikis" style="display:none;" ><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
 
@@ -1116,6 +1123,7 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-gelgid').style.display = 'none';
   document.getElementById('nav-cari').style.display = 'flex';
   document.getElementById('nav-ayarlar').style.display = 'none';
+  document.getElementById('nav-mutfak').style.display = 'flex';
   document.getElementById('nav-garson-cikis').style.display = 'flex';
   // Header'da garson adını göster
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
