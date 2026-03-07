@@ -1537,13 +1537,16 @@ function masalarRender() {
         <div style="font-size:0.5rem;color:var(--muted);font-weight:700;">Paketi Yükselt</div>`;
       btn.addEventListener('click', ()=>{ sayfaGit('ayarlar'); toast('Bu masaya erişmek için paketinizi yükseltin!'); });
     } else {
-      btn.className = 'masa-kart'+(seciliMasa===m.id?' secili':'')+(var_?' dolu':'');
+      const musteriSipVar = m.siparisler && m.siparisler.some(s => s.musteri && !s.mutfak_teslim);
+      const mutfakDurum = m.mutfak_durum || null;
+      btn.className = 'masa-kart'+(seciliMasa===m.id?' secili':'')+(var_?' dolu':'')+(musteriSipVar?' musteri-bekliyor':'');
       btn.innerHTML = `
         <div class="mn">${m.id}</div>
         <div class="mad">${m.ad!=='Masa '+m.id?m.ad:(m.not||'Masa '+m.id)}</div>
         ${m.garson&&paket.garson?`<div class="mgarson">${m.garson}</div>`:''}
         ${var_?`<div class="mt">${fmt(toplam)}</div>`:''}
-        ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+o.adet,0)}</div>`:''}
+        ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+(o.adet||1),0)}</div>`:''}
+        ${musteriSipVar?`<div style="position:absolute;top:4px;right:24px;background:#f97316;color:#fff;border-radius:6px;padding:1px 5px;font-size:0.55rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅HAZIR':mutfakDurum==='hazirlaniyor'?'👨‍🍳':'🔔YENİ'}</div>`:''}
         <button class="masa-not-btn">✏️</button><button class="masa-qr-btn">📷</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
@@ -2918,8 +2921,9 @@ let mmKafeAdi = '';
 
 async function musteriMenuAc(kafeId, masaNo) {
   mmKafeId = kafeId;
-  mmMasaNo = parseInt(masaNo) || 0;
-  mmMasaAdi = 'Masa ' + mmMasaNo; // Önce default ata
+  // masaNo string veya number olabilir, her ikisini de dene
+  mmMasaNo = masaNo; // önce string olarak sakla
+  mmMasaAdi = 'Masa ' + masaNo;
 
   // Auth ekranını gizle, müşteri menüyü göster
   document.getElementById('auth-screen').style.display = 'none';
@@ -2940,9 +2944,10 @@ async function musteriMenuAc(kafeId, masaNo) {
   mmKafeAdi = data.kafe_adi || 'Cafe';
   mmUrunler = data.urunler || {};
   
-  // Masa adını bul
+  // Masa adını bul - id hem number hem string olabilir
   const masalar = data.masalar || [];
-  const masa = masalar.find(m => Number(m.id) === Number(mmMasaNo));
+  const masa = masalar.find(m => String(m.id) === String(mmMasaNo) || Number(m.id) === Number(mmMasaNo));
+  mmMasaNo = masa ? masa.id : mmMasaNo; // gerçek id'yi al
   mmMasaAdi = masa ? masa.ad : 'Masa ' + mmMasaNo;
 
   document.getElementById('mm-kafe-adi').textContent = '☕ ' + mmKafeAdi;
