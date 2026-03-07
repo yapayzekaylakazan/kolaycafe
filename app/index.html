@@ -3083,11 +3083,13 @@ async function mmSiparisGonder() {
     .single();
 
   let masalar = kafeData?.masalar || [];
-  let masa = masalar.find(m => Number(m.id) === Number(mmMasaNo));
+  let masa = masalar.find(m => String(m.id) === String(mmMasaNo) || Number(m.id) === Number(mmMasaNo));
   if (!masa) {
-    masa = {id: mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
+    masa = {id: Number(mmMasaNo)||mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
     masalar.push(masa);
   }
+  // siparisler array'i yoksa oluştur
+  if (!masa.siparisler) masa.siparisler = [];
   
   // Müşteri siparişlerini masaya ekle
   mmSepet.forEach(item => {
