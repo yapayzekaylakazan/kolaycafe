@@ -2401,9 +2401,8 @@ function garsonAyarListeRender(){
 
 function garsonEkleAyar(){
   const inp=document.getElementById('yeni-garson-ayar');
-  const pinInp=document.getElementById('yeni-garson-pin');
   const ad=inp.value.trim();
-  const pin=pinInp.value.trim();
+  const pin='';
   if(!ad){toast('Garson adı girin!');return;}
   if(garsonlar.find(g=>(typeof g==='string'?g:g.isim)===ad)){toast('Bu garson zaten var!');return;}
   garsonlar.push({id: Date.now(), isim: ad, pin: pin, aktif: true});
@@ -2921,9 +2920,10 @@ let mmKafeAdi = '';
 
 async function musteriMenuAc(kafeId, masaNo) {
   mmKafeId = kafeId;
-  // masaNo string veya number olabilir, her ikisini de dene
-  mmMasaNo = masaNo; // önce string olarak sakla
-  mmMasaAdi = 'Masa ' + masaNo;
+  // masaNo her zaman integer'a çevir
+  const masaNoInt = parseInt(masaNo);
+  mmMasaNo = isNaN(masaNoInt) ? masaNo : masaNoInt;
+  mmMasaAdi = 'Masa ' + mmMasaNo;
 
   // Auth ekranını gizle, müşteri menüyü göster
   document.getElementById('auth-screen').style.display = 'none';
@@ -2945,10 +2945,10 @@ async function musteriMenuAc(kafeId, masaNo) {
   mmUrunler = data.urunler || {};
   
   // Masa adını bul - id hem number hem string olabilir
-  const masalar = data.masalar || [];
-  const masa = masalar.find(m => String(m.id) === String(mmMasaNo) || Number(m.id) === Number(mmMasaNo));
-  mmMasaNo = masa ? masa.id : mmMasaNo; // gerçek id'yi al
-  mmMasaAdi = masa ? masa.ad : 'Masa ' + mmMasaNo;
+  const kayitliMasalar = data.masalar || [];
+  const masa = kayitliMasalar.find(m => Number(m.id) === mmMasaNo || String(m.id) === String(mmMasaNo));
+  mmMasaNo = isNaN(masaNoInt) ? mmMasaNo : masaNoInt; // her zaman int
+  mmMasaAdi = (masa && masa.ad) ? masa.ad : 'Masa ' + mmMasaNo;
 
   document.getElementById('mm-kafe-adi').textContent = '☕ ' + mmKafeAdi;
   document.getElementById('mm-masa-adi').textContent = '📍 ' + mmMasaAdi;
@@ -3073,57 +3073,70 @@ async function mmSiparisGonder() {
   btn.textContent = '⏳ Gönderiliyor...';
   btn.disabled = true;
 
-  const not = document.getElementById('mm-siparis-not').value.trim();
-  
-  // Siparişleri Supabase'deki masaya ekle
-  // Önce mevcut masa verisini çek
-  const {data: kafeData} = await sb.from('kafeler')
-    .select('masalar')
-    .eq('id', mmKafeId)
-    .single();
+  try {
+    const not = document.getElementById('mm-siparis-not').value.trim();
+    const masaNoInt = parseInt(mmMasaNo) || mmMasaNo;
+    const saat = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
 
-  let masalar = kafeData?.masalar || [];
-  let masa = masalar.find(m => String(m.id) === String(mmMasaNo) || Number(m.id) === Number(mmMasaNo));
-  if (!masa) {
-    masa = {id: Number(mmMasaNo)||mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
-    masalar.push(masa);
-  }
-  // siparisler array'i yoksa oluştur
-  if (!masa.siparisler) masa.siparisler = [];
-  
-  // Müşteri siparişlerini masaya ekle
-  mmSepet.forEach(item => {
-    for (let i = 0; i < item.adet; i++) {
-      masa.siparisler.push({
-        isim: item.isim,
-        fiyat: item.fiyat,
-        ikon: item.ikon,
-        zaman: new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}),
-        musteri: true // müşteri siparişi işareti
-      });
+    // aktif_masalar kolonunu kullan
+    const {data: kafeData} = await sb.from('kafeler')
+      .select('aktif_masalar')
+      .eq('id', mmKafeId)
+      .single();
+
+    let aktifMasalar = kafeData?.aktif_masalar || [];
+    let masa = aktifMasalar.find(m => Number(m.id) === masaNoInt);
+    if (!masa) {
+      masa = {id: masaNoInt, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
+      aktifMasalar.push(masa);
     }
-  });
-  if (not) masa.not = (masa.not ? masa.not + ' | ' : '') + '🧾 ' + not;
-  // Mutfak için durum ve zaman set et
-  masa.mutfak_durum = 'bekliyor';
-  masa.mutfak_zaman = new Date().toISOString();
+    if (!masa.siparisler) masa.siparisler = [];
 
-  await sb.from('kafeler').update({masalar}).eq('id', mmKafeId);
+    // Müşteri siparişlerini ekle (adet olarak, tek satır)
+    mmSepet.forEach(item => {
+      const mevcut = masa.siparisler.find(s => s.isim === item.isim && s.musteri);
+      if (mevcut) {
+        mevcut.adet = (mevcut.adet || 1) + item.adet;
+      } else {
+        masa.siparisler.push({
+          isim: item.isim,
+          fiyat: item.fiyat,
+          ikon: item.ikon || '🍽',
+          adet: item.adet,
+          ilkSaat: saat,
+          musteri: true,
+          mutfak_teslim: false
+        });
+      }
+    });
 
-  // Başarı ekranı
-  mmSepetKapat();
-  mmSepet = [];
-  mmSepetGuncelle();
-  document.getElementById('mm-siparis-not').value = '';
-  
-  const mm = document.getElementById('musteri-menu');
-  mm.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:32px;text-align:center;">
-      <div style="font-size:4rem;margin-bottom:16px;">✅</div>
-      <h2 style="font-family:'Playfair Display',serif;color:var(--accent2);margin-bottom:8px;">Siparişiniz Alındı!</h2>
-      <p style="color:var(--muted);font-weight:600;line-height:1.6;">${mmMasaAdi} için siparişiniz mutfağa iletildi.<br>Garsonunuz en kısa sürede gelecek.</p>
-      <button onclick="location.reload()" style="margin-top:24px;padding:12px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">🔄 Yeni Sipariş</button>
-    </div>`;
+    if (not) masa.not = (masa.not ? masa.not + ' | ' : '') + '🧾 ' + not;
+    masa.mutfak_durum = 'bekliyor';
+    masa.mutfak_zaman = new Date().toISOString();
+
+    const {error} = await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', mmKafeId);
+    if (error) throw error;
+
+    // Başarı ekranı
+    mmSepetKapat();
+    mmSepet = [];
+    mmSepetGuncelle();
+    document.getElementById('mm-siparis-not').value = '';
+
+    const mm = document.getElementById('musteri-menu');
+    mm.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:32px;text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;">✅</div>
+        <h2 style="font-family:'Playfair Display',serif;color:var(--accent2);margin-bottom:8px;">Siparişiniz Alındı!</h2>
+        <p style="color:var(--muted);font-weight:600;line-height:1.6;">${mmMasaAdi} için siparişiniz mutfağa iletildi.<br>Garsonunuz en kısa sürede gelecek.</p>
+        <button onclick="location.reload()" style="margin-top:24px;padding:12px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">🔄 Yeni Sipariş</button>
+      </div>`;
+  } catch(e) {
+    console.error('Sipariş gönderme hatası:', e);
+    btn.textContent = '✅ Siparişi Gönder';
+    btn.disabled = false;
+    alert('Hata: ' + (e.message || 'Sipariş gönderilemedi. Tekrar deneyin.'));
+  }
 }
 
 async function mmGarsonCagir() {
