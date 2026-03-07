@@ -244,6 +244,52 @@
 <body>
 
 <!-- ── GİRİŞ EKRANI ── -->
+<!-- ── MÜŞTERİ MENÜ MODU ── -->
+<div id="musteri-menu" style="display:none;flex-direction:column;min-height:100vh;background:var(--bg);font-family:'Nunito',sans-serif;">
+  <!-- Header -->
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;">
+    <div>
+      <div id="mm-kafe-adi" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:900;color:var(--accent2);">☕ KolayCafe</div>
+      <div id="mm-masa-adi" style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-top:2px;"></div>
+    </div>
+    <button id="mm-sepet-btn" onclick="mmSepetAc()" style="position:relative;background:var(--accent);border:none;border-radius:12px;padding:9px 16px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;color:var(--bg);cursor:pointer;">
+      🛒 Sepet <span id="mm-sepet-sayi" style="background:#e04040;color:white;border-radius:50%;width:18px;height:18px;font-size:0.7rem;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;display:none;">0</span>
+    </button>
+  </div>
+
+  <!-- Kategori Tabs -->
+  <div id="mm-kategori-tabs" style="display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--border);scrollbar-width:none;"></div>
+
+  <!-- Ürün Listesi -->
+  <div id="mm-urun-liste" style="padding:16px;flex:1;overflow-y:auto;"></div>
+
+  <!-- Garson Çağır -->
+  <div style="padding:12px 16px;background:var(--bg2);border-top:1px solid var(--border);">
+    <button onclick="mmGarsonCagir()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;">
+      🔔 Garson Çağır
+    </button>
+  </div>
+</div>
+
+<!-- Müşteri Sepet Modal -->
+<div id="mm-sepet-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-end;">
+  <div style="background:var(--bg2);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;font-size:1.1rem;">🛒 Sepetim</h3>
+      <button onclick="mmSepetKapat()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <div id="mm-sepet-liste" style="margin-bottom:16px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--border);margin-bottom:12px;">
+      <span style="font-weight:800;">Toplam</span>
+      <span id="mm-sepet-toplam" style="font-size:1.2rem;font-weight:900;color:var(--accent2);">0₺</span>
+    </div>
+    <textarea id="mm-siparis-not" placeholder="Siparişinize not ekleyin... (isteğe bağlı)" style="width:100%;box-sizing:border-box;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;resize:none;height:70px;margin-bottom:12px;"></textarea>
+    <button onclick="mmSiparisGonder()" id="mm-siparis-btn" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">
+      ✅ Siparişi Gönder
+    </button>
+  </div>
+</div>
+
 <div id="auth-screen">
   <div class="auth-logo">☕</div>
   <div class="auth-title">KolayCafe</div>
@@ -2847,17 +2893,243 @@ function qrMasaListeRender() {
   });
 }
 
-// QR URL parametrelerini kontrol et (garson QR okutunca)
-(function() {
+
+// ════════════════════════════════
+// MÜŞTERİ MENÜ MODU
+// ════════════════════════════════
+let mmKafeId = null;
+let mmMasaNo = null;
+let mmUrunler = {};
+let mmSepet = []; // [{isim, fiyat, ikon, adet}]
+let mmMasaAdi = '';
+let mmKafeAdi = '';
+
+async function musteriMenuAc(kafeId, masaNo) {
+  mmKafeId = kafeId;
+  mmMasaNo = parseInt(masaNo);
+
+  // Auth ekranını gizle, müşteri menüyü göster
+  document.getElementById('auth-screen').style.display = 'none';
+  const mm = document.getElementById('musteri-menu');
+  mm.style.display = 'flex';
+
+  // Supabase'den kafe verisi al
+  const {data} = await sb.from('kafeler')
+    .select('kafe_adi, urunler, masalar')
+    .eq('id', kafeId)
+    .single();
+
+  if (!data) {
+    mm.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Cafe bulunamadı 😔</div>';
+    return;
+  }
+
+  mmKafeAdi = data.kafe_adi || 'Cafe';
+  mmUrunler = data.urunler || {};
+  
+  // Masa adını bul
+  const masalar = data.masalar || [];
+  const masa = masalar.find(m => m.id === mmMasaNo);
+  mmMasaAdi = masa ? masa.ad : 'Masa ' + mmMasaNo;
+
+  document.getElementById('mm-kafe-adi').textContent = '☕ ' + mmKafeAdi;
+  document.getElementById('mm-masa-adi').textContent = '📍 ' + mmMasaAdi;
+
+  mmKategoriRender();
+  mmUrunRender(Object.keys(mmUrunler)[0]);
+}
+
+function mmKategoriRender() {
+  const tabs = document.getElementById('mm-kategori-tabs');
+  tabs.innerHTML = '';
+  Object.keys(mmUrunler).forEach((kat, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = kat;
+    btn.dataset.kat = kat;
+    btn.style.cssText = 'white-space:nowrap;padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);font-family:"Nunito",sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;transition:all 0.2s;background:' + (i===0?'var(--accent)':'var(--surface2)') + ';color:' + (i===0?'var(--bg)':'var(--text)') + ';';
+    btn.addEventListener('click', () => {
+      tabs.querySelectorAll('button').forEach(b => { b.style.background='var(--surface2)'; b.style.color='var(--text)'; });
+      btn.style.background = 'var(--accent)'; btn.style.color = 'var(--bg)';
+      mmUrunRender(kat);
+    });
+    tabs.appendChild(btn);
+  });
+}
+
+function mmUrunRender(kat) {
+  const liste = document.getElementById('mm-urun-liste');
+  liste.innerHTML = '';
+  const urunler = mmUrunler[kat] || [];
+  if (urunler.length === 0) {
+    liste.innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px;">Bu kategoride ürün yok</p>';
+    return;
+  }
+  urunler.forEach(u => {
+    const sepetItem = mmSepet.find(s => s.isim === u.isim);
+    const adet = sepetItem ? sepetItem.adet : 0;
+    const card = document.createElement('div');
+    card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex:1;">
+        <span style="font-size:1.8rem;">${u.ikon||'🍽'}</span>
+        <div>
+          <div style="font-weight:800;font-size:0.95rem;">${u.isim}</div>
+          <div style="color:var(--accent2);font-weight:900;font-size:1rem;margin-top:2px;">${u.fiyat}₺</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${adet > 0 ? `<button onclick="mmAdetDusur('${u.isim}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface3);color:var(--text);font-size:1.2rem;cursor:pointer;font-weight:900;">−</button>
+        <span style="font-weight:900;font-size:1rem;min-width:20px;text-align:center;">${adet}</span>` : ''}
+        <button onclick="mmAdetArtir('${u.isim}',${u.fiyat},'${u.ikon||'🍽'}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button>
+      </div>`;
+    liste.appendChild(card);
+  });
+}
+
+function mmAdetArtir(isim, fiyat, ikon) {
+  const item = mmSepet.find(s => s.isim === isim);
+  if (item) item.adet++;
+  else mmSepet.push({isim, fiyat, ikon, adet: 1});
+  mmSepetGuncelle();
+  // Aktif kategoriyi yeniden render et
+  const aktifKat = document.querySelector('#mm-kategori-tabs button[style*="var(--accent)"]');
+  if (aktifKat) mmUrunRender(aktifKat.dataset.kat);
+}
+
+function mmAdetDusur(isim) {
+  const idx = mmSepet.findIndex(s => s.isim === isim);
+  if (idx === -1) return;
+  mmSepet[idx].adet--;
+  if (mmSepet[idx].adet <= 0) mmSepet.splice(idx, 1);
+  mmSepetGuncelle();
+  const aktifKat = document.querySelector('#mm-kategori-tabs button[style*="var(--accent)"]');
+  if (aktifKat) mmUrunRender(aktifKat.dataset.kat);
+}
+
+function mmSepetGuncelle() {
+  const toplam = mmSepet.reduce((s, i) => s + i.fiyat * i.adet, 0);
+  const sayi = mmSepet.reduce((s, i) => s + i.adet, 0);
+  const sayiEl = document.getElementById('mm-sepet-sayi');
+  sayiEl.textContent = sayi;
+  sayiEl.style.display = sayi > 0 ? 'inline-flex' : 'none';
+  document.getElementById('mm-sepet-toplam').textContent = toplam + '₺';
+}
+
+function mmSepetAc() {
+  if (mmSepet.length === 0) { 
+    // Basit toast
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-family:Nunito,sans-serif;font-weight:700;z-index:99999;';
+    t.textContent = 'Sepetiniz boş!';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2000);
+    return; 
+  }
+  // Sepet listesini render et
+  const liste = document.getElementById('mm-sepet-liste');
+  liste.innerHTML = '';
+  mmSepet.forEach(item => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span>${item.ikon}</span>
+        <span style="font-weight:700;">${item.isim}</span>
+        <span style="background:var(--accent);color:var(--bg);border-radius:10px;padding:2px 8px;font-size:0.78rem;font-weight:900;">x${item.adet}</span>
+      </div>
+      <span style="font-weight:900;color:var(--accent2);">${item.fiyat * item.adet}₺</span>`;
+    liste.appendChild(row);
+  });
+  const toplam = mmSepet.reduce((s, i) => s + i.fiyat * i.adet, 0);
+  document.getElementById('mm-sepet-toplam').textContent = toplam + '₺';
+  document.getElementById('mm-sepet-modal').style.display = 'flex';
+}
+
+function mmSepetKapat() {
+  document.getElementById('mm-sepet-modal').style.display = 'none';
+}
+
+async function mmSiparisGonder() {
+  if (mmSepet.length === 0) return;
+  const btn = document.getElementById('mm-siparis-btn');
+  btn.textContent = '⏳ Gönderiliyor...';
+  btn.disabled = true;
+
+  const not = document.getElementById('mm-siparis-not').value.trim();
+  
+  // Siparişleri Supabase'deki masaya ekle
+  // Önce mevcut masa verisini çek
+  const {data: kafeData} = await sb.from('kafeler')
+    .select('masalar')
+    .eq('id', mmKafeId)
+    .single();
+
+  let masalar = kafeData?.masalar || [];
+  let masa = masalar.find(m => m.id === mmMasaNo);
+  if (!masa) {
+    masa = {id: mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
+    masalar.push(masa);
+  }
+  
+  // Müşteri siparişlerini masaya ekle
+  mmSepet.forEach(item => {
+    for (let i = 0; i < item.adet; i++) {
+      masa.siparisler.push({
+        isim: item.isim,
+        fiyat: item.fiyat,
+        ikon: item.ikon,
+        zaman: new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}),
+        musteri: true // müşteri siparişi işareti
+      });
+    }
+  });
+  if (not) masa.not = (masa.not ? masa.not + ' | ' : '') + '🧾 ' + not;
+
+  await sb.from('kafeler').update({masalar}).eq('id', mmKafeId);
+
+  // Başarı ekranı
+  mmSepetKapat();
+  mmSepet = [];
+  mmSepetGuncelle();
+  document.getElementById('mm-siparis-not').value = '';
+  
+  const mm = document.getElementById('musteri-menu');
+  mm.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:32px;text-align:center;">
+      <div style="font-size:4rem;margin-bottom:16px;">✅</div>
+      <h2 style="font-family:'Playfair Display',serif;color:var(--accent2);margin-bottom:8px;">Siparişiniz Alındı!</h2>
+      <p style="color:var(--muted);font-weight:600;line-height:1.6;">${mmMasaAdi} için siparişiniz mutfağa iletildi.<br>Garsonunuz en kısa sürede gelecek.</p>
+      <button onclick="location.reload()" style="margin-top:24px;padding:12px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">🔄 Yeni Sipariş</button>
+    </div>`;
+}
+
+async function mmGarsonCagir() {
+  const {data: kafeData} = await sb.from('kafeler').select('masalar').eq('id', mmKafeId).single();
+  let masalar = kafeData?.masalar || [];
+  let masa = masalar.find(m => m.id === mmMasaNo);
+  if (!masa) { masa = {id:mmMasaNo, ad:mmMasaAdi, siparisler:[], not:'', garson:'', indirim:0}; masalar.push(masa); }
+  masa.not = (masa.not ? masa.not + ' | ' : '') + '🔔 Garson çağrıldı ' + new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  await sb.from('kafeler').update({masalar}).eq('id', mmKafeId);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
+  t.textContent = '🔔 Garsonunuz geliyor!';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ════════════════════════════════
+// URL PARAM KONTROLÜ — Sayfa yüklenince
+// ════════════════════════════════
+(async function() {
   const params = new URLSearchParams(window.location.search);
   const qrKafeId = params.get('kafe');
   const qrMasaNo = params.get('masa');
   if (qrKafeId && qrMasaNo) {
-    // QR ile gelindi — kafeId ve masa set et, direkt masaya git
-    window._qrKafeId = qrKafeId;
-    window._qrMasaNo = parseInt(qrMasaNo);
+    // Müşteri QR ile geldi — menü modunu aç
+    await musteriMenuAc(qrKafeId, qrMasaNo);
   }
 })();
+
 
 </script>
 </body>
