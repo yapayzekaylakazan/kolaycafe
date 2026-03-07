@@ -189,15 +189,20 @@ async function giris(){
 function gosterErr(m){const e=document.getElementById('err');e.textContent=m;e.style.display='block';}
 
 async function yukle(){
-  const{data}=await sb.from('kafeler').select('masalar').eq('id',kafeId).single();
+  const{data}=await sb.from('kafeler').select('aktif_masalar, masalar').eq('id',kafeId).single();
   if(!data)return;
-  const masalar=data.masalar||[];
+  const aktifMasalar=data.aktif_masalar||[];
+  const kayitliMasalar=data.masalar||[];
   const yeni=[];
 
-  masalar.forEach(masa=>{
+  aktifMasalar.forEach(masa=>{
     if(!masa.siparisler||masa.siparisler.length===0)return;
     const mSip=masa.siparisler.filter(s=>s.musteri===true);
     if(mSip.length===0)return;
+
+    // Masa adını kayıtlı masalardan al
+    const kayitliMasa=kayitliMasalar.find(m=>Number(m.id)===Number(masa.id));
+    const masaAdi=(kayitliMasa&&kayitliMasa.ad)?kayitliMasa.ad:(masa.ad||'Masa '+masa.id);
 
     // Ürünleri grupla — adet field varsa kullan, yoksa say
     const gruplu={};
@@ -210,7 +215,7 @@ async function yukle(){
     yeni.push({
       id:'masa_'+masa.id,
       masaNo:masa.id,
-      masaAdi:masa.ad||'Masa '+masa.id,
+      masaAdi:masaAdi,
       urunler:Object.values(gruplu),
       durum:masa.mutfak_durum||'bekliyor',
       zaman:masa.mutfak_zaman?new Date(masa.mutfak_zaman).getTime():Date.now()-10000,
@@ -268,9 +273,9 @@ function render(){
 }
 
 async function durumGuncelle(masaNo,yeniDurum){
-  const{data}=await sb.from('kafeler').select('masalar').eq('id',kafeId).single();
-  const masalar=data?.masalar||[];
-  const masa=masalar.find(m=>String(m.id)===String(masaNo));
+  const{data}=await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+  const aktifMasalar=data?.aktif_masalar||[];
+  const masa=aktifMasalar.find(m=>Number(m.id)===Number(masaNo)||String(m.id)===String(masaNo));
   if(!masa)return;
   if(yeniDurum==='iptal'){
     masa.siparisler=(masa.siparisler||[]).filter(s=>!s.musteri);
@@ -280,19 +285,19 @@ async function durumGuncelle(masaNo,yeniDurum){
     masa.mutfak_durum=yeniDurum;
     toast(yeniDurum==='hazirlaniyor'?'👨‍🍳 Hazırlanıyor!':'✅ Hazır — Garson bilgilendirildi!');
   }
-  await sb.from('kafeler').update({masalar}).eq('id',kafeId);
+  await sb.from('kafeler').update({aktif_masalar:aktifMasalar}).eq('id',kafeId);
   await yukle();
 }
 
 async function teslim(masaNo){
-  const{data}=await sb.from('kafeler').select('masalar').eq('id',kafeId).single();
-  const masalar=data?.masalar||[];
-  const masa=masalar.find(m=>String(m.id)===String(masaNo));
+  const{data}=await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+  const aktifMasalar=data?.aktif_masalar||[];
+  const masa=aktifMasalar.find(m=>Number(m.id)===Number(masaNo)||String(m.id)===String(masaNo));
   if(!masa)return;
-  // Müşteri siparişlerini normal siparişe çevir
-  masa.siparisler=(masa.siparisler||[]).map(s=>({...s,musteri:false}));
+  // Müşteri siparişlerini normal siparişe çevir (mutfak_teslim işaretle)
+  masa.siparisler=(masa.siparisler||[]).map(s=>s.musteri?{...s,musteri:false,mutfak_teslim:true}:s);
   masa.mutfak_durum=null;masa.mutfak_zaman=null;
-  await sb.from('kafeler').update({masalar}).eq('id',kafeId);
+  await sb.from('kafeler').update({aktif_masalar:aktifMasalar}).eq('id',kafeId);
   toast('🏁 Teslim edildi — masa hesabına eklendi');
   await yukle();
 }
