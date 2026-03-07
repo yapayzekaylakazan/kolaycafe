@@ -136,7 +136,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let kafeId = null, aktifFiltre = 'hepsi', sesAcik = true;
-let siparisler = [], sub = null;
+let siparisler = [], sub = null, garsonCagriler = [];
 
 // Saat
 setInterval(()=>{const e=document.getElementById('saat');if(e)e.textContent=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
@@ -162,20 +162,39 @@ function sesCtxBaslat() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-function bildirim(masaAdi,adet){
+function bildirim(masaAdi, adet, garsonCagri=false){
   const b=document.createElement('div');b.className='bildirim';
-  b.innerHTML='🔥 Yeni Sipariş!<br><span style="font-size:.8rem;font-weight:700;">'+masaAdi+' — '+adet+' ürün</span>';
-  document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
+  if(garsonCagri){
+    b.style.background='#ef4444';
+    b.innerHTML='🔔 Garson Çağrısı!<br><span style="font-size:.8rem;font-weight:700;">'+masaAdi+'</span>';
+  } else {
+    b.innerHTML='🔥 Yeni Sipariş!<br><span style="font-size:.8rem;font-weight:700;">'+masaAdi+' — '+adet+' ürün</span>';
+  }
+  document.body.appendChild(b);setTimeout(()=>b.remove(),5000);
   if(sesAcik && audioCtx){
     try{
       sesCtxBaslat();
-      [523,659,784].forEach((f,i)=>{
-        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-        o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;o.type='sine';
-        g.gain.setValueAtTime(.3,audioCtx.currentTime+i*.15);
-        g.gain.exponentialRampToValueAtTime(.01,audioCtx.currentTime+i*.15+.3);
-        o.start(audioCtx.currentTime+i*.15);o.stop(audioCtx.currentTime+i*.15+.3);
-      });
+      if(garsonCagri){
+        // Garson çağrısı - farklı zil sesi (daha yüksek, dikkat çekici)
+        [0, 0.5, 1.0].forEach(gecikme=>{
+          [880,1108,880].forEach((f,i)=>{
+            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+            o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;o.type='sine';
+            g.gain.setValueAtTime(.5,audioCtx.currentTime+gecikme+i*.12);
+            g.gain.exponentialRampToValueAtTime(.01,audioCtx.currentTime+gecikme+i*.12+.2);
+            o.start(audioCtx.currentTime+gecikme+i*.12);o.stop(audioCtx.currentTime+gecikme+i*.12+.2);
+          });
+        });
+      } else {
+        // Sipariş sesi
+        [523,659,784].forEach((f,i)=>{
+          const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+          o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;o.type='sine';
+          g.gain.setValueAtTime(.3,audioCtx.currentTime+i*.15);
+          g.gain.exponentialRampToValueAtTime(.01,audioCtx.currentTime+i*.15+.3);
+          o.start(audioCtx.currentTime+i*.15);o.stop(audioCtx.currentTime+i*.15+.3);
+        });
+      }
     }catch(e){ console.log('Ses hatası:',e); }
   }
 }
@@ -204,15 +223,25 @@ async function yukle(){
   const aktifMasalar=data.aktif_masalar||[];
   const kayitliMasalar=data.masalar||[];
   const yeni=[];
+  const yeniCagriler=[];
 
   aktifMasalar.forEach(masa=>{
+    const kayitliMasa=kayitliMasalar.find(m=>Number(m.id)===Number(masa.id));
+    const masaAdi=(kayitliMasa&&kayitliMasa.ad)?kayitliMasa.ad:(masa.ad||'Masa '+masa.id);
+
+    // Garson çağrısı var mı?
+    if(masa.garson_cagri){
+      yeniCagriler.push({
+        id:'cagri_'+masa.id,
+        masaNo:masa.id,
+        masaAdi:masaAdi,
+        saat:masa.garson_cagri_saat||''
+      });
+    }
+
     if(!masa.siparisler||masa.siparisler.length===0)return;
     const mSip=masa.siparisler.filter(s=>s.musteri===true);
     if(mSip.length===0)return;
-
-    // Masa adını kayıtlı masalardan al
-    const kayitliMasa=kayitliMasalar.find(m=>Number(m.id)===Number(masa.id));
-    const masaAdi=(kayitliMasa&&kayitliMasa.ad)?kayitliMasa.ad:(masa.ad||'Masa '+masa.id);
 
     // Ürünleri grupla — adet field varsa kullan, yoksa say
     const gruplu={};
@@ -233,6 +262,13 @@ async function yukle(){
     });
   });
 
+  // Yeni garson çağrısı geldi mi? Ses çal
+  const eskiCagriIdler = garsonCagriler.map(c=>c.id);
+  yeniCagriler.filter(c=>!eskiCagriIdler.includes(c.id)).forEach(c=>{
+    bildirim('🔔 '+c.masaAdi, 0, true); // true = garson çağrısı
+  });
+  garsonCagriler = yeniCagriler;
+
   // Yeni bekleyen geldi mi?
   const eskiBekleyen=siparisler.filter(s=>s.durum==='bekliyor').map(s=>s.id);
   yeni.filter(s=>s.durum==='bekliyor'&&!eskiBekleyen.includes(s.id))
@@ -244,17 +280,34 @@ async function yukle(){
 
 function render(){
   const grid=document.getElementById('grid');
+
+  // Garson çağrı kartlarını en üste ekle
+  let cagriHTML = '';
+  garsonCagriler.forEach(c=>{
+    cagriHTML += `<div class="kart" style="border-color:#ef4444;animation:pulse 1s infinite;">
+      <div class="kh" style="background:#ef444415;">
+        <div>
+          <div class="masa-no" style="color:#ef4444;">🔔 ${c.masaAdi}</div>
+          <div class="durum-lbl" style="color:#ef4444;">GARSON ÇAĞIRIYOR${c.saat?' · '+c.saat:''}</div>
+        </div>
+      </div>
+      <div class="aksiyonlar">
+        <button class="ak-btn btn-tamam" onclick="garsonCagriKapatMutfak('${c.masaNo}')">✓ Gidiyorum</button>
+      </div>
+    </div>`;
+  });
+
   const filtreli=aktifFiltre==='hepsi'?siparisler:siparisler.filter(s=>s.durum===aktifFiltre);
   document.getElementById('sc-b').textContent='⏳ '+siparisler.filter(s=>s.durum==='bekliyor').length;
   document.getElementById('sc-h').textContent='👨‍🍳 '+siparisler.filter(s=>s.durum==='hazirlaniyor').length;
   document.getElementById('sc-ok').textContent='✅ '+siparisler.filter(s=>s.durum==='hazir').length;
 
-  if(filtreli.length===0){
+  if(filtreli.length===0 && garsonCagriler.length===0){
     grid.innerHTML='<div class="bos"><div class="ikon">🍳</div><h3 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Bekleyen sipariş yok</h3><p style="font-size:.83rem;">Yeni sipariş gelince burada belirir</p></div>';
     return;
   }
 
-  grid.innerHTML='';
+  grid.innerHTML=cagriHTML;
   const sirala={bekliyor:0,hazirlaniyor:1,hazir:2};
   [...filtreli].sort((a,b)=>(sirala[a.durum]||0)-(sirala[b.durum]||0)).forEach(s=>{
     const sure=sureFmt(Date.now()-s.zaman);
@@ -280,6 +333,19 @@ function render(){
       <div class="aksiyonlar">${akHTML}</div>`;
     grid.appendChild(kart);
   });
+}
+
+async function garsonCagriKapatMutfak(masaNo){
+  const{data}=await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+  const aktifMasalar=data?.aktif_masalar||[];
+  const masa=aktifMasalar.find(m=>Number(m.id)===Number(masaNo));
+  if(!masa)return;
+  masa.garson_cagri=false;
+  masa.garson_cagri_saat=null;
+  await sb.from('kafeler').update({aktif_masalar:aktifMasalar}).eq('id',kafeId);
+  garsonCagriler=garsonCagriler.filter(c=>Number(c.masaNo)!==Number(masaNo));
+  render();
+  toast('✓ Gidildi — çağrı kapatıldı');
 }
 
 async function durumGuncelle(masaNo,yeniDurum){
