@@ -431,6 +431,11 @@
           <button class="amh-btn" onclick="masaTemizle()">🗑</button>
         </div>
       </div>
+      <!-- Garson çağrı banner -->
+      <div id="garson-cagri-banner" style="display:none;background:#ef4444;color:#fff;padding:8px 12px;display:none;align-items:center;justify-content:space-between;gap:8px;animation:pulse 1s infinite;">
+        <span style="font-weight:900;font-size:0.9rem;">🔔 Müşteri garson çağırıyor!</span>
+        <button onclick="garsonCagriKapat(seciliMasa)" style="background:#fff;color:#ef4444;border:none;border-radius:8px;padding:4px 12px;font-weight:900;font-size:0.8rem;cursor:pointer;">✓ Geldim</button>
+      </div>
       <div class="kolaycafen-body">
         <div class="urun-bolumu">
           <div class="cat-tabs" id="cat-tabs"></div>
@@ -1578,13 +1583,11 @@ function masalarRender() {
         ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+(o.adet||1),0)}</div>`:''}
         ${garsonCagri?`<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:6px;padding:1px 5px;font-size:0.55rem;font-weight:900;animation:pulse 1s infinite;">🔔ÇAĞRI</div>`:''}
         ${musteriSipVar?`<div style="position:absolute;top:4px;right:24px;background:#f97316;color:#fff;border-radius:6px;padding:1px 5px;font-size:0.55rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅HAZIR':mutfakDurum==='hazirlaniyor'?'👨‍🍳':'🔔YENİ'}</div>`:''}
-        <button class="masa-not-btn">✏️</button><button class="masa-qr-btn">📷</button>
-        ${garsonCagri?`<button class="masa-cagri-kapat" style="position:absolute;bottom:3px;left:3px;background:none;border:none;font-size:0.6rem;color:#ef4444;cursor:pointer;padding:2px;">✓Geldi</button>`:''}`;
+        <button class="masa-not-btn">✏️</button><button class="masa-qr-btn">📷</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       // Garson çağrı kapat butonu
-      const cagriKapat = btn.querySelector(".masa-cagri-kapat");
-      if(cagriKapat) cagriKapat.addEventListener("click", e=>{ e.stopPropagation(); garsonCagriKapat(m.id); });
+      
       btn.addEventListener('click',()=>{seciliMasa=m.id;masalarRender();kolaycafenGuncelle();sayfaGit('kolaycafen');});
     }
     grid.appendChild(btn);
@@ -1639,6 +1642,13 @@ function kolaycafenGuncelle() {
   document.getElementById('kolaycafen-icerik').style.display='flex';
   const m = getMasa(); if(!m) return;
   document.getElementById('kolaycafen-masa-basligi').textContent = m.ad;
+  // Garson çağrı banner
+  const banner = document.getElementById('garson-cagri-banner');
+  if(m.garson_cagri) {
+    banner.style.display='flex';
+  } else {
+    banner.style.display='none';
+  }
   const gc = document.getElementById('garson-chip');
   gc.textContent = m.garson?'👤 '+m.garson:'👤 Garson';
   document.getElementById('indirim-chip-goster').innerHTML = m.indirim>0?`<span class="indirim-chip">-%${m.indirim}</span>`:'';
@@ -2650,12 +2660,18 @@ function garsonCagriSesCal() {
 }
 
 async function garsonCagriKapat(masaId) {
-  const m = masalar.find(x => x.id === masaId);
-  if (!m) return;
-  m.garson_cagri = false;
-  m.garson_cagri_saat = null;
+  // Lokal güncelle
+  const m = masalar.find(x => x.id === masaId || Number(x.id) === Number(masaId));
+  if (m) { m.garson_cagri = false; m.garson_cagri_saat = null; }
   masalarRender();
-  await masaSyncYaz(masaId);
+  // Supabase güncelle
+  try {
+    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+    const aktifMasalar = data?.aktif_masalar || [];
+    const am = aktifMasalar.find(x => Number(x.id) === Number(masaId));
+    if (am) { am.garson_cagri = false; am.garson_cagri_saat = null; }
+    await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', kafeId);
+  } catch(e) {}
   toast('✓ Garson çağrısı kapatıldı');
 }
 let _tt;
