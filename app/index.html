@@ -879,6 +879,14 @@ let seciliMasa = null;
 let mevcutKat = Object.keys(URUNLER)[0];
 let kapaliKolayCafenlar = [];
 let gunlukCiro = 0;
+
+// Müşteri menü değişkenleri
+let mmKafeId = null;
+let mmMasaNo = null;
+let mmUrunler = {};
+let mmSepet = [];
+let mmMasaAdi = '';
+let mmKafeAdi = '';
 let gunlukAdi = 0;
 let gunlukSatis = {};
 let splitOdendi = [];
@@ -2922,12 +2930,7 @@ function qrMasaListeRender() {
 // ════════════════════════════════
 // MÜŞTERİ MENÜ MODU
 // ════════════════════════════════
-let mmKafeId = null;
-let mmMasaNo = null;
-let mmUrunler = {};
-let mmSepet = []; // [{isim, fiyat, ikon, adet}]
-let mmMasaAdi = '';
-let mmKafeAdi = '';
+// mm değişkenleri yukarıda tanımlandı
 
 async function musteriMenuAc(kafeId, masaNo) {
   mmKafeId = kafeId;
