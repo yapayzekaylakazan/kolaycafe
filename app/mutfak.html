@@ -319,11 +319,22 @@ function filtrele(f,btn){
 }
 
 function sesToggle(){
-  sesCtxBaslat(); // ilk tıklamada context başlat
+  sesCtxBaslat();
   sesAcik=!sesAcik;
   const b=document.getElementById('ses-btn');
   b.textContent=sesAcik?'🔔 Ses':'🔕 Ses';
   b.classList.toggle('on',sesAcik);
+  // Ses açıldıysa test sesi çal
+  if(sesAcik && audioCtx){
+    try{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.frequency.value=880;o.type='sine';
+      g.gain.setValueAtTime(.2,audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.01,audioCtx.currentTime+.3);
+      o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+.3);
+    }catch(e){}
+  }
 }
 
 function baglan(){
@@ -365,16 +376,6 @@ function baglan(){
       document.getElementById('ana').style.display='block';
       document.getElementById('h-kafe').textContent=data.kafe_adi;
       await yukle(); baglan();
-      // Ses için kullanıcı etkileşimi gerekli - overlay göster
-      const overlay = document.createElement('div');
-      overlay.id = 'ses-overlay';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      overlay.innerHTML = '<div style="font-size:3rem;margin-bottom:16px;">🔔</div><div style="color:#f0b940;font-family:Nunito,sans-serif;font-weight:900;font-size:1.2rem;">Sesi Etkinleştir</div><div style="color:#888;font-size:0.85rem;margin-top:8px;font-family:Nunito,sans-serif;">Ekrana dokunun</div>';
-      overlay.addEventListener('click', () => {
-        sesCtxBaslat();
-        overlay.remove();
-      });
-      document.body.appendChild(overlay);
     }
   }
 })();
