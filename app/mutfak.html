@@ -553,11 +553,11 @@ async function siparisleriYukle() {
   masalar.forEach(masa => {
     if (!masa.siparisler || masa.siparisler.length === 0) return;
 
-    // Müşteri siparişlerini grupla
-    const musteriSiparisler = masa.siparisler.filter(s => s.musteri && !s.mutfak_durum);
+    // Müşteri siparişlerini al
+    const musteriSiparisler = masa.siparisler.filter(s => s.musteri === true);
     if (musteriSiparisler.length === 0) return;
 
-    // Ürünleri grupla (aynı ürünü say)
+    // Ürünleri grupla
     const gruplu = {};
     musteriSiparisler.forEach(s => {
       const key = s.isim;
@@ -565,24 +565,31 @@ async function siparisleriYukle() {
       gruplu[key].adet++;
     });
 
+    // Durum: masa.mutfak_durum'dan oku, yoksa 'bekliyor'
+    const durum = masa.mutfak_durum || 'bekliyor';
+    
+    // Sipariş zamanı
+    const ilkSiparis = musteriSiparisler[0];
+    const zamanMs = masa.mutfak_zaman ? new Date(masa.mutfak_zaman).getTime() : Date.now();
+
     yeniSiparisler.push({
-      id: masa.id + '_' + (masa.mutfak_ticket || Date.now()),
+      id: 'masa_' + masa.id,
       masaNo: masa.id,
-      masaAdi: masa.ad || 'Masa ' + masa.id,
+      masaAdi: masa.ad || ('Masa ' + masa.id),
       urunler: Object.values(gruplu),
-      durum: masa.mutfak_durum || 'bekliyor',
-      zaman: Date.now(),
+      durum: durum,
+      zaman: zamanMs,
       not: masa.not || '',
-      masaRef: masa
     });
   });
 
-  // Yeni sipariş geldi mi kontrol et
-  if (yeniSiparisler.length > oncekiSiparisSayisi && oncekiSiparisSayisi >= 0) {
-    const yeniGelen = yeniSiparisler.slice(oncekiSiparisSayisi);
-    yeniGelen.forEach(s => bildirimGoster(s.masaAdi, s.urunler.reduce((t, u) => t + u.adet, 0)));
+  // Yeni sipariş bildirimi
+  const eskiBekleyenSayisi = siparisler.filter(s=>s.durum==='bekliyor').length;
+  const yeniBekleyenSayisi = yeniSiparisler.filter(s=>s.durum==='bekliyor').length;
+  if (yeniBekleyenSayisi > eskiBekleyenSayisi) {
+    const yeniGelen = yeniSiparisler.filter(s => s.durum==='bekliyor' && !siparisler.find(e=>e.id===s.id));
+    yeniGelen.forEach(s => bildirimGoster(s.masaAdi, s.urunler.reduce((t,u)=>t+u.adet,0)));
   }
-  oncekiSiparisSayisi = yeniSiparisler.length;
 
   siparisler = yeniSiparisler;
   siparisleriRender();
@@ -668,13 +675,17 @@ async function durumGuncelle(masaNo, yeniDurum) {
   if (!masa) return;
 
   if (yeniDurum === 'iptal') {
-    // Müşteri siparişlerini kaldır
     masa.siparisler = (masa.siparisler || []).filter(s => !s.musteri);
     masa.mutfak_durum = null;
+    masa.mutfak_zaman = null;
     toast('❌ Sipariş iptal edildi');
   } else {
     masa.mutfak_durum = yeniDurum;
-    toast(yeniDurum === 'hazirlaniyor' ? '👨‍🍳 Hazırlanıyor!' : '✅ Hazır! Garson bilgilendirildi');
+    if (yeniDurum === 'hazirlaniyor') {
+      toast('👨‍🍳 Hazırlanıyor!');
+    } else if (yeniDurum === 'hazir') {
+      toast('✅ Hazır! Garson bilgilendirildi');
+    }
   }
 
   await sb.from('kafeler').update({masalar}).eq('id', mutfakKafeId);
@@ -688,9 +699,10 @@ async function siparisiTemizle(masaNo) {
   const masa = masalar.find(m => m.id === parseInt(masaNo));
   if (!masa) return;
 
-  // Müşteri siparişlerini ana siparişlere taşı (musteri flag kaldır)
-  masa.siparisler = (masa.siparisler || []).map(s => ({...s, musteri: false}));
+  // Müşteri flagini kaldır (ana sisteme taşı)
+  masa.siparisler = (masa.siparisler || []).map(s => s.musteri ? {...s, musteri: false} : s);
   masa.mutfak_durum = null;
+  masa.mutfak_zaman = null;
 
   await sb.from('kafeler').update({masalar}).eq('id', mutfakKafeId);
   toast('🏁 Teslim edildi! Masa hesabına eklendi');
