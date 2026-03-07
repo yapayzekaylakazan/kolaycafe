@@ -1288,6 +1288,7 @@ async function uygulamaBaslat(user) {
 
 async function kafeVerisiYukle() {
   const {data} = await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
+  window._kafeData = data; // Global olarak sakla
   if (data) {
     kafeId = data.id;
     kafeAdi = data.kafe_adi || 'Kafem';
@@ -2108,6 +2109,7 @@ function ayarlarRender(){
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
   // Plan + Yetki kontrolü
+  const data = window._kafeData;
   if (data) {
     const plan = data.plan || 'deneme';
     const bitis = data.plan_bitis ? new Date(data.plan_bitis) : null;
@@ -2807,7 +2809,9 @@ window.qrGoster = async function(masaNo, masaAd) {
 
   // QR URL: garson için masa parametreli link, müşteri için menü
   const baseUrl = window.location.origin + window.location.pathname;
-  const qrUrl = `${baseUrl}?kafe=${kafeId}&masa=${masaNo}`;
+  const masaNoInt = parseInt(masaNo) || masaNo;
+  const qrUrl = `${baseUrl}?kafe=${kafeId}&masa=${masaNoInt}`;
+  console.log('QR URL:', qrUrl, 'masaNo:', masaNo, 'kafeId:', kafeId);
 
   modal.style.display = 'flex';
   modal.classList.add('ac');
@@ -2938,7 +2942,7 @@ async function musteriMenuAc(kafeId, masaNo) {
   
   // Masa adını bul
   const masalar = data.masalar || [];
-  const masa = masalar.find(m => m.id === mmMasaNo);
+  const masa = masalar.find(m => Number(m.id) === Number(mmMasaNo));
   mmMasaAdi = masa ? masa.ad : 'Masa ' + mmMasaNo;
 
   document.getElementById('mm-kafe-adi').textContent = '☕ ' + mmKafeAdi;
@@ -3074,7 +3078,7 @@ async function mmSiparisGonder() {
     .single();
 
   let masalar = kafeData?.masalar || [];
-  let masa = masalar.find(m => m.id === mmMasaNo);
+  let masa = masalar.find(m => Number(m.id) === Number(mmMasaNo));
   if (!masa) {
     masa = {id: mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
     masalar.push(masa);
@@ -3093,6 +3097,9 @@ async function mmSiparisGonder() {
     }
   });
   if (not) masa.not = (masa.not ? masa.not + ' | ' : '') + '🧾 ' + not;
+  // Mutfak için durum ve zaman set et
+  masa.mutfak_durum = 'bekliyor';
+  masa.mutfak_zaman = new Date().toISOString();
 
   await sb.from('kafeler').update({masalar}).eq('id', mmKafeId);
 
@@ -3115,7 +3122,7 @@ async function mmSiparisGonder() {
 async function mmGarsonCagir() {
   const {data: kafeData} = await sb.from('kafeler').select('masalar').eq('id', mmKafeId).single();
   let masalar = kafeData?.masalar || [];
-  let masa = masalar.find(m => m.id === mmMasaNo);
+  let masa = masalar.find(m => Number(m.id) === Number(mmMasaNo));
   if (!masa) { masa = {id:mmMasaNo, ad:mmMasaAdi, siparisler:[], not:'', garson:'', indirim:0}; masalar.push(masa); }
   masa.not = (masa.not ? masa.not + ' | ' : '') + '🔔 Garson çağrıldı ' + new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   await sb.from('kafeler').update({masalar}).eq('id', mmKafeId);
