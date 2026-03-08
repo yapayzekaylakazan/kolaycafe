@@ -589,6 +589,65 @@
   </div>
 </div>
 
+<!-- GEL-AL SAYFASI -->
+<div class="page" id="page-gelal" style="overflow-y:auto;padding:12px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <div class="page-title" style="margin-bottom:0;">🛍️ Gel-Al Siparişleri</div>
+    <button onclick="gelAlYeniAc()" style="padding:8px 16px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">+ Yeni</button>
+  </div>
+
+  <!-- AKTİF GEL-AL SİPARİŞLERİ -->
+  <div id="gelal-aktif-liste"></div>
+
+  <!-- BOŞ DURUM -->
+  <div id="gelal-bos" style="text-align:center;padding:48px 20px;color:var(--muted);display:none;">
+    <div style="font-size:3rem;margin-bottom:12px;">🛍️</div>
+    <div style="font-weight:800;font-size:1rem;margin-bottom:6px;">Gel-Al siparişi yok</div>
+    <div style="font-size:0.82rem;">+ Yeni butonuna basarak sipariş ekleyin</div>
+  </div>
+</div>
+
+<!-- GEL-AL YENİ SİPARİŞ MODAL -->
+<div id="gelal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding-bottom:max(20px,env(safe-area-inset-bottom));">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-weight:900;font-size:1rem;">🛍️ Yeni Gel-Al Siparişi</div>
+      <button onclick="gelAlModalKapat()" style="background:var(--surface2);border:none;border-radius:8px;padding:6px 10px;color:var(--text);cursor:pointer;font-size:0.9rem;">✕</button>
+    </div>
+
+    <!-- Müşteri adı -->
+    <input id="gelal-musteri-adi" type="text" placeholder="Müşteri Adı (zorunlu)" 
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;margin-bottom:10px;">
+
+    <!-- Telefon (opsiyonel) -->
+    <input id="gelal-musteri-tel" type="tel" placeholder="Telefon (opsiyonel)" inputmode="tel"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;margin-bottom:14px;">
+
+    <!-- Not -->
+    <input id="gelal-not" type="text" placeholder="Sipariş notu (opsiyonel)"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;margin-bottom:14px;">
+
+    <!-- Ürün seçimi -->
+    <div style="font-weight:800;font-size:0.85rem;color:var(--muted);margin-bottom:8px;">ÜRÜN EKLE</div>
+    <div id="gelal-kat-tabs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;scrollbar-width:none;padding-bottom:2px;"></div>
+    <div id="gelal-urun-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;max-height:220px;overflow-y:auto;"></div>
+
+    <!-- Sepet -->
+    <div id="gelal-sepet-wrap" style="display:none;">
+      <div style="font-weight:800;font-size:0.85rem;color:var(--muted);margin-bottom:8px;">SEPETİNİZ</div>
+      <div id="gelal-sepet-liste" style="margin-bottom:10px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--border);margin-bottom:12px;">
+        <span style="font-weight:800;">Toplam</span>
+        <span style="font-weight:900;color:var(--accent2);font-size:1.1rem;" id="gelal-toplam">₺0</span>
+      </div>
+    </div>
+
+    <button onclick="gelAlSiparisVer()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">
+      ✓ Siparişi Ver → Mutfağa Gönder
+    </button>
+  </div>
+</div>
+
 <div class="page" id="page-ayarlar">
   <div class="page-ayarlar">
     <div class="page-title">⚙️ Ayarlar</div>
@@ -727,6 +786,7 @@
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" ><div class="nav-icon">🪑</div>Masalar</button>
+  <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')"><div class="nav-icon">🛍️</div>Gel-Al</button>
   <button class="bnav-btn" id="nav-kolaycafen" ><div class="nav-icon">🧾</div>KolayCafen</button>
   <button class="bnav-btn" id="nav-urun" ><div class="nav-icon">➕</div>Ürün</button>
   <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
@@ -1538,6 +1598,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='cari') cariHesaplarRender();
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
+  if (sayfa==='gelal') gelAlRender();
 }
 
 // ════════════════════════════════════════
@@ -2796,6 +2857,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // NAV BUTONLARI
   const navBtnler = [
     ['nav-masalar', 'masalar'],
+    ['nav-gelal', 'gelal'],
     ['nav-kolaycafen', 'kolaycafen'],
     ['nav-urun', 'urun'],
     ['nav-cari', 'cari'],
@@ -2934,6 +2996,234 @@ window.btBaglan = btBaglan;
 window.proPlanAc = proPlanAc;
 window.cariGoster = cariGoster;
 window.cariKaydet = cariKaydet;
+// ════════════════════════════════════════
+// GEL-AL SİPARİŞ MODU
+// ════════════════════════════════════════
+let gelAlSiparisler = []; // [{id, musteriAdi, tel, not, urunler, toplam, durum, saat, kafeId}]
+let gelAlSepet = [];
+let gelAlAktifKat = null;
+
+function gelAlRender() {
+  const liste = document.getElementById('gelal-aktif-liste');
+  const bos = document.getElementById('gelal-bos');
+  const kafeId = aktifKafe;
+  const siparisler = gelAlSiparisler.filter(s => s.kafeId === kafeId);
+
+  if (siparisler.length === 0) {
+    liste.innerHTML = '';
+    bos.style.display = 'block';
+    return;
+  }
+  bos.style.display = 'none';
+
+  // Sırala: bekliyor > hazirlaniyor > hazir > teslim
+  const sirala = {bekliyor:0, hazirlaniyor:1, hazir:2, teslim:3};
+  siparisler.sort((a,b) => (sirala[a.durum]||0) - (sirala[b.durum]||0));
+
+  liste.innerHTML = siparisler.map(s => {
+    const renkler = {bekliyor:'#f0b940',hazirlaniyor:'#4080f0',hazir:'#30d080',teslim:'#888'};
+    const etiketler = {bekliyor:'⏳ Bekliyor',hazirlaniyor:'🍳 Hazırlanıyor',hazir:'✅ Hazır',teslim:'💚 Teslim Edildi'};
+    const renk = renkler[s.durum] || '#888';
+    const etiket = etiketler[s.durum] || s.durum;
+    const urunListesi = s.urunler.map(u => `${u.isim} x${u.adet}`).join(', ');
+    return `
+    <div style="background:var(--surface);border:1.5px solid ${renk}40;border-radius:14px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${renk};"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:900;font-size:1rem;">👤 ${s.musteriAdi}</div>
+          ${s.tel ? `<div style="font-size:0.78rem;color:var(--muted);">📞 ${s.tel}</div>` : ''}
+          <div style="font-size:0.78rem;color:var(--muted);">🕐 ${s.saat}</div>
+        </div>
+        <span style="background:${renk}20;color:${renk};border:1px solid ${renk}50;border-radius:8px;padding:4px 10px;font-size:0.72rem;font-weight:800;">${etiket}</span>
+      </div>
+      <div style="font-size:0.82rem;color:var(--text2);margin-bottom:6px;">📦 ${urunListesi}</div>
+      ${s.not ? `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px;">📝 ${s.not}</div>` : ''}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:6px;">
+        <div style="font-weight:900;color:var(--accent2);font-size:1rem;">₺${s.toplam}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${s.durum === 'bekliyor' ? `<button onclick="gelAlDurumGuncelle('${s.id}','hazirlaniyor')" style="padding:6px 12px;border-radius:8px;border:none;background:#4080f020;color:#4080f0;font-weight:800;font-size:0.78rem;cursor:pointer;">🍳 Hazırlanıyor</button>` : ''}
+          ${s.durum === 'hazirlaniyor' ? `<button onclick="gelAlDurumGuncelle('${s.id}','hazir')" style="padding:6px 12px;border-radius:8px;border:none;background:#30d08020;color:#30d080;font-weight:800;font-size:0.78rem;cursor:pointer;">✅ Hazır</button>` : ''}
+          ${s.durum === 'hazir' ? `<button onclick="gelAlOde('${s.id}')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-weight:800;font-size:0.78rem;cursor:pointer;">💰 Ödeme Al</button>` : ''}
+          ${s.durum !== 'teslim' ? `<button onclick="gelAlSil('${s.id}')" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:800;font-size:0.78rem;cursor:pointer;">🗑</button>` : `<button onclick="gelAlSil('${s.id}')" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:800;font-size:0.78rem;cursor:pointer;">✕ Kaldır</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function gelAlYeniAc() {
+  gelAlSepet = [];
+  gelAlAktifKat = null;
+  document.getElementById('gelal-musteri-adi').value = '';
+  document.getElementById('gelal-musteri-tel').value = '';
+  document.getElementById('gelal-not').value = '';
+  gelAlSepetRender();
+  gelAlKatlarRender();
+  document.getElementById('gelal-modal').style.display = 'flex';
+}
+
+function gelAlModalKapat() {
+  document.getElementById('gelal-modal').style.display = 'none';
+}
+
+function gelAlKatlarRender() {
+  const katlar = Object.keys(URUNLER);
+  if (!gelAlAktifKat && katlar.length > 0) gelAlAktifKat = katlar[0];
+  const tabsDiv = document.getElementById('gelal-kat-tabs');
+  tabsDiv.innerHTML = katlar.map(k =>
+    `<button onclick="gelAlKatSec('${k}')" style="flex-shrink:0;padding:7px 14px;border-radius:20px;border:none;background:${gelAlAktifKat===k?'var(--accent2)':'var(--surface2)'};color:${gelAlAktifKat===k?'#fff':'var(--text2)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">${k}</button>`
+  ).join('');
+  gelAlUrunGridRender();
+}
+
+function gelAlKatSec(kat) {
+  gelAlAktifKat = kat;
+  gelAlKatlarRender();
+}
+
+function gelAlUrunGridRender() {
+  const grid = document.getElementById('gelal-urun-grid');
+  const urunler = URUNLER[gelAlAktifKat] || [];
+  grid.innerHTML = urunler.map((u, i) => {
+    const sepetteki = gelAlSepet.find(s => s.isim === u.isim);
+    const adet = sepetteki ? sepetteki.adet : 0;
+    return `
+    <div onclick="gelAlUrunEkle('${gelAlAktifKat}',${i})" style="background:var(--surface2);border:1.5px solid ${adet>0?'var(--accent2)':'var(--border)'};border-radius:12px;padding:10px;cursor:pointer;text-align:center;position:relative;">
+      ${adet > 0 ? `<div style="position:absolute;top:6px;right:6px;background:var(--accent2);color:#fff;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:900;display:flex;align-items:center;justify-content:center;">${adet}</div>` : ''}
+      <div style="font-size:1.6rem;margin-bottom:4px;">${u.resim ? `<img src="${u.resim}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">` : u.ikon}</div>
+      <div style="font-size:0.78rem;font-weight:800;line-height:1.2;">${u.isim}</div>
+      <div style="font-size:0.8rem;color:var(--accent2);font-weight:900;margin-top:2px;">₺${u.fiyat}</div>
+    </div>`;
+  }).join('');
+}
+
+function gelAlUrunEkle(kat, idx) {
+  const urun = URUNLER[kat][idx];
+  const mevcut = gelAlSepet.find(s => s.isim === urun.isim);
+  if (mevcut) { mevcut.adet++; }
+  else { gelAlSepet.push({isim:urun.isim, fiyat:urun.fiyat, ikon:urun.ikon, adet:1}); }
+  gelAlSepetRender();
+  gelAlUrunGridRender();
+}
+
+function gelAlSepetRender() {
+  const wrap = document.getElementById('gelal-sepet-wrap');
+  const liste = document.getElementById('gelal-sepet-liste');
+  const toplam = document.getElementById('gelal-toplam');
+  if (gelAlSepet.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  liste.innerHTML = gelAlSepet.map((u, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:0.88rem;font-weight:700;">${u.ikon} ${u.isim}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="gelAlAdetDeg(${i},-1)" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-weight:900;cursor:pointer;">−</button>
+        <span style="font-weight:800;min-width:20px;text-align:center;">${u.adet}</span>
+        <button onclick="gelAlAdetDeg(${i},1)" style="width:26px;height:26px;border-radius:50%;border:none;background:var(--accent2);color:#fff;font-weight:900;cursor:pointer;">+</button>
+        <span style="min-width:52px;text-align:right;font-weight:800;color:var(--accent2);">₺${u.fiyat*u.adet}</span>
+      </div>
+    </div>`).join('');
+  const top = gelAlSepet.reduce((t,u) => t + u.fiyat*u.adet, 0);
+  toplam.textContent = '₺' + top;
+}
+
+function gelAlAdetDeg(idx, delta) {
+  gelAlSepet[idx].adet += delta;
+  if (gelAlSepet[idx].adet <= 0) gelAlSepet.splice(idx, 1);
+  gelAlSepetRender();
+  gelAlUrunGridRender();
+}
+window.gelAlAdetDeg = gelAlAdetDeg;
+
+function gelAlSiparisVer() {
+  const adi = document.getElementById('gelal-musteri-adi').value.trim();
+  if (!adi) { toast('Müşteri adı girin!'); return; }
+  if (gelAlSepet.length === 0) { toast('En az bir ürün ekleyin!'); return; }
+
+  const toplam = gelAlSepet.reduce((t,u) => t + u.fiyat*u.adet, 0);
+  const simdi = new Date();
+  const saat = simdi.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+
+  const siparis = {
+    id: Date.now().toString(),
+    kafeId: aktifKafe,
+    musteriAdi: adi,
+    tel: document.getElementById('gelal-musteri-tel').value.trim(),
+    not: document.getElementById('gelal-not').value.trim(),
+    urunler: [...gelAlSepet],
+    toplam,
+    durum: 'bekliyor',
+    saat,
+    tarih: simdi.toISOString()
+  };
+
+  gelAlSiparisler.push(siparis);
+
+  // Supabase'e de kaydet (aktif_masalar gibi ayrı tablo - şimdilik local)
+  gelAlSiparislerKaydet();
+  gelAlModalKapat();
+  gelAlRender();
+  toast('✓ Sipariş mutfağa gönderildi!');
+
+  // Mutfak ses bildirimi tetikle
+  if (typeof sesKontrol !== 'undefined') sesKontrol();
+}
+
+function gelAlDurumGuncelle(id, yeniDurum) {
+  const s = gelAlSiparisler.find(x => x.id === id);
+  if (!s) return;
+  s.durum = yeniDurum;
+  if (yeniDurum === 'hazir') toast('✅ ' + s.musteriAdi + ' siparişi hazır!');
+  gelAlSiparislerKaydet();
+  gelAlRender();
+}
+
+function gelAlOde(id) {
+  const s = gelAlSiparisler.find(x => x.id === id);
+  if (!s) return;
+  s.durum = 'teslim';
+  // Gelir kaydı ekle
+  if (typeof gelirGiderler !== 'undefined') {
+    gelirGiderler.push({
+      tip:'gelir', tutar:s.toplam,
+      aciklama:`Gel-Al: ${s.musteriAdi}`,
+      tarih: new Date().toISOString().slice(0,10),
+      kafeId: aktifKafe
+    });
+    bulutKaydet();
+  }
+  gelAlSiparislerKaydet();
+  gelAlRender();
+  toast('💚 Ödeme alındı — ₺' + s.toplam);
+}
+
+function gelAlSil(id) {
+  gelAlSiparisler = gelAlSiparisler.filter(x => x.id !== id);
+  gelAlSiparislerKaydet();
+  gelAlRender();
+}
+
+async function gelAlSiparislerKaydet() {
+  if (!aktifKafe) return;
+  // Supabase kafeler tablosuna gelal_siparisler olarak kaydet
+  const kafeData = await sb.from('kafeler').select('data').eq('kafe_kodu', aktifKafe).single();
+  // Şimdilik localStorage benzeri - bulutKaydet ile birlikte kayıt
+  // TODO: ayrı tablo eklenebilir
+}
+
+async function gelAlSiparislerYukle() {
+  // Uygulama başladığında bugünkü siparişleri yükle
+  // Şimdilik session bazlı tutulur
+}
+
+window.gelAlYeniAc = gelAlYeniAc;
+window.gelAlModalKapat = gelAlModalKapat;
+window.gelAlSiparisVer = gelAlSiparisVer;
+window.gelAlUrunEkle = gelAlUrunEkle;
+window.gelAlDurumGuncelle = gelAlDurumGuncelle;
+window.gelAlOde = gelAlOde;
+window.gelAlSil = gelAlSil;
+window.gelAlKatSec = gelAlKatSec;
 
 (async ()=>{
   // QR ile gelen müşteri ise session kontrolü yapma, direkt menüyü aç
