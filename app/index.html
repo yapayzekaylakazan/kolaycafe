@@ -57,7 +57,9 @@
   .cikis-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; cursor: pointer; }
 
   /* ── BOTTOM NAV ── */
-  .bottom-nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
+  .bottom-nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .bottom-nav::-webkit-scrollbar { display: none; }
+  .bnav-btn { min-width: 64px; }
   .bnav-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.68rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative; }
   .bnav-btn .nav-icon { font-size: 1.2rem; line-height: 1; }
   .bnav-btn.active { color: var(--accent2); }
@@ -629,7 +631,7 @@
 
     <!-- Ürün seçimi -->
     <div style="font-weight:800;font-size:0.85rem;color:var(--muted);margin-bottom:8px;">ÜRÜN EKLE</div>
-    <div id="gelal-kat-tabs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;scrollbar-width:none;padding-bottom:2px;"></div>
+    <div id="gelal-kat-tabs" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;scrollbar-width:none;padding-bottom:4px;-webkit-overflow-scrolling:touch;"></div>
     <div id="gelal-urun-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;max-height:220px;overflow-y:auto;"></div>
 
     <!-- Sepet -->
@@ -3006,7 +3008,6 @@ let gelAlAktifKat = null;
 function gelAlRender() {
   const liste = document.getElementById('gelal-aktif-liste');
   const bos = document.getElementById('gelal-bos');
-  const kafeId = aktifKafe;
   const siparisler = gelAlSiparisler.filter(s => s.kafeId === kafeId);
 
   if (siparisler.length === 0) {
@@ -3072,7 +3073,7 @@ function gelAlKatlarRender() {
   if (!gelAlAktifKat && katlar.length > 0) gelAlAktifKat = katlar[0];
   const tabsDiv = document.getElementById('gelal-kat-tabs');
   tabsDiv.innerHTML = katlar.map(k =>
-    `<button onclick="gelAlKatSec('${k}')" style="flex-shrink:0;padding:7px 14px;border-radius:20px;border:none;background:${gelAlAktifKat===k?'var(--accent2)':'var(--surface2)'};color:${gelAlAktifKat===k?'#fff':'var(--text2)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">${k}</button>`
+    `<button onclick="gelAlKatSec('${k}')" style="flex-shrink:0;white-space:nowrap;padding:7px 14px;border-radius:20px;border:none;background:${gelAlAktifKat===k?'var(--accent2)':'var(--surface2)'};color:${gelAlAktifKat===k?'#fff':'var(--text2)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">${k}</button>`
   ).join('');
   gelAlUrunGridRender();
 }
@@ -3146,7 +3147,7 @@ function gelAlSiparisVer() {
 
   const siparis = {
     id: Date.now().toString(),
-    kafeId: aktifKafe,
+    kafeId: kafeId,
     musteriAdi: adi,
     tel: document.getElementById('gelal-musteri-tel').value.trim(),
     not: document.getElementById('gelal-not').value.trim(),
@@ -3178,19 +3179,19 @@ function gelAlDurumGuncelle(id, yeniDurum) {
   gelAlRender();
 }
 
-function gelAlOde(id) {
+async function gelAlOde(id) {
   const s = gelAlSiparisler.find(x => x.id === id);
   if (!s) return;
   s.durum = 'teslim';
-  // Gelir kaydı ekle
-  if (typeof gelirGiderler !== 'undefined') {
-    gelirGiderler.push({
-      tip:'gelir', tutar:s.toplam,
-      aciklama:`Gel-Al: ${s.musteriAdi}`,
-      tarih: new Date().toISOString().slice(0,10),
-      kafeId: aktifKafe
+  // Gelir kaydını Supabase'e yaz
+  if (kafeId) {
+    await sb.from('gelir_gider').insert({
+      kafe_id: kafeId,
+      tip: 'gelir',
+      tutar: s.toplam,
+      aciklama: 'Gel-Al: ' + s.musteriAdi,
+      tarih: new Date().toISOString().slice(0,10)
     });
-    bulutKaydet();
   }
   gelAlSiparislerKaydet();
   gelAlRender();
@@ -3204,9 +3205,9 @@ function gelAlSil(id) {
 }
 
 async function gelAlSiparislerKaydet() {
-  if (!aktifKafe) return;
+  if (!kafeId) return;
   // Supabase kafeler tablosuna gelal_siparisler olarak kaydet
-  const kafeData = await sb.from('kafeler').select('data').eq('kafe_kodu', aktifKafe).single();
+  const kafeData = await sb.from('kafeler').select('data').eq('id', kafeId).single();
   // Şimdilik localStorage benzeri - bulutKaydet ile birlikte kayıt
   // TODO: ayrı tablo eklenebilir
 }
