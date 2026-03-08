@@ -2066,7 +2066,22 @@ function urunListesiRender(){
   Object.entries(URUNLER).forEach(([kat,urunler])=>{
     urunler.forEach((u,idx)=>{
       const item=document.createElement('div'); item.className='urun-listesi-item';
-      item.innerHTML=`<div class="uli-icon">${u.ikon}</div><div class="uli-info"><div class="uli-isim">${u.isim}</div><div class="uli-cat">${kat}</div></div><div class="uli-fiyat-wrap"><input class="uli-fiyat-input" type="number" value="${u.fiyat}" min="0" inputmode="numeric"><span class="uli-tl">₺</span></div><button class="uli-sil">🗑</button>`;
+      item.style.cssText='flex-direction:column;align-items:stretch;gap:6px;';
+      const resimOnizleme = u.resim ? `<img src="${u.resim}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">` : `<div style="width:40px;height:40px;border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${u.ikon}</div>`;
+      item.innerHTML=`
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${resimOnizleme}
+          <div class="uli-info" style="flex:1;"><div class="uli-isim">${u.isim}</div><div class="uli-cat">${kat}</div></div>
+          <div class="uli-fiyat-wrap"><input class="uli-fiyat-input" type="number" value="${u.fiyat}" min="0" inputmode="numeric"><span class="uli-tl">₺</span></div>
+          <button class="uli-sil">🗑</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="text" class="uli-resim-url" value="${u.resim||''}" placeholder="Resim URL..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.78rem;outline:none;">
+          <button class="uli-resim-yukle-btn" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;white-space:nowrap;">📁</button>
+          <input type="file" class="uli-resim-dosya" accept="image/*" style="display:none">
+          ${u.resim?`<button class="uli-resim-sil-btn" style="padding:6px 8px;border-radius:8px;border:1.5px solid #e04040;background:transparent;color:#e04040;font-size:0.75rem;cursor:pointer;">✕</button>`:''}
+        </div>`;
+
       item.querySelector('.uli-fiyat-input').addEventListener('change',e=>{
         const f=parseFloat(e.target.value);
         if(isNaN(f)||f<0){e.target.value=u.fiyat;toast('Geçersiz fiyat!');return;}
@@ -2075,6 +2090,33 @@ function urunListesiRender(){
       item.querySelector('.uli-sil').addEventListener('click',()=>{
         if(!confirm('"'+u.isim+'" silinsin mi?')) return;
         URUNLER[kat].splice(idx,1); urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Ürün silindi');
+      });
+      // Resim URL değişince kaydet
+      item.querySelector('.uli-resim-url').addEventListener('change', e=>{
+        URUNLER[kat][idx].resim = e.target.value.trim()||null;
+        urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ Resim güncellendi');
+      });
+      // Dosya yükleme butonu
+      const dosyaInput = item.querySelector('.uli-resim-dosya');
+      item.querySelector('.uli-resim-yukle-btn').addEventListener('click', ()=> dosyaInput.click());
+      dosyaInput.addEventListener('change', async function(){
+        const dosya = this.files[0]; if(!dosya) return;
+        if(dosya.size > 2*1024*1024){toast('Resim 2MB\'dan küçük olmalı!');return;}
+        toast('⏳ Yükleniyor...');
+        try {
+          const ad = `urunler/${Date.now()}_${dosya.name.replace(/[^a-z0-9.]/gi,'_')}`;
+          const {error} = await sb.storage.from('urun-resimleri').upload(ad, dosya, {upsert:true});
+          if(error) throw error;
+          const {data} = sb.storage.from('urun-resimleri').getPublicUrl(ad);
+          URUNLER[kat][idx].resim = data.publicUrl;
+          urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ Resim yüklendi!');
+        } catch(e){ toast('Hata: '+(e.message||'Yüklenemedi')); }
+      });
+      // Resim sil
+      const silBtn = item.querySelector('.uli-resim-sil-btn');
+      if(silBtn) silBtn.addEventListener('click',()=>{
+        URUNLER[kat][idx].resim=null;
+        urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Resim silindi');
       });
       liste.appendChild(item);
     });
