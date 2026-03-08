@@ -190,9 +190,29 @@
   }
 
   @media (max-width: 768px) {
-    .ana { padding: 16px; }
-    .tablo th:nth-child(n+5), .tablo td:nth-child(n+5) { display: none; }
-    .arama-inp { width: 150px; }
+    .ana { padding: 12px; }
+    .arama-inp { width: 100%; }
+    .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .filtreler { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tablo-wrap { display: none; }
+    .kart-liste { display: flex; flex-direction: column; gap: 10px; }
+    .uye-kart { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; position: relative; overflow: hidden; }
+    .uye-kart::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--accent); }
+    .uye-kart.pasif { opacity: 0.6; }
+    .uye-kart.pasif::before { background: var(--red); }
+    .uye-kart-ust { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .uye-kafe-adi { font-size: 1rem; font-weight: 800; color: var(--text); }
+    .uye-kafe-kodu { font-size: 0.7rem; color: var(--text2); font-family: "Space Mono", monospace; margin-top: 2px; }
+    .uye-kart-bilgi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .uye-bilgi-key { font-size: 0.65rem; color: var(--text2); font-family: "Space Mono", monospace; text-transform: uppercase; margin-bottom: 2px; }
+    .uye-bilgi-val { font-size: 0.82rem; color: var(--text); font-weight: 600; word-break: break-all; }
+    .uye-kart-alt { display: flex; justify-content: space-between; align-items: center; }
+    .detay-btn-mobil { padding: 8px 18px; border-radius: 10px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-family: "Syne", sans-serif; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-sayi { font-size: 1.5rem; }
+  }
+  @media (min-width: 769px) {
+    .kart-liste { display: none; }
   }
 </style>
 </head>
@@ -251,8 +271,8 @@
           <tr>
             <th>#</th>
             <th>KAFE ADI</th>
-            <th>E-POSTA / TEL</th>
-            <th>ADRES</th>
+            <th>E-POSTA</th>
+            <th>TELEFON / ADRES</th>
             <th>PLAN</th>
             <th>KALAN SÜRE</th>
             <th>KAYIT TARİHİ</th>
@@ -265,6 +285,9 @@
         </tbody>
       </table>
     </div>
+
+    <!-- MOBİL KART LİSTESİ -->
+    <div class="kart-liste" id="kart-liste"></div>
 
     <div style="margin-top:12px;font-size:0.75rem;color:var(--text2);font-family:'Space Mono',monospace;" id="kayit-sayisi"></div>
   </div>
@@ -334,6 +357,9 @@ async function yukle() {
     .order('created_at', { ascending: false });
 
   if (error) { console.error(error); return; }
+
+  // E-postaları auth tablosundan çek (service role olmadan sadece kendi e-postamızı görebiliriz)
+  // Bu yüzden e-postayı kayıt sırasında kafeler tablosuna da kaydedelim
   tumKafeler = data || [];
   istatistikGuncelle();
   tabloRender();
@@ -422,8 +448,8 @@ function tabloRender() {
     tr.innerHTML = `
       <td style="color:var(--text2);font-family:'Space Mono',monospace;font-size:0.75rem;">${i+1}</td>
       <td><strong>${k.kafe_adi||'—'}</strong><br><span style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">${k.kafe_kodu||''}</span></td>
-      <td><div>${k.telefon||'—'}</div><div style="font-size:0.75rem;color:var(--text2);">${tarihFmt(k.created_at)}'de kayıt</div></td>
-      <td style="font-size:0.8rem;color:var(--text2);">${k.adres||'—'}${k.fatura_il ? '<br>'+k.fatura_il+(k.fatura_ilce?'/'+k.fatura_ilce:'') : ''}</td>
+      <td style="font-size:0.8rem;">${k.email||'—'}</td>
+      <td style="font-size:0.8rem;"><div>${k.telefon||'—'}</div><div style="font-size:0.72rem;color:var(--text2);">${k.adres||'—'}${k.fatura_il?', '+k.fatura_il:''}</div></td>
       <td>${planBadge(k.plan)}</td>
       <td>${sure.html}</td>
       <td style="font-size:0.78rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(k.created_at)}</td>
@@ -432,6 +458,47 @@ function tabloRender() {
         <button class="aksiyon-btn" onclick="detayAc('${k.id}')">🔍 Detay</button>
       </td>`;
     tbody.appendChild(tr);
+  });
+
+  // MOBİL KARTLAR
+  const kartListe = document.getElementById('kart-liste');
+  kartListe.innerHTML = '';
+  liste.forEach((k, i) => {
+    const sure = sureBilgi(k.plan_bitis);
+    const kart = document.createElement('div');
+    kart.className = 'uye-kart' + (sure.doldu ? ' pasif' : '');
+    kart.innerHTML = `
+      <div class="uye-kart-ust">
+        <div>
+          <div class="uye-kafe-adi">${k.kafe_adi||'—'}</div>
+          <div class="uye-kafe-kodu">${k.kafe_kodu||''}</div>
+        </div>
+        ${planBadge(k.plan)}
+      </div>
+      <div class="uye-kart-bilgi">
+        <div>
+          <div class="uye-bilgi-key">E-Posta</div>
+          <div class="uye-bilgi-val">${k.email||'—'}</div>
+        </div>
+        <div>
+          <div class="uye-bilgi-key">Telefon</div>
+          <div class="uye-bilgi-val">${k.telefon||'—'}</div>
+        </div>
+        <div>
+          <div class="uye-bilgi-key">Adres</div>
+          <div class="uye-bilgi-val">${k.adres||'—'}</div>
+        </div>
+        <div>
+          <div class="uye-bilgi-key">Kayıt Tarihi</div>
+          <div class="uye-bilgi-val">${tarihFmt(k.created_at)}</div>
+        </div>
+      </div>
+      <div class="uye-kart-alt">
+        <div>${sure.html}</div>
+        <button class="detay-btn-mobil" onclick="detayAc('${k.id}')">🔍 Detay</button>
+      </div>
+    `;
+    kartListe.appendChild(kart);
   });
 }
 
@@ -443,27 +510,57 @@ function detayAc(id) {
   document.getElementById('modal-plan-sec').value = k.plan || 'deneme';
 
   const sure = sureBilgi(k.plan_bitis);
-  const satirlar = [
-    ['Kafe Adı', k.kafe_adi || '—'],
-    ['Telefon', k.telefon || '—'],
-    ['Adres', k.adres || '—'],
-    ['Şehir / İlçe', (k.fatura_il || '—') + (k.fatura_ilce ? ' / ' + k.fatura_ilce : '')],
-    ['Vergi No', k.vergi_no || '—'],
-    ['Fatura Adresi', k.fatura_adres || '—'],
-    ['Kafe Kodu', k.kafe_kodu || '—'],
-    ['Plan', (k.plan || 'deneme').toUpperCase()],
-    ['Plan Başlangıç', tarihFmt(k.created_at)],
-    ['Plan Bitiş', tarihFmt(k.plan_bitis)],
-    ['Kalan Süre', sure.doldu ? '❌ Süresi dolmuş' : sure.html.replace(/<[^>]+>/g, '').trim()],
-    ['Kupon Kodu', k.kupon_kodu || '—'],
-    ['Kayıt Tarihi', tarihFmt(k.created_at)],
-    ['Garson Sayısı', (k.garsonlar || []).length + ' garson'],
-  ];
 
-  document.getElementById('modal-icerik').innerHTML = satirlar.map(([k, v]) =>
-    `<div class="modal-satir"><div class="modal-key">${k}</div><div class="modal-val">${v}</div></div>`
-  ).join('');
+  function satirHtml(etiket, deger, kopyala) {
+    const kopyaBtn = kopyala && deger !== '—'
+      ? `<button onclick="navigator.clipboard.writeText('${deger.replace(/'/g,"\'")}');this.textContent='✓ Kopyalandı';setTimeout(()=>this.textContent='📋 Kopyala',1500)" style="margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.68rem;cursor:pointer;font-family:'Syne',sans-serif;">📋 Kopyala</button>`
+      : '';
+    return `<div class="modal-satir"><div class="modal-key">${etiket}</div><div class="modal-val">${deger}${kopyaBtn}</div></div>`;
+  }
 
+  function bolumBaslik(ikon, baslik) {
+    return `<div style="font-size:0.78rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">${ikon} ${baslik}</div>`;
+  }
+
+  const il = k.fatura_il || '';
+  const ilce = k.fatura_ilce || '';
+  const sehir = il + (ilce ? ' / ' + ilce : '') || '—';
+
+  let html = '';
+
+  // İletişim
+  html += bolumBaslik('📞', 'İletişim Bilgileri');
+  html += satirHtml('E-Posta', k.email || '—', true);
+  html += satirHtml('Telefon', k.telefon || '—', true);
+  html += satirHtml('Cafe Adresi', k.adres || '—', false);
+
+  // Fatura
+  html += bolumBaslik('🧾', 'Fatura Bilgileri');
+  html += satirHtml('Vergi / TC No', k.vergi_no || '—', true);
+  html += satirHtml('Fatura Adresi', k.fatura_adres || '—', true);
+  html += satirHtml('Şehir / İlçe', sehir, false);
+
+  // Fatura özeti kopyalama butonu
+  if (k.vergi_no || k.fatura_adres) {
+    const faturaOzet = `Kafe: ${k.kafe_adi||''}\nVergi/TC: ${k.vergi_no||'—'}\nAdres: ${k.fatura_adres||'—'} ${sehir}\nTelefon: ${k.telefon||'—'}\nE-posta: ${k.email||'—'}`;
+    html += `<button onclick="navigator.clipboard.writeText(\`${faturaOzet.replace(/\`/g,'\`')}\`);this.textContent='✓ Kopyalandı!';setTimeout(()=>this.textContent='📋 Tüm Fatura Bilgilerini Kopyala',1500)" style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:1.5px dashed var(--accent);background:#f0b94010;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📋 Tüm Fatura Bilgilerini Kopyala</button>`;
+  }
+
+  // Plan
+  html += bolumBaslik('💳', 'Plan & Abonelik');
+  html += satirHtml('Plan', planBadge(k.plan), false);
+  html += satirHtml('Başlangıç', tarihFmt(k.created_at), false);
+  html += satirHtml('Bitiş', tarihFmt(k.plan_bitis), false);
+  html += satirHtml('Kalan', sure.doldu ? '<span style="color:var(--red)">❌ Süresi dolmuş</span>' : `<span style="color:var(--green)">${sure.html.replace(/<[^>]+>/g,'').trim()}</span>`, false);
+  html += satirHtml('Kupon', k.kupon_kodu || '—', false);
+
+  // Sistem
+  html += bolumBaslik('⚙️', 'Sistem');
+  html += satirHtml('Kafe Kodu', k.kafe_kodu || '—', true);
+  html += satirHtml('Garson Sayısı', (k.garsonlar || []).length + ' garson', false);
+  html += satirHtml('Kayıt Tarihi', tarihFmt(k.created_at), false);
+
+  document.getElementById('modal-icerik').innerHTML = html;
   document.getElementById('detay-modal').classList.add('ac');
 }
 
@@ -523,4 +620,3 @@ document.getElementById('detay-modal').addEventListener('click', function(e) {
 </script>
 </body>
 </html>
-
