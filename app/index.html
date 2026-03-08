@@ -625,8 +625,8 @@
 </div>
 
 <!-- GEL-AL ÖDEME TİPİ MODAL -->
-<div id="gelal-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;align-items:flex-end;justify-content:center;">
-  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;padding-bottom:max(32px,env(safe-area-inset-bottom));">
+<div id="gelal-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;padding-bottom:max(32px,env(safe-area-inset-bottom));position:absolute;bottom:0;left:50%;transform:translateX(-50%);">
     <div style="text-align:center;font-weight:900;font-size:1rem;margin-bottom:6px;">💰 Ödeme Tipi Seç</div>
     <div style="text-align:center;font-size:0.82rem;color:var(--muted);margin-bottom:20px;" id="gelal-odeme-tutar"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
@@ -3358,7 +3358,7 @@ function gelAlOde(id) {
   gelAlOdeId = id;
   // Ödeme tipi modalını aç
   document.getElementById('gelal-odeme-tutar').textContent = '₺' + s.toplam + ' — ' + s.musteriAdi;
-  document.getElementById('gelal-odeme-modal').style.display = 'flex';
+  document.getElementById('gelal-odeme-modal').style.display = 'block';
 }
 
 async function gelAlOdeTipi(tip) {
