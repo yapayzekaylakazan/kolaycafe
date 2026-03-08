@@ -1003,6 +1003,7 @@ async function kayitOl() {
   const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
   await sb.from('kafeler').insert({
     user_id: data.user.id, kafe_adi: kafe,
+    email: email,
     plan: 'pro', plan_bitis: plnBitis.toISOString(),
     telefon: tel, adres: adres,
     garsonlar: [],
