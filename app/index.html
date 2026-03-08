@@ -3070,8 +3070,8 @@ async function gelAlGecmisYukle() {
       .select('*')
       .eq('kafe_id', kafeId)
       .eq('masa_no', 0)
-      .gte('created_at', tarih + 'T00:00:00+03:00')
-      .lte('created_at', tarih + 'T23:59:59+03:00')
+      .gte('created_at', new Date(tarih + 'T00:00:00+03:00').toISOString())
+      .lte('created_at', new Date(tarih + 'T23:59:59+03:00').toISOString())
       .order('created_at', { ascending: false });
 
     if (error || !data || data.length === 0) {
