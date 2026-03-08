@@ -1,4 +1,3 @@
-<!-- v2 -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -760,6 +759,92 @@
   </div>
 </div>
 
+<!-- STOK SAYFASI -->
+<div class="page" id="page-stok" style="overflow-y:auto;padding:0;">
+  <!-- ÖZET BAR -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 14px 10px;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:1rem;font-weight:900;color:var(--accent2);">📦 Stok Yönetimi</div>
+      <button onclick="stokHareketGecmisiAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;border:1px solid var(--border);">📋 Hareketler</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TAKİPLİ ÜRÜN</div>
+        <div style="font-size:1rem;font-weight:900;" id="stok-takipli-sayi">0</div>
+      </div>
+      <div style="background:rgba(239,68,68,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(239,68,68,0.3);">
+        <div style="font-size:0.65rem;color:#ef4444;font-weight:700;margin-bottom:3px;">TÜKENMİŞ</div>
+        <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="stok-tukenmis-sayi">0</div>
+      </div>
+      <div style="background:rgba(245,158,11,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(245,158,11,0.3);">
+        <div style="font-size:0.65rem;color:#f59e0b;font-weight:700;margin-bottom:3px;">KRİTİK (≤5)</div>
+        <div style="font-size:1rem;font-weight:900;color:#f59e0b;" id="stok-kritik-sayi">0</div>
+      </div>
+    </div>
+    <!-- Kategori filtre -->
+    <div id="stok-kat-filtre" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;"></div>
+  </div>
+  <!-- ÜRÜN LİSTESİ -->
+  <div style="padding:12px;">
+    <div id="stok-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
+
+<!-- STOK DÜZENLE MODAL -->
+<div id="stok-duzenle-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;padding-bottom:max(32px,env(safe-area-inset-bottom));">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:4px;" id="stok-modal-baslik">📦 Stok Güncelle</div>
+    <div style="font-size:0.8rem;color:var(--muted);font-weight:600;margin-bottom:16px;" id="stok-modal-urun">—</div>
+    
+    <!-- Mevcut stok -->
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:0.8rem;color:var(--muted);font-weight:700;">Mevcut Stok</span>
+      <span style="font-weight:900;font-size:1.2rem;" id="stok-modal-mevcut">—</span>
+    </div>
+    
+    <!-- Takip modu toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:var(--surface2);border-radius:12px;padding:12px;">
+      <div>
+        <div style="font-weight:800;font-size:0.88rem;">Stok Takibi</div>
+        <div style="font-size:0.72rem;color:var(--muted);">Kapalıysa bu ürün sonsuz sayılır</div>
+      </div>
+      <div id="stok-toggle" onclick="stokToggle()" style="width:44px;height:24px;border-radius:12px;background:#ef4444;cursor:pointer;position:relative;transition:background 0.2s;">
+        <div id="stok-toggle-top" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;"></div>
+      </div>
+    </div>
+    
+    <div id="stok-input-bolum">
+      <!-- İşlem tipi -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+        <button id="stok-tip-ekle" onclick="stokIslemTipSec('ekle')" style="padding:10px;border-radius:10px;border:2px solid var(--accent);background:rgba(240,184,48,0.15);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">+ Ekle</button>
+        <button id="stok-tip-cikar" onclick="stokIslemTipSec('cikar')" style="padding:10px;border-radius:10px;border:2px solid transparent;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">− Çıkar</button>
+        <button id="stok-tip-set" onclick="stokIslemTipSec('set')" style="padding:10px;border-radius:10px;border:2px solid transparent;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">= Ayarla</button>
+      </div>
+      <input type="number" id="stok-miktar-inp" placeholder="Miktar" min="0"
+        style="width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:11px;padding:13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;outline:none;margin-bottom:10px;text-align:center;">
+      <input type="text" id="stok-aciklama-inp" placeholder="Açıklama (opsiyonel)"
+        style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:600;outline:none;margin-bottom:14px;">
+      <button onclick="stokGuncelle()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;margin-bottom:8px;">✓ Güncelle</button>
+    </div>
+    <button onclick="document.getElementById('stok-duzenle-modal').style.display='none'" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
+<!-- STOK HAREKETLERİ MODAL -->
+<div id="stok-hareketler-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:610;overflow-y:auto;">
+  <div style="background:var(--surface);min-height:100%;padding-bottom:40px;">
+    <div style="background:var(--surface2);padding:14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+      <button onclick="document.getElementById('stok-hareketler-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;">←</button>
+      <div style="font-weight:900;font-size:0.95rem;">📋 Stok Hareketleri</div>
+      <div style="width:32px;"></div>
+    </div>
+    <div style="padding:12px;">
+      <div id="stok-hareketler-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="stok-hareketler-bos" style="text-align:center;color:var(--muted);padding:40px;font-size:0.9rem;font-weight:600;">Henüz hareket yok</div>
+    </div>
+  </div>
+</div>
+
 <!-- GEL-AL ÖDEME TİPİ MODAL -->
 <div id="gelal-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;">
   <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;padding-bottom:max(32px,env(safe-area-inset-bottom));position:absolute;bottom:0;left:50%;transform:translateX(-50%);">
@@ -971,6 +1056,7 @@
   <button class="bnav-btn" id="nav-urun" ><div class="nav-icon">➕</div>Ürün</button>
   <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
   <button class="bnav-btn" id="nav-gelgid" ><div class="nav-icon">💰</div>Gelir/Gider</button>
+  <button class="bnav-btn" id="nav-stok" ><div class="nav-icon">📦</div>Stok</button>
   <button class="bnav-btn" id="nav-rapor" ><div class="nav-icon">📊</div>Rapor</button>
   <button class="bnav-btn" id="nav-ayarlar" ><div class="nav-icon">⚙️</div>Ayarlar</button>
   <button class="bnav-btn" id="nav-mutfak" style="display:none;" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
@@ -1778,6 +1864,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='rapor') raporRender();
   if (sayfa==='urun') urunListesiRender();
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
+  if (sayfa==='stok') stokRender();
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
@@ -1936,14 +2023,24 @@ function urunGridRender() {
     const resimHTML = u.resim
       ? `<div style="width:100%;height:56px;overflow:hidden;border-radius:6px;margin-bottom:4px;"><img src="${u.resim}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=font-size:1.4rem;text-align:center>${u.ikon}</div>'"></div>`
       : `<div class="ui">${u.ikon}</div>`;
-    kart.innerHTML=`${resimHTML}<div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>`;
+    const takipli = u.stok !== null && u.stok !== undefined;
+    const tukendi = takipli && u.stok === 0;
+    const kritikStok = takipli && u.stok > 0 && u.stok <= 5;
+    const stokBadge = tukendi ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.65);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:900;color:#ef4444;">⛔ TÜKENDİ</div>' 
+                    : kritikStok ? `<div style="position:absolute;bottom:2px;left:2px;right:2px;background:rgba(245,158,11,0.9);border-radius:4px;font-size:0.55rem;font-weight:900;color:#1a0f00;text-align:center;">⚠️ Son ${u.stok}</div>` : '';
+    if (tukendi) kart.style.opacity = '0.6';
+    kart.innerHTML=`${resimHTML}<div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>${stokBadge}`;
     kart.querySelector('.udel').addEventListener('click',e=>{
       e.stopPropagation();
       if(!confirm('"'+u.isim+'" silinsin mi?')) return;
       URUNLER[mevcutKat].splice(idx,1);
       urunGridRender(); urunListesiRender(); bulutKaydet(); toast('Ürün silindi');
     });
-    kart.addEventListener('click',e=>{if(e.target.classList.contains('udel')) return;urunEkle(u);});
+    kart.addEventListener('click',e=>{
+      if(e.target.classList.contains('udel')) return;
+      if(tukendi){toast('⛔ ' + u.isim + ' stokta yok!');return;}
+      urunEkle(u);
+    });
     grid.appendChild(kart);
   });
 }
@@ -1951,6 +2048,9 @@ function urunGridRender() {
 function urunEkle(u) {
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
+  // Stok kontrolü
+  const takipli = u.stok !== null && u.stok !== undefined;
+  if (takipli && u.stok <= 0) { toast('⛔ ' + u.isim + ' stokta yok!'); return; }
   const saat=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   const ekleyenGarson=garsonModu?aktifGarsonAdi:(m.garson||'');
   const v=m.siparisler.find(s=>s.isim===u.isim);
@@ -2086,6 +2186,8 @@ async function tahsilEt() {
   // Local'e ekle (realtime gecikmeye karşı)
   kolaycafen.dbId = Date.now(); // Unique ID çift kayıt önlemek için
   kapaliKolayCafenlar.unshift(kolaycafen);
+  // Stok düş
+  kolaycafen.siparisler.forEach(s => stokDus(s.isim, s.adet));
   gunlukCiro+=son; gunlukAdi++;
   m.siparisler.forEach(s=>{
     if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};
@@ -3421,6 +3523,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ['nav-kolaycafen', 'kolaycafen'],
     ['nav-urun', 'urun'],
     ['nav-cari', 'cari'],
+    ['nav-stok', 'stok'],
     ['nav-gelgid', 'gelgid'],
     ['nav-rapor', 'rapor'],
     ['nav-ayarlar', 'ayarlar'],
@@ -3985,7 +4088,281 @@ window.cariSiparisKategoriSec = cariSiparisKategoriSec;
 window.cariSepeteEkle = cariSepeteEkle;
 window.cariSepetCikar = cariSepetCikar;
 window.cariSiparisKaydet = cariSiparisKaydet;
+
+// ════════════════════════════════════════
+// STOK SİSTEMİ
+// ════════════════════════════════════════
+let stokHareketler = []; // Supabase'den yüklenir
+let stokAktifUrun = null; // {kat, idx, urun}
+let stokIslemTip = 'ekle';
+let stokTakipliMi = true;
+let stokAktifKat = 'hepsi';
+
+// Stok hareketlerini Supabase'den yükle
+async function stokHareketlerYukle() {
+  if (!kafeId) return;
+  const { data } = await sb.from('stok_hareketler')
+    .select('*').eq('kafe_id', kafeId)
+    .order('created_at', { ascending: false }).limit(200);
+  stokHareketler = data || [];
+}
+
+// Stok sayfası render
+function stokRender() {
+  // Kategori filtreleri
+  const katFiltre = document.getElementById('stok-kat-filtre');
+  if (katFiltre) {
+    const katlar = ['hepsi', ...Object.keys(URUNLER)];
+    katFiltre.innerHTML = katlar.map(k => `
+      <button onclick="stokKatSec('${k}')"
+        style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;flex-shrink:0;
+               background:${k===stokAktifKat?'var(--accent)':'var(--surface2)'};color:${k===stokAktifKat?'#1a0f00':'var(--text2)'};">
+        ${k === 'hepsi' ? '🌐 Hepsi' : k}
+      </button>`).join('');
+  }
+
+  // Ürünleri listele
+  const liste = document.getElementById('stok-liste');
+  if (!liste) return;
+  liste.innerHTML = '';
+
+  let takipliSayi = 0, tukenmis = 0, kritik = 0;
+  const tumUrunler = [];
+
+  Object.entries(URUNLER).forEach(([kat, urunler]) => {
+    urunler.forEach((u, idx) => {
+      tumUrunler.push({ kat, idx, u });
+      if (u.stok !== null && u.stok !== undefined) {
+        takipliSayi++;
+        if (u.stok === 0) tukenmis++;
+        else if (u.stok <= 5) kritik++;
+      }
+    });
+  });
+
+  if (document.getElementById('stok-takipli-sayi')) document.getElementById('stok-takipli-sayi').textContent = takipliSayi;
+  if (document.getElementById('stok-tukenmis-sayi')) document.getElementById('stok-tukenmis-sayi').textContent = tukenmis;
+  if (document.getElementById('stok-kritik-sayi')) document.getElementById('stok-kritik-sayi').textContent = kritik;
+
+  // Filtrele
+  const filtreli = stokAktifKat === 'hepsi' 
+    ? tumUrunler 
+    : tumUrunler.filter(x => x.kat === stokAktifKat);
+
+  // Önce tükenmiş, sonra kritik, sonra diğerleri
+  filtreli.sort((a, b) => {
+    const sa = a.u.stok ?? 9999, sb = b.u.stok ?? 9999;
+    return sa - sb;
+  });
+
+  filtreli.forEach(({ kat, idx, u }) => {
+    const takipli = u.stok !== null && u.stok !== undefined;
+    const tukendi = takipli && u.stok === 0;
+    const kritikMi = takipli && u.stok > 0 && u.stok <= 5;
+    
+    const renk = tukendi ? '#ef4444' : kritikMi ? '#f59e0b' : takipli ? '#22c55e' : 'var(--muted)';
+    const stokText = !takipli ? '∞ Takip yok' : tukendi ? '⛔ Tükendi' : kritikMi ? `⚠️ ${u.stok} adet` : `✓ ${u.stok} adet`;
+
+    const div = document.createElement('div');
+    div.style.cssText = `background:var(--surface2);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;border:1.5px solid ${tukendi ? 'rgba(239,68,68,0.4)' : kritikMi ? 'rgba(245,158,11,0.4)' : 'var(--border)'};`;
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:1.6rem;">${u.ikon || '📦'}</div>
+        <div>
+          <div style="font-weight:800;font-size:0.9rem;">${u.isim}</div>
+          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">${kat}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="text-align:right;">
+          <div style="font-weight:900;font-size:0.88rem;color:${renk};">${stokText}</div>
+        </div>
+        <button onclick="stokDuzenleAc('${kat}',${idx})" 
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface3);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">
+          ✏️
+        </button>
+      </div>
+    `;
+    liste.appendChild(div);
+  });
+}
+
+function stokKatSec(kat) {
+  stokAktifKat = kat;
+  stokRender();
+}
+
+// Stok düzenleme modal
+function stokDuzenleAc(kat, idx) {
+  const u = URUNLER[kat]?.[idx];
+  if (!u) return;
+  stokAktifUrun = { kat, idx, u };
+  const takipli = u.stok !== null && u.stok !== undefined;
+  stokTakipliMi = takipli;
+  
+  document.getElementById('stok-modal-urun').textContent = `${u.ikon || '📦'} ${u.isim} — ${kat}`;
+  document.getElementById('stok-modal-mevcut').textContent = takipli ? u.stok + ' adet' : '∞ Takip yok';
+  document.getElementById('stok-miktar-inp').value = '';
+  document.getElementById('stok-aciklama-inp').value = '';
+  stokIslemTipSec('ekle');
+  stokToggleGoster(takipli);
+  document.getElementById('stok-duzenle-modal').style.display = 'block';
+}
+
+function stokToggleGoster(aktif) {
+  stokTakipliMi = aktif;
+  const toggle = document.getElementById('stok-toggle');
+  const top = document.getElementById('stok-toggle-top');
+  const bolum = document.getElementById('stok-input-bolum');
+  if (toggle) toggle.style.background = aktif ? '#22c55e' : '#ef4444';
+  if (top) top.style.left = aktif ? '22px' : '2px';
+  if (bolum) bolum.style.display = aktif ? 'block' : 'none';
+}
+
+function stokToggle() {
+  stokToggleGoster(!stokTakipliMi);
+  // Takip kapatılırsa hemen kaydet
+  if (!stokTakipliMi && stokAktifUrun) {
+    const { kat, idx } = stokAktifUrun;
+    URUNLER[kat][idx].stok = null;
+    bulutKaydet();
+    stokRender();
+    urunGridRender();
+    document.getElementById('stok-modal-mevcut').textContent = '∞ Takip yok';
+  }
+}
+
+function stokIslemTipSec(tip) {
+  stokIslemTip = tip;
+  ['ekle','cikar','set'].forEach(t => {
+    const btn = document.getElementById('stok-tip-' + t);
+    if (!btn) return;
+    btn.style.borderColor = t === tip ? 'var(--accent)' : 'transparent';
+    btn.style.background = t === tip ? 'rgba(240,184,48,0.15)' : 'var(--surface2)';
+    btn.style.color = t === tip ? 'var(--accent2)' : 'var(--text2)';
+  });
+  const inp = document.getElementById('stok-miktar-inp');
+  if (inp) inp.placeholder = tip === 'set' ? 'Yeni stok miktarı' : 'Miktar';
+}
+
+async function stokGuncelle() {
+  if (!stokAktifUrun) return;
+  if (!stokTakipliMi) {
+    // Takip kapalı, sadece kaydet
+    const { kat, idx } = stokAktifUrun;
+    URUNLER[kat][idx].stok = null;
+    bulutKaydet();
+    document.getElementById('stok-duzenle-modal').style.display = 'none';
+    stokRender(); urunGridRender();
+    return;
+  }
+  
+  const miktar = parseInt(document.getElementById('stok-miktar-inp').value);
+  if (isNaN(miktar) || miktar < 0) { toast('Geçerli miktar girin!'); return; }
+  
+  const { kat, idx } = stokAktifUrun;
+  const u = URUNLER[kat][idx];
+  const eskiStok = u.stok ?? 0;
+  let yeniStok;
+  
+  if (stokIslemTip === 'ekle') yeniStok = eskiStok + miktar;
+  else if (stokIslemTip === 'cikar') yeniStok = Math.max(0, eskiStok - miktar);
+  else yeniStok = miktar; // set
+  
+  const aciklama = document.getElementById('stok-aciklama-inp').value.trim();
+  
+  // URUNLER güncelle
+  URUNLER[kat][idx].stok = yeniStok;
+  bulutKaydet();
+  
+  // Hareket kaydı
+  if (kafeId) {
+    await sb.from('stok_hareketler').insert({
+      kafe_id: kafeId,
+      urun_adi: u.isim,
+      kategori: kat,
+      tip: stokIslemTip,
+      miktar,
+      onceki_stok: eskiStok,
+      sonraki_stok: yeniStok,
+      aciklama: aciklama || null,
+      garson: aktifGarsonAdi || null
+    });
+    stokHareketler.unshift({
+      urun_adi: u.isim, tip: stokIslemTip, miktar,
+      onceki_stok: eskiStok, sonraki_stok: yeniStok,
+      aciklama, created_at: new Date().toISOString()
+    });
+  }
+  
+  document.getElementById('stok-duzenle-modal').style.display = 'none';
+  stokRender();
+  urunGridRender();
+  toast(`✓ ${u.isim}: ${yeniStok} adet`);
+  
+  // Uyarı
+  if (yeniStok === 0) toast(`⛔ ${u.isim} tükendi!`);
+  else if (yeniStok <= 5) toast(`⚠️ ${u.isim} kritik stok: ${yeniStok}`);
+}
+
+// Stok hareket geçmişi
+async function stokHareketGecmisiAc() {
+  await stokHareketlerYukle();
+  const liste = document.getElementById('stok-hareketler-liste');
+  const bos = document.getElementById('stok-hareketler-bos');
+  liste.innerHTML = '';
+  
+  if (stokHareketler.length === 0) { bos.style.display = 'block'; }
+  else {
+    bos.style.display = 'none';
+    stokHareketler.forEach(h => {
+      const tip = h.tip;
+      const renk = tip === 'ekle' ? '#22c55e' : tip === 'cikar' ? '#ef4444' : '#3b82f6';
+      const icon = tip === 'ekle' ? '📥' : tip === 'cikar' ? '📤' : '✏️';
+      const tarih = new Date(h.created_at).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const div = document.createElement('div');
+      div.style.cssText = 'background:var(--surface2);border-radius:12px;padding:12px;';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="font-weight:800;font-size:0.88rem;">${icon} ${h.urun_adi}</div>
+          <div style="font-weight:900;color:${renk};font-size:0.9rem;">${tip==='ekle'?'+':tip==='cikar'?'-':'='} ${h.miktar}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);">
+          <span>${h.onceki_stok} → ${h.sonraki_stok} adet${h.aciklama ? ' · ' + h.aciklama : ''}${h.garson ? ' · ' + h.garson : ''}</span>
+          <span>${tarih}</span>
+        </div>
+      `;
+      liste.appendChild(div);
+    });
+  }
+  document.getElementById('stok-hareketler-modal').style.display = 'block';
+}
+
+// Sipariş verilince stok düş
+function stokDus(urunAdi, adet) {
+  for (const [kat, urunler] of Object.entries(URUNLER)) {
+    const u = urunler.find(x => x.isim === urunAdi);
+    if (u && u.stok !== null && u.stok !== undefined) {
+      u.stok = Math.max(0, u.stok - adet);
+      if (u.stok === 0) {
+        toast(`⛔ ${urunAdi} tükendi!`);
+        urunGridRender();
+        bulutKaydet();
+      }
+      break;
+    }
+  }
+}
+
+
 window.gelAlOdeTipi = gelAlOdeTipi;
+window.stokRender = stokRender;
+window.stokKatSec = stokKatSec;
+window.stokDuzenleAc = stokDuzenleAc;
+window.stokToggle = stokToggle;
+window.stokIslemTipSec = stokIslemTipSec;
+window.stokGuncelle = stokGuncelle;
+window.stokHareketGecmisiAc = stokHareketGecmisiAc;
 window.gelAlSil = gelAlSil;
 window.gelAlKatSec = gelAlKatSec;
 
