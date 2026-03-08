@@ -1585,7 +1585,7 @@ async function kolaycafenKaydet(kolaycafen) {
   try {
     await sb.from('kolaycafenlar').insert({
       kafe_id: kafeId,
-      masa_no: kolaycafen.masa,
+      masa_no: isNaN(parseInt(kolaycafen.masa)) ? 0 : parseInt(kolaycafen.masa),
       masa_ad: kolaycafen.masaAd,
       toplam: kolaycafen.toplam,
       indirim: kolaycafen.indirim||0,
@@ -3069,7 +3069,7 @@ async function gelAlGecmisYukle() {
     const { data, error } = await sb.from('kolaycafenlar')
       .select('*')
       .eq('kafe_id', kafeId)
-      .eq('masa_no', 'gelal')
+      .eq('masa_no', 0)
       .gte('created_at', tarih + 'T00:00:00')
       .lte('created_at', tarih + 'T23:59:59')
       .order('created_at', { ascending: false });
@@ -3343,7 +3343,7 @@ async function gelAlOde(id) {
 
   // kolaycafenKaydet ile rapora ve DB'ye kaydet
   const kolaycafen = {
-    masa: 'gelal',
+    masa: 0,
     masaAd: '🛍️ Gel-Al: ' + s.musteriAdi,
     tarih: tarih,
     tarihObj: new Date(),
@@ -3379,7 +3379,7 @@ async function gelAlOde(id) {
   } catch(e) {}
 
   // Fiş göster
-  fisGoster('gelal', tarih, kolaycafen.siparisler, toplam, s.garson||'', 0, '🛍️ Gel-Al: '+s.musteriAdi);
+  fisGoster(0, tarih, kolaycafen.siparisler, toplam, s.garson||'', 0, '🛍️ Gel-Al: '+s.musteriAdi);
 
   gelAlSiparisler = gelAlSiparisler.filter(x => x.id !== id);
   gelAlRender();
