@@ -146,7 +146,7 @@
   .btn-kaydet { width: 100%; padding: 14px; border-radius: 13px; border: none; background: var(--accent); color: var(--bg); font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 900; cursor: pointer; margin-bottom: 8px; }
   .btn-yeni-kat { width: 100%; padding: 11px; border-radius: 13px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text2); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; margin-bottom: 18px; }
   .urun-listesi-baslik { font-size: 0.7rem; font-weight: 800; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
-  .urun-listesi-item { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 11px; padding: 10px 12px; margin-bottom: 7px; }
+  .urun-listesi-item { display: flex; flex-direction: column; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 11px; padding: 10px 12px; margin-bottom: 7px; }
   .uli-icon { font-size: 1.2rem; }
   .uli-info { flex: 1; }
   .uli-isim { font-size: 0.85rem; font-weight: 700; }
@@ -999,11 +999,11 @@ async function kayitOl() {
     }
   }
   
-  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+7);
+  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+15);
   const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
   await sb.from('kafeler').insert({
     user_id: data.user.id, kafe_adi: kafe,
-    plan: 'deneme', plan_bitis: plnBitis.toISOString(),
+    plan: 'pro', plan_bitis: plnBitis.toISOString(),
     telefon: tel, adres: adres,
     garsonlar: [],
     kafe_kodu: kafeKoduYeni,
@@ -2066,7 +2066,6 @@ function urunListesiRender(){
   Object.entries(URUNLER).forEach(([kat,urunler])=>{
     urunler.forEach((u,idx)=>{
       const item=document.createElement('div'); item.className='urun-listesi-item';
-      item.style.cssText='flex-direction:column;align-items:stretch;gap:6px;';
       const resimOnizleme = u.resim ? `<img src="${u.resim}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">` : `<div style="width:40px;height:40px;border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${u.ikon}</div>`;
       item.innerHTML=`
         <div style="display:flex;align-items:center;gap:8px;">
