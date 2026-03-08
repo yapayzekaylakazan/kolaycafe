@@ -472,6 +472,22 @@
     <div class="form-group"><label>Ürün Adı</label><input type="text" id="urun-adi" placeholder="Örn: Vişneli Soda"></div>
     <div class="form-group"><label>Fiyat (₺)</label><input type="number" id="urun-fiyat" placeholder="35" min="0" inputmode="numeric"></div>
     <div class="form-group"><label>Emoji İkon</label><input type="text" id="urun-ikon" placeholder="🥤" maxlength="4"></div>
+    <!-- Resim -->
+    <div class="form-group">
+      <label>Ürün Resmi (opsiyonel)</label>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="urun-resim-url" placeholder="Resim URL girin..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;">
+          <button onclick="document.getElementById('urun-resim-dosya').click()" style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;">📁 Yükle</button>
+          <input type="file" id="urun-resim-dosya" accept="image/*" style="display:none" onchange="urunResimYukle(this)">
+        </div>
+        <div id="urun-resim-onizleme" style="display:none;position:relative;width:80px;height:80px;">
+          <img id="urun-resim-img" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border);">
+          <button onclick="urunResimSil()" style="position:absolute;top:-6px;right:-6px;background:#e04040;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+        <div id="urun-resim-yukleniyor" style="display:none;font-size:0.8rem;color:var(--muted);font-weight:700;">⏳ Yükleniyor...</div>
+      </div>
+    </div>
     <button class="btn-kaydet" onclick="urunKaydet()">✓ Kaydet</button>
     <div class="urun-listesi-baslik">Mevcut Ürünler</div>
     <div id="urun-listesi"></div>
@@ -1673,7 +1689,10 @@ function urunGridRender() {
   (URUNLER[mevcutKat]||[]).forEach((u,idx)=>{
     const kart=document.createElement('div');
     kart.className='urun-kart';
-    kart.innerHTML=`<div class="ui">${u.ikon}</div><div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>`;
+    const resimHTML = u.resim
+      ? `<div style="width:100%;height:56px;overflow:hidden;border-radius:6px;margin-bottom:4px;"><img src="${u.resim}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=font-size:1.4rem;text-align:center>${u.ikon}</div>'"></div>`
+      : `<div class="ui">${u.ikon}</div>`;
+    kart.innerHTML=`${resimHTML}<div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>`;
     kart.querySelector('.udel').addEventListener('click',e=>{
       e.stopPropagation();
       if(!confirm('"'+u.isim+'" silinsin mi?')) return;
@@ -1983,17 +2002,61 @@ function yeniKategoriEkle(){
   katSelectDoldur(); document.getElementById('urun-kat').value=isim.trim(); katTabsRender(); bulutKaydet(); toast('✓ Kategori eklendi');
 }
 
+// Resim önizleme güncelle
+function urunResimOnizlemeGoster(url) {
+  if (!url) { urunResimSil(); return; }
+  document.getElementById('urun-resim-onizleme').style.display='block';
+  document.getElementById('urun-resim-img').src=url;
+}
+function urunResimSil() {
+  document.getElementById('urun-resim-url').value='';
+  document.getElementById('urun-resim-onizleme').style.display='none';
+  document.getElementById('urun-resim-img').src='';
+  document.getElementById('urun-resim-dosya').value='';
+}
+// URL alanı değişince önizle
+document.getElementById('urun-resim-url').addEventListener('input', function() {
+  urunResimOnizlemeGoster(this.value.trim());
+});
+
+async function urunResimYukle(input) {
+  const dosya = input.files[0];
+  if (!dosya) return;
+  // 2MB limit
+  if (dosya.size > 2 * 1024 * 1024) { toast('Resim 2MB\'dan küçük olmalı!'); return; }
+
+  document.getElementById('urun-resim-yukleniyor').style.display='block';
+  document.getElementById('urun-resim-onizleme').style.display='none';
+
+  try {
+    const dosyaAdi = `urunler/${Date.now()}_${dosya.name.replace(/[^a-z0-9.]/gi,'_')}`;
+    const { error } = await sb.storage.from('urun-resimleri').upload(dosyaAdi, dosya, { upsert: true });
+    if (error) throw error;
+    const { data } = sb.storage.from('urun-resimleri').getPublicUrl(dosyaAdi);
+    document.getElementById('urun-resim-url').value = data.publicUrl;
+    urunResimOnizlemeGoster(data.publicUrl);
+    toast('✓ Resim yüklendi!');
+  } catch(e) {
+    console.error(e);
+    toast('Resim yüklenemedi: ' + (e.message || 'Hata'));
+  } finally {
+    document.getElementById('urun-resim-yukleniyor').style.display='none';
+  }
+}
+
 function urunKaydet(){
   const kat=document.getElementById('urun-kat').value;
   const isim=document.getElementById('urun-adi').value.trim();
   const fiyat=parseFloat(document.getElementById('urun-fiyat').value);
   const ikon=document.getElementById('urun-ikon').value.trim()||'🥤';
+  const resim=document.getElementById('urun-resim-url').value.trim()||null;
   if(!isim){toast('Ürün adı girin!');return;}
   if(isNaN(fiyat)||fiyat<0){toast('Geçerli fiyat girin!');return;}
-  URUNLER[kat].push({isim,fiyat,ikon});
+  URUNLER[kat].push({isim,fiyat,ikon,resim});
   document.getElementById('urun-adi').value='';
   document.getElementById('urun-fiyat').value='';
   document.getElementById('urun-ikon').value='';
+  urunResimSil();
   urunListesiRender(); katTabsRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ "'+isim+'" eklendi');
 }
 
@@ -3070,28 +3133,50 @@ function mmUrunRender(kat) {
     const sepetItem = mmSepet.find(s => s.isim === u.isim);
     const adet = sepetItem ? sepetItem.adet : 0;
     const card = document.createElement('div');
-    card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;';
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;flex:1;">
-        <span style="font-size:1.8rem;">${u.ikon||'🍽'}</span>
-        <div>
-          <div style="font-weight:800;font-size:0.95rem;">${u.isim}</div>
-          <div style="color:var(--accent2);font-weight:900;font-size:1rem;margin-top:2px;">${u.fiyat}₺</div>
+    const resim = u.resim || '';
+    const isimEsc = u.isim.replace(/'/g, "\\'");
+    const ikonEsc = (u.ikon||'🍽').replace(/'/g, "\\'");
+    const resimEsc = resim.replace(/'/g, "\\'");
+    const azalt = adet > 0 ? `<button onclick="mmAdetDusur('${isimEsc}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface3);color:var(--text);font-size:1.2rem;cursor:pointer;font-weight:900;">−</button><span style="font-weight:900;font-size:1rem;min-width:20px;text-align:center;">${adet}</span>` : '';
+    if (resim) {
+      card.style.cssText = 'background:var(--surface2);border-radius:16px;margin-bottom:12px;overflow:hidden;';
+      card.innerHTML = `
+        <div style="width:100%;height:140px;overflow:hidden;">
+          <img src="${resim}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.height=0">
         </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        ${adet > 0 ? `<button onclick="mmAdetDusur('${u.isim}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface3);color:var(--text);font-size:1.2rem;cursor:pointer;font-weight:900;">−</button>
-        <span style="font-weight:900;font-size:1rem;min-width:20px;text-align:center;">${adet}</span>` : ''}
-        <button onclick="mmAdetArtir('${u.isim}',${u.fiyat},'${u.ikon||'🍽'}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button>
-      </div>`;
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;">
+          <div>
+            <div style="font-weight:800;font-size:0.95rem;">${u.isim}</div>
+            <div style="color:var(--accent2);font-weight:900;font-size:1rem;margin-top:2px;">${u.fiyat}₺</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${azalt}
+            <button onclick="mmAdetArtir('${isimEsc}',${u.fiyat},'${ikonEsc}','${resimEsc}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button>
+          </div>
+        </div>`;
+    } else {
+      card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;flex:1;">
+          <span style="font-size:1.8rem;">${u.ikon||'🍽'}</span>
+          <div>
+            <div style="font-weight:800;font-size:0.95rem;">${u.isim}</div>
+            <div style="color:var(--accent2);font-weight:900;font-size:1rem;margin-top:2px;">${u.fiyat}₺</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${azalt}
+          <button onclick="mmAdetArtir('${isimEsc}',${u.fiyat},'${ikonEsc}','')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button>
+        </div>`;
+    }
     liste.appendChild(card);
   });
 }
 
-function mmAdetArtir(isim, fiyat, ikon) {
+function mmAdetArtir(isim, fiyat, ikon, resim) {
   const item = mmSepet.find(s => s.isim === isim);
   if (item) item.adet++;
-  else mmSepet.push({isim, fiyat, ikon, adet: 1});
+  else mmSepet.push({isim, fiyat, ikon, resim: resim||null, adet: 1});
   mmSepetGuncelle();
   // Aktif kategoriyi yeniden render et
   const aktifKat = document.querySelector('#mm-kategori-tabs button[style*="var(--accent)"]');
