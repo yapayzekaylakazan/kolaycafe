@@ -624,6 +624,22 @@
   </div>
 </div>
 
+<!-- GEL-AL ÖDEME TİPİ MODAL -->
+<div id="gelal-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;padding-bottom:max(32px,env(safe-area-inset-bottom));">
+    <div style="text-align:center;font-weight:900;font-size:1rem;margin-bottom:6px;">💰 Ödeme Tipi Seç</div>
+    <div style="text-align:center;font-size:0.82rem;color:var(--muted);margin-bottom:20px;" id="gelal-odeme-tutar"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <button onclick="gelAlOdeTipi('nakit')" style="padding:16px;border-radius:14px;border:none;background:#1a7a40;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">💵 Nakit</button>
+      <button onclick="gelAlOdeTipi('kart')" style="padding:16px;border-radius:14px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">💳 Kart</button>
+      <button onclick="gelAlOdeTipi('ikram')" style="padding:16px;border-radius:14px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">🎁 İkram</button>
+      <button onclick="gelAlOdeTipi('cari')" style="padding:16px;border-radius:14px;border:none;background:#b45309;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">📋 Cari</button>
+    </div>
+    <button onclick="document.getElementById('gelal-odeme-modal').style.display='none'" 
+      style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
 <!-- GEL-AL YENİ SİPARİŞ MODAL -->
 <div id="gelal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:flex-end;justify-content:center;">
   <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding-bottom:max(20px,env(safe-area-inset-bottom));">
@@ -3334,12 +3350,25 @@ async function gelAlDurumGuncelle(id, yeniDurum) {
   gelAlRender();
 }
 
-async function gelAlOde(id) {
+let gelAlOdeId = null; // ödeme bekleyen sipariş id
+
+function gelAlOde(id) {
+  const s = gelAlSiparisler.find(x => x.id === id);
+  if (!s) return;
+  gelAlOdeId = id;
+  // Ödeme tipi modalını aç
+  document.getElementById('gelal-odeme-tutar').textContent = '₺' + s.toplam + ' — ' + s.musteriAdi;
+  document.getElementById('gelal-odeme-modal').style.display = 'flex';
+}
+
+async function gelAlOdeTipi(tip) {
+  document.getElementById('gelal-odeme-modal').style.display = 'none';
+  const id = gelAlOdeId;
   const s = gelAlSiparisler.find(x => x.id === id);
   if (!s) return;
 
   const tarih = new Date().toLocaleString('tr-TR');
-  const toplam = s.toplam;
+  const toplam = tip === 'ikram' ? 0 : s.toplam;
 
   // kolaycafenKaydet ile rapora ve DB'ye kaydet
   const kolaycafen = {
@@ -3351,7 +3380,7 @@ async function gelAlOde(id) {
     indirim: 0,
     garson: s.garson || '',
     siparisler: s.urunler.map(u => ({isim:u.isim, fiyat:u.fiyat, ikon:u.ikon||'🛍️', adet:u.adet})),
-    odeme_tipi: 'nakit',
+    odeme_tipi: tip,
     musteri_adi: s.musteriAdi,
     gelal: true,
     not: s.not || ''
@@ -3360,7 +3389,7 @@ async function gelAlOde(id) {
 
   // Rapora ekle
   kapaliKolayCafenlar.unshift(kolaycafen);
-  gunlukCiro += toplam;
+  if (tip !== 'ikram') gunlukCiro += toplam;
   gunlukAdi++;
   kolaycafen.siparisler.forEach(u => {
     if (!gunlukSatis[u.isim]) gunlukSatis[u.isim] = {adet:0, toplam:0};
@@ -3419,6 +3448,7 @@ window.gelAlSiparisVer = gelAlSiparisVer;
 window.gelAlUrunEkle = gelAlUrunEkle;
 window.gelAlDurumGuncelle = gelAlDurumGuncelle;
 window.gelAlOde = gelAlOde;
+window.gelAlOdeTipi = gelAlOdeTipi;
 window.gelAlSil = gelAlSil;
 window.gelAlKatSec = gelAlKatSec;
 
