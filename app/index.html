@@ -3073,14 +3073,15 @@ function gelAlYeniAc() {
   const garsonSel = document.getElementById('gelal-garson');
   garsonSel.innerHTML = '<option value="">— Garson Seç (opsiyonel) —</option>';
   if (garsonModu && aktifGarsonAdi) {
-    // Garson modunda otomatik seç
     const opt = document.createElement('option');
     opt.value = aktifGarsonAdi; opt.textContent = aktifGarsonAdi; opt.selected = true;
     garsonSel.appendChild(opt);
   } else {
     (garsonlar || []).forEach(g => {
+      const isim = typeof g === 'string' ? g : g.isim;
+      if (!isim) return;
       const opt = document.createElement('option');
-      opt.value = g; opt.textContent = g;
+      opt.value = isim; opt.textContent = isim;
       garsonSel.appendChild(opt);
     });
   }
@@ -3099,7 +3100,7 @@ function gelAlKatlarRender() {
   if (!gelAlAktifKat && katlar.length > 0) gelAlAktifKat = katlar[0];
   const tabsDiv = document.getElementById('gelal-kat-tabs');
   tabsDiv.innerHTML = katlar.map(k =>
-    `<button onclick="gelAlKatSec('${k}')" style="flex-shrink:0;white-space:nowrap;padding:7px 14px;border-radius:20px;border:none;background:${gelAlAktifKat===k?'var(--accent2)':'var(--surface2)'};color:${gelAlAktifKat===k?'#fff':'var(--text2)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">${k}</button>`
+    `<button onclick="gelAlKatSec('${k}')" style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid ${gelAlAktifKat===k?'var(--accent2)':'var(--border)'};background:${gelAlAktifKat===k?'var(--accent2)':'transparent'};color:${gelAlAktifKat===k?'#fff':'var(--text2)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">${k}</button>`
   ).join('');
   gelAlUrunGridRender();
 }
