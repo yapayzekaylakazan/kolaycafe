@@ -1482,6 +1482,7 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-rapor').style.display = 'none';
   document.getElementById('nav-gelgid').style.display = 'none';
   document.getElementById('nav-cari').style.display = 'flex';
+  document.getElementById('nav-stok').style.display = 'flex';
   document.getElementById('nav-ayarlar').style.display = 'none';
   document.getElementById('nav-mutfak').style.display = 'flex';
   document.getElementById('nav-garson-cikis').style.display = 'flex';
@@ -1889,6 +1890,9 @@ function paketYetkiUygula(plan) {
   // Rapor ve ayarlar nav
   const navRapor = document.getElementById('nav-rapor');
   if(navRapor) navRapor.style.display = paket.rapor ? '' : 'none';
+  // Stok nav her zaman göster
+  const navStok = document.getElementById('nav-stok');
+  if(navStok) navStok.style.display = 'flex';
 }
 
 function masaErisimVar(masaId) {
