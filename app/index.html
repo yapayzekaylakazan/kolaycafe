@@ -576,17 +576,152 @@
 </div>
 
 
-<div class="page" id="page-cari">
-  <div class="page-rapor">
-    <div class="page-title">📋 Cari Hesaplar</div>
-    <div class="rapor-ozet" style="margin-bottom:16px;">
-      <div class="rapor-kart"><div class="rk-label">Toplam Borç</div><div class="rk-val" id="cari-toplam-borc">0 ₺</div></div>
-      <div class="rapor-kart"><div class="rk-label">Müşteri Sayısı</div><div class="rk-val" id="cari-musteri-sayi">0</div></div>
-      <div class="rapor-kart"><div class="rk-label">İşlem Sayısı</div><div class="rk-val" id="cari-islem-sayi">0</div></div>
+<div class="page" id="page-cari" style="overflow-y:auto;padding:0;">
+
+  <!-- ÖZET BAR -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 14px 10px;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:1rem;font-weight:900;color:var(--accent2);">📋 Cari Hesaplar</div>
+      <button onclick="cariYeniMusteriAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;">+ Müşteri Ekle</button>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TOPLAM BORÇ</div>
+        <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="cari-toplam-borc">0 ₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:3px;">MÜŞTERİ</div>
+        <div style="font-size:1rem;font-weight:900;" id="cari-musteri-sayi">0</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:3px;">BORÇLU</div>
+        <div style="font-size:1rem;font-weight:900;color:#f59e0b;" id="cari-borclu-sayi">0</div>
+      </div>
+    </div>
+    <!-- Arama -->
+    <input type="text" id="cari-arama" placeholder="🔍 Müşteri ara..." oninput="cariAra()"
+      style="margin-top:10px;width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;">
+  </div>
+
+  <!-- MÜŞTERİ LİSTESİ -->
+  <div style="padding:12px;">
     <div id="cari-liste" style="display:flex;flex-direction:column;gap:10px;"></div>
-    <div id="cari-bos" style="text-align:center;color:var(--muted);padding:32px;font-size:0.9rem;font-weight:600;display:none;">
-      📋 Henüz cari işlem yok
+    <div id="cari-bos" style="text-align:center;color:var(--muted);padding:48px 20px;font-size:0.9rem;font-weight:600;">
+      <div style="font-size:2.5rem;margin-bottom:12px;">📋</div>
+      Henüz cari müşteri yok<br>
+      <span style="font-size:0.78rem;">+ Müşteri Ekle butonuna basarak başlayın</span>
+    </div>
+  </div>
+</div>
+
+<!-- CARİ YENİ MÜŞTERİ MODAL -->
+<div id="cari-yeni-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;padding-bottom:max(32px,env(safe-area-inset-bottom));">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:16px;" id="cari-yeni-baslik">👤 Yeni Müşteri</div>
+    <input type="hidden" id="cari-duzenle-id">
+    <input type="text" id="cari-yeni-ad" placeholder="Müşteri adı *" maxlength="60"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:10px;">
+    <input type="tel" id="cari-yeni-tel" placeholder="Telefon (opsiyonel)"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:10px;">
+    <input type="text" id="cari-yeni-not" placeholder="Not (opsiyonel)"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:14px;">
+    <button onclick="cariMusteriKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;margin-bottom:8px;">✓ Kaydet</button>
+    <button onclick="document.getElementById('cari-yeni-modal').style.display='none'" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
+<!-- CARİ MÜŞTERİ DETAY MODAL -->
+<div id="cari-detay-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:601;overflow-y:auto;">
+  <div style="background:var(--surface);min-height:100%;padding:0 0 40px;">
+    <!-- Header -->
+    <div style="background:var(--surface2);padding:16px 14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+      <button onclick="document.getElementById('cari-detay-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;padding:4px;">←</button>
+      <div style="font-weight:900;font-size:1rem;" id="cd-baslik">Müşteri Detayı</div>
+      <button onclick="cariDetayDuzenle()" style="background:none;border:none;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">✏️ Düzenle</button>
+    </div>
+    <!-- Müşteri Bilgi Kartı -->
+    <div style="margin:14px;background:var(--surface2);border-radius:16px;padding:16px;border:1.5px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:1.2rem;font-weight:900;" id="cd-ad">—</div>
+          <div style="font-size:0.8rem;color:var(--muted);font-weight:600;margin-top:3px;" id="cd-tel">—</div>
+          <div style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-top:2px;" id="cd-not"></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1.5rem;font-weight:900;" id="cd-bakiye-goster">0 ₺</div>
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;">BAKIYE</div>
+        </div>
+      </div>
+      <!-- Aksiyon butonları -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+        <button onclick="cariSiparisAc()" style="padding:10px 6px;border-radius:10px;border:none;background:#1a7a40;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🛒 Sipariş</button>
+        <button onclick="cariOdemeAl()" style="padding:10px 6px;border-radius:10px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">💰 Ödeme Al</button>
+        <button onclick="cariManuelBorc()" style="padding:10px 6px;border-radius:10px;border:none;background:#b45309;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+ Borç Yaz</button>
+      </div>
+    </div>
+    <!-- Ekstre / Geçmiş -->
+    <div style="margin:0 14px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;letter-spacing:0.5px;">İŞLEM GEÇMİŞİ</div>
+      <div id="cd-ekstra" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="cd-ekstra-bos" style="text-align:center;color:var(--muted);padding:24px;font-size:0.85rem;font-weight:600;">Henüz işlem yok</div>
+    </div>
+  </div>
+</div>
+
+<!-- CARİ ÖDEME AL MODAL -->
+<div id="cari-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:610;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;padding-bottom:max(32px,env(safe-area-inset-bottom));">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:6px;">💰 Ödeme Al</div>
+    <div style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:14px;" id="cari-odeme-kisi">—</div>
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:0.8rem;color:var(--muted);font-weight:700;">Mevcut Bakiye</span>
+      <span style="font-weight:900;color:#ef4444;" id="cari-odeme-mevcut">0 ₺</span>
+    </div>
+    <div style="font-size:0.8rem;color:var(--muted);font-weight:700;margin-bottom:6px;">Tahsil Edilecek Tutar</div>
+    <input type="number" id="cari-odeme-tutar" placeholder="Tutar girin..." min="0"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:11px;padding:13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;outline:none;margin-bottom:6px;text-align:center;">
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button onclick="cariOdemeTamami()" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">Tamamı</button>
+    </div>
+    <div style="font-size:0.8rem;color:var(--muted);font-weight:700;margin-bottom:6px;">Ödeme Tipi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <button id="cari-odeme-tip-nakit" onclick="cariOdemeTipSec('nakit')" style="padding:10px;border-radius:10px;border:2px solid var(--accent);background:rgba(240,184,48,0.15);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">💵 Nakit</button>
+      <button id="cari-odeme-tip-kart" onclick="cariOdemeTipSec('kart')" style="padding:10px;border-radius:10px;border:2px solid transparent;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">💳 Kart</button>
+    </div>
+    <button onclick="cariOdemeyiKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:#1a7a40;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;margin-bottom:8px;">✓ Tahsil Et</button>
+    <button onclick="document.getElementById('cari-odeme-modal').style.display='none'" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
+<!-- CARİ MANUEL BORÇ MODAL -->
+<div id="cari-borc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:610;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;padding-bottom:max(32px,env(safe-area-inset-bottom));">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:14px;">📝 Manuel Borç Ekle</div>
+    <input type="number" id="cari-borc-tutar" placeholder="Tutar *" min="0"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;outline:none;margin-bottom:10px;text-align:center;">
+    <input type="text" id="cari-borc-aciklama" placeholder="Açıklama (opsiyonel)"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:14px;">
+    <button onclick="cariManuelBorcKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:#b45309;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;margin-bottom:8px;">+ Borca Ekle</button>
+    <button onclick="document.getElementById('cari-borc-modal').style.display='none'" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
+<!-- CARİ SİPARİŞ MODAL -->
+<div id="cari-siparis-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:620;overflow-y:auto;">
+  <div style="background:var(--surface);min-height:100%;padding-bottom:100px;">
+    <div style="background:var(--surface2);padding:14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+      <button onclick="document.getElementById('cari-siparis-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;">←</button>
+      <div style="font-weight:900;font-size:0.95rem;" id="cari-siparis-baslik">Sipariş Ekle</div>
+      <div style="font-weight:900;color:var(--accent2);" id="cari-siparis-toplam">0 ₺</div>
+    </div>
+    <!-- Kategoriler -->
+    <div id="cari-siparis-kategoriler" style="display:flex;gap:8px;padding:12px 12px 0;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;"></div>
+    <!-- Ürünler -->
+    <div id="cari-siparis-urunler" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;"></div>
+    <!-- Sepet -->
+    <div style="position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 14px;max-width:480px;margin:0 auto;">
+      <div id="cari-siparis-sepet" style="display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;margin-bottom:8px;"></div>
+      <button onclick="cariSiparisKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">✓ Cariye Yaz</button>
     </div>
   </div>
 </div>
@@ -926,7 +1061,9 @@
     <div class="modal-baslik">📋 Cari Hesap</div>
     <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Müşteri adını girin, tutarı sonra tahsil edin</p>
     <input type="text" id="cari-musteri-adi" placeholder="Müşteri adı veya şirketi..." 
+      list="cari-musteri-datalist"
       style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:12px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:12px;">
+    <datalist id="cari-musteri-datalist"></datalist>
     <div id="cari-tutar-bilgi" style="background:var(--surface3);border-radius:10px;padding:12px;margin-bottom:12px;text-align:center;">
       <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">TUTAR</div>
       <div id="cari-tutar-goster" style="font-size:1.6rem;font-weight:900;color:var(--accent2);">0,00 ₺</div>
@@ -1639,7 +1776,7 @@ function sayfaGit(sayfa) {
   document.getElementById('nav-'+sayfa).classList.add('active');
   if (sayfa==='rapor') raporRender();
   if (sayfa==='urun') urunListesiRender();
-  if (sayfa==='cari') cariHesaplarRender();
+  if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
@@ -1894,6 +2031,11 @@ function cariGoster() {
   const son = ham*(1-(m.indirim||0)/100);
   document.getElementById('cari-tutar-goster').textContent = fmt(son);
   document.getElementById('cari-musteri-adi').value = '';
+  // Autocomplete için müşteri listesi ekle
+  const datalist = document.getElementById('cari-musteri-datalist');
+  if (datalist) {
+    datalist.innerHTML = cariMusteriler.map(m => `<option value="${m.ad}">`).join('');
+  }
   modalAc('cari-modal');
 }
 
@@ -1916,6 +2058,8 @@ async function cariKaydet() {
   };
   kolaycafen.dbId = Date.now();
   const cariMasaId = seciliMasa; // masaSyncYaz için kaydet
+  // Cari müşteri bakiyesini güncelle
+  cariKaydetMusteri(musteriAdi, seciliMasa, m, son);
   kapaliKolayCafenlar.unshift(kolaycafen);
   // Cari ciroya eklenmez
   m.siparisler=[]; m.indirim=0; m.garson='';
@@ -2253,57 +2397,406 @@ function gunEtiketi(t){
   return d.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
 }
 
+// ════════════════════════════════════════
+// CARİ SİSTEM - TAM KAPSAMLI
+// ════════════════════════════════════════
+let cariMusteriler = []; // Supabase'den yüklenir
+let aktifCariMusteri = null; // Detay görüntülenen
+let cariOdemeTipSecili = 'nakit';
+let cariSepet = [];
+let cariSepetKategori = null;
+
+// Supabase'den cari müşterileri yükle
+async function cariYukle() {
+  if (!kafeId) return;
+  const { data, error } = await sb.from('cari_musteriler')
+    .select('*').eq('kafe_id', kafeId).order('ad', {ascending: true});
+  if (error) { console.error('Cari yükleme hatası:', error); return; }
+  cariMusteriler = data || [];
+  cariHesaplarRender();
+}
+
+// Ana liste render
 function cariHesaplarRender() {
   const liste = document.getElementById('cari-liste');
   const bos = document.getElementById('cari-bos');
-  if(!liste) return;
+  if (!liste) return;
+  const ara = (document.getElementById('cari-arama')?.value || '').toLowerCase();
+  const filtre = cariMusteriler.filter(m => !ara || m.ad.toLowerCase().includes(ara));
+  
+  const toplamBorc = cariMusteriler.reduce((s, m) => s + (m.bakiye || 0), 0);
+  const borcluSayi = cariMusteriler.filter(m => (m.bakiye || 0) > 0).length;
+  if (document.getElementById('cari-toplam-borc')) document.getElementById('cari-toplam-borc').textContent = fmt(toplamBorc);
+  if (document.getElementById('cari-musteri-sayi')) document.getElementById('cari-musteri-sayi').textContent = cariMusteriler.length;
+  if (document.getElementById('cari-borclu-sayi')) document.getElementById('cari-borclu-sayi').textContent = borcluSayi;
+  
   liste.innerHTML = '';
-  const cariIslemler = kapaliKolayCafenlar.filter(k => k.odeme_tipi === 'cari');
-  const musteriler = {};
-  cariIslemler.forEach(k => {
-    const ad = k.musteri_adi || 'Bilinmiyor';
-    if(!musteriler[ad]) musteriler[ad] = { islemler: [], toplam: 0 };
-    musteriler[ad].islemler.push(k);
-    musteriler[ad].toplam += k.cari_tutar || k.toplam || 0;
-  });
-  const musteriListesi = Object.entries(musteriler);
-  const toplamBorc = musteriListesi.reduce((s,[,v]) => s + v.toplam, 0);
-  document.getElementById('cari-toplam-borc').textContent = fmt(toplamBorc);
-  document.getElementById('cari-musteri-sayi').textContent = musteriListesi.length;
-  document.getElementById('cari-islem-sayi').textContent = cariIslemler.length;
-  if(musteriListesi.length === 0) { bos.style.display='block'; return; }
+  if (filtre.length === 0) { bos.style.display = 'block'; return; }
   bos.style.display = 'none';
-  musteriListesi.sort((a,b) => b[1].toplam - a[1].toplam).forEach(([ad, veri]) => {
+  
+  // Önce borçlular
+  filtre.sort((a, b) => (b.bakiye||0) - (a.bakiye||0)).forEach(m => {
+    const bakiye = m.bakiye || 0;
+    const borclu = bakiye > 0;
     const kart = document.createElement('div');
-    kart.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);margin-bottom:10px;';
-    const baslik = document.createElement('div');
-    baslik.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
-    baslik.innerHTML = `<div style="font-size:1rem;font-weight:900;color:var(--text);">👤 ${ad}</div><div style="font-size:1.1rem;font-weight:900;color:#ef4444;">${fmt(veri.toplam)}</div>`;
-    kart.appendChild(baslik);
-    veri.islemler.forEach(islem => {
-      const satir = document.createElement('div');
-      satir.style.cssText = 'display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);font-size:0.8rem;color:var(--muted);';
-      satir.innerHTML = `<span>📅 ${islem.tarih}</span><span style="color:var(--text);font-weight:700;">${fmt(islem.cari_tutar||islem.toplam||0)}</span>`;
-      kart.appendChild(satir);
-    });
-    const tahsilBtn = document.createElement('button');
-    tahsilBtn.style.cssText = 'width:100%;margin-top:10px;padding:8px;border-radius:10px;border:none;background:#22c55e;color:#fff;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:900;cursor:pointer;';
-    tahsilBtn.textContent = '✓ Tahsil Edildi';
-    tahsilBtn.addEventListener('click', async () => {
-      // Supabase'de cari_tahsil yap
-      const cariKayitlar = kapaliKolayCafenlar.filter(k => k.odeme_tipi==='cari' && k.musteri_adi===ad && k.id);
-      for (const kayit of cariKayitlar) {
-        await sb.from('kolaycafenlar').update({odeme_tipi:'cari_tahsil'}).eq('id', kayit.id);
-      }
-      kapaliKolayCafenlar = kapaliKolayCafenlar.filter(k => !(k.odeme_tipi==='cari' && k.musteri_adi===ad));
-      toast(`✅ ${ad} — ${fmt(veri.toplam)} tahsil edildi`);
-      cariHesaplarRender();
-      raporRender();
-    });
-    kart.appendChild(tahsilBtn);
+    kart.style.cssText = `background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid ${borclu ? 'rgba(239,68,68,0.3)' : 'var(--border)'};cursor:pointer;`;
+    kart.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:1rem;font-weight:900;">👤 ${m.ad}</div>
+          ${m.telefon ? `<div style="font-size:0.75rem;color:var(--muted);font-weight:600;margin-top:2px;">📞 ${m.telefon}</div>` : ''}
+          ${m.notlar ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">💬 ${m.notlar}</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1.15rem;font-weight:900;color:${borclu ? '#ef4444' : '#22c55e'};">${fmt(bakiye)}</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:700;">${borclu ? 'BORÇ' : 'BAKIYE'}</div>
+        </div>
+      </div>
+      ${borclu ? `<div style="margin-top:10px;display:flex;gap:8px;">
+        <button onclick="event.stopPropagation();cariDetayAc('${m.id}');cariOdemeAl();" style="flex:1;padding:7px;border-radius:8px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💰 Ödeme Al</button>
+        <button onclick="event.stopPropagation();cariDetayAc('${m.id}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">📋 Detay</button>
+      </div>` : ''}
+    `;
+    kart.addEventListener('click', () => cariDetayAc(m.id));
     liste.appendChild(kart);
   });
 }
+
+function cariAra() { cariHesaplarRender(); }
+
+// Yeni müşteri modal aç
+function cariYeniMusteriAc(musteri = null) {
+  document.getElementById('cari-yeni-baslik').textContent = musteri ? '✏️ Müşteriyi Düzenle' : '👤 Yeni Müşteri';
+  document.getElementById('cari-duzenle-id').value = musteri ? musteri.id : '';
+  document.getElementById('cari-yeni-ad').value = musteri ? musteri.ad : '';
+  document.getElementById('cari-yeni-tel').value = musteri ? (musteri.telefon || '') : '';
+  document.getElementById('cari-yeni-not').value = musteri ? (musteri.notlar || '') : '';
+  document.getElementById('cari-yeni-modal').style.display = 'block';
+  setTimeout(() => document.getElementById('cari-yeni-ad').focus(), 100);
+}
+
+// Müşteri kaydet / güncelle
+async function cariMusteriKaydet() {
+  const id = document.getElementById('cari-duzenle-id').value;
+  const ad = document.getElementById('cari-yeni-ad').value.trim();
+  const tel = document.getElementById('cari-yeni-tel').value.trim();
+  const not = document.getElementById('cari-yeni-not').value.trim();
+  if (!ad) { toast('Müşteri adı gerekli!'); return; }
+  if (!kafeId) return;
+  
+  document.getElementById('cari-yeni-modal').style.display = 'none';
+  
+  if (id) {
+    // Güncelle
+    const { error } = await sb.from('cari_musteriler').update({ ad, telefon: tel, notlar: not }).eq('id', id);
+    if (error) { toast('Hata: ' + error.message); return; }
+    const i = cariMusteriler.findIndex(m => m.id === id);
+    if (i >= 0) { cariMusteriler[i].ad = ad; cariMusteriler[i].telefon = tel; cariMusteriler[i].not = not; }
+    toast('✅ Müşteri güncellendi');
+    if (aktifCariMusteri?.id === id) { aktifCariMusteri = cariMusteriler[i]; cariDetayGoster(); }
+  } else {
+    // Yeni
+    const { data, error } = await sb.from('cari_musteriler')
+      .insert({ kafe_id: kafeId, ad, telefon: tel, notlar: not, bakiye: 0 }).select().single();
+    if (error) { toast('Hata: ' + error.message); return; }
+    cariMusteriler.push(data);
+    toast('✅ ' + ad + ' eklendi');
+  }
+  cariHesaplarRender();
+}
+
+// Detay modal aç
+async function cariDetayAc(id) {
+  const m = cariMusteriler.find(x => x.id === id);
+  if (!m) return;
+  aktifCariMusteri = m;
+  cariDetayGoster();
+  document.getElementById('cari-detay-modal').style.display = 'block';
+  // İşlem geçmişini yükle
+  await cariEkstreYukle(id);
+}
+
+function cariDetayGoster() {
+  const m = aktifCariMusteri;
+  if (!m) return;
+  document.getElementById('cd-baslik').textContent = m.ad;
+  document.getElementById('cd-ad').textContent = m.ad;
+  document.getElementById('cd-tel').textContent = m.telefon ? '📞 ' + m.telefon : '';
+  document.getElementById('cd-not').textContent = m.notlar ? '💬 ' + m.notlar : '';
+  const bakiye = m.bakiye || 0;
+  const bakEl = document.getElementById('cd-bakiye-goster');
+  bakEl.textContent = fmt(bakiye);
+  bakEl.style.color = bakiye > 0 ? '#ef4444' : '#22c55e';
+}
+
+// Ekstre yükle
+async function cariEkstreYukle(musteriId) {
+  const el = document.getElementById('cd-ekstra');
+  const bos = document.getElementById('cd-ekstra-bos');
+  el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:12px;">Yükleniyor...</div>';
+  
+  const { data, error } = await sb.from('cari_islemler')
+    .select('*').eq('musteri_id', musteriId).order('created_at', { ascending: false }).limit(50);
+  
+  if (error || !data || data.length === 0) {
+    el.innerHTML = '';
+    bos.style.display = 'block';
+    return;
+  }
+  bos.style.display = 'none';
+  el.innerHTML = '';
+  
+  data.forEach(islem => {
+    const tip = islem.tip; // 'borc' | 'odeme' | 'siparis'
+    const renk = tip === 'odeme' ? '#22c55e' : '#ef4444';
+    const icon = tip === 'odeme' ? '💰' : tip === 'siparis' ? '🛒' : '📝';
+    const isaret = tip === 'odeme' ? '-' : '+';
+    const tarihStr = new Date(islem.created_at).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--surface2);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;';
+    div.innerHTML = `
+      <div>
+        <div style="font-weight:800;font-size:0.88rem;">${icon} ${islem.aciklama || (tip==='odeme'?'Ödeme alındı':tip==='siparis'?'Sipariş':'Manuel borç')}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${tarihStr} ${islem.garson ? '· ' + islem.garson : ''}</div>
+      </div>
+      <div style="font-size:1rem;font-weight:900;color:${renk};">${isaret}${fmt(islem.tutar)}</div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+// Detay düzenle
+function cariDetayDuzenle() {
+  if (!aktifCariMusteri) return;
+  cariYeniMusteriAc(aktifCariMusteri);
+}
+
+// Ödeme al modal
+function cariOdemeAl() {
+  if (!aktifCariMusteri) return;
+  const bakiye = aktifCariMusteri.bakiye || 0;
+  document.getElementById('cari-odeme-kisi').textContent = '👤 ' + aktifCariMusteri.ad;
+  document.getElementById('cari-odeme-mevcut').textContent = fmt(bakiye);
+  document.getElementById('cari-odeme-tutar').value = '';
+  cariOdemeTipSec('nakit');
+  document.getElementById('cari-odeme-modal').style.display = 'block';
+}
+
+function cariOdemeTamami() {
+  const bakiye = aktifCariMusteri?.bakiye || 0;
+  document.getElementById('cari-odeme-tutar').value = bakiye;
+}
+
+function cariOdemeTipSec(tip) {
+  cariOdemeTipSecili = tip;
+  ['nakit','kart'].forEach(t => {
+    const btn = document.getElementById('cari-odeme-tip-'+t);
+    if (!btn) return;
+    btn.style.borderColor = t===tip ? 'var(--accent)' : 'transparent';
+    btn.style.background = t===tip ? 'rgba(240,184,48,0.15)' : 'var(--surface2)';
+    btn.style.color = t===tip ? 'var(--accent2)' : 'var(--text2)';
+  });
+}
+
+async function cariOdemeyiKaydet() {
+  const tutar = parseFloat(document.getElementById('cari-odeme-tutar').value);
+  if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
+  if (!aktifCariMusteri) return;
+  document.getElementById('cari-odeme-modal').style.display = 'none';
+  
+  const yeniBakiye = (aktifCariMusteri.bakiye || 0) - tutar;
+  const { error } = await sb.from('cari_musteriler').update({ bakiye: yeniBakiye }).eq('id', aktifCariMusteri.id);
+  if (error) { toast('Hata!'); return; }
+  
+  // İşlem kaydı
+  await sb.from('cari_islemler').insert({
+    kafe_id: kafeId, musteri_id: aktifCariMusteri.id,
+    tip: 'odeme', tutar, odeme_tipi: cariOdemeTipSecili,
+    aciklama: cariOdemeTipSecili === 'nakit' ? 'Nakit ödeme' : 'Kart ile ödeme',
+    garson: aktifGarsonAdi || null
+  });
+  
+  aktifCariMusteri.bakiye = yeniBakiye;
+  const i = cariMusteriler.findIndex(m => m.id === aktifCariMusteri.id);
+  if (i >= 0) cariMusteriler[i].bakiye = yeniBakiye;
+  
+  toast(`✅ ${fmt(tutar)} tahsil edildi`);
+  cariDetayGoster();
+  cariHesaplarRender();
+  await cariEkstreYukle(aktifCariMusteri.id);
+}
+
+// Manuel borç ekle
+function cariManuelBorc() {
+  if (!aktifCariMusteri) return;
+  document.getElementById('cari-borc-tutar').value = '';
+  document.getElementById('cari-borc-aciklama').value = '';
+  document.getElementById('cari-borc-modal').style.display = 'block';
+}
+
+async function cariManuelBorcKaydet() {
+  const tutar = parseFloat(document.getElementById('cari-borc-tutar').value);
+  const aciklama = document.getElementById('cari-borc-aciklama').value.trim() || 'Manuel borç';
+  if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
+  if (!aktifCariMusteri) return;
+  document.getElementById('cari-borc-modal').style.display = 'none';
+  
+  const yeniBakiye = (aktifCariMusteri.bakiye || 0) + tutar;
+  await sb.from('cari_musteriler').update({ bakiye: yeniBakiye }).eq('id', aktifCariMusteri.id);
+  await sb.from('cari_islemler').insert({
+    kafe_id: kafeId, musteri_id: aktifCariMusteri.id,
+    tip: 'borc', tutar, aciklama, garson: aktifGarsonAdi || null
+  });
+  
+  aktifCariMusteri.bakiye = yeniBakiye;
+  const i = cariMusteriler.findIndex(m => m.id === aktifCariMusteri.id);
+  if (i >= 0) cariMusteriler[i].bakiye = yeniBakiye;
+  
+  toast(`+ ${fmt(tutar)} borca eklendi`);
+  cariDetayGoster();
+  cariHesaplarRender();
+  await cariEkstreYukle(aktifCariMusteri.id);
+}
+
+// Sipariş modal - masa gibi ürün seçimi
+function cariSiparisAc() {
+  if (!aktifCariMusteri) return;
+  cariSepet = [];
+  document.getElementById('cari-siparis-baslik').textContent = '🛒 ' + aktifCariMusteri.ad;
+  document.getElementById('cari-siparis-toplam').textContent = '0 ₺';
+  cariSepetKategori = urunler.length > 0 ? (urunler[0].kategori || 'Genel') : null;
+  document.getElementById('cari-siparis-modal').style.display = 'block';
+  cariSiparisKategorilerRender();
+  cariSiparisUrunlerRender();
+  cariSiperisSepetRender();
+}
+
+function cariSiparisKategorilerRender() {
+  const el = document.getElementById('cari-siparis-kategoriler');
+  const kategoriler = [...new Set(urunler.map(u => u.kategori || 'Genel'))];
+  el.innerHTML = kategoriler.map(k => `
+    <button onclick="cariSiparisKategoriSec('${k}')" 
+      style="white-space:nowrap;padding:7px 14px;border-radius:20px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;flex-shrink:0;
+             background:${k===cariSepetKategori?'var(--accent)':'var(--surface2)'};color:${k===cariSepetKategori?'#1a0f00':'var(--text2)'};">
+      ${k}
+    </button>`).join('');
+}
+
+function cariSiparisKategoriSec(kat) {
+  cariSepetKategori = kat;
+  cariSiparisKategorilerRender();
+  cariSiparisUrunlerRender();
+}
+
+function cariSiparisUrunlerRender() {
+  const el = document.getElementById('cari-siparis-urunler');
+  const liste = urunler.filter(u => (u.kategori || 'Genel') === cariSepetKategori);
+  el.innerHTML = liste.map(u => {
+    const mevcut = cariSepet.find(s => s.isim === u.isim);
+    const adet = mevcut ? mevcut.adet : 0;
+    return `<div onclick="cariSepeteEkle('${u.isim}',${u.fiyat},'${u.ikon||''}','${u.kategori||'Genel'}')" 
+      style="background:var(--surface2);border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer;border:1.5px solid ${adet>0?'var(--accent)':'var(--border)'};">
+      <div style="font-size:1.6rem;">${u.ikon||'🍽️'}</div>
+      <div style="font-size:0.72rem;font-weight:800;margin:3px 0;">${u.isim}</div>
+      <div style="font-size:0.78rem;font-weight:900;color:var(--accent2);">${fmt(u.fiyat)}</div>
+      ${adet>0?`<div style="margin-top:4px;background:var(--accent);color:#1a0f00;border-radius:20px;font-size:0.7rem;font-weight:900;padding:2px 6px;">${adet}x</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function cariSepeteEkle(isim, fiyat, ikon, kategori) {
+  const mevcut = cariSepet.find(s => s.isim === isim);
+  if (mevcut) mevcut.adet++;
+  else cariSepet.push({ isim, fiyat, ikon, kategori, adet: 1 });
+  const toplam = cariSepet.reduce((s, u) => s + u.fiyat * u.adet, 0);
+  document.getElementById('cari-siparis-toplam').textContent = fmt(toplam);
+  cariSiparisUrunlerRender();
+  cariSiperisSepetRender();
+}
+
+function cariSiperisSepetRender() {
+  const el = document.getElementById('cari-siparis-sepet');
+  if (cariSepet.length === 0) { el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;">Ürün seçin</div>'; return; }
+  el.innerHTML = cariSepet.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;">
+      <span style="font-weight:700;">${u.isim} x${u.adet}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--accent2);font-weight:800;">${fmt(u.fiyat*u.adet)}</span>
+        <button onclick="cariSepetCikar('${u.isim}')" style="background:#ef4444;border:none;color:#fff;border-radius:6px;width:22px;height:22px;font-size:0.9rem;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:900;">−</button>
+      </div>
+    </div>`).join('');
+}
+
+function cariSepetCikar(isim) {
+  const i = cariSepet.findIndex(s => s.isim === isim);
+  if (i < 0) return;
+  cariSepet[i].adet--;
+  if (cariSepet[i].adet <= 0) cariSepet.splice(i, 1);
+  const toplam = cariSepet.reduce((s, u) => s + u.fiyat * u.adet, 0);
+  document.getElementById('cari-siparis-toplam').textContent = fmt(toplam);
+  cariSiparisUrunlerRender();
+  cariSiperisSepetRender();
+}
+
+async function cariSiparisKaydet() {
+  if (cariSepet.length === 0) { toast('Ürün seçin!'); return; }
+  if (!aktifCariMusteri) return;
+  const toplam = cariSepet.reduce((s, u) => s + u.fiyat * u.adet, 0);
+  document.getElementById('cari-siparis-modal').style.display = 'none';
+  
+  const aciklama = cariSepet.map(u => `${u.isim} x${u.adet}`).join(', ');
+  const yeniBakiye = (aktifCariMusteri.bakiye || 0) + toplam;
+  
+  await sb.from('cari_musteriler').update({ bakiye: yeniBakiye }).eq('id', aktifCariMusteri.id);
+  await sb.from('cari_islemler').insert({
+    kafe_id: kafeId, musteri_id: aktifCariMusteri.id,
+    tip: 'siparis', tutar: toplam, aciklama,
+    siparisler: JSON.stringify(cariSepet),
+    garson: aktifGarsonAdi || null
+  });
+  
+  // kolaycafenlar tablosuna da yaz (raporlama için)
+  await sb.from('kolaycafenlar').insert({
+    kafe_id: kafeId, masa_no: 0, masa_ad: '📋 Cari: ' + aktifCariMusteri.ad,
+    toplam: 0, garson: aktifGarsonAdi || '', siparisler: cariSepet,
+    odeme_tipi: 'cari', musteri_adi: aktifCariMusteri.ad, cari_tutar: toplam
+  });
+  
+  aktifCariMusteri.bakiye = yeniBakiye;
+  const i = cariMusteriler.findIndex(m => m.id === aktifCariMusteri.id);
+  if (i >= 0) cariMusteriler[i].bakiye = yeniBakiye;
+  
+  toast(`✅ ${fmt(toplam)} cariye yazıldı`);
+  cariDetayGoster();
+  cariHesaplarRender();
+  await cariEkstreYukle(aktifCariMusteri.id);
+}
+
+// Masa ödemesinde cari seçimi (eski cariKaydet ile entegrasyon)
+async function cariKaydetMusteri(musteriAdi, masaId, masaVeri, tutar) {
+  // Müşteri var mı bul, yoksa oluştur
+  let musteri = cariMusteriler.find(m => m.ad.toLowerCase() === musteriAdi.toLowerCase());
+  if (!musteri) {
+    const { data } = await sb.from('cari_musteriler')
+      .insert({ kafe_id: kafeId, ad: musteriAdi, bakiye: 0 }).select().single();
+    if (data) { musteri = data; cariMusteriler.push(musteri); }
+  }
+  if (!musteri) return;
+  
+  const yeniBakiye = (musteri.bakiye || 0) + tutar;
+  await sb.from('cari_musteriler').update({ bakiye: yeniBakiye }).eq('id', musteri.id);
+  await sb.from('cari_islemler').insert({
+    kafe_id: kafeId, musteri_id: musteri.id,
+    tip: 'siparis', tutar,
+    aciklama: 'Masa: ' + (masaVeri?.ad || masaId),
+    siparisler: JSON.stringify(masaVeri?.siparisler || []),
+    garson: masaVeri?.garson || null
+  });
+  musteri.bakiye = yeniBakiye;
+  cariHesaplarRender();
+}
+
+function cariHesaplarRender_eski() {} // eski fonksiyon isim çakışması önlemi
 
 function raporRender(){
   const filtre=donemFiltrele(kapaliKolayCafenlar);
@@ -3473,6 +3966,24 @@ window.gelAlSiparisVer = gelAlSiparisVer;
 window.gelAlUrunEkle = gelAlUrunEkle;
 window.gelAlDurumGuncelle = gelAlDurumGuncelle;
 window.gelAlOde = gelAlOde;
+window.cariYukle = cariYukle;
+window.cariHesaplarRender = cariHesaplarRender;
+window.cariAra = cariAra;
+window.cariYeniMusteriAc = cariYeniMusteriAc;
+window.cariMusteriKaydet = cariMusteriKaydet;
+window.cariDetayAc = cariDetayAc;
+window.cariDetayDuzenle = cariDetayDuzenle;
+window.cariOdemeAl = cariOdemeAl;
+window.cariOdemeTamami = cariOdemeTamami;
+window.cariOdemeTipSec = cariOdemeTipSec;
+window.cariOdemeyiKaydet = cariOdemeyiKaydet;
+window.cariManuelBorc = cariManuelBorc;
+window.cariManuelBorcKaydet = cariManuelBorcKaydet;
+window.cariSiparisAc = cariSiparisAc;
+window.cariSiparisKategoriSec = cariSiparisKategoriSec;
+window.cariSepeteEkle = cariSepeteEkle;
+window.cariSepetCikar = cariSepetCikar;
+window.cariSiparisKaydet = cariSiparisKaydet;
 window.gelAlOdeTipi = gelAlOdeTipi;
 window.gelAlSil = gelAlSil;
 window.gelAlKatSec = gelAlKatSec;
