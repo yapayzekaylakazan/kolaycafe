@@ -598,14 +598,29 @@
     <button onclick="gelAlYeniAc()" style="padding:8px 16px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">+ Yeni</button>
   </div>
 
-  <!-- AKTİF GEL-AL SİPARİŞLERİ -->
-  <div id="gelal-aktif-liste"></div>
+  <!-- SEKME: Aktif / Geçmiş -->
+  <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface);border-radius:12px;padding:3px;">
+    <button id="gelal-tab-aktif" onclick="gelAlTabSec('aktif')" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🟡 Aktif</button>
+    <button id="gelal-tab-gecmis" onclick="gelAlTabSec('gecmis')" style="flex:1;padding:8px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📋 Geçmiş</button>
+  </div>
 
-  <!-- BOŞ DURUM -->
-  <div id="gelal-bos" style="text-align:center;padding:48px 20px;color:var(--muted);display:none;">
-    <div style="font-size:3rem;margin-bottom:12px;">🛍️</div>
-    <div style="font-weight:800;font-size:1rem;margin-bottom:6px;">Gel-Al siparişi yok</div>
-    <div style="font-size:0.82rem;">+ Yeni butonuna basarak sipariş ekleyin</div>
+  <!-- AKTİF -->
+  <div id="gelal-aktif-wrap">
+    <div id="gelal-aktif-liste"></div>
+    <div id="gelal-bos" style="text-align:center;padding:48px 20px;color:var(--muted);display:none;">
+      <div style="font-size:3rem;margin-bottom:12px;">🛍️</div>
+      <div style="font-weight:800;font-size:1rem;margin-bottom:6px;">Aktif gel-al siparişi yok</div>
+      <div style="font-size:0.82rem;">+ Yeni butonuna basarak sipariş ekleyin</div>
+    </div>
+  </div>
+
+  <!-- GEÇMİŞ -->
+  <div id="gelal-gecmis-wrap" style="display:none;">
+    <!-- Tarih filtresi -->
+    <input type="date" id="gelal-gecmis-tarih" onchange="gelAlGecmisYukle()"
+      style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:12px;">
+    <div id="gelal-gecmis-ozet" style="display:flex;gap:10px;margin-bottom:12px;"></div>
+    <div id="gelal-gecmis-liste"></div>
   </div>
 </div>
 
@@ -1605,7 +1620,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='cari') cariHesaplarRender();
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
-  if (sayfa==='gelal') gelAlRender();
+  if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
 }
 
 // ════════════════════════════════════════
@@ -3014,6 +3029,91 @@ let gelAlSiparisler = []; // [{id, musteriAdi, tel, not, urunler, toplam, durum,
 let gelAlSepet = [];
 let gelAlAktifKat = null;
 
+let gelAlAktifTab = 'aktif';
+
+function gelAlTabSec(tab) {
+  gelAlAktifTab = tab;
+  const aktifBtn = document.getElementById('gelal-tab-aktif');
+  const gecmisBtn = document.getElementById('gelal-tab-gecmis');
+  const aktifWrap = document.getElementById('gelal-aktif-wrap');
+  const gecmisWrap = document.getElementById('gelal-gecmis-wrap');
+
+  if (tab === 'aktif') {
+    aktifBtn.style.background = 'var(--accent2)'; aktifBtn.style.color = '#fff';
+    gecmisBtn.style.background = 'transparent'; gecmisBtn.style.color = 'var(--muted)';
+    aktifWrap.style.display = 'block';
+    gecmisWrap.style.display = 'none';
+  } else {
+    gecmisBtn.style.background = 'var(--accent2)'; gecmisBtn.style.color = '#fff';
+    aktifBtn.style.background = 'transparent'; aktifBtn.style.color = 'var(--muted)';
+    aktifWrap.style.display = 'none';
+    gecmisWrap.style.display = 'block';
+    // Bugünün tarihini otomatik seç
+    const tarihInp = document.getElementById('gelal-gecmis-tarih');
+    if (!tarihInp.value) {
+      tarihInp.value = new Date().toISOString().slice(0, 10);
+    }
+    gelAlGecmisYukle();
+  }
+}
+
+async function gelAlGecmisYukle() {
+  const tarih = document.getElementById('gelal-gecmis-tarih').value;
+  if (!tarih || !kafeId) return;
+
+  const liste = document.getElementById('gelal-gecmis-liste');
+  const ozet = document.getElementById('gelal-gecmis-ozet');
+  liste.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem;">⏳ Yükleniyor...</div>';
+
+  try {
+    const { data, error } = await sb.from('kolaycafenlar')
+      .select('*')
+      .eq('kafe_id', kafeId)
+      .eq('masa_no', 'gelal')
+      .gte('created_at', tarih + 'T00:00:00')
+      .lte('created_at', tarih + 'T23:59:59')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || data.length === 0) {
+      ozet.innerHTML = '';
+      liste.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--muted);"><div style="font-size:2rem;margin-bottom:8px;">📋</div><div style="font-weight:800;">Bu tarihte gel-al siparişi yok</div></div>';
+      return;
+    }
+
+    const toplamCiro = data.reduce((t, d) => t + (d.toplam || 0), 0);
+    ozet.innerHTML = `
+      <div style="flex:1;background:var(--surface);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:900;color:var(--accent2);">${data.length}</div>
+        <div style="font-size:0.72rem;color:var(--muted);">SİPARİŞ</div>
+      </div>
+      <div style="flex:1;background:var(--surface);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:900;color:var(--accent2);">₺${toplamCiro}</div>
+        <div style="font-size:0.72rem;color:var(--muted);">TOPLAM CİRO</div>
+      </div>`;
+
+    liste.innerHTML = '';
+    data.forEach(d => {
+      const saat = new Date(d.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+      const urunler = (d.siparisler || []).map(s => s.isim + ' x' + s.adet).join(' · ');
+      const div = document.createElement('div');
+      div.style.cssText = 'background:var(--surface);border:1px solid var(--accent2)30;border-radius:12px;padding:12px;margin-bottom:8px;';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-weight:900;">👤 ${d.musteri_adi || d.masa_ad?.replace('🛍️ Gel-Al: ','') || '—'}</div>
+          <div style="font-weight:900;color:var(--accent2);">₺${d.toplam}</div>
+        </div>
+        ${d.garson ? `<div style="font-size:0.72rem;color:var(--accent);margin-bottom:4px;">👤 ${d.garson}</div>` : ''}
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px;">🕐 ${saat} · ${urunler}</div>
+        <button onclick="fisGoster('gelal','${new Date(d.created_at).toLocaleString('tr-TR')}',${JSON.stringify(d.siparisler||[]).replace(/"/g,"'")},${d.toplam},'${d.garson||''}',0,'${d.masa_ad||'Gel-Al'}')" 
+          style="padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.75rem;font-weight:800;cursor:pointer;">🖨 Fiş</button>
+      `;
+      liste.appendChild(div);
+    });
+  } catch(e) {
+    liste.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">Hata: ' + e.message + '</div>';
+  }
+}
+
 function gelAlRender() {
   const liste = document.getElementById('gelal-aktif-liste');
   const bos = document.getElementById('gelal-bos');
@@ -3312,6 +3412,8 @@ async function gelAlSiparislerYukle() {
 }
 
 window.gelAlYeniAc = gelAlYeniAc;
+window.gelAlTabSec = gelAlTabSec;
+window.gelAlGecmisYukle = gelAlGecmisYukle;
 window.gelAlModalKapat = gelAlModalKapat;
 window.gelAlSiparisVer = gelAlSiparisVer;
 window.gelAlUrunEkle = gelAlUrunEkle;
