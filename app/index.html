@@ -704,7 +704,13 @@
       <div class="ayar-row"><span class="ayar-label">E-posta</span><span class="ayar-val" id="ayar-email">—</span></div>
       <div class="ayar-row">
         <span class="ayar-label">🔑 Cafe Kodu</span>
-        <span class="ayar-val" style="color:var(--accent2);font-weight:800;font-size:1rem;" id="ayar-cafe-kodu">—</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="text" id="ayar-cafe-kodu-inp" maxlength="10"
+            style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;outline:none;width:110px;text-transform:lowercase;"
+            oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9]/g,'')"
+            onkeydown="if(event.key==='Enter') kafeKoduGuncelle()">
+          <button onclick="kafeKoduGuncelle()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent2);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">✓ Kaydet</button>
+        </div>
       </div>
       <div style="font-size:0.72rem;color:var(--muted);padding:4px 0 8px;font-weight:600;">Garsonlar bu kodu kullanarak giriş yapar</div>
       <div class="ayar-row"><span class="ayar-label">Plan</span><span class="plan-badge plan-ucretsiz" id="ayar-plan">Ücretsiz</span></div>
@@ -1259,7 +1265,7 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
   // Kafe kodu göster
   if (kafeData?.kafe_kodu) {
-    if (document.getElementById('ayar-cafe-kodu')) document.getElementById('ayar-cafe-kodu').textContent = kafeData.kafe_kodu;
+    if (document.getElementById('ayar-cafe-kodu-inp')) document.getElementById('ayar-cafe-kodu-inp').value = kafeData.kafe_kodu;
   }
   document.getElementById('header-garson-adi').style.display = 'block';
   document.getElementById('header-garson-adi').textContent = '👤 ' + aktifGarsonAdi;
@@ -1459,7 +1465,7 @@ async function kafeVerisiYukle() {
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
   // Kafe kodu göster
   if (data?.kafe_kodu) {
-    if (document.getElementById('ayar-cafe-kodu')) document.getElementById('ayar-cafe-kodu').textContent = data.kafe_kodu;
+    if (document.getElementById('ayar-cafe-kodu-inp')) document.getElementById('ayar-cafe-kodu-inp').value = data.kafe_kodu;
   }
   document.getElementById('ayar-cafe-adi').textContent = kafeAdi;
   document.getElementById('yeni-cafe-adi').value = kafeAdi;
@@ -2663,6 +2669,24 @@ function garsonEkleAyar(){
   garsonAyarListeRender(); bulutKaydet(); toast('✓ Garson eklendi: '+ad);
 }
 
+async function kafeKoduGuncelle() {
+  const inp = document.getElementById('ayar-cafe-kodu-inp');
+  const yeniKod = inp.value.trim().toLowerCase();
+  if (!yeniKod || yeniKod.length < 3) { toast('En az 3 karakter girin!'); return; }
+  if (!kafeId) { toast('Bağlantı hatası!'); return; }
+
+  // Kod başka kafede kullanılıyor mu kontrol et
+  const { data: var_mi } = await sb.from('kafeler')
+    .select('id').eq('kafe_kodu', yeniKod).neq('id', kafeId).single();
+  if (var_mi) { toast('❌ Bu kod başka bir cafe tarafından kullanılıyor!'); return; }
+
+  const { error } = await sb.from('kafeler')
+    .update({ kafe_kodu: yeniKod }).eq('id', kafeId);
+  if (error) { toast('Hata: ' + error.message); return; }
+
+  toast('✓ Cafe kodu güncellendi: ' + yeniKod);
+}
+
 async function kafeAdiniGuncelle(){
   const yeni=document.getElementById('yeni-cafe-adi').value.trim();
   if(!yeni){toast('Kafe adı girin!');return;}
@@ -3005,6 +3029,7 @@ window.tahsilEt = tahsilEt;
 window.yeniKategoriEkle = yeniKategoriEkle;
 window.urunKaydet = urunKaydet;
 window.kafeAdiniGuncelle = kafeAdiniGuncelle;
+window.kafeKoduGuncelle = kafeKoduGuncelle;
 window.garsonEkleAyar = garsonEkleAyar;
 window.indirimUygula = indirimUygula;
 window.indirimUygulaManuel = indirimUygulaManuel;
