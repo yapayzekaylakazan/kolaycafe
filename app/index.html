@@ -1658,7 +1658,7 @@ async function garsonGiris(isim, kafeData) {
   kafeAdi = kafeData.kafe_adi;
   garsonlar = kafeData.garsonlar || [];
   if (kafeData.urunler) URUNLER = kafeData.urunler;
-  if (kafeData.receteler) RECETELER = kafeData.receteler;
+  if (kafeData.receteler) { RECETELER = kafeData.receteler; console.log("Reçeteler yüklendi:", Object.keys(RECETELER)); } else { console.log("Receteler kolonu boş veya yok"); }
   // Paketi ayarla
   aktifPaket = kafeData.plan || 'pro';
   const _paket = PAKETLER[aktifPaket] || PAKETLER.pro;
@@ -3886,11 +3886,20 @@ async function receteKaydet() {
   
   // Supabase'e kaydet
   if(kafeId) {
-    await sb.from('kafeler').update({ receteler: RECETELER }).eq('id', kafeId);
+    const { error } = await sb.from('kafeler').update({ receteler: RECETELER }).eq('id', kafeId);
+    if(error) {
+      toast('❌ Kayıt hatası: ' + error.message);
+      console.error('Reçete kayıt hatası:', error);
+      return;
+    }
+    toast('✅ Reçete kaydedildi');
+  } else {
+    toast('⚠️ Kafe ID bulunamadı, oturum açık mı?');
+    console.warn('kafeId yok:', kafeId);
+    return;
   }
   
   document.getElementById('recete-modal').style.display = 'none';
-  toast('✅ Reçete kaydedildi');
   receteListeRender();
 }
 
