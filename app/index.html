@@ -557,10 +557,10 @@
   </div>
 </div>
 
-<div class="page" id="page-rapor" style="overflow-y:auto;padding:0;display:flex;flex-direction:column;">
+<div class="page" id="page-rapor" style="overflow-y:auto;padding:0;flex-direction:column;">
 
   <!-- RAPOR HEADER -->
-  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;position:sticky;top:0;z-index:10;flex-shrink:0;">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;">
     <!-- Dönem seçici -->
     <div style="display:flex;gap:5px;margin-bottom:8px;overflow-x:auto;scrollbar-width:none;">
       <button class="donem-tab active" data-donem="gun" style="white-space:nowrap;">📅 Bugün</button>
@@ -576,7 +576,6 @@
       <button id="rtab-urun" onclick="raporSekme('urun')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🛒 Ürünler</button>
       <button id="rtab-garson" onclick="raporSekme('garson')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">👤 Garson</button>
       <button id="rtab-adisyon" onclick="raporSekme('adisyon')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🧾 Adisyon</button>
-      <button id="rtab-recete" onclick="raporSekme('recete')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🧪 Reçete</button>
     </div>
   </div>
 
@@ -661,20 +660,22 @@
     <div id="kapali-liste"></div>
   </div>
 
-  <!-- REÇETE SEKMESİ -->
-  <div id="rsekme-recete" style="padding:12px;display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-size:0.9rem;font-weight:900;color:var(--accent2);">🧪 Reçete & Maliyet</div>
-      <button onclick="receteYeniAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">+ Reçete Ekle</button>
-    </div>
-    <!-- Kar marjı özeti -->
+
+
+<!-- REÇETE SAYFASI -->
+<div class="page" id="page-recete" style="overflow-y:auto;padding:0;">
+  <div style="background:var(--surface2);padding:14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);">🧪 Reçete & Maliyet</div>
+    <button onclick="receteYeniAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;">+ Reçete Ekle</button>
+  </div>
+  <div style="padding:12px;">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORTALAMA MALİYET</div>
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORT. MALİYET</div>
         <div style="font-size:0.95rem;font-weight:900;color:#ef4444;" id="r-ort-maliyet">0 ₺</div>
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORTALAMA KAR</div>
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORT. KAR</div>
         <div style="font-size:0.95rem;font-weight:900;color:#22c55e;" id="r-ort-kar">0 ₺</div>
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
@@ -686,6 +687,32 @@
     <div id="recete-bos" style="text-align:center;color:var(--muted);padding:32px;font-size:0.88rem;font-weight:600;">
       Henüz reçete eklenmemiş
     </div>
+  </div>
+</div>
+
+<div class="page" id="page-recete" style="overflow-y:auto;padding:12px;flex-direction:column;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);">🧪 Reçete & Maliyet</div>
+    <button onclick="receteYeniAc()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;">+ Reçete Ekle</button>
+  </div>
+  <!-- Kar marjı özeti -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;border:1.5px solid var(--border);">
+      <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ORTALAMA MALİYET</div>
+      <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="r-ort-maliyet">0 ₺</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;border:1.5px solid var(--border);">
+      <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ORTALAMA KAR</div>
+      <div style="font-size:1rem;font-weight:900;color:#22c55e;" id="r-ort-kar">0 ₺</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;border:1.5px solid var(--border);">
+      <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">KAR MARJI</div>
+      <div style="font-size:1rem;font-weight:900;color:var(--accent2);" id="r-kar-marji">%0</div>
+    </div>
+  </div>
+  <div id="recete-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+  <div id="recete-bos" style="text-align:center;color:var(--muted);padding:40px;font-size:0.88rem;font-weight:600;">
+    Henüz reçete eklenmemiş.<br><br>Ürünlerinize maliyet ve reçete ekleyerek<br>kar marjınızı takip edin.
   </div>
 </div>
 
@@ -1213,6 +1240,7 @@
   <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
   <button class="bnav-btn" id="nav-gelgid" ><div class="nav-icon">💰</div>Gelir/Gider</button>
   <button class="bnav-btn" id="nav-stok" onclick="sayfaGit('stok')"><div class="nav-icon">📦</div>Stok</button>
+  <button class="bnav-btn" id="nav-recete" onclick="sayfaGit('recete')"><div class="nav-icon">🧪</div>Reçete</button>
   <button class="bnav-btn" id="nav-rapor" ><div class="nav-icon">📊</div>Rapor</button>
   <button class="bnav-btn" id="nav-ayarlar" ><div class="nav-icon">⚙️</div>Ayarlar</button>
   <button class="bnav-btn" id="nav-mutfak" style="display:none;" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
@@ -1637,6 +1665,7 @@ async function garsonGiris(isim, kafeData) {
   appEl.style.display = 'flex'; appEl.style.flexDirection = 'column';
   // Rapor ve Ayarlar gizle
   document.getElementById('nav-rapor').style.display = 'none';
+  document.getElementById('nav-recete').style.display = 'none';
   document.getElementById('nav-gelgid').style.display = 'none';
   document.getElementById('nav-cari').style.display = 'flex';
   document.getElementById('nav-stok').style.display = 'flex';
@@ -2020,9 +2049,11 @@ function sayfaGit(sayfa) {
   if (sayfa === 'gelgid') gelgidRender();
   document.getElementById('nav-'+sayfa).classList.add('active');
   if (sayfa==='rapor') raporRender();
+  if (sayfa==='recete') receteListeRender();
   if (sayfa==='urun') urunListesiRender();
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
   if (sayfa==='stok') stokRender();
+  if (sayfa==='recete') { if(typeof receteListeRender==='function') receteListeRender(); }
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
@@ -2046,10 +2077,13 @@ function paketYetkiUygula(plan) {
   const paket = PAKETLER[plan] || PAKETLER.deneme;
   // Rapor ve ayarlar nav
   const navRapor = document.getElementById('nav-rapor');
+  const navRecete = document.getElementById('nav-recete');
   if(navRapor) navRapor.style.display = paket.rapor ? '' : 'none';
   // Stok nav her zaman göster
   const navStok = document.getElementById('nav-stok');
   if(navStok) navStok.style.display = 'flex';
+  const navRecete2 = document.getElementById('nav-recete');
+  if(navRecete2) navRecete2.style.display = 'flex';
 }
 
 function masaErisimVar(masaId) {
@@ -4187,6 +4221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ['nav-stok', 'stok'],
     ['nav-gelgid', 'gelgid'],
     ['nav-rapor', 'rapor'],
+    ['nav-recete', 'recete'],
     ['nav-ayarlar', 'ayarlar'],
   ];
   navBtnler.forEach(([id, sayfa]) => {
