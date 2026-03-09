@@ -1,0 +1,25 @@
+name: Update SW Cache Version
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-sw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Update SW version timestamp
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          sed -i "s/SW_VERSION = '[^']*'/SW_VERSION = '$TIMESTAMP'/" sw.js
+          echo "SW version updated to: $TIMESTAMP"
+      
+      - name: Commit updated sw.js
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add sw.js
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto: SW cache bust $TIMESTAMP"
+          git push
