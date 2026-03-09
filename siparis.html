@@ -229,7 +229,7 @@ async function init() {
   }
 
   // Kafeyi bul
-  const { data, error } = await sb.from('kafeler').select('id,kafe_adi,urunler,masalar,havale_bilgi').eq('kafe_kodu', kafeKodu).single();
+  const { data, error } = await sb.from('kafeler').select('id,kafe_adi,urunler,masalar').eq('kafe_kodu', kafeKodu).single();
   if (error || !data) {
     document.getElementById('sayfa-yukleniyor').innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center;">❌ Kafe bulunamadı.</div>';
     return;
@@ -238,7 +238,7 @@ async function init() {
   kafeId = data.id;
   kafeAdi = data.kafe_adi || 'KolayCafe';
   URUNLER = data.urunler || {};
-  havaleInfo = data.havale_bilgi || '';
+  havaleInfo = '';
   document.getElementById('h-kafe-adi').textContent = kafeAdi;
   document.title = kafeAdi + ' — Online Sipariş';
 
