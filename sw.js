@@ -1,30 +1,27 @@
-const CACHE_NAME = 'kolaycafe-v1';
-const urlsToCache = ['/app/index.html'];
+// KolayCafe SW v20260309230937
+// Bu dosya her deploy'da değişerek CDN cache'ini temizler
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
+const CACHE_VERSION = 'v20260309230937';
+
+self.addEventListener('install', e => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
+self.addEventListener('activate', e => {
+  e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  // Sadece GET isteklerini cache'le, Supabase isteklerini atlat
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('supabase.co')) return;
-
-  event.respondWith(
-    fetch(event.request).catch(() =>
-      caches.match(event.request)
-    )
-  );
+// Network-first: Her zaman sunucudan al, cache kullanma
+self.addEventListener('fetch', e => {
+  if (e.request.url.includes('/app/index.html') || 
+      e.request.url.includes('/app/mutfak.html')) {
+    e.respondWith(
+      fetch(e.request, {cache: 'no-store'})
+        .catch(() => caches.match(e.request))
+    );
+  }
 });
