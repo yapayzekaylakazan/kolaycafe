@@ -1874,6 +1874,7 @@ async function kafeVerisiYukle() {
     kafeAdi = data.kafe_adi || 'Kafem';
     garsonlar = data.garsonlar || ['Ali','Ayşe'];
     if (data.urunler) URUNLER = data.urunler;
+    if (data.receteler) { RECETELER = data.receteler; console.log("Admin: Reçeteler yüklendi:", Object.keys(RECETELER)); }
     if (data.masalar) {
       const kayitliMasalar = data.masalar;
       masalar.forEach(m => {
