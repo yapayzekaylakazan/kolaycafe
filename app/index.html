@@ -793,8 +793,8 @@
       <button onclick="document.getElementById('cari-detay-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;padding:4px;">←</button>
       <div style="font-weight:900;font-size:1rem;" id="cd-baslik">Müşteri Detayı</div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="cariDetayDuzenle()" style="background:none;border:none;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">✏️ Düzenle</button>
-        <button onclick="cariDetaySil()" style="background:none;border:none;color:#ef4444;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🗑 Sil</button>
+        <button id="btn-cari-duzenle" style="background:none;border:none;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">✏️ Düzenle</button>
+        <button id="btn-cari-sil" style="background:none;border:none;color:#ef4444;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🗑 Sil</button>
       </div>
     </div>
     <!-- Müşteri Bilgi Kartı -->
@@ -2789,6 +2789,10 @@ async function cariDetayAc(id) {
   aktifCariMusteri = m;
   cariDetayGoster();
   document.getElementById('cari-detay-modal').style.display = 'block';
+  const btnDuz = document.getElementById('btn-cari-duzenle');
+  if (btnDuz) { btnDuz.onclick = () => cariYeniMusteriAc(aktifCariMusteri); }
+  const btnSil = document.getElementById('btn-cari-sil');
+  if (btnSil) { btnSil.onclick = () => cariDetaySil(); }
   // İşlem geçmişini yükle
   await cariEkstreYukle(id);
 }
