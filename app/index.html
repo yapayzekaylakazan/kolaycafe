@@ -6,6 +6,9 @@
 <title>KolayCafe — Cafe Adisyon Sistemi</title>
 <meta name="description" content="KolayCafe - Cafe Yönetim Sistemi">
 <meta name="theme-color" content="#1a1200">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KolayCafe">
@@ -13,6 +16,7 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
@@ -553,25 +557,177 @@
   </div>
 </div>
 
-<div class="page" id="page-rapor">
-  <div class="page-rapor">
-    <div class="page-title">📊 Rapor</div>
-    <div class="rapor-ozet">
-      <div class="rapor-kart"><div class="rk-label">Ciro</div><div class="rk-val" id="r-ciro">0 ₺</div></div>
-      <div class="rapor-kart"><div class="rk-label">KolayCafen</div><div class="rk-val" id="r-adi">0</div></div>
-      <div class="rapor-kart"><div class="rk-label">Ürün</div><div class="rk-val" id="r-urun">0</div></div>
-      <div class="rapor-kart"><div class="rk-label">Ort.</div><div class="rk-val" id="r-ort">0 ₺</div></div>
+<div class="page" id="page-rapor" style="overflow-y:auto;padding:0;display:flex;flex-direction:column;">
+
+  <!-- RAPOR HEADER -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;position:sticky;top:0;z-index:10;flex-shrink:0;">
+    <!-- Dönem seçici -->
+    <div style="display:flex;gap:5px;margin-bottom:8px;overflow-x:auto;scrollbar-width:none;">
+      <button class="donem-tab active" data-donem="gun" style="white-space:nowrap;">📅 Bugün</button>
+      <button class="donem-tab" data-donem="hafta" style="white-space:nowrap;">📆 Bu Hafta</button>
+      <button class="donem-tab" data-donem="ay" style="white-space:nowrap;">🗓 Bu Ay</button>
+      <button class="donem-tab" data-donem="yil" style="white-space:nowrap;">📋 Bu Yıl</button>
+      <button class="donem-tab" data-donem="tum" style="white-space:nowrap;">🌐 Tümü</button>
     </div>
-    <div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;">
-      <button class="donem-tab active" data-donem="gun">📅 Bugün</button>
-      <button class="donem-tab" data-donem="ay">📆 Bu Ay</button>
-      <button class="donem-tab" data-donem="yil">🗓 Bu Yıl</button>
-      <button class="donem-tab" data-donem="tum">📋 Tümü</button>
+    <!-- Sekme navigasyon -->
+    <div style="display:flex;gap:0;background:var(--surface2);border-radius:10px;padding:3px;">
+      <button id="rtab-ozet" onclick="raporSekme('ozet')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📊 Özet</button>
+      <button id="rtab-grafik" onclick="raporSekme('grafik')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📈 Grafik</button>
+      <button id="rtab-urun" onclick="raporSekme('urun')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🛒 Ürünler</button>
+      <button id="rtab-garson" onclick="raporSekme('garson')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">👤 Garson</button>
+      <button id="rtab-adisyon" onclick="raporSekme('adisyon')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🧾 Adisyon</button>
+      <button id="rtab-recete" onclick="raporSekme('recete')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🧪 Reçete</button>
+    </div>
+  </div>
+
+  <!-- ÖZET SEKMESİ -->
+  <div id="rsekme-ozet" style="padding:12px;">
+    <!-- KPI kartlar -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;border:1.5px solid var(--border);">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:4px;">💰 CİRO</div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--accent2);" id="r-ciro">0 ₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;border:1.5px solid var(--border);">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🧾 ADİSYON</div>
+        <div style="font-size:1.4rem;font-weight:900;" id="r-adi">0</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;border:1.5px solid var(--border);">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📦 ÜRÜN SATIŞI</div>
+        <div style="font-size:1.4rem;font-weight:900;" id="r-urun">0</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;border:1.5px solid var(--border);">
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📊 ORTALAMA</div>
+        <div style="font-size:1.4rem;font-weight:900;" id="r-ort">0 ₺</div>
+      </div>
+    </div>
+    <!-- Ödeme tipi dağılımı -->
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.72rem;color:var(--muted);font-weight:800;margin-bottom:10px;letter-spacing:0.5px;">ÖDEME TİPİ DAĞILIMI</div>
+      <div id="r-odeme-dagilim" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <!-- Cari & Stok özeti -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:rgba(124,58,237,0.15);border-radius:12px;padding:12px;border:1.5px solid rgba(124,58,237,0.3);">
+        <div style="font-size:0.65rem;color:#a78bfa;font-weight:700;margin-bottom:4px;">📋 CARİ BORÇ</div>
+        <div style="font-size:1.1rem;font-weight:900;color:#a78bfa;" id="r-cari-borc">0 ₺</div>
+      </div>
+      <div style="background:rgba(239,68,68,0.1);border-radius:12px;padding:12px;border:1.5px solid rgba(239,68,68,0.3);">
+        <div style="font-size:0.65rem;color:#ef4444;font-weight:700;margin-bottom:4px;">📦 TÜKENMİŞ</div>
+        <div style="font-size:1.1rem;font-weight:900;color:#ef4444;" id="r-stok-tukenmis">0</div>
+      </div>
+    </div>
+    <!-- Export butonları -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="raporPDFExport()" style="padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📄 PDF İndir</button>
+      <button onclick="raporExcelExport()" style="padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📊 Excel İndir</button>
+    </div>
+  </div>
+
+  <!-- GRAFİK SEKMESİ -->
+  <div id="rsekme-grafik" style="padding:12px;display:none;">
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">📈 GÜNLÜK SATIŞ</div>
+      <canvas id="grafik-ciro" height="160"></canvas>
+    </div>
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">🕐 SAATLİK YOĞUNLUK</div>
+      <canvas id="grafik-saatlik" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- ÜRÜNLER SEKMESİ -->
+  <div id="rsekme-urun" style="padding:12px;display:none;">
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">🏆 EN ÇOK SATANLAR</div>
+      <canvas id="grafik-urun" height="200"></canvas>
     </div>
     <div class="rapor-tablo-baslik"><span>ÜRÜN</span><span>ADET</span><span>TUTAR</span></div>
     <div id="rapor-liste"></div>
-    <div style="margin-top:16px;"><div class="rapor-tablo-baslik" style="margin-bottom:8px;"><span>GARSON PERFORMANSI</span></div><div id="garson-rapor"></div></div>
-    <div style="margin-top:16px;"><div class="rapor-tablo-baslik" style="margin-bottom:8px;"><span>KAPATILAN ADİSYONLAR</span></div><div id="kapali-liste"></div></div>
+  </div>
+
+  <!-- GARSON SEKMESİ -->
+  <div id="rsekme-garson" style="padding:12px;display:none;">
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">👥 GARSON PERFORMANSI</div>
+      <canvas id="grafik-garson" height="160"></canvas>
+    </div>
+    <div id="garson-rapor"></div>
+  </div>
+
+  <!-- ADİSYON SEKMESİ -->
+  <div id="rsekme-adisyon" style="padding:12px;display:none;">
+    <div class="rapor-tablo-baslik" style="margin-bottom:8px;"><span>KAPATILAN ADİSYONLAR</span></div>
+    <div id="kapali-liste"></div>
+  </div>
+
+  <!-- REÇETE SEKMESİ -->
+  <div id="rsekme-recete" style="padding:12px;display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:0.9rem;font-weight:900;color:var(--accent2);">🧪 Reçete & Maliyet</div>
+      <button onclick="receteYeniAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">+ Reçete Ekle</button>
+    </div>
+    <!-- Kar marjı özeti -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORTALAMA MALİYET</div>
+        <div style="font-size:0.95rem;font-weight:900;color:#ef4444;" id="r-ort-maliyet">0 ₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORTALAMA KAR</div>
+        <div style="font-size:0.95rem;font-weight:900;color:#22c55e;" id="r-ort-kar">0 ₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:3px;">KAR MARJI</div>
+        <div style="font-size:0.95rem;font-weight:900;color:var(--accent2);" id="r-kar-marji">%0</div>
+      </div>
+    </div>
+    <div id="recete-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="recete-bos" style="text-align:center;color:var(--muted);padding:32px;font-size:0.88rem;font-weight:600;">
+      Henüz reçete eklenmemiş
+    </div>
+  </div>
+</div>
+
+<!-- REÇETE EKLE/DÜZENLE MODAL -->
+<div id="recete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:620;overflow-y:auto;">
+  <div style="background:var(--surface);min-height:100%;padding-bottom:40px;">
+    <div style="background:var(--surface2);padding:14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+      <button onclick="document.getElementById('recete-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;">←</button>
+      <div style="font-weight:900;font-size:0.95rem;" id="recete-modal-baslik">🧪 Yeni Reçete</div>
+      <button onclick="receteKaydet()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;">✓ Kaydet</button>
+    </div>
+    <div style="padding:14px;">
+      <input type="hidden" id="recete-duzenle-id">
+      <!-- Ürün seç -->
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:6px;">ÜRÜN</div>
+      <select id="recete-urun-sec" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:600;outline:none;margin-bottom:14px;"></select>
+      <!-- Malzemeler -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:0.78rem;color:var(--muted);font-weight:700;">MALZEMELER</div>
+        <button onclick="receteMalzemeEkle()" style="padding:5px 10px;border-radius:8px;border:none;background:var(--surface3);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">+ Malzeme</button>
+      </div>
+      <div id="recete-malzemeler" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+      <!-- Notlar -->
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:6px;">HAZIRLIK NOTU</div>
+      <textarea id="recete-not" placeholder="Hazırlanış notları..." rows="3"
+        style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;resize:none;"></textarea>
+      <!-- Maliyet özeti -->
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:0.8rem;color:var(--muted);font-weight:700;">Toplam Maliyet</span>
+          <span style="font-weight:900;color:#ef4444;" id="recete-maliyet-goster">0 ₺</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:0.8rem;color:var(--muted);font-weight:700;">Satış Fiyatı</span>
+          <span style="font-weight:900;color:var(--accent2);" id="recete-satis-goster">0 ₺</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:0.8rem;color:var(--muted);font-weight:700;">Kar / Marj</span>
+          <span style="font-weight:900;color:#22c55e;" id="recete-kar-goster">0 ₺ / %0</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1460,6 +1616,7 @@ async function garsonGiris(isim, kafeData) {
   kafeAdi = kafeData.kafe_adi;
   garsonlar = kafeData.garsonlar || [];
   if (kafeData.urunler) URUNLER = kafeData.urunler;
+  if (kafeData.receteler) RECETELER = kafeData.receteler;
   // Paketi ayarla
   aktifPaket = kafeData.plan || 'pro';
   const _paket = PAKETLER[aktifPaket] || PAKETLER.pro;
@@ -2490,6 +2647,10 @@ function donemFiltrele(kolaycafenlar){
     if(!a.tarihObj) return aktifDonem==='tum';
     const t=new Date(a.tarihObj);
     if(aktifDonem==='gun') return t.toDateString()===simdi.toDateString();
+    if(aktifDonem==='hafta'){
+      const hb=new Date(simdi); hb.setDate(simdi.getDate()-((simdi.getDay()+6)%7)); hb.setHours(0,0,0,0);
+      return t>=hb;
+    }
     if(aktifDonem==='ay') return t.getMonth()===simdi.getMonth()&&t.getFullYear()===simdi.getFullYear();
     if(aktifDonem==='yil') return t.getFullYear()===simdi.getFullYear();
     return true;
@@ -2905,7 +3066,8 @@ async function cariKaydetMusteri(musteriAdi, masaId, masaVeri, tutar) {
 
 function cariHesaplarRender_eski() {} // eski fonksiyon isim çakışması önlemi
 
-function raporRender(){
+function raporRender(){ raporRenderTam(); }
+function raporRender_legacy(){
   const filtre=donemFiltrele(kapaliKolayCafenlar);
   const toplamCiro=filtre.reduce((s,a)=>s+a.toplam,0);
   const toplamAdi=filtre.length;
@@ -2961,6 +3123,501 @@ function raporRender(){
       kl.appendChild(div);
     });
   });
+}
+
+// ════════════════════════════════════════
+// GELİŞMİŞ RAPOR SİSTEMİ
+// ════════════════════════════════════════
+let aktifRaporSekme = 'ozet';
+let raporGrafikler = {};
+let RECETELER = {}; // {urunAdi: {malzemeler:[{ad,miktar,birim,maliyet}], not}}
+
+function raporSekme(sekme) {
+  aktifRaporSekme = sekme;
+  ['ozet','grafik','urun','garson','adisyon','recete'].forEach(s => {
+    const el = document.getElementById('rsekme-' + s);
+    const btn = document.getElementById('rtab-' + s);
+    if (el) el.style.display = s === sekme ? 'block' : 'none';
+    if (btn) {
+      btn.style.background = s === sekme ? 'var(--accent)' : 'none';
+      btn.style.color = s === sekme ? '#1a0f00' : 'var(--muted)';
+    }
+  });
+  if (sekme === 'grafik') raporGrafikleriCiz();
+  if (sekme === 'recete') receteListeRender();
+}
+
+function raporRenderTam() {
+  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  const toplamCiro = filtre.reduce((s,a) => s + a.toplam, 0);
+  const toplamAdi = filtre.length;
+  const ds = {};
+  filtre.forEach(a => a.siparisler.forEach(s => {
+    if (!ds[s.isim]) ds[s.isim] = {adet:0,toplam:0};
+    ds[s.isim].adet += s.adet;
+    ds[s.isim].toplam += s.fiyat * s.adet;
+  }));
+  const toplamAdet = Object.values(ds).reduce((s,d) => s + d.adet, 0);
+
+  // KPI
+  if(document.getElementById('r-ciro')) document.getElementById('r-ciro').textContent = fmt(toplamCiro);
+  if(document.getElementById('r-adi')) document.getElementById('r-adi').textContent = toplamAdi;
+  if(document.getElementById('r-urun')) document.getElementById('r-urun').textContent = toplamAdet;
+  if(document.getElementById('r-ort')) document.getElementById('r-ort').textContent = toplamAdi > 0 ? fmt(toplamCiro/toplamAdi) : '0 ₺';
+
+  // Ödeme dağılımı
+  const odeme = {};
+  filtre.forEach(a => {
+    const tip = a.odeme_tipi || a.odemeTipi || 'nakit';
+    if (!odeme[tip]) odeme[tip] = 0;
+    odeme[tip] += a.toplam;
+  });
+  const odemeEl = document.getElementById('r-odeme-dagilim');
+  if (odemeEl) {
+    const tipRenk = {nakit:'#22c55e',kart:'#3b82f6',cari:'#a78bfa',ikram:'#6b7280'};
+    const tipIsim = {nakit:'💵 Nakit',kart:'💳 Kart',cari:'📋 Cari',ikram:'🎁 İkram'};
+    odemeEl.innerHTML = Object.entries(odeme).sort((a,b)=>b[1]-a[1]).map(([tip,tutar]) => {
+      const yuzde = toplamCiro > 0 ? Math.round(tutar/toplamCiro*100) : 0;
+      return `<div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-size:0.82rem;font-weight:700;">${tipIsim[tip]||tip}</span>
+          <span style="font-weight:900;color:${tipRenk[tip]||'var(--text)'};">${fmt(tutar)} <span style="color:var(--muted);font-size:0.75rem;">%${yuzde}</span></span>
+        </div>
+        <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${yuzde}%;background:${tipRenk[tip]||'var(--accent)'};border-radius:3px;transition:width 0.5s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Cari borç özeti
+  const cariBorc = cariMusteriler.reduce((s,m) => s + (m.bakiye||0), 0);
+  if(document.getElementById('r-cari-borc')) document.getElementById('r-cari-borc').textContent = fmt(cariBorc);
+
+  // Tükenmiş stok
+  let tukenmis = 0;
+  Object.values(URUNLER).forEach(urunler => urunler.forEach(u => { if(u.stok===0) tukenmis++; }));
+  if(document.getElementById('r-stok-tukenmis')) document.getElementById('r-stok-tukenmis').textContent = tukenmis;
+
+  // Ürün listesi
+  const rl = document.getElementById('rapor-liste');
+  const girdi = Object.entries(ds).sort((a,b) => b[1].toplam - a[1].toplam);
+  if(rl) {
+    rl.innerHTML = girdi.length === 0 ? '<div class="bos-rapor">☕ Bu dönemde satış yok</div>' : '';
+    girdi.forEach(([isim,d]) => {
+      const s = document.createElement('div'); s.className = 'rapor-satir';
+      s.innerHTML = `<span class="rs-isim">${isim}</span><span class="rs-adet">${d.adet}x</span><span class="rs-tutar">${fmt(d.toplam)}</span>`;
+      rl.appendChild(s);
+    });
+  }
+
+  // Garson
+  const gr = document.getElementById('garson-rapor');
+  const gs = {};
+  filtre.forEach(a => {
+    if(!a.garson) return;
+    if(!gs[a.garson]) gs[a.garson] = {adet:0, ciro:0};
+    gs[a.garson].adet++; gs[a.garson].ciro += a.toplam;
+  });
+  if(gr) {
+    gr.innerHTML = Object.keys(gs).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
+    Object.entries(gs).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
+      const d = document.createElement('div'); d.className = 'rapor-satir';
+      d.innerHTML = `<span class="rs-isim">👤 ${g}</span><span class="rs-adet">${s.adet} masa</span><span class="rs-tutar">${fmt(s.ciro)}</span>`;
+      gr.appendChild(d);
+    });
+  }
+
+  // Adisyon listesi
+  const kl = document.getElementById('kapali-liste');
+  if(kl) {
+    if(filtre.length===0){kl.innerHTML='<div class="bos-rapor">Bu dönemde kolaycafen yok</div>';}
+    else {
+      const grupla = a => {
+        if(!a.tarihObj) return 'Bilinmiyor';
+        if(aktifDonem==='gun') return gunEtiketi(a.tarihObj);
+        return new Date(a.tarihObj).toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+      };
+      const gruplar = {};
+      [...filtre].forEach(a=>{const k=grupla(a);if(!gruplar[k])gruplar[k]={kolaycafenlar:[],toplam:0};gruplar[k].kolaycafenlar.push(a);gruplar[k].toplam+=a.toplam;});
+      kl.innerHTML='';
+      Object.entries(gruplar).forEach(([baslik,grup])=>{
+        const h=document.createElement('div');
+        h.style.cssText='display:flex;justify-content:space-between;padding:7px 3px 5px;margin-top:5px;border-bottom:1px solid var(--border);margin-bottom:5px;';
+        h.innerHTML=`<span style="font-size:0.75rem;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">${baslik}</span><span style="font-size:0.8rem;font-weight:900;color:var(--accent2);">${fmt(grup.toplam)}</span>`;
+        kl.appendChild(h);
+        grup.kolaycafenlar.forEach(a=>{
+          const div=document.createElement('div');
+          const saat=a.tarihObj?new Date(a.tarihObj).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):a.tarih;
+          const urunOzet=a.siparisler.map(s=>s.isim+' x'+s.adet).join(' · ');
+          const gelal=a.gelal||a.masa==='gelal';
+          div.style.cssText='background:var(--surface2);border:1px solid '+(gelal?'var(--accent2)40':'var(--border)')+';border-radius:11px;padding:10px 12px;margin-bottom:6px;';
+          div.innerHTML=`
+            ${gelal?'<div style="font-size:0.65rem;font-weight:800;color:var(--accent2);letter-spacing:1px;margin-bottom:4px;">🛍️ GEL-AL SİPARİŞİ</div>':''}
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+              <span style="font-weight:800;font-size:0.9rem;">${gelal?'👤':'🪑'} ${a.masaAd||'Masa '+a.masa} <span style="font-size:0.7rem;color:var(--muted);">· ${saat}</span></span>
+              <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${a.indirim}</span>`:''}</span>
+            </div>
+            ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${a.garson}</div>`:''}
+            <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
+            ${a.odemeTipi&&a.odemeTipi!=='nakit'?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{nakit:'var(--text)',kart:'#3b82f6',cari:'#a78bfa',ikram:'var(--muted)'}[a.odemeTipi]||'var(--text)'}">${{nakit:'💵 Nakit',kart:'💳 Kart',cari:'📋 Cari',ikram:'🎁 İkram'}[a.odemeTipi]||a.odemeTipi}${a.musteri_adi&&!gelal?' — '+a.musteri_adi:''}</div>`:''}
+            <button class="fis-al-btn">🖨 Fiş Al</button>`;
+          div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
+          kl.appendChild(div);
+        });
+      });
+    }
+  }
+
+  // Aktif sekmeye göre grafik çiz
+  if(aktifRaporSekme === 'grafik') raporGrafikleriCiz();
+}
+
+// ── GRAFİKLER ──
+function raporGrafikleriCiz() {
+  const filtre = donemFiltrele(kapaliKolayCafenlar);
+
+  // Günlük ciro grafiği
+  const gunCiro = {};
+  filtre.forEach(a => {
+    if(!a.tarihObj) return;
+    const gun = new Date(a.tarihObj).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
+    if(!gunCiro[gun]) gunCiro[gun] = 0;
+    gunCiro[gun] += a.toplam;
+  });
+  const gunlar = Object.keys(gunCiro).slice(-14);
+  const cirolar = gunlar.map(g => gunCiro[g]);
+
+  const ciroCanvas = document.getElementById('grafik-ciro');
+  if(ciroCanvas) {
+    if(raporGrafikler.ciro) raporGrafikler.ciro.destroy();
+    raporGrafikler.ciro = new Chart(ciroCanvas, {
+      type: 'bar',
+      data: {
+        labels: gunlar,
+        datasets: [{
+          label: 'Ciro',
+          data: cirolar,
+          backgroundColor: 'rgba(240,184,48,0.7)',
+          borderColor: '#f0b830',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#7a6040', font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { color: '#7a6040', font: { size: 10 }, callback: v => v+'₺' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  // Saatlik yoğunluk
+  const saatler = Array(24).fill(0);
+  filtre.forEach(a => {
+    if(!a.tarihObj) return;
+    saatler[new Date(a.tarihObj).getHours()]++;
+  });
+  const saatCanvas = document.getElementById('grafik-saatlik');
+  if(saatCanvas) {
+    if(raporGrafikler.saatlik) raporGrafikler.saatlik.destroy();
+    raporGrafikler.saatlik = new Chart(saatCanvas, {
+      type: 'bar',
+      data: {
+        labels: Array.from({length:24},(_,i)=>i+':00'),
+        datasets: [{
+          data: saatler,
+          backgroundColor: saatler.map(v => v === Math.max(...saatler) ? '#ef4444' : 'rgba(240,184,48,0.5)'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#7a6040', font: { size: 9 }, maxRotation: 0 }, grid: { display: false } },
+          y: { ticks: { color: '#7a6040', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  // Ürün bar grafiği
+  const ds = {};
+  filtre.forEach(a => a.siparisler.forEach(s => {
+    if(!ds[s.isim]) ds[s.isim] = 0;
+    ds[s.isim] += s.adet;
+  }));
+  const top10 = Object.entries(ds).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const urunCanvas = document.getElementById('grafik-urun');
+  if(urunCanvas) {
+    if(raporGrafikler.urun) raporGrafikler.urun.destroy();
+    raporGrafikler.urun = new Chart(urunCanvas, {
+      type: 'bar',
+      data: {
+        labels: top10.map(x=>x[0]),
+        datasets: [{
+          data: top10.map(x=>x[1]),
+          backgroundColor: ['#f0b830','#22c55e','#3b82f6','#a78bfa','#ef4444','#f59e0b','#06b6d4','#ec4899','#84cc16','#fb923c'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#7a6040', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#c8a870', font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Garson bar
+  const gs = {};
+  filtre.forEach(a => { if(!a.garson) return; if(!gs[a.garson]) gs[a.garson]=0; gs[a.garson]+=a.toplam; });
+  const garsonlar = Object.entries(gs).sort((a,b)=>b[1]-a[1]);
+  const garsonCanvas = document.getElementById('grafik-garson');
+  if(garsonCanvas) {
+    if(raporGrafikler.garson) raporGrafikler.garson.destroy();
+    raporGrafikler.garson = new Chart(garsonCanvas, {
+      type: 'bar',
+      data: {
+        labels: garsonlar.map(x=>x[0]),
+        datasets: [{
+          label: 'Ciro',
+          data: garsonlar.map(x=>x[1]),
+          backgroundColor: 'rgba(167,139,250,0.7)',
+          borderColor: '#a78bfa',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#7a6040', font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { color: '#7a6040', font: { size: 10 }, callback: v => v+'₺' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+}
+
+// ── PDF EXPORT ──
+function raporPDFExport() {
+  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  const ciro = filtre.reduce((s,a) => s+a.toplam, 0);
+  const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü'}[aktifDonem];
+  const tarih = new Date().toLocaleDateString('tr-TR');
+
+  const ds = {};
+  filtre.forEach(a => a.siparisler.forEach(s => {
+    if(!ds[s.isim]) ds[s.isim]={adet:0,toplam:0};
+    ds[s.isim].adet+=s.adet; ds[s.isim].toplam+=s.fiyat*s.adet;
+  }));
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>body{font-family:Arial,sans-serif;padding:20px;color:#1a1a1a;}
+  h1{color:#d4960e;}table{width:100%;border-collapse:collapse;margin:10px 0;}
+  th{background:#f0b830;padding:8px;text-align:left;}td{padding:7px;border-bottom:1px solid #eee;}
+  .kpi{display:inline-block;background:#f9f3e3;border-radius:8px;padding:12px 20px;margin:6px;text-align:center;}
+  .kpi-val{font-size:1.4rem;font-weight:bold;color:#d4960e;}</style></head><body>
+  <h1>☕ KolayCafe — Satış Raporu</h1>
+  <p><b>Dönem:</b> ${donemAd} &nbsp; <b>Tarih:</b> ${tarih}</p>
+  <div><div class="kpi"><div>Ciro</div><div class="kpi-val">${fmt(ciro)}</div></div>
+  <div class="kpi"><div>Adisyon</div><div class="kpi-val">${filtre.length}</div></div></div>
+  <h2>Ürün Satışları</h2>
+  <table><tr><th>Ürün</th><th>Adet</th><th>Tutar</th></tr>
+  ${Object.entries(ds).sort((a,b)=>b[1].toplam-a[1].toplam).map(([isim,d])=>`<tr><td>${isim}</td><td>${d.adet}</td><td>${fmt(d.toplam)}</td></tr>`).join('')}
+  </table></body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+
+// ── EXCEL EXPORT ──
+function raporExcelExport() {
+  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü'}[aktifDonem];
+  
+  let csv = 'Tarih,Masa,Garson,Toplam,Ödeme Tipi,Ürünler\n';
+  filtre.forEach(a => {
+    const urunler = (a.siparisler||[]).map(s=>s.isim+'x'+s.adet).join(';');
+    csv += `"${a.tarih}","${a.masaAd||a.masa}","${a.garson||''}","${a.toplam}","${a.odemeTipi||'nakit'}","${urunler}"\n`;
+  });
+  
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `kolaycafe_rapor_${donemAd}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('📊 Excel dosyası indiriliyor...');
+}
+
+// ── REÇETE SİSTEMİ ──
+function receteListeRender() {
+  const liste = document.getElementById('recete-liste');
+  const bos = document.getElementById('recete-bos');
+  if(!liste) return;
+  
+  // Maliyet özeti
+  const tumUrunler = Object.values(URUNLER).flat();
+  const receteli = tumUrunler.filter(u => RECETELER[u.isim]);
+  if(receteli.length > 0) {
+    const maliyetler = receteli.map(u => {
+      const r = RECETELER[u.isim];
+      return { fiyat: u.fiyat, maliyet: r.malzemeler.reduce((s,m) => s + (m.maliyet||0), 0) };
+    });
+    const ortMaliyet = maliyetler.reduce((s,x)=>s+x.maliyet,0)/maliyetler.length;
+    const ortKar = maliyetler.reduce((s,x)=>s+(x.fiyat-x.maliyet),0)/maliyetler.length;
+    const ortMarj = maliyetler.reduce((s,x)=>s+(x.fiyat>0?(x.fiyat-x.maliyet)/x.fiyat*100:0),0)/maliyetler.length;
+    if(document.getElementById('r-ort-maliyet')) document.getElementById('r-ort-maliyet').textContent = fmt(ortMaliyet);
+    if(document.getElementById('r-ort-kar')) document.getElementById('r-ort-kar').textContent = fmt(ortKar);
+    if(document.getElementById('r-kar-marji')) document.getElementById('r-kar-marji').textContent = '%'+Math.round(ortMarj);
+  }
+
+  const tumUrunlerFlat = [];
+  Object.entries(URUNLER).forEach(([kat,urunler]) => urunler.forEach(u => tumUrunlerFlat.push({...u,kat})));
+  
+  liste.innerHTML = '';
+  if(Object.keys(RECETELER).length === 0) { bos.style.display='block'; return; }
+  bos.style.display='none';
+  
+  Object.entries(RECETELER).forEach(([urunAdi, recete]) => {
+    const urun = tumUrunlerFlat.find(u => u.isim === urunAdi);
+    const maliyet = recete.malzemeler.reduce((s,m) => s+(m.maliyet||0), 0);
+    const satisFiyat = urun?.fiyat || 0;
+    const kar = satisFiyat - maliyet;
+    const marj = satisFiyat > 0 ? Math.round(kar/satisFiyat*100) : 0;
+    
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:900;font-size:0.95rem;">${urun?.ikon||'🍽️'} ${urunAdi}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${urun?.kat||''}</div>
+        </div>
+        <button onclick="receteDuzenle('${urunAdi}')" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✏️</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">MALİYET</div>
+          <div style="font-weight:900;color:#ef4444;font-size:0.88rem;">${fmt(maliyet)}</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">KAR</div>
+          <div style="font-weight:900;color:#22c55e;font-size:0.88rem;">${fmt(kar)}</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">MARJ</div>
+          <div style="font-weight:900;color:var(--accent2);font-size:0.88rem;">%${marj}</div>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:6px;">MALZEMELER</div>
+      ${recete.malzemeler.map(m=>`<div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:3px 0;border-top:1px solid var(--border);">
+        <span>${m.ad} — ${m.miktar} ${m.birim}</span>
+        <span style="color:var(--accent2);font-weight:700;">${fmt(m.maliyet||0)}</span>
+      </div>`).join('')}
+      ${recete.not ? `<div style="margin-top:8px;font-size:0.75rem;color:var(--muted);background:var(--surface3);border-radius:8px;padding:7px;">📝 ${recete.not}</div>` : ''}
+    `;
+    liste.appendChild(div);
+  });
+}
+
+function receteYeniAc() {
+  const select = document.getElementById('recete-urun-sec');
+  if(select) {
+    select.innerHTML = Object.entries(URUNLER).map(([kat,urunler]) =>
+      `<optgroup label="${kat}">${urunler.map(u=>`<option value="${u.isim}">${u.ikon||''} ${u.isim} — ${fmt(u.fiyat)}</option>`).join('')}</optgroup>`
+    ).join('');
+  }
+  document.getElementById('recete-duzenle-id').value = '';
+  document.getElementById('recete-modal-baslik').textContent = '🧪 Yeni Reçete';
+  document.getElementById('recete-malzemeler').innerHTML = '';
+  document.getElementById('recete-not').value = '';
+  receteMalzemeEkle();
+  receteMaliyetGuncelle();
+  document.getElementById('recete-modal').style.display = 'block';
+}
+
+function receteDuzenle(urunAdi) {
+  receteYeniAc();
+  const select = document.getElementById('recete-urun-sec');
+  if(select) select.value = urunAdi;
+  document.getElementById('recete-modal-baslik').textContent = '✏️ Reçete Düzenle';
+  document.getElementById('recete-duzenle-id').value = urunAdi;
+  const r = RECETELER[urunAdi];
+  if(r) {
+    document.getElementById('recete-malzemeler').innerHTML = '';
+    r.malzemeler.forEach(m => receteMalzemeEkle(m));
+    document.getElementById('recete-not').value = r.not || '';
+  }
+  receteMaliyetGuncelle();
+}
+
+function receteMalzemeEkle(m = null) {
+  const container = document.getElementById('recete-malzemeler');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;align-items:center;';
+  div.innerHTML = `
+    <input type="text" placeholder="Malzeme adı" value="${m?.ad||''}" oninput="receteMaliyetGuncelle()"
+      style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;outline:none;">
+    <input type="number" placeholder="Miktar" value="${m?.miktar||''}" min="0" oninput="receteMaliyetGuncelle()"
+      style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;outline:none;">
+    <input type="number" placeholder="₺ Maliyet" value="${m?.maliyet||''}" min="0" step="0.01" oninput="receteMaliyetGuncelle()"
+      style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;outline:none;">
+    <button onclick="this.parentElement.remove();receteMaliyetGuncelle()" style="padding:9px;border-radius:8px;border:none;background:#ef444420;color:#ef4444;font-size:1rem;cursor:pointer;">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function receteMaliyetGuncelle() {
+  const satirlar = document.getElementById('recete-malzemeler').children;
+  let toplamMaliyet = 0;
+  Array.from(satirlar).forEach(s => {
+    const inp = s.querySelectorAll('input');
+    toplamMaliyet += parseFloat(inp[2]?.value)||0;
+  });
+  const urunAdi = document.getElementById('recete-urun-sec')?.value;
+  const urun = Object.values(URUNLER).flat().find(u => u.isim === urunAdi);
+  const satisFiyat = urun?.fiyat || 0;
+  const kar = satisFiyat - toplamMaliyet;
+  const marj = satisFiyat > 0 ? Math.round(kar/satisFiyat*100) : 0;
+  if(document.getElementById('recete-maliyet-goster')) document.getElementById('recete-maliyet-goster').textContent = fmt(toplamMaliyet);
+  if(document.getElementById('recete-satis-goster')) document.getElementById('recete-satis-goster').textContent = fmt(satisFiyat);
+  if(document.getElementById('recete-kar-goster')) document.getElementById('recete-kar-goster').textContent = fmt(kar) + ' / %' + marj;
+}
+
+async function receteKaydet() {
+  const urunAdi = document.getElementById('recete-urun-sec')?.value;
+  if(!urunAdi) { toast('Ürün seçin!'); return; }
+  
+  const satirlar = document.getElementById('recete-malzemeler').children;
+  const malzemeler = Array.from(satirlar).map(s => {
+    const inp = s.querySelectorAll('input');
+    return { ad: inp[0]?.value.trim(), miktar: inp[1]?.value, birim: 'adet', maliyet: parseFloat(inp[2]?.value)||0 };
+  }).filter(m => m.ad);
+  
+  if(malzemeler.length === 0) { toast('En az 1 malzeme girin!'); return; }
+  
+  RECETELER[urunAdi] = { malzemeler, not: document.getElementById('recete-not').value.trim() };
+  
+  // Supabase'e kaydet
+  if(kafeId) {
+    await sb.from('kafeler').update({ receteler: RECETELER }).eq('id', kafeId);
+  }
+  
+  document.getElementById('recete-modal').style.display = 'none';
+  toast('✅ Reçete kaydedildi');
+  receteListeRender();
 }
 
 // ════════════════════════════════════════
@@ -4367,6 +5024,14 @@ window.stokToggle = stokToggle;
 window.stokIslemTipSec = stokIslemTipSec;
 window.stokGuncelle = stokGuncelle;
 window.stokHareketGecmisiAc = stokHareketGecmisiAc;
+window.raporSekme = raporSekme;
+window.raporPDFExport = raporPDFExport;
+window.raporExcelExport = raporExcelExport;
+window.receteYeniAc = receteYeniAc;
+window.receteDuzenle = receteDuzenle;
+window.receteMalzemeEkle = receteMalzemeEkle;
+window.receteMaliyetGuncelle = receteMaliyetGuncelle;
+window.receteKaydet = receteKaydet;
 window.gelAlSil = gelAlSil;
 window.gelAlKatSec = gelAlKatSec;
 
