@@ -1049,6 +1049,36 @@
   </div>
 </div>
 
+<!-- ONLINE SİPARİŞLER SAYFASI -->
+<div class="page" id="page-online" style="overflow-y:auto;padding:12px;flex-direction:column;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);">🌐 Online Siparişler</div>
+    <button onclick="onlineSiparisQRAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">📲 QR & Link</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;">
+    <button class="online-tab active" onclick="onlineFiltre('bekleniyor',this)" style="white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">⏳ Bekleyen</button>
+    <button class="online-tab" onclick="onlineFiltre('hazirlaniyor',this)" style="white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">👨‍🍳 Hazırlanıyor</button>
+    <button class="online-tab" onclick="onlineFiltre('yolda',this)" style="white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">🛵 Yolda</button>
+    <button class="online-tab" onclick="onlineFiltre('teslim',this)" style="white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">✅ Teslim</button>
+  </div>
+  <div id="online-liste" style="display:flex;flex-direction:column;gap:10px;"></div>
+  <div id="online-bos" style="text-align:center;color:var(--muted);padding:40px;font-size:0.88rem;">Henüz online sipariş yok</div>
+</div>
+
+<!-- ONLINE QR MODAL -->
+<div id="online-qr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:620;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:20px;padding:24px;width:90%;max-width:340px;text-align:center;margin:auto;margin-top:10vh;">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:6px;">📲 Online Sipariş Linki</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:16px;">Müşterilere bu linki veya QR kodu paylaşın</div>
+    <div id="online-qr-canvas" style="margin:0 auto 14px;display:flex;justify-content:center;"></div>
+    <div id="online-qr-link" style="background:var(--surface2);border-radius:8px;padding:10px;font-size:0.72rem;color:var(--text2);word-break:break-all;margin-bottom:14px;cursor:pointer;" onclick="onlineQRKopyala()"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="onlineQRKopyala()" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📋 Linki Kopyala</button>
+      <button onclick="document.getElementById('online-qr-modal').style.display='none'" style="padding:10px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">✕ Kapat</button>
+    </div>
+  </div>
+</div>
+
 <!-- GEL-AL ÖDEME TİPİ MODAL -->
 <div id="gelal-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;">
   <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;padding-bottom:max(32px,env(safe-area-inset-bottom));position:absolute;bottom:0;left:50%;transform:translateX(-50%);">
@@ -1256,6 +1286,7 @@
 <div class="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" ><div class="nav-icon">🪑</div>Masalar</button>
   <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')"><div class="nav-icon">🛍️</div>Gel-Al</button>
+  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;" id="online-badge">0</span></button>
   <button class="bnav-btn" id="nav-kolaycafen" ><div class="nav-icon">🧾</div>KolayCafen</button>
   <button class="bnav-btn" id="nav-urun" ><div class="nav-icon">➕</div>Ürün</button>
   <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
@@ -1695,6 +1726,7 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-garson-cikis').style.display = 'flex';
   // Header'da garson adını göster
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
+  setTimeout(() => { onlineSiparisYukle(); onlineRealtimeBaslat(); }, 1000);
   // Kafe kodu göster
   if (kafeData?.kafe_kodu) {
     if (document.getElementById('ayar-cafe-kodu-inp')) document.getElementById('ayar-cafe-kodu-inp').value = kafeData.kafe_kodu;
@@ -2075,7 +2107,9 @@ function sayfaGit(sayfa) {
   if (sayfa==='urun') urunListesiRender();
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
   if (sayfa==='stok') stokRender();
+  if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
   if (sayfa==='recete') { if(typeof receteListeRender==='function') receteListeRender(); }
+  if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
@@ -3198,6 +3232,164 @@ function raporRender_legacy(){
       kl.appendChild(div);
     });
   });
+}
+
+// ════════════════════════════════════════
+// ONLINE SİPARİŞ SİSTEMİ
+// ════════════════════════════════════════
+let onlineSiparisler = [];
+let aktifOnlineFiltre = 'bekleniyor';
+
+async function onlineSiparisYukle() {
+  if (!kafeId) return;
+  const { data } = await sb.from('online_siparisler')
+    .select('*').eq('kafe_id', kafeId)
+    .in('durum', ['bekleniyor','hazirlaniyor','yolda'])
+    .order('created_at', {ascending: false});
+  onlineSiparisler = data || [];
+  onlineBadgeGuncelle();
+  if (document.getElementById('page-online')?.classList.contains('active')) {
+    onlineListeRender();
+  }
+}
+
+function onlineBadgeGuncelle() {
+  const bekleyen = onlineSiparisler.filter(s => s.durum === 'bekleniyor').length;
+  const badge = document.getElementById('online-badge');
+  if (badge) {
+    badge.style.display = bekleyen > 0 ? 'flex' : 'none';
+    badge.textContent = bekleyen;
+  }
+}
+
+function onlineFiltre(filtre, btn) {
+  aktifOnlineFiltre = filtre;
+  document.querySelectorAll('.online-tab').forEach(b => {
+    b.style.background = 'var(--surface2)';
+    b.style.color = 'var(--text2)';
+    b.style.borderColor = 'var(--border)';
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#1a0f00';
+  btn.style.borderColor = 'var(--accent)';
+  onlineListeRender();
+}
+
+async function onlineListeRender() {
+  const liste = document.getElementById('online-liste');
+  const bos = document.getElementById('online-bos');
+  if (!liste) return;
+
+  // Teslim edilenleri de çek gerekirse
+  let goruntur = onlineSiparisler.filter(s => s.durum === aktifOnlineFiltre);
+  
+  if (aktifOnlineFiltre === 'teslim') {
+    const { data } = await sb.from('online_siparisler')
+      .select('*').eq('kafe_id', kafeId).eq('durum', 'teslim')
+      .order('created_at', {ascending:false}).limit(20);
+    goruntur = data || [];
+  }
+
+  liste.innerHTML = '';
+  if (goruntur.length === 0) { bos.style.display = 'block'; return; }
+  bos.style.display = 'none';
+
+  const durumRenk = { bekleniyor:'#f0b830', hazirlaniyor:'#3b82f6', yolda:'#22c55e', teslim:'#a78bfa', iptal:'#ef4444' };
+  const durumText = { bekleniyor:'⏳ Bekliyor', hazirlaniyor:'👨‍🍳 Hazırlanıyor', yolda:'🛵 Yolda', teslim:'✅ Teslim', iptal:'❌ İptal' };
+
+  goruntur.forEach(s => {
+    const urunOzet = (s.siparisler||[]).map(x => x.isim + ' ×' + x.adet).join(', ');
+    const tarih = new Date(s.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+    const renk = durumRenk[s.durum] || 'var(--muted)';
+    const div = document.createElement('div');
+    div.style.cssText = `background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid ${renk}40;`;
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:900;font-size:0.95rem;">#${s.siparis_no} — ${s.musteri_ad}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">📞 ${s.musteri_tel} · ${tarih}</div>
+        </div>
+        <span style="background:${renk}20;color:${renk};font-size:0.68rem;font-weight:800;padding:3px 8px;border-radius:20px;">${durumText[s.durum]||s.durum}</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:6px;">📦 ${urunOzet}</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">📍 ${s.adres}</div>
+      ${s.siparis_notu ? `<div style="font-size:0.75rem;background:var(--surface3);border-radius:8px;padding:6px;margin-bottom:8px;">📝 ${s.siparis_notu}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:900;color:var(--accent);">${Number(s.toplam).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</span>
+        <div style="display:flex;gap:6px;">
+          ${onlineSonrakiButon(s)}
+        </div>
+      </div>`;
+    liste.appendChild(div);
+  });
+}
+
+function onlineSonrakiButon(s) {
+  const sonrakiDurum = {bekleniyor:'hazirlaniyor', hazirlaniyor:'yolda', yolda:'teslim'};
+  const sonrakiText = {bekleniyor:'👨‍🍳 Onayla', hazirlaniyor:'🛵 Yola Çıktı', yolda:'✅ Teslim Et'};
+  const sonraki = sonrakiDurum[s.durum];
+  let html = '';
+  if (sonraki) {
+    html += `<button onclick="onlineDurumGuncelle('${s.id}','${sonraki}')" 
+      style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">
+      ${sonrakiText[s.durum]}</button>`;
+  }
+  if (s.durum === 'bekleniyor') {
+    html += `<button onclick="onlineDurumGuncelle('${s.id}','iptal')"
+      style="padding:7px 12px;border-radius:8px;border:none;background:#ef444420;color:#ef4444;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">❌ İptal</button>`;
+  }
+  return html;
+}
+
+async function onlineDurumGuncelle(siparisId, yeniDurum) {
+  await sb.from('online_siparisler').update({durum: yeniDurum}).eq('id', siparisId);
+  // Listeyi güncelle
+  const idx = onlineSiparisler.findIndex(s => s.id === siparisId);
+  if (idx >= 0) onlineSiparisler[idx].durum = yeniDurum;
+  onlineBadgeGuncelle();
+  onlineListeRender();
+  toast(yeniDurum === 'iptal' ? '❌ Sipariş iptal edildi' : '✅ Durum güncellendi');
+}
+
+function onlineSiparisQRAc() {
+  if (!kafeAdi) return;
+  // kafe_kodu'nu bul
+  const data = window._kafeData;
+  const kod = data?.kafe_kodu || '';
+  if (!kod) { toast('Kafe kodu bulunamadı!'); return; }
+  
+  const link = `https://kolaycafe.com/siparis.html?kafe=${kod}`;
+  document.getElementById('online-qr-link').textContent = link;
+  
+  const canvas = document.getElementById('online-qr-canvas');
+  canvas.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(canvas, { text: link, width: 180, height: 180, colorDark:'#1a1200', colorLight:'#f5e6c8' });
+  }
+  document.getElementById('online-qr-modal').style.display = 'flex';
+}
+
+function onlineQRKopyala() {
+  const link = document.getElementById('online-qr-link').textContent;
+  navigator.clipboard.writeText(link).then(() => toast('📋 Link kopyalandı!'));
+}
+
+// Realtime online siparişler dinle
+function onlineRealtimeBaslat() {
+  if (!kafeId) return;
+  sb.channel('online-' + kafeId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'online_siparisler',
+      filter: 'kafe_id=eq.' + kafeId
+    }, payload => {
+      onlineSiparisler.unshift(payload.new);
+      onlineBadgeGuncelle();
+      onlineListeRender();
+      // Bildirim sesi + toast
+      toast('🔔 Yeni online sipariş! #' + payload.new.siparis_no, 4000);
+      try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...').play(); } catch(e) {}
+    })
+    .subscribe();
 }
 
 // ════════════════════════════════════════
@@ -4743,7 +4935,7 @@ function gelAlRender() {
         <span style="background:${renk}20;color:${renk};border:1px solid ${renk}50;border-radius:8px;padding:4px 10px;font-size:0.72rem;font-weight:800;">${etiket}</span>
       </div>
       <div style="font-size:0.82rem;color:var(--text2);margin-bottom:6px;">📦 ${urunListesi}</div>
-      ${s.not ? `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px;">📝 ${s.not}</div>` : ''}
+      ${s.siparis_notu ? `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px;">📝 ${s.siparis_notu}</div>` : ''}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:6px;">
         <div style="font-weight:900;color:var(--accent2);font-size:1rem;">₺${s.toplam}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -5326,6 +5518,10 @@ window.raporPDFExport = raporPDFExport;
 window.raporExcelExport = raporExcelExport;
 window.receteYeniAc = receteYeniAc;
 window.receteSekme = receteSekme;
+window.onlineFiltre = onlineFiltre;
+window.onlineDurumGuncelle = onlineDurumGuncelle;
+window.onlineSiparisQRAc = onlineSiparisQRAc;
+window.onlineQRKopyala = onlineQRKopyala;
 window.receteKatSec = receteKatSec;
 window.receteSilOnay = receteSilOnay;
 window.receteDuzenle = receteDuzenle;
