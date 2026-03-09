@@ -3886,12 +3886,16 @@ async function receteKaydet() {
   
   // Supabase'e kaydet
   if(kafeId) {
-    const { error } = await sb.from('kafeler').update({ receteler: RECETELER }).eq('id', kafeId);
+    console.log('Kaydediliyor... kafeId:', kafeId, 'RECETELER:', JSON.stringify(RECETELER));
+    const { data, error } = await sb.from('kafeler').update({ receteler: RECETELER }).eq('id', kafeId).select('receteler').single();
     if(error) {
       toast('❌ Kayıt hatası: ' + error.message);
       console.error('Reçete kayıt hatası:', error);
       return;
     }
+    console.log('Kaydedilen veri:', data);
+    // Dönen veriyle RECETELER'i senkronize et
+    if(data?.receteler) RECETELER = data.receteler;
     toast('✅ Reçete kaydedildi');
   } else {
     toast('⚠️ Kafe ID bulunamadı, oturum açık mı?');
