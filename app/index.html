@@ -662,29 +662,68 @@
 
 </div>
 
-<div class="page" id="page-recete" style="overflow-y:auto;padding:12px;flex-direction:column;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div style="font-size:1rem;font-weight:900;color:var(--accent2);">🧪 Reçete & Maliyet</div>
-    <button onclick="receteYeniAc()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;">+ Reçete Ekle</button>
-  </div>
-  <!-- Kar marjı özeti -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
-    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;border:1.5px solid var(--border);">
-      <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ORTALAMA MALİYET</div>
-      <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="r-ort-maliyet">0 ₺</div>
+<div class="page" id="page-recete" style="overflow-y:auto;padding:0;flex-direction:column;">
+  <!-- Header -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:1rem;font-weight:900;color:var(--accent2);">🧪 Reçete & Maliyet</div>
+      <button onclick="receteYeniAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">+ Reçete Ekle</button>
     </div>
-    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;border:1.5px solid var(--border);">
-      <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ORTALAMA KAR</div>
-      <div style="font-size:1rem;font-weight:900;color:#22c55e;" id="r-ort-kar">0 ₺</div>
-    </div>
-    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;border:1.5px solid var(--border);">
-      <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">KAR MARJI</div>
-      <div style="font-size:1rem;font-weight:900;color:var(--accent2);" id="r-kar-marji">%0</div>
+    <!-- Sekme: Reçeteler / Analiz -->
+    <div style="display:flex;gap:0;background:var(--surface2);border-radius:10px;padding:3px;">
+      <button id="rtab-receteler" onclick="receteSekme('receteler')" style="flex:1;padding:7px;border:none;border-radius:8px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">📋 Reçeteler</button>
+      <button id="rtab-analiz" onclick="receteSekme('analiz')" style="flex:1;padding:7px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">📊 Analiz</button>
     </div>
   </div>
-  <div id="recete-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
-  <div id="recete-bos" style="text-align:center;color:var(--muted);padding:40px;font-size:0.88rem;font-weight:600;">
-    Henüz reçete eklenmemiş.<br><br>Ürünlerinize maliyet ve reçete ekleyerek<br>kar marjınızı takip edin.
+
+  <!-- REÇETELER SEKMESİ -->
+  <div id="rsekme-receteler" style="padding:12px;">
+    <!-- KPI özeti -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;border:1.5px solid var(--border);">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORT. MALİYET</div>
+        <div style="font-size:0.95rem;font-weight:900;color:#ef4444;" id="r-ort-maliyet">0 ₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;border:1.5px solid var(--border);">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;">ORT. KAR</div>
+        <div style="font-size:0.95rem;font-weight:900;color:#22c55e;" id="r-ort-kar">0 ₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;border:1.5px solid var(--border);">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;">KAR MARJI</div>
+        <div style="font-size:0.95rem;font-weight:900;color:var(--accent2);" id="r-kar-marji">%0</div>
+      </div>
+    </div>
+    <!-- Kategori filtresi -->
+    <div id="recete-kategori-filter" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px;"></div>
+    <!-- Reçete listesi (kategoriye göre gruplu) -->
+    <div id="recete-liste" style="display:flex;flex-direction:column;gap:16px;"></div>
+    <div id="recete-bos" style="text-align:center;color:var(--muted);padding:40px;font-size:0.88rem;font-weight:600;">
+      Henüz reçete eklenmemiş.<br><br>Ürünlerinize maliyet ve reçete ekleyerek<br>kar marjınızı takip edin.
+    </div>
+  </div>
+
+  <!-- ANALİZ SEKMESİ -->
+  <div id="rsekme-analiz" style="padding:12px;display:none;">
+    <!-- En karlı ürünler -->
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">🏆 EN KARLI ÜRÜNLER</div>
+      <canvas id="grafik-karli" height="200"></canvas>
+    </div>
+    <!-- En düşük marjlı ürünler -->
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">⚠️ EN DÜŞÜK MARJLI ÜRÜNLER</div>
+      <div id="analiz-dusuk-marj" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <!-- Kategori bazlı maliyet -->
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">📂 KATEGORİ BAZLI MALİYET</div>
+      <canvas id="grafik-kategori-maliyet" height="180"></canvas>
+    </div>
+    <!-- Dönem karlılık karşılaştırması -->
+    <div style="background:var(--surface2);border-radius:12px;padding:12px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">💰 DÖNEM KARLILIĞı (Satış × Kar Marjı)</div>
+      <div id="analiz-donem-kar" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
   </div>
 </div>
 
@@ -3490,18 +3529,37 @@ function raporExcelExport() {
 }
 
 // ── REÇETE SİSTEMİ ──
+let aktifReceteKategori = 'tumu';
+let receteGrafikler = {};
+
+function receteSekme(sekme) {
+  ['receteler','analiz'].forEach(s => {
+    const el = document.getElementById('rsekme-' + s);
+    const btn = document.getElementById('rtab-' + s);
+    if(el) el.style.display = s === sekme ? 'block' : 'none';
+    if(btn) {
+      btn.style.background = s === sekme ? 'var(--accent)' : 'none';
+      btn.style.color = s === sekme ? '#1a0f00' : 'var(--muted)';
+    }
+  });
+  if(sekme === 'analiz') receteAnalizCiz();
+}
+
 function receteListeRender() {
   const liste = document.getElementById('recete-liste');
   const bos = document.getElementById('recete-bos');
   if(!liste) return;
-  
-  // Maliyet özeti
+
+  const tumUrunlerFlat = [];
+  Object.entries(URUNLER).forEach(([kat,urunler]) => urunler.forEach(u => tumUrunlerFlat.push({...u,kat})));
   const tumUrunler = Object.values(URUNLER).flat();
   const receteli = tumUrunler.filter(u => RECETELER[u.isim]);
+
+  // KPI özeti
   if(receteli.length > 0) {
     const maliyetler = receteli.map(u => {
       const r = RECETELER[u.isim];
-      return { fiyat: u.fiyat, maliyet: r.malzemeler.reduce((s,m) => s + (m.maliyet||0), 0) };
+      return { fiyat: u.fiyat, maliyet: r.malzemeler.reduce((s,m) => s+(m.maliyet||0), 0) };
     });
     const ortMaliyet = maliyetler.reduce((s,x)=>s+x.maliyet,0)/maliyetler.length;
     const ortKar = maliyetler.reduce((s,x)=>s+(x.fiyat-x.maliyet),0)/maliyetler.length;
@@ -3511,53 +3569,241 @@ function receteListeRender() {
     if(document.getElementById('r-kar-marji')) document.getElementById('r-kar-marji').textContent = '%'+Math.round(ortMarj);
   }
 
-  const tumUrunlerFlat = [];
-  Object.entries(URUNLER).forEach(([kat,urunler]) => urunler.forEach(u => tumUrunlerFlat.push({...u,kat})));
-  
+  // Kategori filtre butonları
+  const katFilter = document.getElementById('recete-kategori-filter');
+  if(katFilter) {
+    const kategoriler = [...new Set(Object.keys(RECETELER).map(ad => {
+      const u = tumUrunlerFlat.find(x => x.isim === ad);
+      return u?.kat || 'Diğer';
+    }))];
+    katFilter.innerHTML = `<button onclick="receteKatSec('tumu',this)"
+      style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid ${aktifReceteKategori==='tumu'?'var(--accent)':'var(--border)'};
+      background:${aktifReceteKategori==='tumu'?'var(--accent)':'var(--surface2)'};color:${aktifReceteKategori==='tumu'?'#1a0f00':'var(--text2)'};
+      font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">Tümü</button>`;
+    kategoriler.forEach(kat => {
+      const aktif = aktifReceteKategori === kat;
+      katFilter.innerHTML += `<button onclick="receteKatSec('${kat}',this)"
+        style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid ${aktif?'var(--accent)':'var(--border)'};
+        background:${aktif?'var(--accent)':'var(--surface2)'};color:${aktif?'#1a0f00':'var(--text2)'};
+        font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">${kat}</button>`;
+    });
+  }
+
   liste.innerHTML = '';
   if(Object.keys(RECETELER).length === 0) { bos.style.display='block'; return; }
   bos.style.display='none';
-  
+
+  // Kategoriye göre grupla
+  const gruplar = {};
   Object.entries(RECETELER).forEach(([urunAdi, recete]) => {
     const urun = tumUrunlerFlat.find(u => u.isim === urunAdi);
-    const maliyet = recete.malzemeler.reduce((s,m) => s+(m.maliyet||0), 0);
-    const satisFiyat = urun?.fiyat || 0;
-    const kar = satisFiyat - maliyet;
-    const marj = satisFiyat > 0 ? Math.round(kar/satisFiyat*100) : 0;
-    
-    const div = document.createElement('div');
-    div.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);';
-    div.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-        <div>
-          <div style="font-weight:900;font-size:0.95rem;">${urun?.ikon||'🍽️'} ${urunAdi}</div>
-          <div style="font-size:0.72rem;color:var(--muted);">${urun?.kat||''}</div>
-        </div>
-        <button onclick="receteDuzenle('${urunAdi}')" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✏️</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
-        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
-          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">MALİYET</div>
-          <div style="font-weight:900;color:#ef4444;font-size:0.88rem;">${fmt(maliyet)}</div>
-        </div>
-        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
-          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">KAR</div>
-          <div style="font-weight:900;color:#22c55e;font-size:0.88rem;">${fmt(kar)}</div>
-        </div>
-        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
-          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">MARJ</div>
-          <div style="font-weight:900;color:var(--accent2);font-size:0.88rem;">%${marj}</div>
-        </div>
-      </div>
-      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:6px;">MALZEMELER</div>
-      ${recete.malzemeler.map(m=>`<div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:3px 0;border-top:1px solid var(--border);">
-        <span>${m.ad} — ${m.miktar} ${m.birim}</span>
-        <span style="color:var(--accent2);font-weight:700;">${fmt(m.maliyet||0)}</span>
-      </div>`).join('')}
-      ${recete.not ? `<div style="margin-top:8px;font-size:0.75rem;color:var(--muted);background:var(--surface3);border-radius:8px;padding:7px;">📝 ${recete.not}</div>` : ''}
-    `;
-    liste.appendChild(div);
+    const kat = urun?.kat || 'Diğer';
+    if(aktifReceteKategori !== 'tumu' && kat !== aktifReceteKategori) return;
+    if(!gruplar[kat]) gruplar[kat] = [];
+    gruplar[kat].push({urunAdi, recete, urun});
   });
+
+  if(Object.keys(gruplar).length === 0) {
+    liste.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Bu kategoride reçete yok</div>';
+    return;
+  }
+
+  Object.entries(gruplar).forEach(([kat, items]) => {
+    // Kategori başlığı
+    const katDiv = document.createElement('div');
+    katDiv.innerHTML = `<div style="font-size:0.72rem;font-weight:900;color:var(--accent);letter-spacing:1px;text-transform:uppercase;
+      padding:6px 0;border-bottom:2px solid var(--accent)30;margin-bottom:8px;">📂 ${kat} <span style="color:var(--muted);font-size:0.68rem;">(${items.length} reçete)</span></div>`;
+    liste.appendChild(katDiv);
+
+    const katContainer = document.createElement('div');
+    katContainer.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+
+    items.forEach(({urunAdi, recete, urun}) => {
+      const maliyet = recete.malzemeler.reduce((s,m) => s+(m.maliyet||0), 0);
+      const satisFiyat = urun?.fiyat || 0;
+      const kar = satisFiyat - maliyet;
+      const marj = satisFiyat > 0 ? Math.round(kar/satisFiyat*100) : 0;
+      const marjRenk = marj >= 60 ? '#22c55e' : marj >= 40 ? 'var(--accent2)' : '#ef4444';
+
+      const div = document.createElement('div');
+      div.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-weight:900;font-size:0.92rem;">${urun?.ikon||'🍽️'} ${urunAdi}</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="background:${marjRenk}20;color:${marjRenk};font-size:0.7rem;font-weight:900;padding:3px 8px;border-radius:20px;">%${marj}</span>
+            <button onclick="receteDuzenle('${urunAdi}')" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✏️</button>
+            <button onclick="receteSilOnay('${urunAdi}')" style="padding:5px 8px;border-radius:8px;border:none;background:#ef444415;color:#ef4444;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🗑</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+          <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:0.58rem;color:var(--muted);font-weight:700;">MALİYET</div>
+            <div style="font-weight:900;color:#ef4444;font-size:0.85rem;">${fmt(maliyet)}</div>
+          </div>
+          <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:0.58rem;color:var(--muted);font-weight:700;">SATIŞ</div>
+            <div style="font-weight:900;color:var(--accent2);font-size:0.85rem;">${fmt(satisFiyat)}</div>
+          </div>
+          <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:0.58rem;color:var(--muted);font-weight:700;">KAR</div>
+            <div style="font-weight:900;color:#22c55e;font-size:0.85rem;">${fmt(kar)}</div>
+          </div>
+        </div>
+        <details style="cursor:pointer;">
+          <summary style="font-size:0.75rem;color:var(--muted);font-weight:700;list-style:none;display:flex;justify-content:space-between;">
+            <span>MALZEMELER (${recete.malzemeler.length})</span><span>▼</span>
+          </summary>
+          <div style="margin-top:6px;">
+            ${recete.malzemeler.map(m=>`<div style="display:flex;justify-content:space-between;font-size:0.78rem;padding:4px 0;border-top:1px solid var(--border);">
+              <span>${m.ad} — ${m.miktar} ${m.birim}</span>
+              <span style="color:var(--accent2);font-weight:700;">${fmt(m.maliyet||0)}</span>
+            </div>`).join('')}
+            ${recete.not ? `<div style="margin-top:6px;font-size:0.73rem;color:var(--muted);background:var(--surface3);border-radius:8px;padding:6px;">📝 ${recete.not}</div>` : ''}
+          </div>
+        </details>`;
+      katContainer.appendChild(div);
+    });
+    liste.appendChild(katContainer);
+  });
+}
+
+function receteKatSec(kat, btn) {
+  aktifReceteKategori = kat;
+  receteListeRender();
+}
+
+async function receteSilOnay(urunAdi) {
+  if(!confirm(`"${urunAdi}" reçetesini silmek istiyor musunuz?`)) return;
+  delete RECETELER[urunAdi];
+  if(kafeId) await sb.from('kafeler').update({receteler: RECETELER}).eq('id', kafeId);
+  toast('🗑 Reçete silindi');
+  receteListeRender();
+}
+
+function receteAnalizCiz() {
+  const tumUrunlerFlat = [];
+  Object.entries(URUNLER).forEach(([kat,urunler]) => urunler.forEach(u => tumUrunlerFlat.push({...u,kat})));
+
+  // Karlılık verileri
+  const veriler = Object.entries(RECETELER).map(([urunAdi, recete]) => {
+    const urun = tumUrunlerFlat.find(u => u.isim === urunAdi);
+    const maliyet = recete.malzemeler.reduce((s,m)=>s+(m.maliyet||0),0);
+    const fiyat = urun?.fiyat || 0;
+    const kar = fiyat - maliyet;
+    const marj = fiyat > 0 ? Math.round(kar/fiyat*100) : 0;
+    const satisSayisi = (() => {
+      const ds = {};
+      kapaliKolayCafenlar.forEach(a => a.siparisler.forEach(s => {
+        if(!ds[s.isim]) ds[s.isim]=0; ds[s.isim]+=s.adet;
+      }));
+      return ds[urunAdi] || 0;
+    })();
+    return {urunAdi, urun, maliyet, fiyat, kar, marj, satisSayisi, kat: urun?.kat||'Diğer', toplamKar: kar*satisSayisi};
+  }).filter(x => x.fiyat > 0);
+
+  if(veriler.length === 0) {
+    document.getElementById('analiz-dusuk-marj').innerHTML = '<div style="color:var(--muted);padding:10px;text-align:center;">Yeterli reçete yok</div>';
+    document.getElementById('analiz-donem-kar').innerHTML = '<div style="color:var(--muted);padding:10px;text-align:center;">Veri yok</div>';
+    return;
+  }
+
+  // En karlı ürünler grafiği
+  const enKarli = [...veriler].sort((a,b)=>b.kar-a.kar).slice(0,8);
+  const karliCanvas = document.getElementById('grafik-karli');
+  if(karliCanvas) {
+    if(receteGrafikler.karli) receteGrafikler.karli.destroy();
+    receteGrafikler.karli = new Chart(karliCanvas, {
+      type: 'bar',
+      data: {
+        labels: enKarli.map(x=>x.urunAdi),
+        datasets: [{
+          label: 'Kar (₺)',
+          data: enKarli.map(x=>x.kar),
+          backgroundColor: enKarli.map(x => x.marj>=60?'rgba(34,197,94,0.7)':x.marj>=40?'rgba(240,184,48,0.7)':'rgba(239,68,68,0.7)'),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color:'#7a6040',font:{size:10}, callback: v=>v+'₺' }, grid:{color:'rgba(255,255,255,0.05)'} },
+          y: { ticks: { color:'#c8a870',font:{size:10} }, grid:{display:false} }
+        }
+      }
+    });
+  }
+
+  // En düşük marjlı
+  const dusukMarj = document.getElementById('analiz-dusuk-marj');
+  if(dusukMarj) {
+    const en3Dusuk = [...veriler].sort((a,b)=>a.marj-b.marj).slice(0,5);
+    dusukMarj.innerHTML = en3Dusuk.map(x => {
+      const renk = x.marj < 30 ? '#ef4444' : x.marj < 50 ? '#f59e0b' : '#22c55e';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--surface3);border-radius:8px;">
+        <span style="font-size:0.82rem;font-weight:700;">${x.urun?.ikon||'🍽️'} ${x.urunAdi}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:0.75rem;color:var(--muted);">${fmt(x.maliyet)} maliyet</span>
+          <span style="font-weight:900;color:${renk};font-size:0.85rem;">%${x.marj}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Kategori bazlı maliyet grafiği
+  const katMaliyet = {};
+  veriler.forEach(x => {
+    if(!katMaliyet[x.kat]) katMaliyet[x.kat] = {maliyet:0, kar:0, adet:0};
+    katMaliyet[x.kat].maliyet += x.maliyet;
+    katMaliyet[x.kat].kar += x.kar;
+    katMaliyet[x.kat].adet++;
+  });
+  const katCanvas = document.getElementById('grafik-kategori-maliyet');
+  if(katCanvas) {
+    if(receteGrafikler.kategori) receteGrafikler.kategori.destroy();
+    const katlar = Object.keys(katMaliyet);
+    receteGrafikler.kategori = new Chart(katCanvas, {
+      type: 'bar',
+      data: {
+        labels: katlar,
+        datasets: [
+          { label: 'Ort. Maliyet', data: katlar.map(k=>katMaliyet[k].maliyet/katMaliyet[k].adet), backgroundColor:'rgba(239,68,68,0.6)', borderRadius:4 },
+          { label: 'Ort. Kar', data: katlar.map(k=>katMaliyet[k].kar/katMaliyet[k].adet), backgroundColor:'rgba(34,197,94,0.6)', borderRadius:4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: {color:'#c8a870',font:{size:10}} } },
+        scales: {
+          x: { ticks:{color:'#7a6040',font:{size:10}}, grid:{display:false} },
+          y: { ticks:{color:'#7a6040',font:{size:10},callback:v=>v+'₺'}, grid:{color:'rgba(255,255,255,0.05)'} }
+        }
+      }
+    });
+  }
+
+  // Dönem karlılık — satış adedi × kar
+  const donemKar = document.getElementById('analiz-donem-kar');
+  if(donemKar) {
+    const satirlar = [...veriler].filter(x=>x.satisSayisi>0).sort((a,b)=>b.toplamKar-a.toplamKar).slice(0,8);
+    if(satirlar.length === 0) {
+      donemKar.innerHTML = '<div style="color:var(--muted);padding:10px;text-align:center;">Satış verisi yok</div>';
+    } else {
+      const maxKar = Math.max(...satirlar.map(x=>x.toplamKar));
+      donemKar.innerHTML = satirlar.map(x => `
+        <div style="margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <span style="font-size:0.8rem;font-weight:700;">${x.urun?.ikon||'🍽️'} ${x.urunAdi} <span style="color:var(--muted);font-weight:600;">${x.satisSayisi}x</span></span>
+            <span style="font-weight:900;color:#22c55e;font-size:0.82rem;">${fmt(x.toplamKar)}</span>
+          </div>
+          <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${Math.round(x.toplamKar/maxKar*100)}%;background:linear-gradient(90deg,#22c55e,var(--accent));border-radius:3px;"></div>
+          </div>
+        </div>`).join('');
+    }
+  }
 }
 
 function receteYeniAc() {
@@ -5058,6 +5304,9 @@ window.raporSekme = raporSekme;
 window.raporPDFExport = raporPDFExport;
 window.raporExcelExport = raporExcelExport;
 window.receteYeniAc = receteYeniAc;
+window.receteSekme = receteSekme;
+window.receteKatSec = receteKatSec;
+window.receteSilOnay = receteSilOnay;
 window.receteDuzenle = receteDuzenle;
 window.receteMalzemeEkle = receteMalzemeEkle;
 window.receteMaliyetGuncelle = receteMaliyetGuncelle;
