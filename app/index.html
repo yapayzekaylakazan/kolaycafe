@@ -5342,9 +5342,22 @@ window.gelAlKatSec = gelAlKatSec;
 // PWA Service Worker
 // SW temizle
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(reg => reg.unregister());
-  });
+  // SW'yi kaydet - network-first cache temizleyici olarak
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => {
+      // Yeni SW varsa hemen aktiflleştir
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // Sayfayı otomatik yenile
+            window.location.reload();
+          }
+        });
+      });
+      // Her açılışta update kontrol et
+      reg.update();
+    });
 }
 
 // PWA Yükle butonu
