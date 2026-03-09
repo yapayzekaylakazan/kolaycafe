@@ -1,7 +1,4 @@
-// KolayCafe SW v20260309230937
-// Bu dosya her deploy'da değişerek CDN cache'ini temizler
-
-const CACHE_VERSION = 'v20260309230937';
+const SW_VERSION = '20260310000000';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -15,10 +12,9 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Network-first: Her zaman sunucudan al, cache kullanma
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('/app/index.html') || 
-      e.request.url.includes('/app/mutfak.html')) {
+  // Her zaman network'ten al, cache kullanma
+  if (e.request.destination === 'document') {
     e.respondWith(
       fetch(e.request, {cache: 'no-store'})
         .catch(() => caches.match(e.request))
