@@ -1072,9 +1072,12 @@
     <div style="font-size:0.75rem;color:var(--muted);margin-bottom:16px;">Müşterilere bu linki veya QR kodu paylaşın</div>
     <div id="online-qr-canvas" style="margin:0 auto 14px;display:flex;justify-content:center;"></div>
     <div id="online-qr-link" style="background:var(--surface2);border-radius:8px;padding:10px;font-size:0.72rem;color:var(--text2);word-break:break-all;margin-bottom:14px;cursor:pointer;" onclick="onlineQRKopyala()"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <button onclick="onlineQRKopyala()" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📋 Linki Kopyala</button>
-      <button onclick="document.getElementById('online-qr-modal').style.display='none'" style="padding:10px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">✕ Kapat</button>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="onlineWhatsapp()" style="width:100%;padding:11px;border-radius:10px;border:none;background:#25D366;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;">💬 WhatsApp ile Paylaş</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="onlineQRKopyala()" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📋 Linki Kopyala</button>
+        <button onclick="document.getElementById('online-qr-modal').style.display='none'" style="padding:10px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">✕ Kapat</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3374,6 +3377,15 @@ function onlineQRKopyala() {
   navigator.clipboard.writeText(link).then(() => toast('📋 Link kopyalandı!'));
 }
 
+function onlineWhatsapp() {
+  const link = document.getElementById('online-qr-link').textContent;
+  const mesaj = encodeURIComponent(`☕ ${kafeAdi} — Online Sipariş
+
+Buradan sipariş verebilirsiniz:
+${link}`);
+  window.open('https://wa.me/?text=' + mesaj, '_blank');
+}
+
 // Realtime online siparişler dinle
 function onlineRealtimeBaslat() {
   if (!kafeId) return;
@@ -5522,6 +5534,7 @@ window.onlineFiltre = onlineFiltre;
 window.onlineDurumGuncelle = onlineDurumGuncelle;
 window.onlineSiparisQRAc = onlineSiparisQRAc;
 window.onlineQRKopyala = onlineQRKopyala;
+window.onlineWhatsapp = onlineWhatsapp;
 window.receteKatSec = receteKatSec;
 window.receteSilOnay = receteSilOnay;
 window.receteDuzenle = receteDuzenle;
