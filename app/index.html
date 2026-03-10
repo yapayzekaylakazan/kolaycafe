@@ -1521,15 +1521,20 @@ let kafeId = null;
 let kafeAdi = 'Kafem';
 // ── PAKET TANIMLARI ──
 const PAKETLER = {
-  deneme: { ad:'🆓 Deneme',  masa:6,  garson:false, rapor:true,  fiyat:0,   sure:'10 gün' },
-  start:  { ad:'🚀 Start',   masa:4,  garson:true,  rapor:true,  fiyat:299, sure:'aylık' },
-  grow:   { ad:'🌱 Grow',    masa:6,  garson:true,  rapor:true,  fiyat:399, sure:'aylık' },
-  gold:   { ad:'🥇 Gold',    masa:8,  garson:true,  rapor:true,  fiyat:499, sure:'aylık' },
-  platin: { ad:'💎 Platin',  masa:10, garson:true,  rapor:true,  fiyat:599, sure:'aylık' },
-  ultra:  { ad:'🚀 Ultra',   masa:12, garson:true,  rapor:true,  fiyat:699, sure:'aylık' },
-  elite:  { ad:'👑 Elite',   masa:15, garson:true,  rapor:true,  fiyat:799, sure:'aylık' },
-  pro:    { ad:'⭐ Pro',     masa:999,garson:true,  rapor:true,  fiyat:899, sure:'aylık' },
-  kilitli:{ ad:'🔒 Kilitli', masa:0,  garson:false, rapor:false, fiyat:0,   sure:'' },
+  // masa: kaç masa açık | garson: garson takibi | rapor: raporlar
+  // gelgid: gelir/gider | stok: stok takibi | recete: reçete
+  // kupon: indirim kuponu | bluetooth: bt yazıcı | platform: platform siparişi
+  // online: online sipariş | mutfak: mutfak ekranı | hesapbol: hesap bölme
+  // masatransfer: masa transfer | cari: cari hesap | qr: qr masa kodu
+  deneme: { ad:'🆓 Deneme',  masa:6,  garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:0,   sure:'10 gün' },
+  start:  { ad:'🚀 Start',   masa:4,  garson:true,  rapor:true,  gelgid:false, stok:false, recete:false, kupon:false, bluetooth:false, platform:false, online:true,  mutfak:false, hesapbol:false, masatransfer:false, cari:true,  qr:false, fiyat:299, sure:'aylık' },
+  grow:   { ad:'🌱 Grow',    masa:6,  garson:true,  rapor:true,  gelgid:true,  stok:false, recete:false, kupon:false, bluetooth:false, platform:true,  online:true,  mutfak:true,  hesapbol:false, masatransfer:false, cari:true,  qr:true,  fiyat:399, sure:'aylık' },
+  gold:   { ad:'🥇 Gold',    masa:8,  garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:false, platform:true,  online:true,  mutfak:true,  hesapbol:false, masatransfer:false, cari:true,  qr:true,  fiyat:499, sure:'aylık' },
+  platin: { ad:'💎 Platin',  masa:10, garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:599, sure:'aylık' },
+  ultra:  { ad:'🚀 Ultra',   masa:12, garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:699, sure:'aylık' },
+  elite:  { ad:'👑 Elite',   masa:15, garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:799, sure:'aylık' },
+  pro:    { ad:'⭐ Pro',     masa:999,garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:899, sure:'aylık' },
+  kilitli:{ ad:'🔒 Kilitli', masa:0,  garson:false, rapor:false, gelgid:false, stok:false, recete:false, kupon:false, bluetooth:false, platform:false, online:false, mutfak:false, hesapbol:false, masatransfer:false, cari:false, qr:false, fiyat:0,   sure:'' },
 };
 let aktifPaket = 'deneme'; // cafeVerisiYukle'de güncellenir
 
@@ -2228,22 +2233,45 @@ function kilitEkraniGoster(mesaj) {
 }
 
 function paketYetkiUygula(plan) {
-  const paket = PAKETLER[plan] || PAKETLER.deneme;
-  // Rapor ve ayarlar nav
-  const navRapor = document.getElementById('nav-rapor');
-  const navRecete = document.getElementById('nav-recete');
-  if(navRapor) navRapor.style.display = paket.rapor ? '' : 'none';
-  // Stok nav her zaman göster
-  const navStok = document.getElementById('nav-stok');
-  if(navStok) navStok.style.display = 'flex';
-  const navRecete2 = document.getElementById('nav-recete');
-  if(navRecete2) navRecete2.style.display = 'flex';
-  // Cari ve Gelir/Gider nav her zaman göster
-  const navCari = document.getElementById('nav-cari');
-  if(navCari) navCari.style.display = 'flex';
-  const navGelgid = document.getElementById('nav-gelgid');
-  if(navGelgid) navGelgid.style.display = 'flex';
+  const p = PAKETLER[plan] || PAKETLER.deneme;
+
+  function goster(id, durum, display) {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(!durum) { el.style.display = 'none'; return; }
+    el.style.display = display || el.dataset.display || '';
+  }
+
+  // ── NAV MENÜ ──────────────────────────────────────────
+  goster('nav-rapor',     p.rapor,   'flex');
+  goster('nav-recete',    p.recete,  'flex');
+  goster('nav-stok',      p.stok,    'flex');
+  goster('nav-gelgid',    p.gelgid,  'flex');
+  goster('nav-cari',      p.cari,    'flex');
+  goster('nav-online',    p.online,  'flex');
+  goster('nav-mutfak',    p.mutfak,  'flex');
+
+  // ── AYARLAR ───────────────────────────────────────────
+  goster('kupon-yonetim-kart', p.kupon,    'block');
+  goster('qr-yonetim-kart',    p.qr,       'block');
+
+  // ── MASA EKLE ─────────────────────────────────────────
+  goster('masa-ekle-btn', plan === 'pro');
+
+  // ── PAKET KARTLARI (aktif olanı vurgula) ──────────────
+  ['deneme','start','grow','gold','platin','ultra','elite','pro'].forEach(pid => {
+    const el = document.getElementById('paket-' + pid);
+    if(!el) return;
+    if(pid === plan) {
+      el.style.opacity = '1';
+      el.style.boxShadow = '0 0 0 2px var(--accent2)';
+    } else {
+      el.style.opacity = '0.5';
+      el.style.boxShadow = 'none';
+    }
+  });
 }
+
 
 function masaErisimVar(masaId) {
   const paket = PAKETLER[aktifPaket] || PAKETLER.deneme;
