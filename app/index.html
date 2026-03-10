@@ -1744,13 +1744,13 @@ async function garsonKafeBul() {
   // kafe adını veya kodu ara
   // Önce kafe_kodu ile ara
   let {data, error} = await sb.from('kafeler')
-    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu')
+    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, stok, receteler')
     .eq('kafe_kodu', kod)
     .limit(1).single();
   // Bulunamazsa kafe adıyla ara
   if (error || !data) {
     const res2 = await sb.from('kafeler')
-      .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu')
+      .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, stok, receteler')
       .ilike('kafe_adi', '%'+kod+'%')
       .limit(1).single();
     data = res2.data;
@@ -1816,7 +1816,8 @@ async function garsonGiris(isim, kafeData) {
   kafeAdi = kafeData.kafe_adi;
   garsonlar = kafeData.garsonlar || [];
   if (kafeData.urunler) URUNLER = kafeData.urunler;
-  if (kafeData.receteler) { RECETELER = kafeData.receteler; console.log("Reçeteler yüklendi:", Object.keys(RECETELER)); } else { console.log("Receteler kolonu boş veya yok"); }
+  if (kafeData.stok) STOK = kafeData.stok;
+  if (kafeData.receteler) { RECETELER = kafeData.receteler; } 
   // Paketi ayarla
   aktifPaket = kafeData.plan || 'pro';
   const _paket = PAKETLER[aktifPaket] || PAKETLER.pro;
@@ -6036,18 +6037,17 @@ async function stokHareketGecmisiAc() {
 
 // Sipariş verilince stok düş
 function stokDus(urunAdi, adet) {
+  let degisti = false;
   for (const [kat, urunler] of Object.entries(URUNLER)) {
     const u = urunler.find(x => x.isim === urunAdi);
     if (u && u.stok !== null && u.stok !== undefined) {
       u.stok = Math.max(0, u.stok - adet);
-      if (u.stok === 0) {
-        toast(`⛔ ${urunAdi} tükendi!`);
-        urunGridRender();
-        bulutKaydet();
-      }
+      degisti = true;
+      if (u.stok === 0) toast(`⛔ ${urunAdi} tükendi!`);
       break;
     }
   }
+  if (degisti) { urunGridRender(); bulutKaydet(); }
 }
 
 
