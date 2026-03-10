@@ -1331,7 +1331,7 @@
         <div style="font-size:0.73rem;color:var(--text2);line-height:1.7;">✓ 20+ Masa (sınırsız) &nbsp;✓ Tüm Özellikler &nbsp;✓ 🖨️ İndirimli Termal Yazıcı &nbsp;✓ Öncelikli Destek</div>
       </div>
 
-      <a href="mailto:bilgi@kolaycafe.com" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
+      <a href="/cdn-cgi/l/email-protection#8ae8e3e6ede3cae1e5e6ebf3e9ebecefa4e9e5e7" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
         📧 Paket Değiştir / İletişim
       </a>
     </div>
@@ -1510,7 +1510,7 @@
   <button id="btn-kilit-cikis" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;display:block;margin:0 auto;">Çıkış Yap</button>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ════════════════════════════════════════
 // SUPABASE BAŞLAT
 // ════════════════════════════════════════
@@ -2030,14 +2030,14 @@ async function kafeVerisiYukle() {
     // masalar burada GÜNCELLENMEZ — aşağıda pakete göre oluşturulacak
   } else {
     // İlk giriş, kafe verisi henüz yok
-    const kkYeni = Math.random().toString(36).substring(2,8).toUpperCase();
+    const kkYeni = Math.random().toString(36).substring(2,8).toLowerCase();
     const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'deneme', plan_bitis: new Date(Date.now()+10*24*60*60*1000).toISOString(), garsonlar:['Ali','Ayşe'], kafe_kodu: kkYeni}).select().single();
     if (yeni) { kafeId = yeni.id; garsonlar = ['Ali','Ayşe']; }
   }
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
   // Kafe kodu yoksa otomatik oluştur ve kaydet
   if (data && !data.kafe_kodu) {
-    const yeniKod = Math.random().toString(36).substring(2,8).toUpperCase();
+    const yeniKod = Math.random().toString(36).substring(2,8).toLowerCase();
     await sb.from('kafeler').update({ kafe_kodu: yeniKod }).eq('id', data.id);
     data.kafe_kodu = yeniKod;
     toast('✓ Kafe kodunuz oluşturuldu: ' + yeniKod);
@@ -2077,6 +2077,8 @@ async function kafeVerisiYukle() {
     }
     if (plan==='deneme' && bitis) {
       const kalanGun = Math.ceil((bitis-simdi)/(1000*60*60*24));
+      window._denemeKalanGun = kalanGun;
+      window._denemeBitis = bitis;
       if(kalanGun<=1) toast('⚠️ Deneme süreniz yarın bitiyor! Paket seçin.');
       else if(kalanGun<=3) toast('⏳ '+kalanGun+' gün deneme hakkınız kaldı');
     }
@@ -2261,12 +2263,28 @@ function paketYetkiUygula(plan) {
   if (_badge) {
     const _renkMap = {pro:'#7c3aed',elite:'#f97316',ultra:'#2d7a3a',platin:'#1a6fb5',gold:'#b8860b',grow:'#22c55e',start:'#64748b',deneme:'#4080f0',ucretsiz:'#4080f0'};
     const _renk = _renkMap[plan] || '#888';
-    _badge.textContent = p.ad || plan.toUpperCase();
-    _badge.style.display = 'inline-block';
-    _badge.style.color = _renk;
-    _badge.style.borderColor = _renk + '60';
-    _badge.style.background = _renk + '18';
-    _badge.style.boxShadow = '0 0 8px ' + _renk + '40';
+
+    if (plan === 'deneme' && window._denemeKalanGun !== undefined) {
+      const gun = window._denemeKalanGun;
+      const acil = gun <= 3;
+      _badge.innerHTML = `
+        <span style="color:${acil?'#ef4444':_renk};font-weight:900;">⏳ ${gun} gün</span>
+        <button onclick="sayfaGit('ayarlar')" style="margin-left:6px;padding:2px 8px;border-radius:6px;border:none;background:${acil?'#ef4444':'#4080f0'};color:#fff;font-family:'Nunito',sans-serif;font-size:0.68rem;font-weight:900;cursor:pointer;">⭐ Pakete Geç</button>
+      `;
+      _badge.style.display = 'inline-flex';
+      _badge.style.alignItems = 'center';
+      _badge.style.background = (acil?'#ef444418':'#4080f018');
+      _badge.style.border = `1px solid ${acil?'#ef444460':'#4080f060'}`;
+      _badge.style.padding = '3px 8px';
+      _badge.style.borderRadius = '6px';
+    } else {
+      _badge.textContent = p.ad || plan.toUpperCase();
+      _badge.style.display = 'inline-block';
+      _badge.style.color = _renk;
+      _badge.style.borderColor = _renk + '60';
+      _badge.style.background = _renk + '18';
+      _badge.style.boxShadow = '0 0 8px ' + _renk + '40';
+    }
   }
 
   function goster(id, durum, display) {
@@ -2351,7 +2369,13 @@ function masalarRender() {
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       // Garson çağrı kapat butonu
       
-      btn.addEventListener('click',()=>{seciliMasa=m.id;masalarRender();kolaycafenGuncelle();sayfaGit('kolaycafen');});
+      btn.addEventListener('click',()=>{
+        // Garson çakışma koruması
+        if (garsonModu && aktifGarsonAdi && m.garson && m.garson !== aktifGarsonAdi && m.siparisler.length > 0) {
+          if (!confirm(`⚠️ Bu masada şu an "${m.garson}" çalışıyor.\nYine de açmak istiyor musunuz?`)) return;
+        }
+        seciliMasa=m.id;masalarRender();kolaycafenGuncelle();sayfaGit('kolaycafen');
+      });
     }
     grid.appendChild(btn);
   });
@@ -4613,6 +4637,8 @@ function ayarlarRender(){
     }
     if (plan==='deneme' && bitis) {
       const kalanGun = Math.ceil((bitis-simdi)/(1000*60*60*24));
+      window._denemeKalanGun = kalanGun;
+      window._denemeBitis = bitis;
       if(kalanGun<=1) toast('⚠️ Deneme süreniz yarın bitiyor! Paket seçin.');
       else if(kalanGun<=3) toast('⏳ '+kalanGun+' gün deneme hakkınız kaldı');
     }
@@ -6519,13 +6545,4 @@ async function mmGarsonCagir() {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
   t.textContent = '🔔 Garsonunuz geliyor!';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-// URL PARAM KONTROLÜ — yukarıdaki session bloğunda hallendi
-
-
-</script>
-</body>
-</html>
+  document.body.a
