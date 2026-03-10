@@ -466,9 +466,11 @@ async function testPaketUygula() {
   } else {
     const p = TEST_PAKETLER.find(x => x.id === testSecilenPaket);
     const kafe = tumKafeler.find(x => x.id === kafeId);
-    sonuc.textContent = `✓ ${kafe?.kafe_adi||'Kafe'} → ${p?.isim||testSecilenPaket} paketi uygulandı (${gun} gün). Şimdi uygulamayı açıp test edebilirsiniz.`;
+    sonuc.textContent = `✓ ${kafe?.kafe_adi||'Kafe'} → ${p?.isim||testSecilenPaket} paketi uygulandı (${gun} gün). Uygulama yeni sekmede açılıyor...`;
     sonuc.className = 'test-sonuc ok';
     await yukle();
+    // Uygulamayı cache'siz yeni sekmede aç
+    setTimeout(() => window.open('app/index.html?t=' + Date.now(), '_blank'), 800);
   }
   sonuc.style.display = 'block';
 }
