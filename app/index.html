@@ -1743,7 +1743,7 @@ async function garsonKafeBul() {
   document.getElementById('auth-loading').style.display = 'block';
   const {data, error} = await sb.from('kafeler')
     .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, stok, receteler')
-    .ilike('kafe_kodu', kod)
+    .eq('kafe_kodu', kod.toUpperCase())
     .maybeSingle();
   document.getElementById('auth-loading').style.display = 'none';
   if (error || !data) { authHata('Cafe bulunamadı! Kodu kontrol edin.'); return; }
