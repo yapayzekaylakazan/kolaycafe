@@ -292,7 +292,7 @@ async function yukleOnline() {
     yeniData.filter(s=>s.durum==='bekleniyor'&&!eskiBekleyen.includes(s.id))
       .forEach(s => bildirim('🌐 Online #'+s.siparis_no, (s.siparisler||[]).reduce((t,u)=>t+u.adet,0)));
     onlineSiparislerMutfak = yeniData;
-  } catch(e) {}
+  } catch(e) { console.error('Online yükleme hatası:', e); }
 }
 
 function render(){
@@ -315,17 +315,23 @@ function render(){
   });
 
   const filtreli=aktifFiltre==='hepsi'?siparisler:siparisler.filter(s=>s.durum===aktifFiltre);
-  document.getElementById('sc-b').textContent='⏳ '+siparisler.filter(s=>s.durum==='bekliyor').length;
-  document.getElementById('sc-h').textContent='👨‍🍳 '+siparisler.filter(s=>s.durum==='hazirlaniyor').length;
+  const onlineFiltreli = aktifFiltre==='hepsi' ? onlineSiparislerMutfak :
+    aktifFiltre==='bekliyor' ? onlineSiparislerMutfak.filter(s=>s.durum==='bekleniyor') :
+    aktifFiltre==='hazirlaniyor' ? onlineSiparislerMutfak.filter(s=>s.durum==='hazirlaniyor') : [];
+  
+  const toplamBekleyen = siparisler.filter(s=>s.durum==='bekliyor').length + onlineSiparislerMutfak.filter(s=>s.durum==='bekleniyor').length;
+  const toplamHazirlaniyor = siparisler.filter(s=>s.durum==='hazirlaniyor').length + onlineSiparislerMutfak.filter(s=>s.durum==='hazirlaniyor').length;
+  document.getElementById('sc-b').textContent='⏳ '+toplamBekleyen;
+  document.getElementById('sc-h').textContent='👨‍🍳 '+toplamHazirlaniyor;
   document.getElementById('sc-ok').textContent='✅ '+siparisler.filter(s=>s.durum==='hazir').length;
 
-  if(filtreli.length===0 && garsonCagriler.length===0){
+  if(filtreli.length===0 && garsonCagriler.length===0 && onlineFiltreli.length===0){
     grid.innerHTML='<div class="bos"><div class="ikon">🍳</div><h3 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Bekleyen sipariş yok</h3><p style="font-size:.83rem;">Yeni sipariş gelince burada belirir</p></div>';
     return;
   }
 
   // Online sipariş kartları
-  onlineSiparislerMutfak.forEach(s => {
+  onlineFiltreli.forEach(s => {
     const durRenk = s.durum==='bekleniyor'?'#f0b830':'#3b82f6';
     const durLbl = s.durum==='bekleniyor'?'⏳ Bekliyor':'👨‍🍳 Hazırlanıyor';
     const urunHTML = (s.siparisler||[]).map(u=>`<div class="urun"><div class="urun-sol"><span>${u.ikon||'📦'}</span><span>${u.isim}</span></div><span class="adet">x${u.adet}</span></div>`).join('');
@@ -455,9 +461,16 @@ function baglan(){
   if(onlineSub) onlineSub.unsubscribe();
   onlineSub = sb.channel('mutfak-online-'+kafeId)
     .on('postgres_changes', {
-      event: '*', schema: 'public', table: 'online_siparisler',
-      filter: 'kafe_id=eq.'+kafeId
-    }, async () => {
+      event: 'INSERT', schema: 'public', table: 'online_siparisler'
+    }, async (payload) => {
+      if (payload.new?.kafe_id !== kafeId) return;
+      await yukleOnline();
+      render();
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'online_siparisler'
+    }, async (payload) => {
+      if (payload.new?.kafe_id !== kafeId) return;
       await yukleOnline();
       render();
     })
