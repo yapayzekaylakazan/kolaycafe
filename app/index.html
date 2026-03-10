@@ -576,6 +576,7 @@
       <button id="rtab-urun" onclick="raporSekme('urun')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🛒 Ürünler</button>
       <button id="rtab-garson" onclick="raporSekme('garson')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">👤 Garson</button>
       <button id="rtab-adisyon" onclick="raporSekme('adisyon')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🧾 Adisyon</button>
+      <button id="rtab-online" onclick="raporSekme('online')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🌐 Online</button>
     </div>
   </div>
 
@@ -658,6 +659,21 @@
   <div id="rsekme-adisyon" style="padding:12px;display:none;">
     <div class="rapor-tablo-baslik" style="margin-bottom:8px;"><span>KAPATILAN ADİSYONLAR</span></div>
     <div id="kapali-liste"></div>
+  </div>
+
+  <div id="rsekme-online" style="padding:12px;display:none;">
+    <div class="rapor-tablo-baslik" style="margin-bottom:10px;"><span>🌐 ONLİNE SİPARİŞLER</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:900;color:var(--accent2);" id="ro-adet">0</div>
+        <div style="font-size:0.7rem;color:var(--muted);">SİPARİŞ</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:900;color:#22c55e;" id="ro-ciro">0 ₺</div>
+        <div style="font-size:0.7rem;color:var(--muted);">CİRO</div>
+      </div>
+    </div>
+    <div id="ro-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
 </div>
@@ -2734,6 +2750,15 @@ function urunListesiRender(){
 // ════════════════════════════════════════
 function donemSec(donem,btn){aktifDonem=donem;document.querySelectorAll('.donem-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');raporRender();}
 
+function donemBaslangic() {
+  const simdi = new Date();
+  if (aktifDonem === 'gun') { const d = new Date(simdi); d.setHours(0,0,0,0); return d.toISOString(); }
+  if (aktifDonem === 'hafta') { const d = new Date(simdi); d.setDate(simdi.getDate()-((simdi.getDay()+6)%7)); d.setHours(0,0,0,0); return d.toISOString(); }
+  if (aktifDonem === 'ay') { return new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString(); }
+  if (aktifDonem === 'yil') { return new Date(simdi.getFullYear(), 0, 1).toISOString(); }
+  return null; // tümü
+}
+
 function donemFiltrele(kolaycafenlar){
   const simdi=new Date();
   return kolaycafenlar.filter(a=>{
@@ -3423,18 +3448,79 @@ function raporSekme(sekme) {
     }
   });
   if (sekme === 'grafik') raporGrafikleriCiz();
+  if (sekme === 'online') raporOnlineRender();
   if (sekme === 'recete') receteListeRender();
 }
 
-function raporRenderTam() {
+async function raporOnlineRender() {
+  const roListe = document.getElementById('ro-liste');
+  const roAdet = document.getElementById('ro-adet');
+  const roCiro = document.getElementById('ro-ciro');
+  if (!roListe) return;
+  roListe.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Yükleniyor...</div>';
+  try {
+    const baslangic = donemBaslangic();
+    let q = sb.from('online_siparisler').select('*').eq('kafe_id', kafeId).order('created_at', {ascending:false});
+    if (baslangic) q = q.gte('created_at', baslangic);
+    const { data } = await q;
+    const liste = data || [];
+    const teslimler = liste.filter(s => s.durum === 'teslim');
+    const toplamCiro = teslimler.reduce((s,x) => s + (x.toplam||0), 0);
+    if (roAdet) roAdet.textContent = teslimler.length;
+    if (roCiro) roCiro.textContent = fmt(toplamCiro);
+    const durumRenk = {bekleniyor:'#f0b830',hazirlaniyor:'#3b82f6',yolda:'#22c55e',teslim:'#a78bfa',iptal:'#6b7280'};
+    const durumText = {bekleniyor:'⏳',hazirlaniyor:'👨‍🍳',yolda:'🛵',teslim:'✅',iptal:'❌'};
+    roListe.innerHTML = liste.length === 0 ? '<div style="text-align:center;color:var(--muted);padding:30px;">Bu dönemde online sipariş yok</div>' : '';
+    liste.forEach(s => {
+      const tarih = new Date(s.created_at).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const urunler = (s.siparisler||[]).map(x => x.isim+'×'+x.adet).join(', ');
+      const div = document.createElement('div');
+      div.style.cssText = `background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid ${durumRenk[s.durum]||'var(--border)'};`;
+      div.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-weight:900;">${durumText[s.durum]||''} #${s.siparis_no} — ${s.musteri_ad}</span>
+        <span style="font-weight:900;color:var(--accent);">${fmt(s.toplam)}</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);">${tarih} · ${urunler}</div>`;
+      roListe.appendChild(div);
+    });
+  } catch(e) {
+    roListe.innerHTML = '<div style="color:#ef4444;padding:10px;">Hata: ' + e.message + '</div>';
+  }
+}
+
+async function raporRenderTam() {
   const filtre = donemFiltrele(kapaliKolayCafenlar);
-  const toplamCiro = filtre.reduce((s,a) => s + a.toplam, 0);
-  const toplamAdi = filtre.length;
+  
+  // Online siparişleri çek (teslim edilenler)
+  let onlineFiltreli = [];
+  try {
+    const baslangic = donemBaslangic();
+    let q = sb.from('online_siparisler').select('*').eq('kafe_id', kafeId).eq('durum', 'teslim');
+    if (baslangic) q = q.gte('created_at', baslangic);
+    const { data: onlineData } = await q;
+    onlineFiltreli = onlineData || [];
+  } catch(e) {}
+
+  // Online siparişleri rapor formatına çevir
+  const onlineAdisyonlar = onlineFiltreli.map(o => ({
+    toplam: o.toplam || 0,
+    siparisler: o.siparisler || [],
+    garson: '🌐 Online',
+    odeme_tipi: o.odeme_tipi || 'online',
+    tarihObj: new Date(o.created_at),
+    siparis_no: o.siparis_no,
+    musteri_ad: o.musteri_ad,
+    kaynak: 'online'
+  }));
+
+  const tumAdisyonlar = [...filtre, ...onlineAdisyonlar];
+  const toplamCiro = tumAdisyonlar.reduce((s,a) => s + a.toplam, 0);
+  const toplamAdi = tumAdisyonlar.length;
   const ds = {};
-  filtre.forEach(a => a.siparisler.forEach(s => {
+  tumAdisyonlar.forEach(a => (a.siparisler||[]).forEach(s => {
     if (!ds[s.isim]) ds[s.isim] = {adet:0,toplam:0};
-    ds[s.isim].adet += s.adet;
-    ds[s.isim].toplam += s.fiyat * s.adet;
+    ds[s.isim].adet += (s.adet||1);
+    ds[s.isim].toplam += (s.fiyat||0) * (s.adet||1);
   }));
   const toplamAdet = Object.values(ds).reduce((s,d) => s + d.adet, 0);
 
@@ -3446,7 +3532,7 @@ function raporRenderTam() {
 
   // Ödeme dağılımı
   const odeme = {};
-  filtre.forEach(a => {
+  tumAdisyonlar.forEach(a => {
     const tip = a.odeme_tipi || a.odemeTipi || 'nakit';
     if (!odeme[tip]) odeme[tip] = 0;
     odeme[tip] += a.toplam;
@@ -3493,7 +3579,7 @@ function raporRenderTam() {
   // Garson
   const gr = document.getElementById('garson-rapor');
   const gs = {};
-  filtre.forEach(a => {
+  tumAdisyonlar.forEach(a => {
     if(!a.garson) return;
     if(!gs[a.garson]) gs[a.garson] = {adet:0, ciro:0};
     gs[a.garson].adet++; gs[a.garson].ciro += a.toplam;
@@ -3510,7 +3596,7 @@ function raporRenderTam() {
   // Adisyon listesi
   const kl = document.getElementById('kapali-liste');
   if(kl) {
-    if(filtre.length===0){kl.innerHTML='<div class="bos-rapor">Bu dönemde kolaycafen yok</div>';}
+    if(tumAdisyonlar.length===0){kl.innerHTML='<div class="bos-rapor">Bu dönemde işlem yok</div>';}
     else {
       const grupla = a => {
         if(!a.tarihObj) return 'Bilinmiyor';
@@ -3518,7 +3604,7 @@ function raporRenderTam() {
         return new Date(a.tarihObj).toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
       };
       const gruplar = {};
-      [...filtre].forEach(a=>{const k=grupla(a);if(!gruplar[k])gruplar[k]={kolaycafenlar:[],toplam:0};gruplar[k].kolaycafenlar.push(a);gruplar[k].toplam+=a.toplam;});
+      [...tumAdisyonlar].sort((a,b)=>(b.tarihObj||0)-(a.tarihObj||0)).forEach(a=>{const k=grupla(a);if(!gruplar[k])gruplar[k]={kolaycafenlar:[],toplam:0};gruplar[k].kolaycafenlar.push(a);gruplar[k].toplam+=a.toplam;});
       kl.innerHTML='';
       Object.entries(gruplar).forEach(([baslik,grup])=>{
         const h=document.createElement('div');
