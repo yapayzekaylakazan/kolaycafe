@@ -1331,7 +1331,7 @@
         <div style="font-size:0.73rem;color:var(--text2);line-height:1.7;">✓ 20+ Masa (sınırsız) &nbsp;✓ Tüm Özellikler &nbsp;✓ 🖨️ İndirimli Termal Yazıcı &nbsp;✓ Öncelikli Destek</div>
       </div>
 
-      <a href="/cdn-cgi/l/email-protection#8ae8e3e6ede3cae1e5e6ebf3e9ebecefa4e9e5e7" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
+      <a href="mailto:bilgi@kolaycafe.com" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
         📧 Paket Değiştir / İletişim
       </a>
     </div>
@@ -1510,7 +1510,7 @@
   <button id="btn-kilit-cikis" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;display:block;margin:0 auto;">Çıkış Yap</button>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ════════════════════════════════════════
 // SUPABASE BAŞLAT
 // ════════════════════════════════════════
@@ -1902,6 +1902,17 @@ async function uygulamaBaslat(user) {
   urunListesiRender();
   setSyncOnline(true);
   kuponYonetimGoster();
+  // Son giriş zamanını kaydet
+  if (kafeId) sb.from('kafeler').update({ son_giris: new Date().toISOString() }).eq('id', kafeId).then(()=>{});
+  // Admin banner mesajı varsa göster, sonra temizle
+  setTimeout(async () => {
+    if (!kafeId) return;
+    const { data: bd } = await sb.from('kafeler').select('banner_mesaj').eq('id', kafeId).single();
+    if (bd?.banner_mesaj) {
+      bannerGoster(bd.banner_mesaj);
+      await sb.from('kafeler').update({ banner_mesaj: null }).eq('id', kafeId);
+    }
+  }, 2000);
 
   // Realtime: başka cihazdan yapılan değişiklikleri al
   sb.channel('kafe-'+kafeId)
@@ -2208,6 +2219,10 @@ async function kolaycafenKaydet(kolaycafen) {
       musteri_adi: kolaycafen.musteri_adi||null,
       cari_tutar: kolaycafen.cari_tutar||null,
     });
+    // Toplam ciroyu artır
+    if (kolaycafen.toplam > 0) {
+      sb.rpc('increment_ciro', { kafe_id_param: kafeId, miktar: kolaycafen.toplam }).then(()=>{});
+    }
     setSyncOnline(true);
   } catch(e) {
     console.error('Kayıt hatası:', e);
@@ -5215,6 +5230,28 @@ async function garsonCagriKapat(masaId) {
 let _tt;
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('goster');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('goster'),2800);}
 
+function bannerGoster(mesaj) {
+  let el = document.getElementById('admin-banner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'admin-banner';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#7c3aed,#4080f0);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 24px #0008;font-family:Nunito,sans-serif;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+      <span style="font-size:1.3rem;">📢</span>
+      <span style="font-size:0.88rem;font-weight:700;line-height:1.4;">${mesaj}</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button onclick="sayfaGit('ayarlar');document.getElementById('admin-banner').remove();"
+        style="padding:7px 14px;border-radius:8px;border:none;background:#fff;color:#7c3aed;font-weight:900;font-size:0.8rem;cursor:pointer;">⭐ Pakete Geç</button>
+      <button onclick="document.getElementById('admin-banner').remove();"
+        style="padding:7px 10px;border-radius:8px;border:1px solid #ffffff60;background:transparent;color:#fff;font-size:0.8rem;cursor:pointer;">✕</button>
+    </div>`;
+  el.style.display = 'flex';
+}
+
 // Enter tuşu
 document.getElementById('not-input').addEventListener('keydown',e=>{if(e.key==='Enter') document.getElementById('not-modal-kaydet').click();});
 // enter listeners moved to DOMContentLoaded
@@ -6545,4 +6582,13 @@ async function mmGarsonCagir() {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
   t.textContent = '🔔 Garsonunuz geliyor!';
-  document.body.a
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// URL PARAM KONTROLÜ — yukarıdaki session bloğunda hallendi
+
+
+</script>
+</body>
+</html>
