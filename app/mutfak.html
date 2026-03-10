@@ -136,7 +136,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let kafeId = null, aktifFiltre = 'hepsi', sesAcik = true;
-let siparisler = [], sub = null, garsonCagriler = [];
+let siparisler = [], sub = null, garsonCagriler = [], onlineSiparislerMutfak = [], onlineSub = null;
 
 // Saat
 setInterval(()=>{const e=document.getElementById('saat');if(e)e.textContent=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
@@ -275,7 +275,24 @@ async function yukle(){
     .forEach(s=>bildirim(s.masaAdi,s.urunler.reduce((t,u)=>t+u.adet,0)));
 
   siparisler=yeni;
+  // Online siparişleri yükle
+  await yukleOnline();
   render();
+}
+
+async function yukleOnline() {
+  try {
+    const { data } = await sb.from('online_siparisler')
+      .select('*').eq('kafe_id', kafeId)
+      .in('durum', ['bekleniyor','hazirlaniyor'])
+      .order('created_at', {ascending:true});
+    const eskiBekleyen = onlineSiparislerMutfak.filter(s=>s.durum==='bekleniyor').map(s=>s.id);
+    const yeniData = data || [];
+    // Yeni gelen online siparişler için bildirim
+    yeniData.filter(s=>s.durum==='bekleniyor'&&!eskiBekleyen.includes(s.id))
+      .forEach(s => bildirim('🌐 Online #'+s.siparis_no, (s.siparisler||[]).reduce((t,u)=>t+u.adet,0)));
+    onlineSiparislerMutfak = yeniData;
+  } catch(e) {}
 }
 
 function render(){
@@ -306,6 +323,29 @@ function render(){
     grid.innerHTML='<div class="bos"><div class="ikon">🍳</div><h3 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Bekleyen sipariş yok</h3><p style="font-size:.83rem;">Yeni sipariş gelince burada belirir</p></div>';
     return;
   }
+
+  // Online sipariş kartları
+  onlineSiparislerMutfak.forEach(s => {
+    const durRenk = s.durum==='bekleniyor'?'#f0b830':'#3b82f6';
+    const durLbl = s.durum==='bekleniyor'?'⏳ Bekliyor':'👨‍🍳 Hazırlanıyor';
+    const urunHTML = (s.siparisler||[]).map(u=>`<div class="urun"><div class="urun-sol"><span>${u.ikon||'📦'}</span><span>${u.isim}</span></div><span class="adet">x${u.adet}</span></div>`).join('');
+    const notHTML = s.siparis_notu ? `<div class="not">📝 ${s.siparis_notu}</div>` : '';
+    const adresHTML = s.adres ? `<div class="not">📍 ${s.adres}</div>` : '';
+    const akBtn = s.durum==='bekleniyor'
+      ? `<button class="ak-btn btn-hazirla" onclick="onlineDurumGuncelleMutfak('${s.id}','hazirlaniyor')">👨‍🍳 Hazırlanıyor</button><button class="ak-btn btn-iptal" onclick="onlineDurumGuncelleMutfak('${s.id}','iptal')">✕ İptal</button>`
+      : `<button class="ak-btn btn-tamam" onclick="onlineDurumGuncelleMutfak('${s.id}','yolda')">🛵 Yola Çıktı</button>`;
+    cagriHTML += `<div class="kart" style="border-color:${durRenk};">
+      <div class="kh" style="background:${durRenk}15;">
+        <div>
+          <div class="masa-no" style="color:${durRenk};">🌐 Online #${s.siparis_no}</div>
+          <div class="durum-lbl" style="color:${durRenk};">${durLbl} · ${s.musteri_ad} · ${s.musteri_tel}</div>
+        </div>
+      </div>
+      <div class="urunler">${urunHTML}</div>
+      ${notHTML}${adresHTML}
+      <div class="aksiyonlar">${akBtn}</div>
+    </div>`;
+  });
 
   grid.innerHTML=cagriHTML;
   const sirala={bekliyor:0,hazirlaniyor:1,hazir:2};
@@ -403,8 +443,25 @@ function sesToggle(){
   }
 }
 
+async function onlineDurumGuncelleMutfak(id, durum) {
+  await sb.from('online_siparisler').update({durum}).eq('id', id);
+  await yukleOnline();
+  render();
+}
+
 function baglan(){
   if(sub) sub.unsubscribe();
+  // Online siparişler realtime
+  if(onlineSub) onlineSub.unsubscribe();
+  onlineSub = sb.channel('mutfak-online-'+kafeId)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'online_siparisler',
+      filter: 'kafe_id=eq.'+kafeId
+    }, async () => {
+      await yukleOnline();
+      render();
+    })
+    .subscribe();
   
   sub = sb.channel('mutfak-'+kafeId)
     .on('postgres_changes', {
