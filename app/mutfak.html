@@ -126,7 +126,7 @@
     <h1>Mutfak Ekranı</h1>
     <p>Cafe kodunuzu girin</p>
     <input class="inp" id="kode" type="text" placeholder="Cafe kodu..." autocomplete="off">
-    <button class="btn-giris" onclick="giris()">Mutfak Ekranını Aç →</button>
+    <button class="btn-giris" onclick="mutfakGiris()">Mutfak Ekranını Aç →</button>
     <div class="err" id="err"></div>
   </div>
 </div>
@@ -238,7 +238,7 @@ function bildirim(masaAdi, adet, garsonCagri=false){
   }
 }
 
-async function giris(){
+async function mutfakGiris(){
   sesCtxBaslat();
   const kod=document.getElementById('kode').value.trim();
   if(!kod){gosterErr('Cafe kodu girin!');return;}
@@ -695,6 +695,8 @@ function baglan(){
     }
   }
 })();
+</script>
+
 <!-- BOTTOM NAV -->
 <nav class="mutfak-nav" id="mutfak-nav" style="display:none;">
   <a href="index.html" class="nv-btn">
