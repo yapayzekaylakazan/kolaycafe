@@ -1665,7 +1665,7 @@ async function kayitOl() {
     }
   }
   
-  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+15);
+  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+10);
   const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
   await sb.from('kafeler').insert({
     user_id: data.user.id, kafe_adi: kafe,
@@ -2012,6 +2012,11 @@ async function kafeVerisiYukle() {
   window._kafeData = data; // Global olarak sakla
   if (data) {
     kafeId = data.id;
+    // E-posta yoksa auth'tan al ve kaydet
+    if (!data.email && kullanici?.email) {
+      await sb.from('kafeler').update({ email: kullanici.email }).eq('id', data.id);
+      data.email = kullanici.email;
+    }
     kafeAdi = data.kafe_adi || 'Kafem';
     garsonlar = data.garsonlar || ['Ali','Ayşe'];
     if (data.urunler) URUNLER = data.urunler;
