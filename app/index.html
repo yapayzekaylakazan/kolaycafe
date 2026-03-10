@@ -3665,21 +3665,28 @@ async function raporOnlineRender() {
     if (baslangic) q = q.gte('created_at', baslangic);
     const { data } = await q;
     const liste = data || [];
-    const teslimler = liste.filter(s => s.durum === 'teslim' || s.durum === 'yolda');
-    const toplamCiro = teslimler.reduce((s,x) => s + (x.toplam||0), 0);
-    if (roAdet) roAdet.textContent = teslimler.length;
+    // Ciro: iptal hariç hepsi
+    const aktifler = liste.filter(s => s.durum !== 'iptal');
+    const toplamCiro = aktifler.reduce((s,x) => s + (x.toplam||0), 0);
+    if (roAdet) roAdet.textContent = aktifler.length;
     if (roCiro) roCiro.textContent = fmt(toplamCiro);
     const durumRenk = {bekleniyor:'#f0b830',hazirlaniyor:'#3b82f6',yolda:'#22c55e',teslim:'#a78bfa',iptal:'#6b7280'};
-    const durumText = {bekleniyor:'⏳',hazirlaniyor:'👨‍🍳',yolda:'🛵',teslim:'✅',iptal:'❌'};
+    const durumText = {bekleniyor:'⏳ Bekliyor',hazirlaniyor:'👨‍🍳 Hazırlanıyor',yolda:'🛵 Yolda',teslim:'✅ Teslim',iptal:'❌ İptal'};
+    const pltRenk = {'Yemeksepeti':'#FFD700','Getir':'#ef4444','Trendyol':'#F27A1A','Migros Yemek':'#22c55e','Siparişim':'#2563EB','Diğer':'#6b7280'};
     roListe.innerHTML = liste.length === 0 ? '<div style="text-align:center;color:var(--muted);padding:30px;">Bu dönemde online sipariş yok</div>' : '';
     liste.forEach(s => {
       const tarih = new Date(s.created_at).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       const urunler = (s.siparisler||[]).map(x => x.isim+'×'+x.adet).join(', ');
+      const renk = durumRenk[s.durum] || 'var(--border)';
+      const pltBadge = s.platform ? `<span style="font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:900;background:${pltRenk[s.platform]||'#7c3aed'}33;color:${pltRenk[s.platform]||'#7c3aed'};margin-left:6px;">${s.platform}</span>` : '<span style="font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:900;background:#f97316 33;color:#f97316;margin-left:6px;">🌐 Online</span>';
       const div = document.createElement('div');
-      div.style.cssText = `background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid ${durumRenk[s.durum]||'var(--border)'};`;
-      div.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-        <span style="font-weight:900;">${durumText[s.durum]||''} #${s.siparis_no} — ${s.musteri_ad}</span>
-        <span style="font-weight:900;color:var(--accent);">${fmt(s.toplam)}</span>
+      div.style.cssText = `background:var(--surface2);border-radius:12px;padding:12px;border-left:3px solid ${renk};margin-bottom:8px;`;
+      div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div>
+          <span style="font-weight:900;">#${s.siparis_no} — ${s.musteri_ad}</span>${pltBadge}
+          <div style="margin-top:3px;"><span style="font-size:0.68rem;padding:2px 8px;border-radius:8px;font-weight:800;background:${renk}22;color:${renk};">${durumText[s.durum]||s.durum}</span></div>
+        </div>
+        <span style="font-weight:900;color:var(--accent);white-space:nowrap;margin-left:8px;">${fmt(s.toplam)}</span>
       </div>
       <div style="font-size:0.75rem;color:var(--muted);">${tarih} · ${urunler}</div>`;
       roListe.appendChild(div);
