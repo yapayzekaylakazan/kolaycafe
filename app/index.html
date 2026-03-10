@@ -2445,17 +2445,20 @@ async function cariKaydet() {
   await masaSyncYaz(cariMasaId); // Masayı kapat
 }
 
-async function tahsilEt() {
+async function tahsilEt(odemeTipi) {
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
+  const tip = odemeTipi || 'nakit';
   const kolaycafen={
     masa:seciliMasa, masaAd:m.ad,
     tarih:new Date().toLocaleString('tr-TR'), tarihObj:new Date(),
-    toplam:son, indirim:m.indirim||0, garson:m.garson||'',
+    toplam: tip==='ikram' ? 0 : son,
+    indirim:m.indirim||0, garson:m.garson||'',
+    odeme_tipi: tip,
     siparisler:m.siparisler.map(s=>({...s}))
   };
   // Local'e ekle (realtime gecikmeye karşı)
@@ -2463,7 +2466,7 @@ async function tahsilEt() {
   kapaliKolayCafenlar.unshift(kolaycafen);
   // Stok düş
   kolaycafen.siparisler.forEach(s => stokDus(s.isim, s.adet));
-  gunlukCiro+=son; gunlukAdi++;
+  if(tip!=='ikram') gunlukCiro+=son; gunlukAdi++;
   m.siparisler.forEach(s=>{
     if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};
     gunlukSatis[s.isim].adet+=s.adet;
@@ -2471,7 +2474,8 @@ async function tahsilEt() {
   });
   m.siparisler=[]; m.indirim=0; m.garson='';
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
-  toast('✓ '+m.ad+' — '+fmt(son)+' tahsil edildi');
+  const tipEtiket = {nakit:'💵 Nakit',kart:'💳 Kart',ikram:'🎁 İkram',cari:'📋 Cari'}[tip]||tip;
+  toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket));
   await kolaycafenKaydet(kolaycafen);
   masaSyncYaz(seciliMasa); // Kapanan masayı sil
 }
@@ -3469,7 +3473,7 @@ async function raporOnlineRender() {
     if (baslangic) q = q.gte('created_at', baslangic);
     const { data } = await q;
     const liste = data || [];
-    const teslimler = liste.filter(s => s.durum === 'teslim');
+    const teslimler = liste.filter(s => s.durum === 'teslim' || s.durum === 'yolda');
     const toplamCiro = teslimler.reduce((s,x) => s + (x.toplam||0), 0);
     if (roAdet) roAdet.textContent = teslimler.length;
     if (roCiro) roCiro.textContent = fmt(toplamCiro);
@@ -3500,7 +3504,7 @@ async function raporRenderTam() {
   let onlineFiltreli = [];
   try {
     const baslangic = donemBaslangic();
-    let q = sb.from('online_siparisler').select('*').eq('kafe_id', kafeId).eq('durum', 'teslim');
+    let q = sb.from('online_siparisler').select('*').eq('kafe_id', kafeId).in('durum', ['teslim','yolda']);
     if (baslangic) q = q.gte('created_at', baslangic);
     const { data: onlineData } = await q;
     onlineFiltreli = onlineData || [];
@@ -3544,8 +3548,14 @@ async function raporRenderTam() {
   });
   const odemeEl = document.getElementById('r-odeme-dagilim');
   if (odemeEl) {
-    const tipRenk = {nakit:'#22c55e',kart:'#3b82f6',cari:'#a78bfa',ikram:'#6b7280'};
-    const tipIsim = {nakit:'💵 Nakit',kart:'💳 Kart',cari:'📋 Cari',ikram:'🎁 İkram'};
+    const tipRenk = {
+      nakit:'#22c55e', kart:'#3b82f6', cari:'#a78bfa', ikram:'#6b7280',
+      'kapi-nakit':'#f0b830', 'kapi-kart':'#06b6d4', online:'#f97316'
+    };
+    const tipIsim = {
+      nakit:'💵 Nakit', kart:'💳 Kart', cari:'📋 Cari', ikram:'🎁 İkram',
+      'kapi-nakit':'🏠 Kapı (Nakit)', 'kapi-kart':'🏠 Kapı (Kart)', online:'🌐 Online'
+    };
     odemeEl.innerHTML = Object.entries(odeme).sort((a,b)=>b[1]-a[1]).map(([tip,tutar]) => {
       const yuzde = toplamCiro > 0 ? Math.round(tutar/toplamCiro*100) : 0;
       return `<div>
