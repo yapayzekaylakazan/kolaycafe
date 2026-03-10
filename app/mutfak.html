@@ -86,6 +86,24 @@
     .bos{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;text-align:center;color:var(--muted);grid-column:1/-1;}
     .bos .ikon{font-size:3.5rem;margin-bottom:14px;opacity:.35;}
 
+    /* YOLA ÇIKANLAR */
+    .gecmis-bolum{padding:0 20px 30px;}
+    .gecmis-baslik{display:flex;align-items:center;justify-content:space-between;padding:16px 0 10px;border-top:2px solid var(--border);margin-top:8px;}
+    .gecmis-baslik h3{font-size:.85rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+    .tarih-sec{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+    .tarih-btn{padding:4px 12px;border-radius:16px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:.72rem;cursor:pointer;transition:all .2s;}
+    .tarih-btn.ak{background:#22c55e22;color:var(--green);border-color:var(--green);}
+    input[type=date].tarih-inp{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:4px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.75rem;font-weight:700;outline:none;cursor:pointer;}
+    input[type=date].tarih-inp:focus{border-color:var(--accent);}
+    .gecmis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:10px;}
+    .gecmis-kart{background:var(--bg2);border:1.5px solid #22c55e44;border-radius:12px;padding:12px 14px;}
+    .gecmis-kart-baslik{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    .gecmis-masa{font-weight:900;font-size:.9rem;color:var(--green);}
+    .gecmis-saat{font-size:.72rem;color:var(--muted);font-weight:700;}
+    .gecmis-urun{font-size:.78rem;color:var(--text);font-weight:600;line-height:1.5;}
+    .gecmis-toplam{margin-top:6px;font-size:.82rem;font-weight:900;color:var(--accent);text-align:right;}
+    .gecmis-bos{text-align:center;color:var(--muted);padding:30px;font-size:.85rem;font-weight:600;grid-column:1/-1;}
+
     /* TOAST / BİLDİRİM */
     .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:10px 22px;border-radius:12px;font-weight:800;font-size:.85rem;z-index:9999;animation:toastIn .3s ease;border:1px solid var(--border);}
     .bildirim{position:fixed;top:76px;right:20px;background:var(--orange);color:#1a0f00;padding:12px 18px;border-radius:13px;font-weight:900;font-size:.9rem;z-index:9998;animation:bildirimIn .35s ease;box-shadow:0 6px 20px rgba(249,115,22,.4);}
@@ -128,7 +146,19 @@
     </div>
   </div>
   <div class="grid" id="grid"></div>
-</div>
+
+  <!-- YOLA ÇIKANLAR / GEÇMİŞ -->
+  <div class="gecmis-bolum">
+    <div class="gecmis-baslik">
+      <h3>🛵 Yola Çıkanlar / Teslim Edilenler</h3>
+      <div class="tarih-sec">
+        <button class="tarih-btn ak" onclick="gecmisTarihSec('bugun',this)">Bugün</button>
+        <button class="tarih-btn" onclick="gecmisTarihSec('dun',this)">Dün</button>
+        <input type="date" class="tarih-inp" id="gecmis-tarih-inp" onchange="gecmisTarihInputDegisti(this)">
+      </div>
+    </div>
+    <div class="gecmis-grid" id="gecmis-grid"><div class="gecmis-bos">Yükleniyor...</div></div>
+  </div>
 
 <script>
 const SB_URL = 'https://sjfcdthwlwmbdmcevobv.supabase.co';
@@ -137,6 +167,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let kafeId = null, aktifFiltre = 'hepsi', sesAcik = true;
 let siparisler = [], sub = null, garsonCagriler = [], onlineSiparislerMutfak = [], onlineSub = null;
+let gecmisTarih = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
 // Saat
 setInterval(()=>{const e=document.getElementById('saat');if(e)e.textContent=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
@@ -211,6 +242,7 @@ async function giris(){
   document.getElementById('giris').style.display='none';
   document.getElementById('ana').style.display='block';
   document.getElementById('h-kafe').textContent=data.kafe_adi;
+  document.getElementById('gecmis-tarih-inp').value = gecmisTarih;
   await yukle();
   baglan();
 }
@@ -277,6 +309,8 @@ async function yukle(){
   siparisler=yeni;
   // Online siparişleri yükle
   await yukleOnline();
+  // Geçmiş (yola çıkanlar) güncelle
+  await yukleGecmis();
   render();
 }
 
@@ -475,6 +509,115 @@ async function onlineDurumGuncelleMutfak(id, durum) {
   render();
 }
 
+function gecmisTarihSec(tip, btn) {
+  document.querySelectorAll('.tarih-btn').forEach(b=>b.classList.remove('ak'));
+  btn.classList.add('ak');
+  const bugun = new Date();
+  if (tip === 'bugun') {
+    gecmisTarih = bugun.toISOString().split('T')[0];
+  } else if (tip === 'dun') {
+    const dun = new Date(bugun); dun.setDate(dun.getDate()-1);
+    gecmisTarih = dun.toISOString().split('T')[0];
+  }
+  document.getElementById('gecmis-tarih-inp').value = gecmisTarih;
+  yukleGecmis();
+}
+
+function gecmisTarihInputDegisti(inp) {
+  gecmisTarih = inp.value;
+  document.querySelectorAll('.tarih-btn').forEach(b=>b.classList.remove('ak'));
+  yukleGecmis();
+}
+
+async function yukleGecmis() {
+  const grid = document.getElementById('gecmis-grid');
+  grid.innerHTML = '<div class="gecmis-bos">Yükleniyor...</div>';
+  
+  try {
+    // Seçilen günün başı ve sonu
+    const baslangic = gecmisTarih + 'T00:00:00.000Z';
+    const bitis = gecmisTarih + 'T23:59:59.999Z';
+    
+    // Türkiye UTC+3, buna göre düzelt
+    const tarihObj = new Date(gecmisTarih);
+    const tzOffset = 3 * 60 * 60 * 1000; // UTC+3
+    const gunBaslangic = new Date(tarihObj.getTime() - tzOffset).toISOString();
+    const gunBitis = new Date(tarihObj.getTime() - tzOffset + 24*60*60*1000 - 1).toISOString();
+
+    // Teslim/yolda online siparişler
+    const { data: onlineData } = await sb.from('online_siparisler')
+      .select('*').eq('kafe_id', kafeId)
+      .in('durum', ['yolda','teslim'])
+      .gte('created_at', gunBaslangic)
+      .lte('created_at', gunBitis)
+      .order('created_at', {ascending: false});
+
+    // Kolaycafenlar (masa siparişleri) - sadece bugünkü
+    const { data: masaData } = await sb.from('kolaycafenlar')
+      .select('*').eq('kafe_id', kafeId)
+      .neq('odeme_tipi', 'cari_tahsil')
+      .gte('created_at', gunBaslangic)
+      .lte('created_at', gunBitis)
+      .order('created_at', {ascending: false});
+
+    const kayitlar = [];
+    
+    // Online siparişleri ekle
+    (onlineData || []).forEach(s => {
+      kayitlar.push({
+        tip: 'online',
+        baslik: '🌐 Online #' + s.siparis_no,
+        alttBaslik: s.musteri_ad + ' · ' + s.musteri_tel,
+        adres: s.adres || '',
+        urunler: s.siparisler || [],
+        toplam: s.toplam || 0,
+        saat: new Date(s.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}),
+        durum: s.durum
+      });
+    });
+    
+    // Masa siparişlerini ekle
+    (masaData || []).forEach(a => {
+      kayitlar.push({
+        tip: 'masa',
+        baslik: a.masa_ad || 'Masa ' + a.masa_no,
+        alttBaslik: (a.garson ? '👤 ' + a.garson : '') + (a.musteri_adi ? ' · ' + a.musteri_adi : ''),
+        urunler: a.siparisler || [],
+        toplam: a.toplam || 0,
+        saat: new Date(a.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}),
+        odeme: a.odeme_tipi || 'nakit'
+      });
+    });
+
+    if (kayitlar.length === 0) {
+      const tarihGoster = new Date(gecmisTarih + 'T12:00:00').toLocaleDateString('tr-TR', {day:'numeric',month:'long'});
+      grid.innerHTML = `<div class="gecmis-bos">📭 ${tarihGoster} tarihinde kayıt bulunamadı</div>`;
+      return;
+    }
+
+    grid.innerHTML = kayitlar.map(k => {
+      const urunStr = k.urunler.slice(0,4).map(u => u.isim + ' x' + (u.adet||1)).join(', ') + (k.urunler.length>4?'...':'');
+      const durumBadge = k.tip==='online' ? `<span style="font-size:.65rem;background:#22c55e22;color:var(--green);padding:2px 7px;border-radius:8px;font-weight:900;">${k.durum==='yolda'?'🛵 Yolda':'✅ Teslim'}</span>` : `<span style="font-size:.65rem;background:#3b82f622;color:#3b82f6;padding:2px 7px;border-radius:8px;font-weight:900;">💳 ${k.odeme||'nakit'}</span>`;
+      return `<div class="gecmis-kart">
+        <div class="gecmis-kart-baslik">
+          <div>
+            <div class="gecmis-masa">${k.baslik}</div>
+            <div class="gecmis-saat">${k.saat}${k.alttBaslik?' · '+k.alttBaslik:''}</div>
+          </div>
+          ${durumBadge}
+        </div>
+        ${k.adres ? `<div style="font-size:.72rem;color:var(--muted);margin-bottom:5px;">📍 ${k.adres}</div>` : ''}
+        <div class="gecmis-urun">${urunStr || '—'}</div>
+        <div class="gecmis-toplam">${k.toplam.toLocaleString('tr-TR')} ₺</div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.error('Geçmiş yükleme hatası:', e);
+    grid.innerHTML = '<div class="gecmis-bos">⚠️ Yüklenirken hata oluştu</div>';
+  }
+}
+
 function baglan(){
   if(sub) sub.unsubscribe();
   // Online siparişler realtime
@@ -531,6 +674,7 @@ function baglan(){
       document.getElementById('giris').style.display='none';
       document.getElementById('ana').style.display='block';
       document.getElementById('h-kafe').textContent=data.kafe_adi;
+      document.getElementById('gecmis-tarih-inp').value = gecmisTarih;
       await yukle(); baglan();
     }
   }
