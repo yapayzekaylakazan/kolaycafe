@@ -1738,24 +1738,13 @@ function garsonCikis() {
 }
 
 async function garsonKafeBul() {
-  const kod = document.getElementById('garson-kafe-kodu').value.trim().toLowerCase();
+  const kod = document.getElementById('garson-kafe-kodu').value.trim();
   if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
-  // kafe adını veya kodu ara
-  // Önce kafe_kodu ile ara
-  let {data, error} = await sb.from('kafeler')
+  const {data, error} = await sb.from('kafeler')
     .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, stok, receteler')
-    .eq('kafe_kodu', kod)
-    .limit(1).single();
-  // Bulunamazsa kafe adıyla ara
-  if (error || !data) {
-    const res2 = await sb.from('kafeler')
-      .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, stok, receteler')
-      .ilike('kafe_adi', '%'+kod+'%')
-      .limit(1).single();
-    data = res2.data;
-    error = res2.error;
-  }
+    .ilike('kafe_kodu', kod)
+    .maybeSingle();
   document.getElementById('auth-loading').style.display = 'none';
   if (error || !data) { authHata('Cafe bulunamadı! Kodu kontrol edin.'); return; }
   // Garson listesini göster
