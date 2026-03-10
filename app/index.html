@@ -4936,7 +4936,7 @@ function garsonAyarListeRender(){
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <input type="text" class="gb-pin" data-i="${i}" value="${g.pin||''}" placeholder="PIN kodu" inputmode="numeric"
+        <input type="text" class="gb-pin" data-i="${i}" value="${g.pin||''}" placeholder="5 haneli PIN" inputmode="numeric" maxlength="5"
           style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
         <button class="gb-pin-kaydet" data-i="${i}" style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">Kaydet</button>
       </div>`;
