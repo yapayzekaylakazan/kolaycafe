@@ -136,10 +136,47 @@
   .badge-gold { background: #ffd70020; color: #ffd700; border: 1px solid #ffd70040; }
   .badge-platin { background: #e0e0e020; color: #e0e0e0; border: 1px solid #e0e0e040; }
   .badge-ultra { background: #9060f020; color: var(--purple); border: 1px solid #9060f040; }
+  .badge-elite { background: #f9731620; color: #fb923c; border: 1px solid #f9731640; }
+  .badge-grow { background: #22c55e20; color: #22c55e; border: 1px solid #22c55e40; }
+  .badge-start { background: #64748b20; color: #94a3b8; border: 1px solid #64748b40; }
   .badge-deneme { background: #4080f020; color: var(--blue); border: 1px solid #4080f040; }
   .badge-iptal { background: #e0405020; color: var(--red); border: 1px solid #e0405040; }
   .badge-aktif { background: #30d08020; color: var(--green); border: 1px solid #30d08040; }
   .badge-suresi-doldu { background: #e0405015; color: #e07070; border: 1px solid #e0405030; }
+
+  /* PAKET TEST PANELİ */
+  .test-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 28px; }
+  .test-panel-baslik { font-size: 0.72rem; font-weight: 800; color: var(--accent); font-family: 'Space Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom:6px; }
+  .test-panel-sub { font-size: 0.78rem; color: var(--text2); margin-bottom: 18px; }
+  .test-paket-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .test-paket-kart {
+    border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 14px;
+    cursor: pointer; transition: all 0.18s; position: relative; background: var(--surface);
+  }
+  .test-paket-kart:hover { transform: translateY(-3px); }
+  .test-paket-kart.aktif-test { box-shadow: 0 0 0 2px var(--accent); }
+  .test-paket-isim { font-size: 0.82rem; font-weight: 800; margin-bottom: 4px; }
+  .test-paket-fiyat { font-size: 1.3rem; font-weight: 800; color: var(--accent); font-family: 'Space Mono', monospace; line-height: 1; }
+  .test-paket-sure { font-size: 0.65rem; color: var(--text2); margin-bottom: 8px; }
+  .test-paket-ozellik { font-size: 0.7rem; color: var(--text2); line-height: 1.6; }
+  .test-uygula-btn {
+    padding: 10px 24px; border-radius: 10px; border: none;
+    background: var(--accent); color: #1a0f00; font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s;
+  }
+  .test-uygula-btn:hover { opacity: 0.85; }
+  .test-uygula-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .test-gun-inp {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 9px 14px; color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; outline: none; width: 100px;
+  }
+  .test-gun-inp:focus { border-color: var(--accent); }
+  .test-sonuc { margin-top: 12px; font-size: 0.82rem; font-family: 'Space Mono', monospace; padding: 10px 14px; border-radius: 8px; display: none; }
+  .test-sonuc.ok { background: #30d08015; color: var(--green); border: 1px solid #30d08040; }
+  .test-sonuc.err { background: #e0405015; color: var(--red); border: 1px solid #e0405040; }
+  @media (max-width: 900px) { .test-paket-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .test-paket-grid { grid-template-columns: repeat(2, 1fr); } }
 
   .sure-bar-wrap { width: 120px; }
   .sure-bar-bg { background: var(--surface2); border-radius: 4px; height: 5px; overflow: hidden; }
@@ -252,6 +289,40 @@
       <div class="stat-kart kirmizi"><div class="stat-ikon">⚠️</div><div class="stat-sayi" id="st-doldu">—</div><div class="stat-label">SÜRESİ DOLMUŞ</div></div>
     </div>
 
+    <!-- PAKET TEST PANELİ -->
+    <div class="test-panel">
+      <div class="test-panel-baslik">🧪 Paket Test Paneli</div>
+      <div class="test-panel-sub">Test kafeyi seçip paketi uygula → <a href="app/index.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:700;">app/index.html</a>'de giriş yap ve paketi test et.</div>
+
+      <div class="test-paket-grid" id="test-paket-grid">
+        <!-- JS ile doldurulacak -->
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">TEST KAFE</div>
+          <select id="test-kafe-sec" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;min-width:200px;">
+            <option value="">— Kafe seçin —</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">SÜRE (GÜN)</div>
+          <input type="number" id="test-gun" class="test-gun-inp" value="30" min="1" max="365">
+        </div>
+        <div style="padding-top:18px;">
+          <button class="test-uygula-btn" id="test-uygula-btn" onclick="testPaketUygula()" disabled>
+            ▶ Paketi Uygula
+          </button>
+        </div>
+        <div style="padding-top:18px;">
+          <a href="app/index.html" target="_blank" style="display:inline-block;padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;text-decoration:none;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+            🚀 Uygulamayı Aç →
+          </a>
+        </div>
+      </div>
+      <div class="test-sonuc" id="test-sonuc"></div>
+    </div>
+
     <!-- TABLO -->
     <div class="toolbar">
       <div class="toolbar-title">👥 Tüm Üyeler</div>
@@ -301,11 +372,14 @@
     <hr class="modal-ayir">
     <div class="modal-baslik" style="font-size:0.9rem;margin-bottom:12px;">Plan Güncelle</div>
     <select class="plan-sec" id="modal-plan-sec">
-      <option value="deneme">Deneme (15 gün)</option>
-      <option value="gold">Gold (6 masa)</option>
-      <option value="platin">Platin (10 masa)</option>
-      <option value="ultra">Ultra (15 masa)</option>
-      <option value="pro">Pro (Sınırsız)</option>
+      <option value="deneme">🆓 Deneme (10 gün)</option>
+      <option value="start">🚀 Start — 4 masa (299₺/ay)</option>
+      <option value="grow">🌱 Grow — 6 masa (399₺/ay)</option>
+      <option value="gold">🥇 Gold — 8 masa (499₺/ay)</option>
+      <option value="platin">💎 Platin — 10 masa (599₺/ay)</option>
+      <option value="ultra">🚀 Ultra — 12 masa (699₺/ay)</option>
+      <option value="elite">👑 Elite — 15 masa (799₺/ay)</option>
+      <option value="pro">⭐ Pro — 20+ masa (899₺/ay)</option>
     </select>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
       <input type="number" id="modal-gun" placeholder="Gün sayısı (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;">
@@ -324,6 +398,80 @@ const ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
 let tumKafeler = [];
 let aktifFiltre = 'hepsi';
 let seciliKafeId = null;
+let testSecilenPaket = '';
+
+const TEST_PAKETLER = [
+  { id:'deneme', isim:'🆓 Deneme',  fiyat:'0₺',   sure:'/10 gün', masa:6,  renk:'#4080f0', ozellik:'6 masa · Tüm Pro özellikler (test)' },
+  { id:'start',  isim:'🚀 Start',   fiyat:'299₺',  sure:'/ay',     masa:4,  renk:'#64748b', ozellik:'4 masa · Temel özellikler' },
+  { id:'grow',   isim:'🌱 Grow',    fiyat:'399₺',  sure:'/ay',     masa:6,  renk:'#22c55e', ozellik:'6 masa · Gelir/Gider · Mutfak' },
+  { id:'gold',   isim:'🥇 Gold',    fiyat:'499₺',  sure:'/ay',     masa:8,  renk:'#b8860b', ozellik:'8 masa · Stok · Reçete · Kupon' },
+  { id:'platin', isim:'💎 Platin',  fiyat:'599₺',  sure:'/ay',     masa:10, renk:'#1a6fb5', ozellik:'10 masa · BT Yazıcı · Hesap Bölme' },
+  { id:'ultra',  isim:'🚀 Ultra',   fiyat:'699₺',  sure:'/ay',     masa:12, renk:'#2d7a3a', ozellik:'12 masa · Platform Ent. · Yemeksepeti' },
+  { id:'elite',  isim:'👑 Elite',   fiyat:'799₺',  sure:'/ay',     masa:15, renk:'#ea580c', ozellik:'15 masa · Çoklu Şube · Özel Rapor' },
+  { id:'pro',    isim:'⭐ Pro',     fiyat:'899₺',  sure:'/ay',     masa:999,renk:'#7c3aed', ozellik:'20+ masa · Tüm Özellikler · API' },
+];
+
+function testPanelRender() {
+  const grid = document.getElementById('test-paket-grid');
+  grid.innerHTML = TEST_PAKETLER.map(p => `
+    <div class="test-paket-kart ${testSecilenPaket===p.id?'aktif-test':''}"
+         style="border-color:${testSecilenPaket===p.id?p.renk:'var(--border)'};"
+         onclick="testPaketSec('${p.id}')">
+      <div class="test-paket-isim" style="color:${p.renk};">${p.isim}</div>
+      <div class="test-paket-fiyat" style="color:${p.renk};">${p.fiyat}</div>
+      <div class="test-paket-sure">${p.sure} · ${p.masa>=999?'Sınırsız':p.masa+' masa'}</div>
+      <div class="test-paket-ozellik">${p.ozellik}</div>
+      ${testSecilenPaket===p.id?`<div style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:${p.renk};box-shadow:0 0 6px ${p.renk};"></div>`:''}
+    </div>
+  `).join('');
+}
+
+function testPaketSec(id) {
+  testSecilenPaket = id;
+  testPanelRender();
+  const btn = document.getElementById('test-uygula-btn');
+  if (btn) btn.disabled = !id;
+}
+
+function testKafeListesiDoldur() {
+  const sel = document.getElementById('test-kafe-sec');
+  sel.innerHTML = '<option value="">— Kafe seçin —</option>';
+  tumKafeler.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k.id;
+    opt.textContent = `${k.kafe_adi||'?'} (${k.plan||'deneme'}) — ${k.email||''}`;
+    sel.appendChild(opt);
+  });
+}
+
+async function testPaketUygula() {
+  const kafeId = document.getElementById('test-kafe-sec').value;
+  const gun = parseInt(document.getElementById('test-gun').value) || 30;
+  const sonuc = document.getElementById('test-sonuc');
+
+  if (!kafeId) { sonuc.textContent = '⚠️ Kafe seçin!'; sonuc.className='test-sonuc err'; sonuc.style.display='block'; return; }
+  if (!testSecilenPaket) { sonuc.textContent = '⚠️ Paket seçin!'; sonuc.className='test-sonuc err'; sonuc.style.display='block'; return; }
+
+  const bitis = new Date();
+  bitis.setDate(bitis.getDate() + gun);
+
+  const { error } = await sb.from('kafeler').update({
+    plan: testSecilenPaket,
+    plan_bitis: bitis.toISOString()
+  }).eq('id', kafeId);
+
+  if (error) {
+    sonuc.textContent = '❌ Hata: ' + error.message;
+    sonuc.className = 'test-sonuc err';
+  } else {
+    const p = TEST_PAKETLER.find(x => x.id === testSecilenPaket);
+    const kafe = tumKafeler.find(x => x.id === kafeId);
+    sonuc.textContent = `✓ ${kafe?.kafe_adi||'Kafe'} → ${p?.isim||testSecilenPaket} paketi uygulandı (${gun} gün). Şimdi uygulamayı açıp test edebilirsiniz.`;
+    sonuc.className = 'test-sonuc ok';
+    await yukle();
+  }
+  sonuc.style.display = 'block';
+}
 
 async function girisYap() {
   const email = document.getElementById('login-email').value.trim();
@@ -363,12 +511,14 @@ async function yukle() {
   tumKafeler = data || [];
   istatistikGuncelle();
   tabloRender();
+  testPanelRender();
+  testKafeListesiDoldur();
 }
 
 function istatistikGuncelle() {
   const simdi = new Date();
   const bugunBaslangic = new Date(); bugunBaslangic.setHours(0,0,0,0);
-  const odemeliPlanlar = ['gold','platin','ultra','pro'];
+  const odemeliPlanlar = ['start','grow','gold','platin','ultra','elite','pro'];
 
   document.getElementById('st-toplam').textContent = tumKafeler.length;
   document.getElementById('st-aktif').textContent = tumKafeler.filter(k => k.plan_bitis && new Date(k.plan_bitis) > simdi).length;
@@ -403,7 +553,7 @@ function filtreliKafeler() {
 }
 
 function planBadge(plan) {
-  const m = { pro:'badge-pro', gold:'badge-gold', platin:'badge-platin', ultra:'badge-ultra', deneme:'badge-deneme' };
+  const m = { pro:'badge-pro', gold:'badge-gold', platin:'badge-platin', ultra:'badge-ultra', elite:'badge-elite', grow:'badge-grow', start:'badge-start', deneme:'badge-deneme' };
   return `<span class="badge ${m[plan]||'badge-deneme'}">${(plan||'deneme').toUpperCase()}</span>`;
 }
 
