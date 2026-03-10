@@ -295,9 +295,10 @@
         <div class="test-panel-baslik" style="margin-bottom:0;">🧪 Paket Test Paneli</div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <div style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">TEST KAFESİ:</div>
-          <select id="test-kafe-sec" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;min-width:180px;">
+          <select id="test-kafe-sec" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;min-width:220px;">
             <option value="">— Kafe seçin —</option>
           </select>
+          <button id="btn-test-kafe-olustur" onclick="genelTestCafesiOlustur()" style="padding:7px 14px;border-radius:8px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;cursor:pointer;" title="🧪 Genel Test Cafesi otomatik oluştur">+ Test Cafesi</button>
           <a href="app/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
             🚀 Uygulamayı Aç
           </a>
@@ -568,19 +569,12 @@ async function yukle() {
   if (error) { console.error(error); return; }
 
   tumKafeler = data || [];
-
-  // Genel Test Cafesi yoksa oluştur
-  const testKafe = tumKafeler.find(k => k.kafe_kodu === 'TESTXX' || k.kafe_adi === '🧪 Genel Test Cafesi');
-  if (!testKafe) {
-    await genelTestCafesiOlustur();
-    return; // yukle tekrar çağrılacak
-  }
-
   istatistikGuncelle();
   tabloRender();
   testPanelRender();
   testKafeListesiDoldur();
 }
+
 
 function toast(msg, sure=3000) {
   let t = document.getElementById('admin-toast');
@@ -597,32 +591,43 @@ function toast(msg, sure=3000) {
 }
 
 async function genelTestCafesiOlustur() {
-  // Önce auth'ta bu e-posta var mı kontrol et
+  const btn = document.getElementById('btn-test-kafe-olustur');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Oluşturuluyor...'; }
+
   const testEmail = 'test@kolaycafe.com';
-  // Direkt Supabase auth signUp ile test kullanıcısı oluştur
+
+  // Zaten var mı kontrol et (e-posta ile)
+  const mevcutKafe = tumKafeler.find(k => k.email === testEmail || k.kafe_kodu === 'TESTXX');
+  if (mevcutKafe) {
+    // Sadece güncelle
+    const bitis = new Date(); bitis.setFullYear(bitis.getFullYear() + 10);
+    await sb.from('kafeler').update({
+      kafe_kodu: 'TESTXX',
+      kafe_adi: '🧪 Genel Test Cafesi',
+      plan: 'pro',
+      plan_bitis: bitis.toISOString()
+    }).eq('id', mevcutKafe.id);
+    toast('✓ Test cafesi güncellendi!');
+    await yukle();
+    return;
+  }
+
+  // Auth'ta kayıt oluştur
   const { data: authData, error: authErr } = await sb.auth.signUp({
     email: testEmail,
     password: 'test123456'
   });
 
-  let userId = authData?.user?.id;
-
-  // Kullanıcı zaten varsa (error code: user_already_exists) - kullanıcıyı bul
-  if (authErr && authErr.message?.includes('already')) {
-    // Mevcut kafeler arasında bu e-posta ile olan varsa onu kullan
-    const mevcutKafe = tumKafeler.find(k => k.email === testEmail);
-    if (mevcutKafe) {
-      await sb.from('kafeler').update({ kafe_kodu: 'TESTXX', kafe_adi: '🧪 Genel Test Cafesi' }).eq('id', mevcutKafe.id);
-      await yukle();
-      return;
-    }
+  const userId = authData?.user?.id;
+  if (!userId) {
+    toast('⚠️ ' + (authErr?.message || 'Auth hatası — test@kolaycafe.com zaten kayıtlı olabilir'));
+    if (btn) { btn.disabled = false; btn.textContent = '+ Test Cafesi Oluştur'; }
+    return;
   }
 
-  if (!userId && !authErr) return;
-
   const bitis = new Date(); bitis.setFullYear(bitis.getFullYear() + 10);
-  await sb.from('kafeler').insert({
-    user_id: userId || 'test-user-id',
+  const { error: insertErr } = await sb.from('kafeler').insert({
+    user_id: userId,
     kafe_adi: '🧪 Genel Test Cafesi',
     email: testEmail,
     plan: 'pro',
@@ -634,7 +639,13 @@ async function genelTestCafesiOlustur() {
     masalar: Array.from({length:20}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), not:''}))
   });
 
-  toast('✓ Genel Test Cafesi oluşturuldu! (test@kolaycafe.com / test123456)');
+  if (insertErr) {
+    toast('❌ Hata: ' + insertErr.message);
+    if (btn) { btn.disabled = false; btn.textContent = '+ Test Cafesi Oluştur'; }
+    return;
+  }
+
+  toast('✓ Test Cafesi oluşturuldu! Giriş: test@kolaycafe.com / test123456');
   await yukle();
 }
 
