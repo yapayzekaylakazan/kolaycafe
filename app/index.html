@@ -1742,7 +1742,7 @@ async function garsonKafeBul() {
   if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   const {data, error} = await sb.from('kafeler')
-    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, stok, receteler')
+    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler')
     .eq('kafe_kodu', kod.toLowerCase())
     .maybeSingle();
   document.getElementById('auth-loading').style.display = 'none';
