@@ -2031,7 +2031,13 @@ async function kafeVerisiYukle() {
     if (yeni) { kafeId = yeni.id; garsonlar = ['Ali','Ayşe']; }
   }
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
-  // Kafe kodu göster
+  // Kafe kodu yoksa otomatik oluştur ve kaydet
+  if (data && !data.kafe_kodu) {
+    const yeniKod = Math.random().toString(36).substring(2,8).toUpperCase();
+    await sb.from('kafeler').update({ kafe_kodu: yeniKod }).eq('id', data.id);
+    data.kafe_kodu = yeniKod;
+    toast('✓ Kafe kodunuz oluşturuldu: ' + yeniKod);
+  }
   if (data?.kafe_kodu) {
     if (document.getElementById('ayar-cafe-kodu-inp')) document.getElementById('ayar-cafe-kodu-inp').value = data.kafe_kodu;
   }
