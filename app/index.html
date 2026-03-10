@@ -3438,7 +3438,7 @@ let RECETELER = {}; // {urunAdi: {malzemeler:[{ad,miktar,birim,maliyet}], not}}
 
 function raporSekme(sekme) {
   aktifRaporSekme = sekme;
-  ['ozet','grafik','urun','garson','adisyon','recete'].forEach(s => {
+  ['ozet','grafik','urun','garson','adisyon','recete','online'].forEach(s => {
     const el = document.getElementById('rsekme-' + s);
     const btn = document.getElementById('rtab-' + s);
     if (el) el.style.display = s === sekme ? 'block' : 'none';
