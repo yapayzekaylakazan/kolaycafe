@@ -2408,11 +2408,41 @@ function katTabsRender() {
   const tabs = document.getElementById('cat-tabs');
   tabs.innerHTML='';
   Object.keys(URUNLER).forEach(kat=>{
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:relative;display:inline-flex;align-items:center;';
+
     const btn=document.createElement('button');
     btn.className='cat-tab'+(kat===mevcutKat?' active':'');
+    btn.style.paddingRight='42px';
     btn.textContent=kat;
     btn.addEventListener('click',()=>{mevcutKat=kat;katTabsRender();urunGridRender();});
-    tabs.appendChild(btn);
+
+    // Düzenle butonu
+    const editBtn=document.createElement('button');
+    editBtn.innerHTML='✏️';
+    editBtn.title='Yeniden adlandır';
+    editBtn.style.cssText='position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.8rem;padding:2px 4px;border-radius:4px;opacity:0.6;';
+    editBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const yeniAd = prompt('Kategori adını değiştir:', kat);
+      if (!yeniAd || yeniAd.trim()===kat) return;
+      const temiz = yeniAd.trim();
+      if (URUNLER[temiz]) { toast('⚠️ Bu isimde kategori zaten var!'); return; }
+      // Anahtarı yeniden adlandır
+      const yeni = {};
+      Object.keys(URUNLER).forEach(k => { yeni[k===kat ? temiz : k] = URUNLER[k]; });
+      URUNLER = yeni;
+      if (mevcutKat===kat) mevcutKat=temiz;
+      katSelectDoldur();
+      katTabsRender();
+      urunGridRender();
+      bulutKaydet();
+      toast('✓ Kategori adı güncellendi');
+    });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(editBtn);
+    tabs.appendChild(wrap);
   });
 }
 
