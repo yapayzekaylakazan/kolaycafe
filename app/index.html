@@ -459,8 +459,8 @@
           <div class="toplam-tutar" id="toplam-tutar">0,00 ₺</div>
         </div>
         <div class="odeme-butonlar" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-          <button class="btn-nakit" onclick="tahsilEt('nakit')">💵 Nakit</button>
-          <button class="btn-kart" onclick="tahsilEt('kart')">💳 Kart</button>
+          <button class="btn-nakit" onclick="tahsilEt('salon-nakit')">💵 Nakit</button>
+          <button class="btn-kart" onclick="tahsilEt('salon-kart')">💳 Kart</button>
           <button class="btn-cari" id="btn-cari-goster">📋 Cari</button>
           <button class="btn-ikram" onclick="tahsilEt('ikram')">🎁 İkram</button>
           <button class="btn-bol" style="grid-column:span 2;" onclick="bolmeGoster()">✂ Hesabı Böl</button>
@@ -1104,8 +1104,8 @@
     <div style="text-align:center;font-weight:900;font-size:1rem;margin-bottom:6px;">💰 Ödeme Tipi Seç</div>
     <div style="text-align:center;font-size:0.82rem;color:var(--muted);margin-bottom:20px;" id="gelal-odeme-tutar"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <button onclick="gelAlOdeTipi('nakit')" style="padding:16px;border-radius:14px;border:none;background:#1a7a40;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">💵 Nakit</button>
-      <button onclick="gelAlOdeTipi('kart')" style="padding:16px;border-radius:14px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">💳 Kart</button>
+      <button onclick="gelAlOdeTipi('kapi-nakit')" style="padding:16px;border-radius:14px;border:none;background:#1a7a40;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">💵 Nakit</button>
+      <button onclick="gelAlOdeTipi('kapi-kart')" style="padding:16px;border-radius:14px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">💳 Kart</button>
       <button onclick="gelAlOdeTipi('ikram')" style="padding:16px;border-radius:14px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">🎁 İkram</button>
       <button onclick="gelAlOdeTipi('cari')" style="padding:16px;border-radius:14px;border:none;background:#b45309;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">📋 Cari</button>
     </div>
@@ -2474,7 +2474,12 @@ async function tahsilEt(odemeTipi) {
   });
   m.siparisler=[]; m.indirim=0; m.garson='';
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
-  const tipEtiket = {nakit:'💵 Nakit',kart:'💳 Kart',ikram:'🎁 İkram',cari:'📋 Cari'}[tip]||tip;
+  const tipEtiket = {
+    'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart',
+    'kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart',
+    ikram:'🎁 İkram',cari:'📋 Cari',online:'🌐 Online',
+    nakit:'💵 Nakit',kart:'💳 Kart'
+  }[tip]||tip;
   toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket));
   await kolaycafenKaydet(kolaycafen);
   masaSyncYaz(seciliMasa); // Kapanan masayı sil
@@ -3263,7 +3268,7 @@ function raporRender_legacy(){
         ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 Garson: ${a.garson}</div>`:''}
         ${gelal&&a.not?`<div style="font-size:0.68rem;color:var(--muted);margin-bottom:2px;">📝 ${a.not}</div>`:''}
         <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
-        ${a.odemeTipi&&a.odemeTipi!=='nakit'?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${a.odemeTipi==='kart'?'#1a6fb5':a.odemeTipi==='cari'?'#7c3aed':a.odemeTipi==='ikram'?'var(--muted)':'var(--text2)'}">${{nakit:'💵 Nakit',kart:'💳 Kart',cari:'📋 Cari',ikram:'🎁 İkram'}[a.odemeTipi]||a.odemeTipi}${a.musteriAdi&&!gelal?' — '+a.musteriAdi:''}</div>`:''}
+        ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteriAdi&&!gelal?' — '+a.musteriAdi:''}</div>`:''}
         <button class="fis-al-btn">🖨 Fiş Al</button>`;
       div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
       kl.appendChild(div);
@@ -3549,12 +3554,16 @@ async function raporRenderTam() {
   const odemeEl = document.getElementById('r-odeme-dagilim');
   if (odemeEl) {
     const tipRenk = {
-      nakit:'#22c55e', kart:'#3b82f6', cari:'#a78bfa', ikram:'#6b7280',
-      'kapi-nakit':'#f0b830', 'kapi-kart':'#06b6d4', online:'#f97316'
+      'salon-nakit':'#22c55e', 'salon-kart':'#3b82f6',
+      'kapi-nakit':'#f0b830', 'kapi-kart':'#06b6d4',
+      ikram:'#6b7280', cari:'#a78bfa', online:'#f97316',
+      nakit:'#22c55e', kart:'#3b82f6'  // eski kayıtlar için
     };
     const tipIsim = {
-      nakit:'💵 Nakit', kart:'💳 Kart', cari:'📋 Cari', ikram:'🎁 İkram',
-      'kapi-nakit':'🏠 Kapı (Nakit)', 'kapi-kart':'🏠 Kapı (Kart)', online:'🌐 Online'
+      'salon-nakit':'🪑 Salon (Nakit)', 'salon-kart':'🪑 Salon (Kart)',
+      'kapi-nakit':'🏠 Kapıda (Nakit)', 'kapi-kart':'🏠 Kapıda (Kart)',
+      ikram:'🎁 İkram', cari:'📋 Cari', online:'🌐 Online',
+      nakit:'💵 Nakit', kart:'💳 Kart'  // eski kayıtlar için
     };
     odemeEl.innerHTML = Object.entries(odeme).sort((a,b)=>b[1]-a[1]).map(([tip,tutar]) => {
       const yuzde = toplamCiro > 0 ? Math.round(tutar/toplamCiro*100) : 0;
@@ -3640,7 +3649,7 @@ async function raporRenderTam() {
             </div>
             ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${a.garson}</div>`:''}
             <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
-            ${a.odemeTipi&&a.odemeTipi!=='nakit'?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{nakit:'var(--text)',kart:'#3b82f6',cari:'#a78bfa',ikram:'var(--muted)'}[a.odemeTipi]||'var(--text)'}">${{nakit:'💵 Nakit',kart:'💳 Kart',cari:'📋 Cari',ikram:'🎁 İkram'}[a.odemeTipi]||a.odemeTipi}${a.musteri_adi&&!gelal?' — '+a.musteri_adi:''}</div>`:''}
+            ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteri_adi&&!gelal?' — '+a.musteri_adi:''}</div>`:''}
             <button class="fis-al-btn">🖨 Fiş Al</button>`;
           div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
           kl.appendChild(div);
