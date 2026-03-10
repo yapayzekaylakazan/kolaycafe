@@ -5928,6 +5928,18 @@ window.gelAlKatSec = gelAlKatSec;
     return;
   }
 
+  // Admin test panelinden gelen e-posta → giriş alanını doldur
+  const _testEmail = _params.get('email');
+  if (_testEmail) {
+    const emailInp = document.getElementById('giris-email');
+    const sifreInp = document.getElementById('giris-sifre');
+    if (emailInp) {
+      emailInp.value = decodeURIComponent(_testEmail);
+      if (sifreInp) sifreInp.focus();
+      // Hafif uyarı toast
+      setTimeout(() => toast('🧪 Test modu: ' + decodeURIComponent(_testEmail) + ' ile giriş yapın'), 500);
+    }
+  }
   try {
     const {data:{session}} = await sb.auth.getSession();
     if(session) {
