@@ -1069,7 +1069,10 @@
 <div class="page" id="page-online" style="overflow-y:auto;padding:12px;flex-direction:column;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
     <div style="font-size:1rem;font-weight:900;color:var(--accent2);">🌐 Online Siparişler</div>
-    <button onclick="onlineSiparisQRAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">📲 QR & Link</button>
+    <div style="display:flex;gap:8px;">
+      <button onclick="platformSiparisAc()" style="padding:8px 14px;border-radius:10px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">🟡 Platform Siparişi</button>
+      <button onclick="onlineSiparisQRAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">📲 QR & Link</button>
+    </div>
   </div>
   <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;">
     <button class="online-tab active" onclick="onlineFiltre('bekleniyor',this)" style="white-space:nowrap;padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">⏳ Bekleyen</button>
@@ -1079,6 +1082,48 @@
   </div>
   <div id="online-liste" style="display:flex;flex-direction:column;gap:10px;"></div>
   <div id="online-bos" style="text-align:center;color:var(--muted);padding:40px;font-size:0.88rem;">Henüz online sipariş yok</div>
+</div>
+
+<!-- PLATFORM SİPARİŞ MODAL -->
+<div id="platform-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:700;overflow-y:auto;">
+  <div style="background:var(--surface);border-radius:20px;padding:20px;width:92%;max-width:420px;margin:24px auto;">
+    <!-- Başlık -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-weight:900;font-size:1rem;">🟡 Platform Siparişi Ekle</div>
+      <button onclick="document.getElementById('platform-modal').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;">✕</button>
+    </div>
+    <!-- Platform Seç -->
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:800;margin-bottom:8px;letter-spacing:0.5px;">PLATFORM</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;" id="platform-grid">
+      <button class="plt-btn" onclick="platformSec('Yemeksepeti',this)" style="padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;text-align:center;">🟡<br>Yemeksepeti</button>
+      <button class="plt-btn" onclick="platformSec('Getir',this)" style="padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;text-align:center;">🔴<br>Getir</button>
+      <button class="plt-btn" onclick="platformSec('Trendyol',this)" style="padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;text-align:center;">🟠<br>Trendyol</button>
+      <button class="plt-btn" onclick="platformSec('Migros Yemek',this)" style="padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;text-align:center;">🟢<br>Migros</button>
+      <button class="plt-btn" onclick="platformSec('Siparişim',this)" style="padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;text-align:center;">🔵<br>Siparişim</button>
+      <button class="plt-btn" onclick="platformSec('Diğer',this)" style="padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;text-align:center;">⚪<br>Diğer</button>
+    </div>
+    <!-- Müşteri Adı -->
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:800;margin-bottom:6px;letter-spacing:0.5px;">MÜŞTERİ ADI (OPSİYONEL)</div>
+    <input id="plt-musteri" type="text" placeholder="Ad Soyad..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:14px;">
+    <!-- Ürün Seç -->
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:800;margin-bottom:8px;letter-spacing:0.5px;">ÜRÜNLER</div>
+    <div id="plt-kategori" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px;"></div>
+    <div id="plt-urun-liste" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:14px;"></div>
+    <!-- Seçilen Ürünler -->
+    <div id="plt-secilen-bolum" style="display:none;">
+      <div style="font-size:0.72rem;color:var(--muted);font-weight:800;margin-bottom:6px;letter-spacing:0.5px;">SEÇİLEN ÜRÜNLER</div>
+      <div id="plt-secilen" style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+        <span style="font-size:0.82rem;font-weight:800;color:var(--muted);">TOPLAM</span>
+        <span style="font-size:1.1rem;font-weight:900;color:var(--accent);" id="plt-toplam">0,00 ₺</span>
+      </div>
+    </div>
+    <!-- Not -->
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:800;margin-bottom:6px;letter-spacing:0.5px;">NOT (OPSİYONEL)</div>
+    <input id="plt-not" type="text" placeholder="Sipariş notu..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;margin-bottom:16px;">
+    <!-- Kaydet -->
+    <button onclick="platformSiparisKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:#7c3aed;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">✓ Mutfağa Gönder</button>
+  </div>
 </div>
 
 <!-- ONLINE QR MODAL -->
@@ -3348,7 +3393,7 @@ async function onlineListeRender() {
     div.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
         <div>
-          <div style="font-weight:900;font-size:0.95rem;">#${s.siparis_no} — ${s.musteri_ad}</div>
+          <div style="font-weight:900;font-size:0.95rem;">#${s.siparis_no} — ${s.musteri_ad}${s.platform?` <span style="font-size:0.68rem;padding:2px 7px;border-radius:8px;font-weight:900;background:${(PLATFORM_RENKLER||{})[s.platform]||'#7c3aed'}33;color:${(PLATFORM_RENKLER||{})[s.platform]||'#7c3aed'};">${s.platform}</span>`:''}</div>
           <div style="font-size:0.72rem;color:var(--muted);">📞 ${s.musteri_tel} · ${tarih}</div>
         </div>
         <span style="background:${renk}20;color:${renk};font-size:0.68rem;font-weight:800;padding:3px 8px;border-radius:20px;">${durumText[s.durum]||s.durum}</span>
@@ -3391,6 +3436,148 @@ async function onlineDurumGuncelle(siparisId, yeniDurum) {
   onlineBadgeGuncelle();
   onlineListeRender();
   toast(yeniDurum === 'iptal' ? '❌ Sipariş iptal edildi' : '✅ Durum güncellendi');
+}
+
+// ════════════════════════════════════════
+// PLATFORM SİPARİŞİ
+// ════════════════════════════════════════
+let secilenPlatform = '';
+let platformSepet = {}; // {urunIsim: {isim, fiyat, ikon, adet}}
+let platformAktifKat = '';
+
+const PLATFORM_RENKLER = {
+  'Yemeksepeti': '#FFD700', 'Getir': '#FF0000',
+  'Trendyol': '#F27A1A', 'Migros Yemek': '#00A650',
+  'Siparişim': '#2563EB', 'Diğer': '#6b7280'
+};
+
+function platformSiparisAc() {
+  secilenPlatform = '';
+  platformSepet = {};
+  platformAktifKat = '';
+  document.getElementById('plt-musteri').value = '';
+  document.getElementById('plt-not').value = '';
+  // Platform butonlarını sıfırla
+  document.querySelectorAll('.plt-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--surface2)';
+    b.style.color = 'var(--text)';
+  });
+  platformKategoriRender();
+  platformSecilenRender();
+  document.getElementById('platform-modal').style.display = 'block';
+}
+
+function platformSec(isim, btn) {
+  secilenPlatform = isim;
+  document.querySelectorAll('.plt-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--surface2)';
+    b.style.color = 'var(--text)';
+  });
+  const renk = PLATFORM_RENKLER[isim] || '#7c3aed';
+  btn.style.borderColor = renk;
+  btn.style.background = renk + '22';
+  btn.style.color = renk;
+}
+
+function platformKategoriRender() {
+  const katDiv = document.getElementById('plt-kategori');
+  const kategoriler = Object.keys(URUNLER);
+  if (kategoriler.length === 0) { katDiv.innerHTML = ''; platformUrunRender(''); return; }
+  if (!platformAktifKat || !kategoriler.includes(platformAktifKat)) platformAktifKat = kategoriler[0];
+  katDiv.innerHTML = kategoriler.map(k =>
+    `<button onclick="platformKatSec('${k}')" style="white-space:nowrap;padding:5px 12px;border-radius:16px;border:1.5px solid ${k===platformAktifKat?'var(--accent)':'var(--border)'};background:${k===platformAktifKat?'var(--accent)':'var(--surface2)'};color:${k===platformAktifKat?'#1a0f00':'var(--text2)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">${k}</button>`
+  ).join('');
+  platformUrunRender(platformAktifKat);
+}
+
+function platformKatSec(kat) {
+  platformAktifKat = kat;
+  platformKategoriRender();
+}
+
+function platformUrunRender(kat) {
+  const div = document.getElementById('plt-urun-liste');
+  const urunler = URUNLER[kat] || [];
+  div.innerHTML = urunler.map(u => {
+    const adet = platformSepet[u.isim]?.adet || 0;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.2rem;">${u.ikon||'🍽️'}</span>
+        <div>
+          <div style="font-size:0.83rem;font-weight:800;">${u.isim}</div>
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:700;">${Number(u.fiyat).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button onclick="platformAdetDegistir('${u.isim}',${u.fiyat},'${u.ikon||'🍽️'}',-1)" style="width:28px;height:28px;border-radius:7px;border:none;background:var(--surface3);color:var(--text);font-size:1rem;font-weight:900;cursor:pointer;${adet===0?'opacity:0.3;':''}"">−</button>
+        <span style="min-width:18px;text-align:center;font-weight:900;font-size:0.88rem;">${adet||0}</span>
+        <button onclick="platformAdetDegistir('${u.isim}',${u.fiyat},'${u.ikon||'🍽️'}',1)" style="width:28px;height:28px;border-radius:7px;border:none;background:var(--accent);color:#1a0f00;font-size:1rem;font-weight:900;cursor:pointer;">+</button>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.82rem;padding:12px;">Bu kategoride ürün yok</div>';
+}
+
+function platformAdetDegistir(isim, fiyat, ikon, delta) {
+  if (!platformSepet[isim]) platformSepet[isim] = {isim, fiyat, ikon, adet: 0};
+  platformSepet[isim].adet = Math.max(0, (platformSepet[isim].adet || 0) + delta);
+  if (platformSepet[isim].adet === 0) delete platformSepet[isim];
+  platformUrunRender(platformAktifKat);
+  platformSecilenRender();
+}
+
+function platformSecilenRender() {
+  const secilen = Object.values(platformSepet);
+  const bolum = document.getElementById('plt-secilen-bolum');
+  const div = document.getElementById('plt-secilen');
+  const toplamEl = document.getElementById('plt-toplam');
+  if (secilen.length === 0) { bolum.style.display = 'none'; return; }
+  bolum.style.display = 'block';
+  const toplam = secilen.reduce((s, u) => s + u.fiyat * u.adet, 0);
+  toplamEl.textContent = toplam.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+  div.innerHTML = secilen.map(u =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span>${u.ikon} ${u.isim} <span style="color:var(--muted);">x${u.adet}</span></span>
+      <span style="font-weight:800;color:var(--accent);">${(u.fiyat*u.adet).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</span>
+    </div>`
+  ).join('');
+}
+
+async function platformSiparisKaydet() {
+  if (!secilenPlatform) { toast('⚠️ Platform seçin!'); return; }
+  const urunler = Object.values(platformSepet);
+  if (urunler.length === 0) { toast('⚠️ En az 1 ürün ekleyin!'); return; }
+  const musteriAd = document.getElementById('plt-musteri').value.trim() || secilenPlatform;
+  const not = document.getElementById('plt-not').value.trim();
+  const toplam = urunler.reduce((s, u) => s + u.fiyat * u.adet, 0);
+  const siparisNo = Math.floor(Math.random() * 9000) + 1000;
+  const renk = PLATFORM_RENKLER[secilenPlatform] || '#7c3aed';
+
+  const siparis = {
+    kafe_id: kafeId,
+    siparis_no: siparisNo,
+    musteri_ad: musteriAd,
+    musteri_tel: secilenPlatform, // platform adı telefon alanında
+    adres: '📦 ' + secilenPlatform + ' Siparişi',
+    siparis_notu: not || null,
+    odeme_tipi: 'platform-' + secilenPlatform.toLowerCase().replace(/\s/g, ''),
+    siparisler: urunler.map(u => ({isim: u.isim, fiyat: u.fiyat, ikon: u.ikon, adet: u.adet})),
+    toplam,
+    durum: 'bekleniyor',
+    platform: secilenPlatform
+  };
+
+  try {
+    const { error } = await sb.from('online_siparisler').insert(siparis);
+    if (error) throw error;
+    document.getElementById('platform-modal').style.display = 'none';
+    toast('✅ ' + secilenPlatform + ' siparişi mutfağa gönderildi!');
+    onlineSiparisYukle();
+    sayfaGit('online');
+  } catch(e) {
+    toast('❌ Hata: ' + e.message);
+  }
 }
 
 function onlineSiparisQRAc() {
@@ -3557,13 +3744,19 @@ async function raporRenderTam() {
       'salon-nakit':'#22c55e', 'salon-kart':'#3b82f6',
       'kapi-nakit':'#f0b830', 'kapi-kart':'#06b6d4',
       ikram:'#6b7280', cari:'#a78bfa', online:'#f97316',
-      nakit:'#22c55e', kart:'#3b82f6'  // eski kayıtlar için
+      'platform-yemeksepeti':'#FFD700', 'platform-getir':'#ef4444',
+      'platform-trendyol':'#F27A1A', 'platform-migrosyemek':'#22c55e',
+      'platform-siparişim':'#2563EB', 'platform-diğer':'#6b7280',
+      nakit:'#22c55e', kart:'#3b82f6'
     };
     const tipIsim = {
-      'salon-nakit':'🪑 Salon (Nakit)', 'salon-kart':'🪑 Salon (Kart)',
-      'kapi-nakit':'🏠 Kapıda (Nakit)', 'kapi-kart':'🏠 Kapıda (Kart)',
+      'salon-nakit':'🪑 Salon Nakit', 'salon-kart':'🪑 Salon Kart',
+      'kapi-nakit':'🏠 Kapıda Nakit', 'kapi-kart':'🏠 Kapıda Kart',
       ikram:'🎁 İkram', cari:'📋 Cari', online:'🌐 Online',
-      nakit:'💵 Nakit', kart:'💳 Kart'  // eski kayıtlar için
+      'platform-yemeksepeti':'🟡 Yemeksepeti', 'platform-getir':'🔴 Getir',
+      'platform-trendyol':'🟠 Trendyol', 'platform-migrosyemek':'🟢 Migros',
+      'platform-siparişim':'🔵 Siparişim', 'platform-diğer':'⚪ Diğer Platform',
+      nakit:'💵 Nakit', kart:'💳 Kart'
     };
     odemeEl.innerHTML = Object.entries(odeme).sort((a,b)=>b[1]-a[1]).map(([tip,tutar]) => {
       const yuzde = toplamCiro > 0 ? Math.round(tutar/toplamCiro*100) : 0;
