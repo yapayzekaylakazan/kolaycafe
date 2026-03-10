@@ -491,7 +491,9 @@ async function testPaketTikla(paketId) {
   const kafe = tumKafeler.find(x => x.id === kafeId);
   sonuc.innerHTML = `✓ <strong>${kafe?.kafe_adi||'Kafe'}</strong> → <strong style="color:${p.renk}">${p.isim}</strong> (${p.masa>=999?'Sınırsız':p.masa} masa, 30 gün). Uygulama açılıyor...`;
   await yukle();
-  setTimeout(() => window.open('app/index.html?t=' + Date.now(), '_blank'), 600);
+  // E-postayı URL'e ekle → uygulama açılınca giriş alanı otomatik dolar
+  const emailParam = kafe?.email ? '&email=' + encodeURIComponent(kafe.email) : '';
+  setTimeout(() => window.open('app/index.html?t=' + Date.now() + emailParam, '_blank'), 600);
 }
 
 function testKafeListesiDoldur() {
@@ -506,7 +508,8 @@ function testKafeListesiDoldur() {
     const opt = document.createElement('option');
     opt.value = k.id;
     const etiket = (k.kafe_adi?.toLowerCase().includes('admin') || k.kafe_adi?.toLowerCase().includes('test')) ? '🧪 ' : '';
-    opt.textContent = `${etiket}${k.kafe_adi||'?'} — ${k.plan||'deneme'}`;
+    const emailKisa = k.email ? ` (${k.email})` : '';
+    opt.textContent = `${etiket}${k.kafe_adi||'?'}${emailKisa} — ${k.plan||'deneme'}`;
     sel.appendChild(opt);
   });
   if (mevcutDeger) sel.value = mevcutDeger;
