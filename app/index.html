@@ -1255,6 +1255,14 @@
       <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Mutfakta ayrı bir tablet veya ekrana açın. Müşteri siparişleri buraya düşer.</p>
       <a href="mutfak.html" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;text-align:center;text-decoration:none;">🍳 Mutfak Ekranını Aç →</a>
     </div>
+    <!-- Garson Uygulaması -->
+    <div class="ayar-kart">
+      <h3>📱 Garson Uygulaması</h3>
+      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Garsonlar telefonlarından kafe kodu + PIN ile giriş yapıp sipariş alabilir.</p>
+      <a id="garson-link" href="garson.html" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:13px;border-radius:12px;border:none;background:#3b82f6;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;text-align:center;text-decoration:none;margin-bottom:8px;">📱 Garson Ekranını Aç →</a>
+      <button onclick="garsonLinkKopyala()" style="width:100%;padding:10px;border-radius:11px;border:1.5px dashed var(--border);background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🔗 Garson Linkini Kopyala</button>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;">QR masa siparişi için: <code id="garson-qr-link" style="font-size:0.7rem;color:var(--accent);"></code></div>
+    </div>
     <div class="ayar-kart">
       <h3>📦 Paket Seçenekleri</h3>
       <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Paket değiştirmek için bizimle iletişime geçin</p>
@@ -2050,6 +2058,12 @@ async function kafeVerisiYukle() {
   }
   if (data?.kafe_kodu) {
     if (document.getElementById('ayar-cafe-kodu-inp')) document.getElementById('ayar-cafe-kodu-inp').value = data.kafe_kodu;
+    // Garson linkini güncelle
+    const _gLink = document.getElementById('garson-link');
+    const _gQR = document.getElementById('garson-qr-link');
+    const _gBase = location.origin + location.pathname.replace('index.html','') + 'garson.html';
+    if (_gLink) _gLink.href = _gBase + '?kafe=' + data.kafe_kodu;
+    if (_gQR) _gQR.textContent = _gBase + '?kafe=' + data.kafe_kodu + '&masa=1';
   }
   document.getElementById('ayar-cafe-adi').textContent = kafeAdi;
   document.getElementById('yeni-cafe-adi').value = kafeAdi;
@@ -3756,6 +3770,12 @@ function onlineSiparisQRAc() {
 function onlineQRKopyala() {
   const link = document.getElementById('online-qr-link').textContent;
   navigator.clipboard.writeText(link).then(() => toast('📋 Link kopyalandı!'));
+}
+
+function garsonLinkKopyala() {
+  const el = document.getElementById('garson-link');
+  const link = el?.href || (location.origin + location.pathname.replace('index.html','') + 'garson.html');
+  navigator.clipboard.writeText(link).then(() => toast('📋 Garson linki kopyalandı!'));
 }
 
 function onlineWhatsapp() {
