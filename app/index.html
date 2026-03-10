@@ -393,7 +393,8 @@
     </div>
   </div>
   <div class="header-stats">
-    <div class="hstat">Dolu: <span id="hstat-dolu">0</span>/20</div>
+    <span id="header-plan-badge" style="display:none;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;font-family:'Space Mono',monospace;border:1px solid;margin-right:4px;"></span>
+    <div class="hstat">Dolu: <span id="hstat-dolu">0/—</span></div>
     <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span></div>
     <div class="hstat">Günlük: <span id="hstat-ciro">0₺</span></div>
     <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
@@ -1389,7 +1390,7 @@
   <button class="bnav-btn" id="nav-recete" onclick="sayfaGit('recete')"><div class="nav-icon">🧪</div>Reçete</button>
   <button class="bnav-btn" id="nav-rapor" ><div class="nav-icon">📊</div>Rapor</button>
   <button class="bnav-btn" id="nav-ayarlar" ><div class="nav-icon">⚙️</div>Ayarlar</button>
-  <button class="bnav-btn" id="nav-mutfak" style="display:none;" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
+  <button class="bnav-btn" id="nav-mutfak" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
   <button class="bnav-btn" id="nav-garson-cikis" style="display:none;" ><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
 
@@ -1535,6 +1536,7 @@ const PAKETLER = {
   elite:  { ad:'👑 Elite',   masa:15, garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:799, sure:'aylık' },
   pro:    { ad:'⭐ Pro',     masa:999,garson:true,  rapor:true,  gelgid:true,  stok:true,  recete:true,  kupon:true,  bluetooth:true,  platform:true,  online:true,  mutfak:true,  hesapbol:true,  masatransfer:true,  cari:true,  qr:true,  fiyat:899, sure:'aylık' },
   kilitli:{ ad:'🔒 Kilitli', masa:0,  garson:false, rapor:false, gelgid:false, stok:false, recete:false, kupon:false, bluetooth:false, platform:false, online:false, mutfak:false, hesapbol:false, masatransfer:false, cari:false, qr:false, fiyat:0,   sure:'' },
+  ucretsiz:{ ad:'🆓 Ücretsiz', masa:6, garson:true, rapor:true, gelgid:true, stok:true, recete:true, kupon:true, bluetooth:true, platform:true, online:true, mutfak:true, hesapbol:true, masatransfer:true, cari:true, qr:true, fiyat:0, sure:'' },
 };
 let aktifPaket = 'deneme'; // cafeVerisiYukle'de güncellenir
 
@@ -2021,13 +2023,7 @@ async function kafeVerisiYukle() {
     garsonlar = data.garsonlar || ['Ali','Ayşe'];
     if (data.urunler) URUNLER = data.urunler;
     if (data.receteler) { RECETELER = data.receteler; console.log("Admin: Reçeteler yüklendi:", Object.keys(RECETELER)); }
-    if (data.masalar) {
-      const kayitliMasalar = data.masalar;
-      masalar.forEach(m => {
-        const k = kayitliMasalar.find(x=>x.id===m.id);
-        if (k) { m.ad = k.ad; m.not = k.not||''; }
-      });
-    }
+    // masalar burada GÜNCELLENMEZ — aşağıda pakete göre oluşturulacak
   } else {
     // İlk giriş, kafe verisi henüz yok
     const kkYeni = Math.random().toString(36).substring(2,8).toUpperCase();
@@ -2239,6 +2235,19 @@ function kilitEkraniGoster(mesaj) {
 
 function paketYetkiUygula(plan) {
   const p = PAKETLER[plan] || PAKETLER.deneme;
+
+  // ── HEADER PLAN BADGE ─────────────────────────────────
+  const _badge = document.getElementById('header-plan-badge');
+  if (_badge) {
+    const _renkMap = {pro:'#7c3aed',elite:'#f97316',ultra:'#2d7a3a',platin:'#1a6fb5',gold:'#b8860b',grow:'#22c55e',start:'#64748b',deneme:'#4080f0',ucretsiz:'#4080f0'};
+    const _renk = _renkMap[plan] || '#888';
+    _badge.textContent = p.ad || plan.toUpperCase();
+    _badge.style.display = 'inline-block';
+    _badge.style.color = _renk;
+    _badge.style.borderColor = _renk + '60';
+    _badge.style.background = _renk + '18';
+    _badge.style.boxShadow = '0 0 8px ' + _renk + '40';
+  }
 
   function goster(id, durum, display) {
     const el = document.getElementById(id);
