@@ -394,6 +394,7 @@
   </div>
   <div class="header-stats">
     <span id="header-plan-badge" style="display:none;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;font-family:'Space Mono',monospace;border:1px solid;margin-right:4px;"></span>
+    <span id="kayit-durum" style="display:none;font-size:0.68rem;font-weight:700;color:var(--muted);font-family:'Space Mono',monospace;"></span>
     <div class="hstat">Dolu: <span id="hstat-dolu">0/—</span></div>
     <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span></div>
     <div class="hstat">Günlük: <span id="hstat-ciro">0₺</span></div>
@@ -1587,6 +1588,15 @@ let _skipSubscriptionCount = 0; // transfer/split sonrası kaç event yoksayıla
 let aktifDonem = 'gun';
 let btYazici = null;
 let _kayitTimeout = null;
+let _kayitBekliyor = false;
+
+// Kayıt tamamlanmadan sayfa kapatılmasını önle
+window.addEventListener('beforeunload', e => {
+  if (_kayitBekliyor) {
+    e.preventDefault();
+    e.returnValue = 'Değişiklikler kaydediliyor, çıkmak istiyor musunuz?';
+  }
+});
 
 // ════════════════════════════════════════
 // AUTH
@@ -2161,19 +2171,29 @@ async function masaSyncYaz(masaId) {
 }
 
 function bulutKaydet() {
+  const ind = document.getElementById('kayit-durum');
+  if (ind) { ind.style.display='inline'; ind.textContent='⏳ kaydediliyor...'; ind.style.color='var(--muted)'; }
+  _kayitBekliyor = true;
   clearTimeout(_kayitTimeout);
   _kayitTimeout = setTimeout(async () => {
     if (!kafeId) return;
     try {
       if (!garsonModu) {
         const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
-        await sb.from('kafeler').update({
+        const {error} = await sb.from('kafeler').update({
           urunler: URUNLER,
           masalar: masaKayit,
           garsonlar: garsonlar,
         }).eq('id', kafeId);
+        if (error) throw error;
+        _kayitBekliyor = false;
+        if (ind) { ind.textContent='✓ kaydedildi'; ind.style.color='#22c55e'; setTimeout(()=>{ind.style.display='none';},2500); }
       }
-    } catch(e) { console.log('Kayıt hatası:', e); }
+    } catch(e) {
+      console.log('Kayıt hatası:', e);
+      _kayitBekliyor = false;
+      if (ind) { ind.textContent='⚠️ kayıt hatası!'; ind.style.color='var(--danger)'; }
+    }
   }, 1200);
 }
 
@@ -2421,7 +2441,7 @@ function katTabsRender() {
     const editBtn=document.createElement('button');
     editBtn.innerHTML='✏️';
     editBtn.title='Yeniden adlandır';
-    editBtn.style.cssText='position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.8rem;padding:2px 4px;border-radius:4px;opacity:0.6;';
+    editBtn.style.cssText='position:absolute;right:24px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.8rem;padding:2px 4px;border-radius:4px;opacity:0.6;';
     editBtn.addEventListener('click', e=>{
       e.stopPropagation();
       const yeniAd = prompt('Kategori adını değiştir:', kat);
@@ -2440,8 +2460,31 @@ function katTabsRender() {
       toast('✓ Kategori adı güncellendi');
     });
 
+    // Sil butonu
+    const delBtn=document.createElement('button');
+    delBtn.innerHTML='✕';
+    delBtn.title='Kategoriyi sil';
+    delBtn.style.cssText='position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.75rem;padding:2px 3px;border-radius:4px;opacity:0.5;color:var(--danger);';
+    delBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const urunSayisi = (URUNLER[kat]||[]).length;
+      const mesaj = urunSayisi > 0
+        ? `"${kat}" kategorisinde ${urunSayisi} ürün var. Kategori ve tüm ürünleri silinecek. Emin misiniz?`
+        : `"${kat}" kategorisi silinsin mi?`;
+      if (!confirm(mesaj)) return;
+      delete URUNLER[kat];
+      mevcutKat = Object.keys(URUNLER)[0] || '';
+      katSelectDoldur();
+      katTabsRender();
+      urunGridRender();
+      bulutKaydet();
+      toast('🗑 Kategori silindi');
+    });
+
+    btn.style.paddingRight='52px';
     wrap.appendChild(btn);
     wrap.appendChild(editBtn);
+    wrap.appendChild(delBtn);
     tabs.appendChild(wrap);
   });
 }
