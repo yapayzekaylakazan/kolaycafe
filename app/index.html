@@ -4620,12 +4620,17 @@ async function gelgidRender() {
   const {data} = await query;
   if (!data) return;
 
-  // Satış geliri ekle (kolaycafenlar'dan)
-  const satirGelir = kapaliKolayCafenlar
+  // Satış geliri (kolaycafenlar'dan) — gün bazında grupla
+  const satirGelirGunluk = {};
+  kapaliKolayCafenlar
     .filter(k => k.odeme_tipi !== 'cari' && k.odeme_tipi !== 'cari_tahsil' && new Date(k.tarihObj) >= baslangic)
-    .reduce((s, k) => s + (k.toplam || 0), 0);
+    .forEach(k => {
+      const gun = new Date(k.tarihObj).toISOString().split('T')[0];
+      satirGelirGunluk[gun] = (satirGelirGunluk[gun] || 0) + (k.toplam || 0);
+    });
 
-  const toplamGelir = data.filter(d=>d.tip==='gelir').reduce((s,d)=>s+d.tutar,0) + satirGelir;
+  const satirGelirToplam = Object.values(satirGelirGunluk).reduce((s,v)=>s+v, 0);
+  const toplamGelir = data.filter(d=>d.tip==='gelir').reduce((s,d)=>s+d.tutar,0) + satirGelirToplam;
   const toplamGider = data.filter(d=>d.tip==='gider').reduce((s,d)=>s+d.tutar,0);
   const netKar = toplamGelir - toplamGider;
 
@@ -4635,40 +4640,101 @@ async function gelgidRender() {
   karEl.textContent = fmt(netKar);
   karEl.style.color = netKar >= 0 ? '#22c55e' : 'var(--danger)';
 
-  // Liste
   const liste = document.getElementById('gg-liste');
-  if (!data.length) {
+
+  // Tüm kayıtları güne göre grupla
+  // Manuel gelir/gider kayıtları
+  const gunMap = {}; // { '2026-03-10': { gelir:[], gider:[] } }
+
+  // Satış gelirlerini (kolaycafen) ekle
+  Object.entries(satirGelirGunluk).forEach(([gun, tutar]) => {
+    if (!gunMap[gun]) gunMap[gun] = { gelir:[], gider:[] };
+    gunMap[gun].gelir.push({ id:null, kategori:'Satış Geliri', aciklama:'Otomatik (KolayCafen)', tutar, tip:'gelir', otomatik:true });
+  });
+
+  // Manuel kayıtları ekle
+  data.forEach(d => {
+    const gun = new Date(d.tarih).toISOString().split('T')[0];
+    if (!gunMap[gun]) gunMap[gun] = { gelir:[], gider:[] };
+    if (d.tip === 'gelir') gunMap[gun].gelir.push(d);
+    else gunMap[gun].gider.push(d);
+  });
+
+  // Günleri tarihe göre sırala (yeniden eskiye)
+  const gunler = Object.keys(gunMap).sort((a,b) => b.localeCompare(a));
+
+  if (!gunler.length) {
     liste.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-weight:700;">Kayıt yok</div>';
     return;
   }
 
-  // Satış gelirini otomatik ekle
-  let satirlar = `<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-radius:12px;background:var(--surface2);margin-bottom:7px;">
-    <div>
-      <span style="font-size:0.78rem;background:#22c55e22;color:#22c55e;border-radius:6px;padding:2px 8px;font-weight:800;">Satış Geliri</span>
-      <div style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-top:2px;">Otomatik (KolayCafen)</div>
-    </div>
-    <span style="font-weight:900;color:#22c55e;">${fmt(satirGelir)}</span>
-  </div>`;
+  const gunAdi = (iso) => {
+    const d = new Date(iso + 'T12:00:00');
+    const bugun = new Date(); bugun.setHours(0,0,0,0);
+    const dun = new Date(bugun); dun.setDate(dun.getDate()-1);
+    const gD = new Date(iso + 'T00:00:00');
+    if (gD.toDateString() === bugun.toDateString()) return '📅 Bugün';
+    if (gD.toDateString() === dun.toDateString()) return '📅 Dün';
+    return '📅 ' + d.toLocaleDateString('tr-TR', {day:'2-digit', month:'long', year:'numeric'});
+  };
 
-  satirlar += data.map(d => {
-    const renk = d.tip === 'gelir' ? '#22c55e' : 'var(--danger)';
-    const bg = d.tip === 'gelir' ? '#22c55e22' : '#ef444422';
-    const tarihStr = new Date(d.tarih).toLocaleDateString('tr-TR');
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-radius:12px;background:var(--surface2);margin-bottom:7px;">
-      <div>
-        <span style="font-size:0.78rem;background:${bg};color:${renk};border-radius:6px;padding:2px 8px;font-weight:800;">${d.kategori}</span>
-        <div style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-top:2px;">${d.aciklama} · ${tarihStr}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-weight:900;color:${renk};">${d.tip==='gider'?'-':''}${fmt(d.tutar)}</span>
-        <button onclick="gelgidSil('${d.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🗑</button>
-      </div>
-    </div>`;
+  liste.innerHTML = gunler.map(gun => {
+    const g = gunMap[gun];
+    const gunGelir = g.gelir.reduce((s,d)=>s+d.tutar,0);
+    const gunGider = g.gider.reduce((s,d)=>s+d.tutar,0);
+    const gunNet = gunGelir - gunGider;
+    const netRenk = gunNet >= 0 ? '#22c55e' : 'var(--danger)';
+
+    const satirlar = [
+      ...g.gelir.map(d => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:9px;background:var(--surface);margin-bottom:5px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>
+            <div>
+              <span style="font-size:0.75rem;background:#22c55e22;color:#22c55e;border-radius:5px;padding:1px 7px;font-weight:800;">${d.kategori}</span>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">${d.aciklama||''}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:900;color:#22c55e;">+${fmt(d.tutar)}</span>
+            ${!d.otomatik && d.id ? `<button onclick="gelgidSil('${d.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0;">🗑</button>` : ''}
+          </div>
+        </div>`),
+      ...g.gider.map(d => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:9px;background:var(--surface);margin-bottom:5px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--danger);flex-shrink:0;"></span>
+            <div>
+              <span style="font-size:0.75rem;background:#ef444422;color:var(--danger);border-radius:5px;padding:1px 7px;font-weight:800;">${d.kategori}</span>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">${d.aciklama||''}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:900;color:var(--danger);">-${fmt(d.tutar)}</span>
+            ${d.id ? `<button onclick="gelgidSil('${d.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0;">🗑</button>` : ''}
+          </div>
+        </div>`)
+    ].join('');
+
+    return `
+      <div style="margin-bottom:14px;">
+        <!-- Gün başlığı -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:10px;background:var(--surface2);margin-bottom:6px;border-left:3px solid ${netRenk};">
+          <span style="font-size:0.82rem;font-weight:800;color:var(--text);">${gunAdi(gun)}</span>
+          <div style="display:flex;gap:14px;align-items:center;">
+            ${gunGelir > 0 ? `<span style="font-size:0.75rem;color:#22c55e;font-weight:700;">+${fmt(gunGelir)}</span>` : ''}
+            ${gunGider > 0 ? `<span style="font-size:0.75rem;color:var(--danger);font-weight:700;">-${fmt(gunGider)}</span>` : ''}
+            <span style="font-size:0.8rem;font-weight:900;color:${netRenk};">${gunNet >= 0 ? '+' : ''}${fmt(gunNet)}</span>
+          </div>
+        </div>
+        <!-- O günün kayıtları -->
+        <div style="padding-left:8px;">
+          ${satirlar}
+        </div>
+      </div>`;
   }).join('');
-
-  liste.innerHTML = satirlar;
 }
+
 
 // ════════════════════════════════════════
 // KUPON SİSTEMİ
