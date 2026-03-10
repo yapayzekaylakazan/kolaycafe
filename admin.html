@@ -500,21 +500,38 @@ function testKafeListesiDoldur() {
   const sel = document.getElementById('test-kafe-sec');
   const mevcutDeger = sel.value;
   sel.innerHTML = '<option value="">— Test kafesi seçin —</option>';
-  // Kendi admin kafeni en üste koy
-  const adminKafe = tumKafeler.find(k => k.kafe_kodu === 'admin' || k.kafe_adi?.toLowerCase().includes('admin') || k.kafe_adi?.toLowerCase().includes('test'));
-  const diger = tumKafeler.filter(k => k !== adminKafe);
-  const sirali = adminKafe ? [adminKafe, ...diger] : diger;
-  sirali.forEach(k => {
+
+  // Test kafesini en üste sabitle
+  const testKafe = tumKafeler.find(k => k.kafe_kodu === 'TESTXX' || k.kafe_adi === '🧪 Genel Test Cafesi');
+  const diger = tumKafeler.filter(k => k !== testKafe);
+
+  if (testKafe) {
+    const opt = document.createElement('option');
+    opt.value = testKafe.id;
+    opt.textContent = `🧪 Genel Test Cafesi`;
+    opt.style.fontWeight = 'bold';
+    sel.appendChild(opt);
+    // Küçük ayraç
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '──────────────';
+    sel.appendChild(sep);
+  }
+
+  diger.forEach(k => {
     const opt = document.createElement('option');
     opt.value = k.id;
-    const etiket = (k.kafe_adi?.toLowerCase().includes('admin') || k.kafe_adi?.toLowerCase().includes('test')) ? '🧪 ' : '';
-    const emailKisa = k.email ? ` (${k.email})` : '';
-    opt.textContent = `${etiket}${k.kafe_adi||'?'}${emailKisa} — ${k.plan||'deneme'}`;
+    const emailKisa = k.email ? ` (${k.email})` : ' ⚠️ e-posta yok';
+    opt.textContent = `${k.kafe_adi||'?'}${emailKisa} — ${k.plan||'deneme'}`;
     sel.appendChild(opt);
   });
-  if (mevcutDeger) sel.value = mevcutDeger;
-  // İlk admin/test kafesini otomatik seç
-  if (!sel.value && adminKafe) sel.value = adminKafe.id;
+
+  // Test kafesini otomatik seç
+  if (!mevcutDeger && testKafe) {
+    sel.value = testKafe.id;
+  } else if (mevcutDeger) {
+    sel.value = mevcutDeger;
+  }
 }
 
 async function girisYap() {
@@ -550,13 +567,75 @@ async function yukle() {
 
   if (error) { console.error(error); return; }
 
-  // E-postaları auth tablosundan çek (service role olmadan sadece kendi e-postamızı görebiliriz)
-  // Bu yüzden e-postayı kayıt sırasında kafeler tablosuna da kaydedelim
   tumKafeler = data || [];
+
+  // Genel Test Cafesi yoksa oluştur
+  const testKafe = tumKafeler.find(k => k.kafe_kodu === 'TESTXX' || k.kafe_adi === '🧪 Genel Test Cafesi');
+  if (!testKafe) {
+    await genelTestCafesiOlustur();
+    return; // yukle tekrar çağrılacak
+  }
+
   istatistikGuncelle();
   tabloRender();
   testPanelRender();
   testKafeListesiDoldur();
+}
+
+function toast(msg, sure=3000) {
+  let t = document.getElementById('admin-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'admin-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a24;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:0.82rem;font-family:"Space Mono",monospace;z-index:9999;transition:opacity 0.3s;white-space:nowrap;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.style.opacity = '0', sure);
+}
+
+async function genelTestCafesiOlustur() {
+  // Önce auth'ta bu e-posta var mı kontrol et
+  const testEmail = 'test@kolaycafe.com';
+  // Direkt Supabase auth signUp ile test kullanıcısı oluştur
+  const { data: authData, error: authErr } = await sb.auth.signUp({
+    email: testEmail,
+    password: 'test123456'
+  });
+
+  let userId = authData?.user?.id;
+
+  // Kullanıcı zaten varsa (error code: user_already_exists) - kullanıcıyı bul
+  if (authErr && authErr.message?.includes('already')) {
+    // Mevcut kafeler arasında bu e-posta ile olan varsa onu kullan
+    const mevcutKafe = tumKafeler.find(k => k.email === testEmail);
+    if (mevcutKafe) {
+      await sb.from('kafeler').update({ kafe_kodu: 'TESTXX', kafe_adi: '🧪 Genel Test Cafesi' }).eq('id', mevcutKafe.id);
+      await yukle();
+      return;
+    }
+  }
+
+  if (!userId && !authErr) return;
+
+  const bitis = new Date(); bitis.setFullYear(bitis.getFullYear() + 10);
+  await sb.from('kafeler').insert({
+    user_id: userId || 'test-user-id',
+    kafe_adi: '🧪 Genel Test Cafesi',
+    email: testEmail,
+    plan: 'pro',
+    plan_bitis: bitis.toISOString(),
+    telefon: '05000000000',
+    adres: 'Test Adresi',
+    garsonlar: ['Test Garson'],
+    kafe_kodu: 'TESTXX',
+    masalar: Array.from({length:20}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), not:''}))
+  });
+
+  toast('✓ Genel Test Cafesi oluşturuldu! (test@kolaycafe.com / test123456)');
+  await yukle();
 }
 
 function istatistikGuncelle() {
