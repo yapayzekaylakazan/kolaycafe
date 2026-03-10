@@ -156,7 +156,7 @@
 
     <div class="giris-kart" id="adim-kafe">
       <div class="g-label">Cafe Kodu</div>
-      <input class="g-inp" id="inp-kafe-kodu" type="text" placeholder="Örn: ALIUSTA1" autocomplete="off" autocapitalize="characters">
+      <input class="g-inp" id="inp-kafe-kodu" type="text" placeholder="Cafe adı kodunu girin" autocomplete="off" autocapitalize="characters">
       <button class="g-btn" onclick="kafeBul()">Devam →</button>
       <div class="g-err" id="kafe-err"></div>
     </div>
@@ -176,6 +176,7 @@
         <div class="pin-dot" id="pd1"></div>
         <div class="pin-dot" id="pd2"></div>
         <div class="pin-dot" id="pd3"></div>
+        <div class="pin-dot" id="pd4"></div>
       </div>
       <div class="numpad">
         <button class="np-btn" onclick="pinTus('1')">1</button>
@@ -388,10 +389,10 @@ function garsonSec(idx) {
 let _pinGirilen = '';
 
 function pinTus(d) {
-  if (_pinGirilen.length >= 4) return;
+  if (_pinGirilen.length >= 5) return;
   _pinGirilen += d;
   pinGoster();
-  if (_pinGirilen.length === 4) {
+  if (_pinGirilen.length === 5) {
     setTimeout(() => pinKontrol(), 200);
   }
 }
@@ -407,7 +408,7 @@ function pinTemizle() {
 }
 
 function pinGoster() {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     const d = document.getElementById('pd' + i);
     if (d) d.className = 'pin-dot' + (i < _pinGirilen.length ? ' dolu' : '');
   }
