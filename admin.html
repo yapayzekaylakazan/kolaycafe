@@ -642,7 +642,7 @@ function tabloRender() {
     tr.innerHTML = `
       <td style="color:var(--text2);font-family:'Space Mono',monospace;font-size:0.75rem;">${i+1}</td>
       <td><strong>${k.kafe_adi||'—'}</strong><br><span style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">${k.kafe_kodu||''}</span></td>
-      <td style="font-size:0.8rem;">${k.email||'—'}</td>
+      <td style="font-size:0.8rem;">${k.email ? k.email : '<span style="color:var(--red);font-size:0.72rem;font-family:\'Space Mono\',monospace;">⚠ eksik</span>'}</td>
       <td style="font-size:0.8rem;"><div>${k.telefon||'—'}</div><div style="font-size:0.72rem;color:var(--text2);">${k.adres||'—'}${k.fatura_il?', '+k.fatura_il:''}</div></td>
       <td>${planBadge(k.plan)}</td>
       <td>${sure.html}</td>
@@ -722,9 +722,32 @@ function detayAc(id) {
 
   let html = '';
 
+  // E-posta eksikse uyarı banner
+  if (!k.email) {
+    html += `<div style="background:#f0b94015;border:1.5px solid #f0b94050;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:1.2rem;">⚠️</span>
+      <div>
+        <div style="font-size:0.8rem;font-weight:800;color:var(--accent);margin-bottom:2px;">E-posta eksik!</div>
+        <div style="font-size:0.72rem;color:var(--text2);">Bu kafe eski kayıt — aşağıdan e-postayı ekleyebilirsiniz.</div>
+      </div>
+    </div>`;
+  }
+
   // İletişim
   html += bolumBaslik('📞', 'İletişim Bilgileri');
-  html += satirHtml('E-Posta', k.email || '—', true);
+  // E-posta: varsa kopyala, yoksa düzenlenebilir alan
+  if (k.email) {
+    html += satirHtml('E-Posta', k.email, true);
+  } else {
+    html += `<div class="modal-satir">
+      <div class="modal-key">E-Posta</div>
+      <div class="modal-val" style="display:flex;gap:8px;align-items:center;flex:1;">
+        <input id="modal-email-inp" type="email" placeholder="ornek@mail.com"
+          style="flex:1;background:var(--surface);border:1.5px solid var(--accent);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;">
+        <button onclick="emailKaydet()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">✓ Kaydet</button>
+      </div>
+    </div>`;
+  }
   html += satirHtml('Telefon', k.telefon || '—', true);
   html += satirHtml('Cafe Adresi', k.adres || '—', false);
 
@@ -761,6 +784,27 @@ function detayAc(id) {
 function modalKapat() {
   document.getElementById('detay-modal').classList.remove('ac');
   seciliKafeId = null;
+}
+
+async function emailKaydet() {
+  if (!seciliKafeId) return;
+  const inp = document.getElementById('modal-email-inp');
+  if (!inp) return;
+  const email = inp.value.trim();
+  if (!email || !email.includes('@')) {
+    inp.style.borderColor = 'var(--red)';
+    inp.placeholder = 'Geçerli bir e-posta girin!';
+    setTimeout(() => { inp.style.borderColor = 'var(--accent)'; inp.placeholder = 'ornek@mail.com'; }, 2000);
+    return;
+  }
+  const { error } = await sb.from('kafeler').update({ email }).eq('id', seciliKafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+  // Yerel veriyi güncelle
+  const kafe = tumKafeler.find(x => x.id === seciliKafeId);
+  if (kafe) kafe.email = email;
+  // Modal'ı yenile
+  detayAc(seciliKafeId);
+  await yukle();
 }
 
 async function planGuncelle() {
