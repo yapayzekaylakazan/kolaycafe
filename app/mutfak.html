@@ -239,17 +239,23 @@ function bildirim(masaAdi, adet, garsonCagri=false){
 }
 
 async function giris(){
-  sesCtxBaslat(); // Kullanıcı tıkladı - ses iznini al
-  const kod=document.getElementById('kode').value.trim().toLowerCase();
+  sesCtxBaslat();
+  const kod=document.getElementById('kode').value.trim();
   if(!kod){gosterErr('Cafe kodu girin!');return;}
-  const{data,error}=await sb.from('kafeler').select('id,kafe_adi').eq('kafe_kodu',kod).single();
-  if(error||!data){gosterErr('Cafe bulunamadı!');return;}
+  // Büyük/küçük harf bağımsız ara
+  const{data,error}=await sb.from('kafeler').select('id,kafe_adi,kafe_kodu').ilike('kafe_kodu',kod).single();
+  if(error||!data){
+    // Hata detayını göster
+    gosterErr('Cafe bulunamadı! (Kod: "'+kod+'") — Ayarlar > Kafe Kodu kısmından kontrol edin.');
+    console.error('Mutfak giris hatasi:', error);
+    return;
+  }
   kafeId=data.id;
   localStorage.setItem('mk_id',data.id);
   localStorage.setItem('mk_kod',kod);
   document.getElementById('giris').style.display='none';
   document.getElementById('ana').style.display='block';
-      const _mn=document.getElementById('mutfak-nav');if(_mn)_mn.style.display='flex';
+  const _mn=document.getElementById('mutfak-nav');if(_mn)_mn.style.display='flex';
   document.getElementById('h-kafe').textContent=data.kafe_adi;
   document.getElementById('gecmis-tarih-inp').value = gecmisTarih;
   await yukle();
