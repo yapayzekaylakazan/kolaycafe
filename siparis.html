@@ -34,7 +34,7 @@
   .main { padding: 12px; padding-bottom: 100px; }
   .kat-baslik { font-size: 0.78rem; font-weight: 900; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; padding: 8px 0 6px; border-bottom: 2px solid var(--accent)30; margin-bottom: 10px; margin-top: 16px; }
   .urun-grid { display: flex; flex-direction: column; gap: 8px; }
-  .urun-kart { background: var(--surface2); border-radius: var(--radius); padding: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+  .urun-kart { background: var(--surface2); border-radius: var(--radius); padding: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); gap: 6px; }
   .urun-sol { flex: 1; }
   .urun-isim { font-weight: 800; font-size: 0.9rem; margin-bottom: 3px; }
   .urun-fiyat { font-weight: 900; color: var(--accent); font-size: 0.95rem; }
@@ -283,8 +283,9 @@ function menuRender() {
       }
       const adet = sepet[u.isim]?.adet || 0;
       grid.innerHTML += `<div class="urun-kart" id="ukart-${u.isim.replace(/\s/g,'_')}">
+        ${u.resim ? `<img src="${u.resim}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0;">` : ''}
         <div class="urun-sol">
-          <div class="urun-isim">${u.ikon||''} ${u.isim}</div>
+          <div class="urun-isim">${u.resim ? '' : (u.ikon||'')} ${u.isim}</div>
           <div class="urun-fiyat">${fmt(u.fiyat)}</div>
         </div>
         <div class="urun-sag">
