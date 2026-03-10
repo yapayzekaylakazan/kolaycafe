@@ -105,8 +105,16 @@
     .gecmis-bos{text-align:center;color:var(--muted);padding:30px;font-size:.85rem;font-weight:600;grid-column:1/-1;}
 
     /* TOAST / BİLDİRİM */
-    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:10px 22px;border-radius:12px;font-weight:800;font-size:.85rem;z-index:9999;animation:toastIn .3s ease;border:1px solid var(--border);}
+    .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:10px 22px;border-radius:12px;font-weight:800;font-size:.85rem;z-index:9999;animation:toastIn .3s ease;border:1px solid var(--border);}
     .bildirim{position:fixed;top:76px;right:20px;background:var(--orange);color:#1a0f00;padding:12px 18px;border-radius:13px;font-weight:900;font-size:.9rem;z-index:9998;animation:bildirimIn .35s ease;box-shadow:0 6px 20px rgba(249,115,22,.4);}
+
+    /* BOTTOM NAV */
+    .mutfak-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:2px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:6px 0 8px;z-index:200;}
+    .mutfak-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:0.62rem;font-weight:800;font-family:'Nunito',sans-serif;text-decoration:none;padding:4px 12px;border-radius:10px;transition:color .15s;}
+    .mutfak-nav a.aktif{color:var(--accent);}
+    .mutfak-nav a .nv-icon{font-size:1.3rem;line-height:1;}
+    .mutfak-nav a .nv-label{margin-top:1px;}
+    #ana{padding-bottom:72px;}
   </style>
 </head>
 <body>
@@ -241,6 +249,7 @@ async function giris(){
   localStorage.setItem('mk_kod',kod);
   document.getElementById('giris').style.display='none';
   document.getElementById('ana').style.display='block';
+      const _mn=document.getElementById('mutfak-nav');if(_mn)_mn.style.display='flex';
   document.getElementById('h-kafe').textContent=data.kafe_adi;
   document.getElementById('gecmis-tarih-inp').value = gecmisTarih;
   await yukle();
@@ -673,12 +682,40 @@ function baglan(){
     if(data){
       document.getElementById('giris').style.display='none';
       document.getElementById('ana').style.display='block';
+      const _mn=document.getElementById('mutfak-nav');if(_mn)_mn.style.display='flex';
       document.getElementById('h-kafe').textContent=data.kafe_adi;
       document.getElementById('gecmis-tarih-inp').value = gecmisTarih;
       await yukle(); baglan();
     }
   }
 })();
-</script>
+<!-- BOTTOM NAV -->
+<nav class="mutfak-nav" id="mutfak-nav" style="display:none;">
+  <a href="index.html" class="nv-btn">
+    <div class="nv-icon">🪑</div>
+    <div class="nv-label">Masalar</div>
+  </a>
+  <a href="index.html#gelal" class="nv-btn">
+    <div class="nv-icon">🛍️</div>
+    <div class="nv-label">Gel-Al</div>
+  </a>
+  <a href="index.html#online" class="nv-btn">
+    <div class="nv-icon">🌐</div>
+    <div class="nv-label">Online</div>
+  </a>
+  <a href="mutfak.html" class="nv-btn aktif">
+    <div class="nv-icon">🍳</div>
+    <div class="nv-label">Mutfak</div>
+  </a>
+  <a href="index.html#rapor" class="nv-btn">
+    <div class="nv-icon">📊</div>
+    <div class="nv-label">Rapor</div>
+  </a>
+  <a href="index.html#ayarlar" class="nv-btn">
+    <div class="nv-icon">⚙️</div>
+    <div class="nv-label">Ayarlar</div>
+  </a>
+</nav>
+
 </body>
 </html>
