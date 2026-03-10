@@ -321,6 +321,7 @@
       <button class="filtre-btn" onclick="filtrele('doldu',this)">Süresi Dolmuş</button>
       <button class="filtre-btn" onclick="filtrele('pro',this)">Pro</button>
       <button class="filtre-btn" onclick="filtrele('deneme',this)">Deneme</button>
+      <button class="filtre-btn" onclick="filtrele('crm',this)" style="border-color:#9060f0;color:#9060f0;">🎯 CRM</button>
       <button class="export-btn" onclick="csvIndir()">📥 CSV İndir</button>
       <button class="export-btn" onclick="yukle()">🔄</button>
     </div>
@@ -335,7 +336,9 @@
             <th>TELEFON / ADRES</th>
             <th>PLAN</th>
             <th>KALAN SÜRE</th>
-            <th>KAYIT TARİHİ</th>
+            <th>SON GİRİŞ</th>
+            <th>CİRO</th>
+            <th>KAYIT</th>
             <th>DURUM</th>
             <th>İŞLEM</th>
           </tr>
@@ -682,6 +685,14 @@ function filtreliKafeler() {
     if (aktifFiltre === 'doldu') return !k.plan_bitis || new Date(k.plan_bitis) <= simdi;
     if (aktifFiltre === 'pro') return k.plan === 'pro';
     if (aktifFiltre === 'deneme') return k.plan === 'deneme';
+    if (aktifFiltre === 'crm') {
+      // Deneme süresi dolmuş VEYA 3 gün içinde bitecek + ücretli pakette değil
+      const odemeliPlanlar = ['start','grow','gold','platin','ultra','elite','pro'];
+      if (odemeliPlanlar.includes(k.plan)) return false;
+      if (!k.plan_bitis) return true;
+      const kalan = Math.ceil((new Date(k.plan_bitis) - simdi) / (1000*60*60*24));
+      return kalan <= 3;
+    }
     return true;
   });
 }
@@ -729,13 +740,27 @@ function tabloRender() {
       : `<span class="badge badge-aktif">AKTİF</span>`;
     const tr = document.createElement('tr');
     if (sure.doldu) tr.className = 'pasif';
+    const simdi2 = new Date();
+    const sonGirisStr = k.son_giris ? (() => {
+      const sg = new Date(k.son_giris);
+      const fark = Math.floor((simdi2 - sg) / (1000*60*60*24));
+      const renk = fark === 0 ? '#30d080' : fark <= 3 ? '#f0b940' : fark <= 7 ? '#e07840' : '#e04050';
+      const yazi = fark === 0 ? 'Bugün' : fark === 1 ? 'Dün' : fark + ' gün önce';
+      return `<span style="color:${renk};font-size:0.75rem;font-family:'Space Mono',monospace;">${yazi}</span>`;
+    })() : '<span style="color:var(--text2);font-size:0.72rem;">—</span>';
+    const ciroStr = k.toplam_ciro > 0
+      ? `<span style="color:#30d080;font-weight:700;font-size:0.8rem;">${Math.round(k.toplam_ciro).toLocaleString('tr-TR')}₺</span>`
+      : '<span style="color:var(--text2);font-size:0.72rem;">—</span>';
+    const crmNotSayisi = (k.crm_notlar||[]).length;
     tr.innerHTML = `
       <td style="color:var(--text2);font-family:'Space Mono',monospace;font-size:0.75rem;">${i+1}</td>
-      <td><strong>${k.kafe_adi||'—'}</strong><br><span style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">${k.kafe_kodu||''}</span></td>
+      <td><strong>${k.kafe_adi||'—'}</strong><br><span style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">${k.kafe_kodu||''}</span>${crmNotSayisi>0?`<span style="margin-left:4px;background:#9060f030;color:#9060f0;border-radius:4px;padding:1px 5px;font-size:0.65rem;font-weight:800;">${crmNotSayisi} not</span>`:''}</td>
       <td style="font-size:0.8rem;">${k.email ? k.email : '<span style="color:var(--red);font-size:0.72rem;font-family:\'Space Mono\',monospace;">⚠ eksik</span>'}</td>
       <td style="font-size:0.8rem;"><div>${k.telefon||'—'}</div><div style="font-size:0.72rem;color:var(--text2);">${k.adres||'—'}${k.fatura_il?', '+k.fatura_il:''}</div></td>
       <td>${planBadge(k.plan)}</td>
       <td>${sure.html}</td>
+      <td>${sonGirisStr}</td>
+      <td>${ciroStr}</td>
       <td style="font-size:0.78rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(k.created_at)}</td>
       <td>${durum}</td>
       <td>
@@ -867,6 +892,79 @@ function detayAc(id) {
   html += satirHtml('Garson Sayısı', (k.garsonlar || []).length + ' garson', false);
   html += satirHtml('Kayıt Tarihi', tarihFmt(k.created_at), false);
 
+  // CRM ANALİZ
+  html += bolumBaslik('📊', 'Analiz & CRM');
+  const simdiCrm = new Date();
+  const sonGirisCrm = k.son_giris ? (() => {
+    const sg = new Date(k.son_giris);
+    const fark = Math.floor((simdiCrm - sg) / (1000*60*60*24));
+    return fark === 0 ? 'Bugün' : fark === 1 ? 'Dün' : fark + ' gün önce (' + tarihFmt(k.son_giris) + ')';
+  })() : '— (hiç giriş yok)';
+  html += satirHtml('Son Giriş', `<span style="color:${k.son_giris ? '#30d080' : 'var(--red)'}">${sonGirisCrm}</span>`, false);
+  html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${Math.round(k.toplam_ciro).toLocaleString('tr-TR')} ₺</span>` : '—', false);
+  html += satirHtml('Ürün Sayısı', (() => { let s=0; Object.values(k.urunler||{}).forEach(a=>s+=a.length); return s + ' ürün'; })(), false);
+
+  // SATIŞ DÖNÜŞÜM AKSİYONLARI
+  html += bolumBaslik('🎯', 'Satışa Dönüştür');
+  const tel = (k.telefon||'').replace(/\D/g,'');
+  const waMsg = encodeURIComponent(`Merhaba ${k.kafe_adi||''}! KolayCafe deneme süreniz yaklaşıyor. Size özel %20 indirimle hemen paket seçebilirsiniz 👉 https://kolaycafe.com`);
+  const waTel = tel.startsWith('0') ? '90'+tel.slice(1) : tel.startsWith('90') ? tel : '90'+tel;
+
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+    ${tel ? `<a href="https://wa.me/${waTel}?text=${waMsg}" target="_blank"
+      style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;background:#25D36615;border:1.5px solid #25D36640;color:#25D366;font-size:0.82rem;font-weight:800;text-decoration:none;cursor:pointer;">
+      <span style="font-size:1.1rem;">💬</span> WhatsApp
+    </a>` : `<div style="padding:10px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text2);font-size:0.78rem;text-align:center;">📵 Tel yok</div>`}
+    ${k.email ? `<a href="mailto:${k.email}?subject=KolayCafe%20Paket%20Teklifiniz&body=Merhaba%20${encodeURIComponent(k.kafe_adi||'')}%2C%0A%0ADeneme%20s%C3%BCreniz%20yak%C4%B1nda%20bitiyor.%20Size%20%C3%B6zel%20teklif%20i%C3%A7in%20hemen%20iletiAim%20edin." target="_blank"
+      style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;background:#4080f015;border:1.5px solid #4080f040;color:#4080f0;font-size:0.82rem;font-weight:800;text-decoration:none;">
+      <span style="font-size:1.1rem;">📧</span> E-posta
+    </a>` : `<div style="padding:10px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text2);font-size:0.78rem;text-align:center;">📭 Mail yok</div>`}
+  </div>`;
+
+  // UYGULAMA İÇİ BANNER GÖNDER
+  html += `<button onclick="bannerGonder('${k.id}')"
+    style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #f0b94040;background:#f0b94010;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;margin-bottom:10px;">
+    📢 Uygulama İçi Banner Gönder
+  </button>`;
+
+  // CRM NOTLAR
+  html += bolumBaslik('📝', 'CRM Notları');
+  const notlar = k.crm_notlar || [];
+  if (notlar.length > 0) {
+    html += `<div style="margin-bottom:10px;">`;
+    notlar.slice().reverse().forEach((n, i) => {
+      const idx = notlar.length - 1 - i;
+      html += `<div style="background:var(--surface);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid ${n.tip==='onemli'?'#e04050':n.tip==='pozitif'?'#30d080':'#9060f0'};">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(n.tarih)} — ${n.yazar||'Admin'}</span>
+          <button onclick="crmNotSil('${k.id}',${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.75rem;">✕</button>
+        </div>
+        <div style="font-size:0.82rem;">${n.metin}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div style="color:var(--text2);font-size:0.78rem;margin-bottom:10px;">Henüz not yok.</div>`;
+  }
+
+  html += `<div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;gap:6px;">
+      <select id="crm-not-tip" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
+        <option value="normal">💬 Normal</option>
+        <option value="pozitif">✅ Pozitif</option>
+        <option value="onemli">🔴 Önemli</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <textarea id="crm-not-inp" placeholder="Not ekle... (arama yapmadı, fiyat sordu, geri aranacak...)"
+        style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;resize:none;height:70px;"></textarea>
+      <button onclick="crmNotKaydet('${k.id}')"
+        style="padding:10px 14px;border-radius:8px;border:none;background:#9060f0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;">
+        ✓ Ekle
+      </button>
+    </div>
+  </div>`;
+
   document.getElementById('modal-icerik').innerHTML = html;
   document.getElementById('detay-modal').classList.add('ac');
 }
@@ -875,6 +973,48 @@ function modalKapat() {
   document.getElementById('detay-modal').classList.remove('ac');
   seciliKafeId = null;
 }
+
+async function crmNotKaydet(kafeId) {
+  const inp = document.getElementById('crm-not-inp');
+  const tip = document.getElementById('crm-not-tip');
+  if (!inp || !inp.value.trim()) { inp.style.borderColor='var(--red)'; return; }
+  const k = tumKafeler.find(x => x.id === kafeId);
+  if (!k) return;
+  const notlar = k.crm_notlar || [];
+  notlar.push({ metin: inp.value.trim(), tip: tip.value, tarih: new Date().toISOString(), yazar: 'Admin' });
+  const { error } = await sb.from('kafeler').update({ crm_notlar: notlar }).eq('id', kafeId);
+  if (error) { toast('❌ ' + error.message); return; }
+  k.crm_notlar = notlar;
+  toast('✓ Not eklendi');
+  detayAc(kafeId);
+  tabloRender();
+}
+
+async function crmNotSil(kafeId, idx) {
+  if (!confirm('Bu notu silmek istiyor musunuz?')) return;
+  const k = tumKafeler.find(x => x.id === kafeId);
+  if (!k) return;
+  const notlar = [...(k.crm_notlar || [])];
+  notlar.splice(idx, 1);
+  const { error } = await sb.from('kafeler').update({ crm_notlar: notlar }).eq('id', kafeId);
+  if (error) { toast('❌ ' + error.message); return; }
+  k.crm_notlar = notlar;
+  toast('✓ Not silindi');
+  detayAc(kafeId);
+  tabloRender();
+}
+
+async function bannerGonder(kafeId) {
+  // kafeler tablosuna banner_mesaj kolonu yazıyoruz, uygulama açılışta okuyacak
+  const mesaj = prompt('Banner mesajı girin (uygulama açılışta gösterilecek):', '⭐ Deneme süreniz bitiyor! Hemen paket seçin ve %20 indirim kazanın 👉 kolaycafe.com');
+  if (!mesaj) return;
+  const { error } = await sb.from('kafeler').update({ banner_mesaj: mesaj }).eq('id', kafeId);
+  if (error) { toast('❌ ' + error.message); return; }
+  const k = tumKafeler.find(x => x.id === kafeId);
+  if (k) k.banner_mesaj = mesaj;
+  toast('✓ Banner gönderildi — kullanıcı bir sonraki girişte görecek');
+}
+
 
 async function emailKaydet() {
   if (!seciliKafeId) return;
