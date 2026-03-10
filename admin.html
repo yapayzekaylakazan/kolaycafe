@@ -291,34 +291,22 @@
 
     <!-- PAKET TEST PANELİ -->
     <div class="test-panel">
-      <div class="test-panel-baslik">🧪 Paket Test Paneli</div>
-      <div class="test-panel-sub">Test kafeyi seçip paketi uygula → <a href="app/index.html" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:700;">app/index.html</a>'de giriş yap ve paketi test et.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;">
+        <div class="test-panel-baslik" style="margin-bottom:0;">🧪 Paket Test Paneli</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">TEST KAFESİ:</div>
+          <select id="test-kafe-sec" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;min-width:180px;">
+            <option value="">— Kafe seçin —</option>
+          </select>
+          <a href="app/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+            🚀 Uygulamayı Aç
+          </a>
+        </div>
+      </div>
+      <div class="test-panel-sub">Pakete tek tıkla → otomatik uygulanır → uygulama yeni sekmede açılır. Her paketi sırayla test edin.</div>
 
       <div class="test-paket-grid" id="test-paket-grid">
         <!-- JS ile doldurulacak -->
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">TEST KAFE</div>
-          <select id="test-kafe-sec" style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;min-width:200px;">
-            <option value="">— Kafe seçin —</option>
-          </select>
-        </div>
-        <div>
-          <div style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">SÜRE (GÜN)</div>
-          <input type="number" id="test-gun" class="test-gun-inp" value="30" min="1" max="365">
-        </div>
-        <div style="padding-top:18px;">
-          <button class="test-uygula-btn" id="test-uygula-btn" onclick="testPaketUygula()" disabled>
-            ▶ Paketi Uygula
-          </button>
-        </div>
-        <div style="padding-top:18px;">
-          <a href="app/index.html" target="_blank" style="display:inline-block;padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;text-decoration:none;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-            🚀 Uygulamayı Aç →
-          </a>
-        </div>
       </div>
       <div class="test-sonuc" id="test-sonuc"></div>
     </div>
@@ -398,81 +386,132 @@ const ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
 let tumKafeler = [];
 let aktifFiltre = 'hepsi';
 let seciliKafeId = null;
-let testSecilenPaket = '';
 
 const TEST_PAKETLER = [
-  { id:'deneme', isim:'🆓 Deneme',  fiyat:'0₺',   sure:'/10 gün', masa:6,  renk:'#4080f0', ozellik:'6 masa · Tüm Pro özellikler (test)' },
-  { id:'start',  isim:'🚀 Start',   fiyat:'299₺',  sure:'/ay',     masa:4,  renk:'#64748b', ozellik:'4 masa · Temel özellikler' },
-  { id:'grow',   isim:'🌱 Grow',    fiyat:'399₺',  sure:'/ay',     masa:6,  renk:'#22c55e', ozellik:'6 masa · Gelir/Gider · Mutfak' },
-  { id:'gold',   isim:'🥇 Gold',    fiyat:'499₺',  sure:'/ay',     masa:8,  renk:'#b8860b', ozellik:'8 masa · Stok · Reçete · Kupon' },
-  { id:'platin', isim:'💎 Platin',  fiyat:'599₺',  sure:'/ay',     masa:10, renk:'#1a6fb5', ozellik:'10 masa · BT Yazıcı · Hesap Bölme' },
-  { id:'ultra',  isim:'🚀 Ultra',   fiyat:'699₺',  sure:'/ay',     masa:12, renk:'#2d7a3a', ozellik:'12 masa · Platform Ent. · Yemeksepeti' },
-  { id:'elite',  isim:'👑 Elite',   fiyat:'799₺',  sure:'/ay',     masa:15, renk:'#ea580c', ozellik:'15 masa · Çoklu Şube · Özel Rapor' },
-  { id:'pro',    isim:'⭐ Pro',     fiyat:'899₺',  sure:'/ay',     masa:999,renk:'#7c3aed', ozellik:'20+ masa · Tüm Özellikler · API' },
+  {
+    id:'deneme', isim:'🆓 Deneme', fiyat:'0₺', sure:'/10 gün', masa:6, renk:'#4080f0',
+    ozellikler: ['6 masa','Tüm özellikler aktif (test)','Garson takibi','Raporlar','Gelir/Gider','Stok & Reçete','Kupon','Platform siparişi','Mutfak ekranı','BT Yazıcı','QR masa'],
+    yok: []
+  },
+  {
+    id:'start', isim:'🚀 Start', fiyat:'299₺', sure:'/ay', masa:4, renk:'#64748b',
+    ozellikler: ['4 masa','Garson takibi','Raporlar','Nakit/Kart/Cari/İkram','Online sipariş (QR)','WhatsApp fiş'],
+    yok: ['Gelir/Gider takibi','Stok & Reçete','Kupon','Bluetooth yazıcı','Platform siparişi','Mutfak ekranı']
+  },
+  {
+    id:'grow', isim:'🌱 Grow', fiyat:'399₺', sure:'/ay', masa:6, renk:'#22c55e',
+    ozellikler: ['6 masa','Garson takibi','Raporlar','Gelir/Gider takibi','Cari hesap','QR masa kodu','Platform siparişi','Mutfak ekranı'],
+    yok: ['Stok & Reçete','Kupon','Bluetooth yazıcı']
+  },
+  {
+    id:'gold', isim:'🥇 Gold', fiyat:'499₺', sure:'/ay', masa:8, renk:'#b8860b',
+    ozellikler: ['8 masa','Garson takibi','Raporlar','Gelir/Gider','Stok takibi','Reçete yönetimi','İndirim kuponu','Platform siparişi','Mutfak ekranı'],
+    yok: ['Bluetooth yazıcı','Hesap bölme']
+  },
+  {
+    id:'platin', isim:'💎 Platin', fiyat:'599₺', sure:'/ay', masa:10, renk:'#1a6fb5',
+    ozellikler: ['10 masa','Gold\'un tüm özellikleri','Bluetooth yazıcı','Hesap bölme','Masa transfer','Garson QR girişi','Müşteri menüsü QR'],
+    yok: ['Çoklu şube']
+  },
+  {
+    id:'ultra', isim:'🚀 Ultra', fiyat:'699₺', sure:'/ay', masa:12, renk:'#2d7a3a',
+    ozellikler: ['12 masa','Platin\'in tüm özellikleri','🟡 Yemeksepeti enteg.','🔴 Getir enteg.','🟠 Trendyol enteg.','🟢 Migros Yemek enteg.'],
+    yok: ['Çoklu şube']
+  },
+  {
+    id:'elite', isim:'👑 Elite', fiyat:'799₺', sure:'/ay', masa:15, renk:'#ea580c',
+    ozellikler: ['15 masa','Ultra\'nın tüm özellikleri','Çoklu şube desteği','Şube bazlı raporlama','Özelleştirilmiş raporlar','Öncelikli destek'],
+    yok: ['İndirimli termal yazıcı']
+  },
+  {
+    id:'pro', isim:'⭐ Pro', fiyat:'899₺', sure:'/ay', masa:999, renk:'#7c3aed',
+    ozellikler: ['20+ masa (sınırsız)','Elite\'in tüm özellikleri','Sınırsız garson','🖨️ İndirimli termal yazıcı','7/24 öncelikli destek','API erişimi'],
+    yok: []
+  },
 ];
+
+let testAktifPaket = '';
 
 function testPanelRender() {
   const grid = document.getElementById('test-paket-grid');
   grid.innerHTML = TEST_PAKETLER.map(p => `
-    <div class="test-paket-kart ${testSecilenPaket===p.id?'aktif-test':''}"
-         style="border-color:${testSecilenPaket===p.id?p.renk:'var(--border)'};"
-         onclick="testPaketSec('${p.id}')">
+    <div class="test-paket-kart ${testAktifPaket===p.id?'aktif-test':''}"
+         style="border-color:${testAktifPaket===p.id?p.renk:'var(--border)'};cursor:pointer;position:relative;"
+         onclick="testPaketTikla('${p.id}')">
+      ${testAktifPaket===p.id ? `<div style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:${p.renk};box-shadow:0 0 8px ${p.renk};"></div>` : ''}
       <div class="test-paket-isim" style="color:${p.renk};">${p.isim}</div>
       <div class="test-paket-fiyat" style="color:${p.renk};">${p.fiyat}</div>
-      <div class="test-paket-sure">${p.sure} · ${p.masa>=999?'Sınırsız':p.masa+' masa'}</div>
-      <div class="test-paket-ozellik">${p.ozellik}</div>
-      ${testSecilenPaket===p.id?`<div style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:${p.renk};box-shadow:0 0 6px ${p.renk};"></div>`:''}
+      <div class="test-paket-sure">${p.sure} · ${p.masa>=999?'Sınırsız masa':p.masa+' masa'}</div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">
+        ${p.ozellikler.map(o=>`<div style="font-size:0.68rem;color:#a0ffa0;font-weight:700;">✓ ${o}</div>`).join('')}
+        ${p.yok.map(o=>`<div style="font-size:0.68rem;color:#555;font-weight:700;text-decoration:line-through;">✗ ${o}</div>`).join('')}
+      </div>
+      ${testAktifPaket===p.id ? `<div style="margin-top:10px;padding:5px 8px;border-radius:6px;background:${p.renk}22;border:1px solid ${p.renk}55;font-size:0.68rem;color:${p.renk};font-weight:900;font-family:'Space Mono',monospace;text-align:center;">✓ AKTİF TEST PAKETİ</div>` : `<div style="margin-top:10px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;text-align:center;">Tıkla → Uygula</div>`}
     </div>
   `).join('');
 }
 
-function testPaketSec(id) {
-  testSecilenPaket = id;
-  testPanelRender();
-  const btn = document.getElementById('test-uygula-btn');
-  if (btn) btn.disabled = !id;
-}
-
-function testKafeListesiDoldur() {
-  const sel = document.getElementById('test-kafe-sec');
-  sel.innerHTML = '<option value="">— Kafe seçin —</option>';
-  tumKafeler.forEach(k => {
-    const opt = document.createElement('option');
-    opt.value = k.id;
-    opt.textContent = `${k.kafe_adi||'?'} (${k.plan||'deneme'}) — ${k.email||''}`;
-    sel.appendChild(opt);
-  });
-}
-
-async function testPaketUygula() {
+async function testPaketTikla(paketId) {
   const kafeId = document.getElementById('test-kafe-sec').value;
-  const gun = parseInt(document.getElementById('test-gun').value) || 30;
   const sonuc = document.getElementById('test-sonuc');
 
-  if (!kafeId) { sonuc.textContent = '⚠️ Kafe seçin!'; sonuc.className='test-sonuc err'; sonuc.style.display='block'; return; }
-  if (!testSecilenPaket) { sonuc.textContent = '⚠️ Paket seçin!'; sonuc.className='test-sonuc err'; sonuc.style.display='block'; return; }
+  if (!kafeId) {
+    sonuc.textContent = '⚠️ Önce üstten bir test kafesi seçin!';
+    sonuc.className = 'test-sonuc err';
+    sonuc.style.display = 'block';
+    // Kafe seç dropdown'ı vurgula
+    const sel = document.getElementById('test-kafe-sec');
+    sel.style.borderColor = 'var(--red)';
+    setTimeout(() => sel.style.borderColor = 'var(--border)', 2000);
+    return;
+  }
+
+  testAktifPaket = paketId;
+  testPanelRender();
+
+  const p = TEST_PAKETLER.find(x => x.id === paketId);
+  sonuc.textContent = `⏳ ${p.isim} paketi uygulanıyor...`;
+  sonuc.className = 'test-sonuc ok';
+  sonuc.style.display = 'block';
 
   const bitis = new Date();
-  bitis.setDate(bitis.getDate() + gun);
+  bitis.setDate(bitis.getDate() + 30);
 
   const { error } = await sb.from('kafeler').update({
-    plan: testSecilenPaket,
+    plan: paketId,
     plan_bitis: bitis.toISOString()
   }).eq('id', kafeId);
 
   if (error) {
     sonuc.textContent = '❌ Hata: ' + error.message;
     sonuc.className = 'test-sonuc err';
-  } else {
-    const p = TEST_PAKETLER.find(x => x.id === testSecilenPaket);
-    const kafe = tumKafeler.find(x => x.id === kafeId);
-    sonuc.textContent = `✓ ${kafe?.kafe_adi||'Kafe'} → ${p?.isim||testSecilenPaket} paketi uygulandı (${gun} gün). Uygulama yeni sekmede açılıyor...`;
-    sonuc.className = 'test-sonuc ok';
-    await yukle();
-    // Uygulamayı cache'siz yeni sekmede aç
-    setTimeout(() => window.open('app/index.html?t=' + Date.now(), '_blank'), 800);
+    return;
   }
-  sonuc.style.display = 'block';
+
+  const kafe = tumKafeler.find(x => x.id === kafeId);
+  sonuc.innerHTML = `✓ <strong>${kafe?.kafe_adi||'Kafe'}</strong> → <strong style="color:${p.renk}">${p.isim}</strong> (${p.masa>=999?'Sınırsız':p.masa} masa, 30 gün). Uygulama açılıyor...`;
+  await yukle();
+  setTimeout(() => window.open('app/index.html?t=' + Date.now(), '_blank'), 600);
+}
+
+function testKafeListesiDoldur() {
+  const sel = document.getElementById('test-kafe-sec');
+  const mevcutDeger = sel.value;
+  sel.innerHTML = '<option value="">— Test kafesi seçin —</option>';
+  // Kendi admin kafeni en üste koy
+  const adminKafe = tumKafeler.find(k => k.kafe_kodu === 'admin' || k.kafe_adi?.toLowerCase().includes('admin') || k.kafe_adi?.toLowerCase().includes('test'));
+  const diger = tumKafeler.filter(k => k !== adminKafe);
+  const sirali = adminKafe ? [adminKafe, ...diger] : diger;
+  sirali.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k.id;
+    const etiket = (k.kafe_adi?.toLowerCase().includes('admin') || k.kafe_adi?.toLowerCase().includes('test')) ? '🧪 ' : '';
+    opt.textContent = `${etiket}${k.kafe_adi||'?'} — ${k.plan||'deneme'}`;
+    sel.appendChild(opt);
+  });
+  if (mevcutDeger) sel.value = mevcutDeger;
+  // İlk admin/test kafesini otomatik seç
+  if (!sel.value && adminKafe) sel.value = adminKafe.id;
 }
 
 async function girisYap() {
