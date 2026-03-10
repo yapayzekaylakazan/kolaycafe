@@ -451,6 +451,26 @@ function sesToggle(){
 
 async function onlineDurumGuncelleMutfak(id, durum) {
   await sb.from('online_siparisler').update({durum}).eq('id', id);
+  
+  // Teslim edilince kolaycafenlar tablosuna da yaz (raporlama için)
+  if (durum === 'teslim' || durum === 'yolda') {
+    try {
+      const siparis = onlineSiparislerMutfak.find(s => s.id === id);
+      if (siparis && durum === 'yolda') {
+        await sb.from('kolaycafenlar').insert({
+          kafe_id: kafeId,
+          masa_no: 0,
+          masa_ad: '🌐 Online #' + siparis.siparis_no,
+          toplam: siparis.toplam || 0,
+          garson: '🌐 Online',
+          odeme_tipi: siparis.odeme_tipi || 'online',
+          siparisler: siparis.siparisler || [],
+          musteri_adi: siparis.musteri_ad || ''
+        });
+      }
+    } catch(e) { console.error('Kolaycafen yazma hatası:', e); }
+  }
+  
   await yukleOnline();
   render();
 }
