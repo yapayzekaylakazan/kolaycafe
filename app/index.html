@@ -497,6 +497,11 @@
       </div>
     </div>
     <button class="btn-kaydet" onclick="urunKaydet()">✓ Kaydet</button>
+
+    <!-- KATEGORİ YÖNETİMİ -->
+    <div style="margin-top:20px;margin-bottom:6px;font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📂 Kategoriler</div>
+    <div id="kat-yonetim-liste"></div>
+
     <div class="urun-listesi-baslik">Mevcut Ürünler</div>
     <div id="urun-listesi"></div>
   </div>
@@ -2248,7 +2253,7 @@ function sayfaGit(sayfa) {
   document.getElementById('nav-'+sayfa).classList.add('active');
   if (sayfa==='rapor') raporRender();
   if (sayfa==='recete') receteListeRender();
-  if (sayfa==='urun') urunListesiRender();
+  if (sayfa==='urun') { urunListesiRender(); katYonetimRender(); }
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
   if (sayfa==='stok') stokRender();
   if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
@@ -2442,65 +2447,63 @@ function katTabsRender() {
   const tabs = document.getElementById('cat-tabs');
   tabs.innerHTML='';
   Object.keys(URUNLER).forEach(kat=>{
-    const wrap=document.createElement('div');
-    wrap.style.cssText='position:relative;display:inline-flex;align-items:center;';
-
     const btn=document.createElement('button');
     btn.className='cat-tab'+(kat===mevcutKat?' active':'');
-    btn.style.paddingRight='42px';
     btn.textContent=kat;
     btn.addEventListener('click',()=>{mevcutKat=kat;katTabsRender();urunGridRender();});
-
-    // Düzenle butonu
-    const editBtn=document.createElement('button');
-    editBtn.innerHTML='✏️';
-    editBtn.title='Yeniden adlandır';
-    editBtn.style.cssText='position:absolute;right:24px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.8rem;padding:2px 4px;border-radius:4px;opacity:0.6;';
-    editBtn.addEventListener('click', e=>{
-      e.stopPropagation();
-      const yeniAd = prompt('Kategori adını değiştir:', kat);
-      if (!yeniAd || yeniAd.trim()===kat) return;
-      const temiz = yeniAd.trim();
-      if (URUNLER[temiz]) { toast('⚠️ Bu isimde kategori zaten var!'); return; }
-      // Anahtarı yeniden adlandır
-      const yeni = {};
-      Object.keys(URUNLER).forEach(k => { yeni[k===kat ? temiz : k] = URUNLER[k]; });
-      URUNLER = yeni;
-      if (mevcutKat===kat) mevcutKat=temiz;
-      katSelectDoldur();
-      katTabsRender();
-      urunGridRender();
-      bulutKaydet();
-      toast('✓ Kategori adı güncellendi');
-    });
-
-    // Sil butonu
-    const delBtn=document.createElement('button');
-    delBtn.innerHTML='✕';
-    delBtn.title='Kategoriyi sil';
-    delBtn.style.cssText='position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:0.75rem;padding:2px 3px;border-radius:4px;opacity:0.5;color:var(--danger);';
-    delBtn.addEventListener('click', e=>{
-      e.stopPropagation();
-      const urunSayisi = (URUNLER[kat]||[]).length;
-      const mesaj = urunSayisi > 0
-        ? `"${kat}" kategorisinde ${urunSayisi} ürün var. Kategori ve tüm ürünleri silinecek. Emin misiniz?`
-        : `"${kat}" kategorisi silinsin mi?`;
-      if (!confirm(mesaj)) return;
-      delete URUNLER[kat];
-      mevcutKat = Object.keys(URUNLER)[0] || '';
-      katSelectDoldur();
-      katTabsRender();
-      urunGridRender();
-      bulutKaydet();
-      toast('🗑 Kategori silindi');
-    });
-
-    btn.style.paddingRight='52px';
-    wrap.appendChild(btn);
-    wrap.appendChild(editBtn);
-    wrap.appendChild(delBtn);
-    tabs.appendChild(wrap);
+    tabs.appendChild(btn);
   });
+}
+
+// Ürün sayfasındaki kategori yönetim listesi
+function katYonetimRender() {
+  const el = document.getElementById('kat-yonetim-liste');
+  if (!el) return;
+  const katlar = Object.keys(URUNLER);
+  if (!katlar.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
+    return;
+  }
+  el.innerHTML = katlar.map(kat => {
+    const sayi = (URUNLER[kat]||[]).length;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface);border-radius:10px;margin-bottom:6px;">
+      <div>
+        <span style="font-weight:800;font-size:0.88rem;">${kat}</span>
+        <span style="font-size:0.72rem;color:var(--muted);margin-left:7px;">${sayi} ürün</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="katAdDegistir('${kat.replace(/'/g,"\\'")}')"
+          style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">✏️ Düzenle</button>
+        <button onclick="katSil('${kat.replace(/'/g,"\\'")}')"
+          style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">🗑 Sil</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function katAdDegistir(kat) {
+  const yeniAd = prompt('Kategori adını değiştir:', kat);
+  if (!yeniAd || yeniAd.trim()===kat) return;
+  const temiz = yeniAd.trim();
+  if (URUNLER[temiz]) { toast('⚠️ Bu isimde kategori zaten var!'); return; }
+  const yeni = {};
+  Object.keys(URUNLER).forEach(k => { yeni[k===kat ? temiz : k] = URUNLER[k]; });
+  URUNLER = yeni;
+  if (mevcutKat===kat) mevcutKat=temiz;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('✓ Kategori adı güncellendi');
+}
+
+function katSil(kat) {
+  const urunSayisi = (URUNLER[kat]||[]).length;
+  const mesaj = urunSayisi > 0
+    ? `"${kat}" kategorisinde ${urunSayisi} ürün var.\nKategori ve tüm ürünleri silinecek. Emin misiniz?`
+    : `"${kat}" kategorisi silinsin mi?`;
+  if (!confirm(mesaj)) return;
+  delete URUNLER[kat];
+  mevcutKat = Object.keys(URUNLER)[0] || '';
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('🗑 Kategori silindi');
 }
 
 function urunGridRender() {
@@ -2850,7 +2853,7 @@ function yeniKategoriEkle(){
   if(!isim||!isim.trim()) return;
   if(URUNLER[isim.trim()]){toast('Bu kategori zaten var!');return;}
   URUNLER[isim.trim()]=[];
-  katSelectDoldur(); document.getElementById('urun-kat').value=isim.trim(); katTabsRender(); bulutKaydet(); toast('✓ Kategori eklendi');
+  katSelectDoldur(); document.getElementById('urun-kat').value=isim.trim(); katTabsRender(); katYonetimRender(); bulutKaydet(); toast('✓ Kategori eklendi');
 }
 
 // Resim önizleme güncelle
@@ -2908,7 +2911,7 @@ function urunKaydet(){
   document.getElementById('urun-fiyat').value='';
   document.getElementById('urun-ikon').value='';
   urunResimSil();
-  urunListesiRender(); katTabsRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ "'+isim+'" eklendi');
+  urunListesiRender(); katTabsRender(); katYonetimRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ "'+isim+'" eklendi');
 }
 
 function urunListesiRender(){
