@@ -479,7 +479,27 @@
     <button class="btn-yeni-kat" onclick="yeniKategoriEkle()">+ Yeni Kategori Ekle</button>
     <div class="form-group"><label>Ürün Adı</label><input type="text" id="urun-adi" placeholder="Örn: Vişneli Soda"></div>
     <div class="form-group"><label>Fiyat (₺)</label><input type="number" id="urun-fiyat" placeholder="35" min="0" inputmode="numeric"></div>
-    <div class="form-group"><label>Emoji İkon</label><input type="text" id="urun-ikon" placeholder="🥤" maxlength="4"></div>
+    <div class="form-group">
+      <label>Emoji İkon</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div id="secili-emoji-goster" style="font-size:2rem;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:12px;border:1.5px solid var(--accent);">🥤</div>
+        <span style="font-size:0.8rem;color:var(--muted);">Aşağıdan seç veya yaz:</span>
+        <input type="text" id="urun-ikon" placeholder="🥤" maxlength="4"
+          style="width:60px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px;color:var(--text);font-size:1.2rem;text-align:center;outline:none;"
+          oninput="document.getElementById('secili-emoji-goster').textContent=this.value||'🥤'">
+      </div>
+      <!-- Kategori bazlı emoji seçici -->
+      <div id="emoji-picker-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <div style="display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none;">
+          <button class="epick-tab aktif" onclick="emojiTabSec(this,'icecek')" style="padding:8px 12px;border:none;background:transparent;color:var(--accent);font-size:0.75rem;font-weight:800;white-space:nowrap;cursor:pointer;border-bottom:2px solid var(--accent);">☕ İçecek</button>
+          <button class="epick-tab" onclick="emojiTabSec(this,'yiyecek')" style="padding:8px 12px;border:none;background:transparent;color:var(--muted);font-size:0.75rem;font-weight:800;white-space:nowrap;cursor:pointer;">🍕 Yiyecek</button>
+          <button class="epick-tab" onclick="emojiTabSec(this,'tatli')" style="padding:8px 12px;border:none;background:transparent;color:var(--muted);font-size:0.75rem;font-weight:800;white-space:nowrap;cursor:pointer;">🍰 Tatlı</button>
+          <button class="epick-tab" onclick="emojiTabSec(this,'meyve')" style="padding:8px 12px;border:none;background:transparent;color:var(--muted);font-size:0.75rem;font-weight:800;white-space:nowrap;cursor:pointer;">🍓 Meyve</button>
+          <button class="epick-tab" onclick="emojiTabSec(this,'diger')" style="padding:8px 12px;border:none;background:transparent;color:var(--muted);font-size:0.75rem;font-weight:800;white-space:nowrap;cursor:pointer;">✨ Diğer</button>
+        </div>
+        <div id="emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;padding:10px;max-height:160px;overflow-y:auto;"></div>
+      </div>
+    </div>
     <!-- Resim -->
     <div class="form-group">
       <label>Ürün Resmi (opsiyonel)</label>
@@ -1342,6 +1362,17 @@
       <div id="qr-masa-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
+    <!-- SADECE MENÜ QR -->
+    <div class="ayar-kart">
+      <h3>🍽️ Sadece Menü QR</h3>
+      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Müşteri bu QR'ı okutunca sadece menüyü görür — sipariş veremez. Vitrine, masaya veya kartvizite ekleyebilirsiniz.</p>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface3);border-radius:12px;padding:12px 14px;">
+        <span style="font-size:0.92rem;font-weight:700;flex:1;">📋 Dijital Menü</span>
+        <button onclick="menuQrGoster()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📷 QR Göster</button>
+        <button onclick="menuLinkKopyala()" style="padding:8px 14px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🔗 Link</button>
+      </div>
+    </div>
+
     <!-- KUPON YÖNETİMİ - Sadece Pro/Admin -->
     <div class="ayar-kart" id="kupon-yonetim-kart" style="display:none;">
       <h3>🎟️ İndirim Kuponları</h3>
@@ -2042,8 +2073,59 @@ async function kafeVerisiYukle() {
   } else {
     // İlk giriş, kafe verisi henüz yok
     const kkYeni = Math.random().toString(36).substring(2,8).toLowerCase();
-    const {data:yeni} = await sb.from('kafeler').insert({user_id: kullanici.id, kafe_adi: 'Kafem', plan:'deneme', plan_bitis: new Date(Date.now()+10*24*60*60*1000).toISOString(), garsonlar:['Ali','Ayşe'], kafe_kodu: kkYeni}).select().single();
-    if (yeni) { kafeId = yeni.id; garsonlar = ['Ali','Ayşe']; }
+    const _ornek_garsonlar = [
+      {id: Date.now()+1, isim:'Garson 1', pin:'12345', aktif:true},
+      {id: Date.now()+2, isim:'Garson 2', pin:'54321', aktif:true}
+    ];
+    const _ornek_urunler = {
+      "☕ Sıcak İçecekler": [
+        {isim:"Türk Kahvesi", fiyat:45, emoji:"☕", stok:null},
+        {isim:"Sütlü Kahve", fiyat:55, emoji:"☕", stok:null},
+        {isim:"Çay", fiyat:15, emoji:"🍵", stok:null},
+        {isim:"Bitki Çayı", fiyat:30, emoji:"🌿", stok:null},
+        {isim:"Nescafe", fiyat:50, emoji:"☕", stok:null},
+        {isim:"Salep", fiyat:55, emoji:"🥛", stok:null}
+      ],
+      "🥤 Soğuk İçecekler": [
+        {isim:"Soğuk Kahve", fiyat:65, emoji:"🧊", stok:null},
+        {isim:"Limonata", fiyat:50, emoji:"🍋", stok:null},
+        {isim:"Ayran", fiyat:25, emoji:"🥛", stok:null},
+        {isim:"Su", fiyat:10, emoji:"💧", stok:null},
+        {isim:"Meyve Suyu", fiyat:35, emoji:"🍊", stok:null}
+      ],
+      "🍰 Tatlılar": [
+        {isim:"Cheesecake", fiyat:90, emoji:"🍰", stok:null},
+        {isim:"Brownie", fiyat:75, emoji:"🍫", stok:null},
+        {isim:"Tiramisu", fiyat:95, emoji:"🍮", stok:null},
+        {isim:"Waffle", fiyat:110, emoji:"🧇", stok:null}
+      ],
+      "🥪 Atıştırmalık": [
+        {isim:"Tost", fiyat:70, emoji:"🥪", stok:null},
+        {isim:"Sandviç", fiyat:85, emoji:"🥖", stok:null},
+        {isim:"Kruvasan", fiyat:55, emoji:"🥐", stok:null},
+        {isim:"Kurabiye", fiyat:35, emoji:"🍪", stok:null}
+      ],
+      "🍽️ Yemekler": [
+        {isim:"Menemen", fiyat:95, emoji:"🍳", stok:null},
+        {isim:"Kahvaltı Tabağı", fiyat:150, emoji:"🍽️", stok:null},
+        {isim:"Omlet", fiyat:85, emoji:"🥚", stok:null}
+      ]
+    };
+    const {data:yeni} = await sb.from('kafeler').insert({
+      user_id: kullanici.id,
+      kafe_adi: 'Kafem',
+      plan: 'deneme',
+      plan_bitis: new Date(Date.now()+10*24*60*60*1000).toISOString(),
+      garsonlar: _ornek_garsonlar,
+      kafe_kodu: kkYeni,
+      urunler: _ornek_urunler
+    }).select().single();
+    if (yeni) {
+      kafeId = yeni.id;
+      garsonlar = _ornek_garsonlar;
+      URUNLER = _ornek_urunler;
+      toast('🎉 Hoş geldiniz! Örnek menü hazırlandı, düzenleyebilirsiniz.');
+    }
   }
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
   // Kafe kodu yoksa otomatik oluştur ve kaydet
@@ -2245,7 +2327,7 @@ function sayfaGit(sayfa) {
   document.getElementById('nav-'+sayfa).classList.add('active');
   if (sayfa==='rapor') raporRender();
   if (sayfa==='recete') receteListeRender();
-  if (sayfa==='urun') { urunListesiRender(); katYonetimRender(); }
+  if (sayfa==='urun') { urunListesiRender(); katYonetimRender(); setTimeout(()=>emojiGridRender('icecek'),50); }
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
   if (sayfa==='stok') stokRender();
   if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
@@ -2733,19 +2815,23 @@ function garsonSec(){
   if(!paket.garson){toast('Garson takibi bu pakette yok. Paketi yükseltin! 📦');sayfaGit('ayarlar');return;}
   const liste=document.getElementById('garson-liste-modal');
   liste.innerHTML='';
-  garsonlar.forEach(g=>{
+  // garsonlar hem string hem obje olabilir, normalize et
+  const aktifGarsonlar = garsonlar
+    .map(g => typeof g === 'string' ? g : (g.isim||''))
+    .filter(g => g && garsonlar.find(x=>(typeof x==='string'?x:x.isim)===g && (typeof x==='string' || x.aktif!==false)));
+  aktifGarsonlar.forEach(gIsim=>{
     const btn=document.createElement('button');
-    const secili=getMasa().garson===g;
+    const secili=getMasa().garson===gIsim;
     btn.style.cssText=`width:100%;padding:11px 13px;margin-bottom:6px;border-radius:10px;border:1.5px solid ${secili?'var(--accent2)':'var(--border)'};background:${secili?'var(--surface3)':'var(--surface2)'};color:${secili?'var(--accent2)':'var(--text)'};font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;text-align:left;display:flex;justify-content:space-between;`;
-    btn.innerHTML=`<span>👤 ${g}</span>${secili?'<span>✓</span>':''}`;
+    btn.innerHTML=`<span>👤 ${gIsim}</span>${secili?'<span>✓</span>':''}`;
     btn.addEventListener('click',()=>{
-      getMasa().garson=secili?'':g;
+      getMasa().garson=secili?'':gIsim;
       modalKapat('garson-modal'); kolaycafenGuncelle(); masalarRender();
-      toast(secili?'Garson kaldırıldı':'✓ Garson: '+g);
+      toast(secili?'Garson kaldırıldı':'✓ Garson: '+gIsim);
     });
     liste.appendChild(btn);
   });
-  if(garsonlar.length===0) liste.innerHTML='<p style="color:var(--muted);font-size:0.85rem;text-align:center;padding:12px;">Ayarlar\'dan garson ekleyin</p>';
+  if(aktifGarsonlar.length===0) liste.innerHTML='<p style="color:var(--muted);font-size:0.85rem;text-align:center;padding:12px;">Ayarlar\'dan garson ekleyin</p>';
   modalAc('garson-modal');
 }
 
@@ -2912,6 +2998,49 @@ async function urunResimYukle(input) {
   }
 }
 
+// ── EMOJİ PİCKER ─────────────────────────────────────
+const EMOJI_KATEGORILER = {
+  icecek: ['☕','🍵','🧋','🥤','🍶','🍺','🍻','🥂','🍷','🍸','🍹','🧃','🥛','💧','🧊','🫖','🍾','🍯'],
+  yiyecek: ['🍕','🍔','🥪','🌮','🌯','🥗','🍜','🍝','🍲','🥘','🍛','🍣','🍱','🥙','🧆','🥚','🍳','🥓','🥩','🍗','🍖','🌭','🥨','🧀','🥐','🍞','🥖','🫓','🧇','🥞','🧈'],
+  tatli: ['🍰','🎂','🧁','🍮','🍭','🍬','🍫','🍩','🍪','🥧','🍦','🍧','🍨','🍡','🧆','🍢','🍣','🍤','🫘','🍯'],
+  meyve: ['🍎','🍊','🍋','🍇','🍓','🫐','🍑','🍒','🥭','🍍','🥝','🍅','🫒','🥑','🍆','🥦','🥕','🌽','🍄','🫚'],
+  diger: ['⭐','✨','🔥','💎','👑','🎯','🎪','🌟','💫','🎁','🏆','🥇','🎨','🎭','🌈','❤️','💚','💛','🤍','🖤']
+};
+
+function emojiTabSec(btn, kat) {
+  document.querySelectorAll('.epick-tab').forEach(b => {
+    b.style.color = 'var(--muted)';
+    b.style.borderBottom = 'none';
+    b.classList.remove('aktif');
+  });
+  btn.style.color = 'var(--accent)';
+  btn.style.borderBottom = '2px solid var(--accent)';
+  btn.classList.add('aktif');
+  emojiGridRender(kat);
+}
+
+function emojiGridRender(kat) {
+  const grid = document.getElementById('emoji-grid');
+  if (!grid) return;
+  const emojiler = EMOJI_KATEGORILER[kat] || [];
+  grid.innerHTML = emojiler.map(e => `
+    <button onclick="emojiSec('${e}')" title="${e}"
+      style="font-size:1.4rem;padding:6px;border-radius:8px;border:none;background:transparent;cursor:pointer;transition:background 0.15s;line-height:1;"
+      onmouseover="this.style.background='var(--surface2)'"
+      onmouseout="this.style.background='transparent'">${e}</button>
+  `).join('');
+}
+
+function emojiSec(e) {
+  const inp = document.getElementById('urun-ikon');
+  const goster = document.getElementById('secili-emoji-goster');
+  if (inp) inp.value = e;
+  if (goster) goster.textContent = e;
+}
+
+// İlk yükleme
+setTimeout(() => emojiGridRender('icecek'), 100);
+
 function urunKaydet(){
   const kat=document.getElementById('urun-kat').value;
   const isim=document.getElementById('urun-adi').value.trim();
@@ -2924,6 +3053,8 @@ function urunKaydet(){
   document.getElementById('urun-adi').value='';
   document.getElementById('urun-fiyat').value='';
   document.getElementById('urun-ikon').value='';
+  const goster = document.getElementById('secili-emoji-goster');
+  if (goster) goster.textContent = '🥤';
   urunResimSil();
   urunListesiRender(); katTabsRender(); katYonetimRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ "'+isim+'" eklendi');
 }
@@ -5176,7 +5307,7 @@ async function yazdir(){
 // ════════════════════════════════════════
 // MODAL & UTILS
 // ════════════════════════════════════════
-function modalAc(id){document.getElementById(id).classList.add('ac');}
+function modalAc(id){const el=document.getElementById(id);if(!el)return;el.style.display='';el.classList.add('ac');}
 function modalKapat(id){
   const el = document.getElementById(id);
   if (!el) return;
@@ -6135,10 +6266,16 @@ window.gelAlKatSec = gelAlKatSec;
   const _params = new URLSearchParams(window.location.search);
   const _qrKafe = _params.get('kafe');
   const _qrMasa = _params.get('masa');
+  const _sadeceMenu = _params.get('sadece_menu');
   if (_qrKafe && _qrMasa) {
-    // Auth ekranını gizle, müşteri menüsünü aç
     document.getElementById('auth-screen').style.display = 'none';
     await musteriMenuAc(_qrKafe, _qrMasa);
+    return;
+  }
+  // Sadece menü modu — masa yok, sipariş yok
+  if (_qrKafe && _sadeceMenu === '1') {
+    document.getElementById('auth-screen').style.display = 'none';
+    await musteriMenuAc(_qrKafe, null, true);
     return;
   }
 
@@ -6227,25 +6364,28 @@ window.qrGoster = async function(masaNo, masaAd) {
   adDiv.textContent = adStr;
   acDiv.textContent = 'Garson okutunca masa açılır • Müşteri okutunca menüyü görür';
 
-  // QR URL: garson için masa parametreli link, müşteri için menü
   const baseUrl = window.location.origin + window.location.pathname;
   const masaNoInt = parseInt(masaNo) || masaNo;
   const qrUrl = `${baseUrl}?kafe=${kafeId}&masa=${masaNoInt}`;
-  console.log('QR URL:', qrUrl, 'masaNo:', masaNo, 'kafeId:', kafeId);
 
   modal.style.display = 'flex';
   modal.classList.add('ac');
 
-  // Canvas temizle
+  // Önceki QR'ı temizle
+  const qrContainer = document.getElementById('qr-render-container');
+  if (qrContainer) {
+    qrContainer.innerHTML = '';
+  } else {
+    const div = document.createElement('div');
+    div.id = 'qr-render-container';
+    div.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(div);
+  }
   canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  
-  // qrcodejs ile QR oluştur - div içinde render edip canvas'a kopyala
+
   try {
-    const tempDiv = document.createElement('div');
-    tempDiv.style.display = 'none';
-    document.body.appendChild(tempDiv);
-    
-    new QRCode(tempDiv, {
+    const container = document.getElementById('qr-render-container');
+    const qr = new QRCode(container, {
       text: qrUrl,
       width: 220,
       height: 220,
@@ -6253,29 +6393,85 @@ window.qrGoster = async function(masaNo, masaAd) {
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
-    
-    // QR oluşunca img'yi canvas'a kopyala
-    setTimeout(() => {
-      const img = tempDiv.querySelector('img');
-      if (img) {
+
+    // img yüklenince canvas'a çiz
+    const tryDraw = (attempts) => {
+      const img = container.querySelector('img');
+      if (img && img.complete && img.naturalWidth > 0) {
         canvas.width = 220;
         canvas.height = 220;
-        const ctx = canvas.getContext('2d');
-        const image = new Image();
-        image.onload = () => ctx.drawImage(image, 0, 0, 220, 220);
-        image.src = img.src;
+        canvas.getContext('2d').drawImage(img, 0, 0, 220, 220);
+      } else if (img) {
+        img.onload = () => {
+          canvas.width = 220;
+          canvas.height = 220;
+          canvas.getContext('2d').drawImage(img, 0, 0, 220, 220);
+        };
+      } else if (attempts > 0) {
+        setTimeout(() => tryDraw(attempts - 1), 80);
       }
-      document.body.removeChild(tempDiv);
-    }, 100);
+    };
+    setTimeout(() => tryDraw(10), 80);
+
   } catch(e) {
     toast('QR oluşturulamadı: ' + e.message);
   }
 
-  // PDF indir butonu
   document.getElementById('btn-qr-indir').onclick = function() {
     qrPdfIndir(masaNo, adStr, canvas);
   };
 };
+
+function menuQrGoster() {
+  if (!kafeId) { toast('Önce giriş yapın'); return; }
+  const baseUrl = window.location.origin + window.location.pathname;
+  const qrUrl = `${baseUrl}?kafe=${kafeId}&sadece_menu=1`;
+
+  const modal = document.getElementById('qr-modal');
+  const canvas = document.getElementById('qr-canvas');
+  document.getElementById('qr-modal-baslik').textContent = '🍽️ Dijital Menü QR';
+  document.getElementById('qr-masa-adi').textContent = 'Sadece Menü — Sipariş Yok';
+  document.getElementById('qr-aciklama').textContent = 'Müşteri bu QR\'ı okutunca sadece menüyü görür, sipariş veremez';
+
+  modal.style.display = 'flex';
+  modal.classList.add('ac');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+  const container = document.getElementById('qr-render-container') || (() => {
+    const d = document.createElement('div');
+    d.id = 'qr-render-container';
+    d.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(d);
+    return d;
+  })();
+  container.innerHTML = '';
+
+  new QRCode(container, {
+    text: qrUrl, width: 220, height: 220,
+    colorDark: '#1a1200', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  const tryDraw = (n) => {
+    const img = container.querySelector('img');
+    if (img && img.complete && img.naturalWidth > 0) {
+      canvas.width = 220; canvas.height = 220;
+      canvas.getContext('2d').drawImage(img, 0, 0, 220, 220);
+    } else if (img) {
+      img.onload = () => { canvas.width=220;canvas.height=220;canvas.getContext('2d').drawImage(img,0,0,220,220); };
+    } else if (n > 0) setTimeout(() => tryDraw(n-1), 80);
+  };
+  setTimeout(() => tryDraw(10), 80);
+
+  document.getElementById('btn-qr-indir').onclick = () => qrPdfIndir('menu', 'Dijital Menü', canvas);
+}
+
+function menuLinkKopyala() {
+  if (!kafeId) { toast('Önce giriş yapın'); return; }
+  const baseUrl = window.location.origin + window.location.pathname;
+  const link = `${baseUrl}?kafe=${kafeId}&sadece_menu=1`;
+  navigator.clipboard.writeText(link).then(() => toast('✓ Menü linki kopyalandı!')).catch(() => toast('Link: ' + link));
+}
 
 function qrPdfIndir(masaNo, masaAd, canvas) {
   const dataUrl = canvas.toDataURL('image/png');
@@ -6331,11 +6527,11 @@ function qrMasaListeRender() {
 // ════════════════════════════════
 // mm değişkenleri yukarıda tanımlandı
 
-async function musteriMenuAc(kafeId, masaNo) {
+async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false) {
   mmKafeId = kafeId;
   const masaNoInt = parseInt(masaNo);
   mmMasaNo = isNaN(masaNoInt) ? masaNo : masaNoInt;
-  mmMasaAdi = 'Masa ' + mmMasaNo;
+  mmMasaAdi = sadeceMenu ? '' : ('Masa ' + mmMasaNo);
 
   document.getElementById('auth-screen').style.display = 'none';
   const mm = document.getElementById('musteri-menu');
@@ -6354,12 +6550,31 @@ async function musteriMenuAc(kafeId, masaNo) {
   mmKafeAdi = data.kafe_adi || 'Cafe';
   mmUrunler = data.urunler || {};
 
-  const kayitliMasalar = data.masalar || [];
-  const masa = kayitliMasalar.find(m => Number(m.id) === mmMasaNo || String(m.id) === String(mmMasaNo));
-  mmMasaAdi = (masa && masa.ad) ? masa.ad : 'Masa ' + mmMasaNo;
+  if (!sadeceMenu) {
+    const kayitliMasalar = data.masalar || [];
+    const masa = kayitliMasalar.find(m => Number(m.id) === mmMasaNo || String(m.id) === String(mmMasaNo));
+    mmMasaAdi = (masa && masa.ad) ? masa.ad : 'Masa ' + mmMasaNo;
+  }
 
   document.getElementById('mm-kafe-adi').textContent = '☕ ' + mmKafeAdi;
-  document.getElementById('mm-masa-adi').textContent = '📍 ' + mmMasaAdi;
+
+  if (sadeceMenu) {
+    // Sadece menü — masa adı gizle, sipariş butonu gizle, sepet gizle
+    document.getElementById('mm-masa-adi').textContent = '🍽️ Dijital Menü';
+    document.getElementById('mm-masa-adi').style.color = 'var(--accent)';
+    const siparisBtn = document.getElementById('mm-siparis-btn');
+    if (siparisBtn) siparisBtn.parentElement.style.display = 'none';
+    const sepetBtn = document.querySelector('[onclick="mmSepetAc()"]');
+    if (sepetBtn) sepetBtn.style.display = 'none';
+    // Sepet ikonu de gizle
+    const mmSepetIkon = document.getElementById('mm-sepet-ikon');
+    if (mmSepetIkon) mmSepetIkon.style.display = 'none';
+    // Ürünlere + butonu gizle — sadece göster
+    window._sadeceMenuModu = true;
+  } else {
+    window._sadeceMenuModu = false;
+    document.getElementById('mm-masa-adi').textContent = '📍 ' + mmMasaAdi;
+  }
 
   mmKategoriRender();
   mmUrunRender(Object.keys(mmUrunler)[0]);
@@ -6399,6 +6614,7 @@ function mmUrunRender(kat) {
     const ikonEsc = (u.ikon||'🍽').replace(/'/g, "\\'");
     const resimEsc = resim.replace(/'/g, "\\'");
     const azalt = adet > 0 ? `<button onclick="mmAdetDusur('${isimEsc}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface3);color:var(--text);font-size:1.2rem;cursor:pointer;font-weight:900;">−</button><span style="font-weight:900;font-size:1rem;min-width:20px;text-align:center;">${adet}</span>` : '';
+    const sepetBtns = window._sadeceMenuModu ? '' : `<div style="display:flex;align-items:center;gap:8px;">${azalt}<button onclick="mmAdetArtir('${isimEsc}',${u.fiyat},'${ikonEsc}','${resimEsc}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button></div>`;
     if (resim) {
       card.style.cssText = 'background:var(--surface2);border-radius:16px;margin-bottom:12px;overflow:hidden;';
       card.innerHTML = `
@@ -6410,10 +6626,7 @@ function mmUrunRender(kat) {
             <div style="font-weight:800;font-size:0.95rem;">${u.isim}</div>
             <div style="color:var(--accent2);font-weight:900;font-size:1rem;margin-top:2px;">${u.fiyat}₺</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${azalt}
-            <button onclick="mmAdetArtir('${isimEsc}',${u.fiyat},'${ikonEsc}','${resimEsc}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button>
-          </div>
+          ${sepetBtns}
         </div>`;
     } else {
       card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;';
@@ -6425,10 +6638,7 @@ function mmUrunRender(kat) {
             <div style="color:var(--accent2);font-weight:900;font-size:1rem;margin-top:2px;">${u.fiyat}₺</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${azalt}
-          <button onclick="mmAdetArtir('${isimEsc}',${u.fiyat},'${ikonEsc}','')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button>
-        </div>`;
+        ${window._sadeceMenuModu ? '' : `<div style="display:flex;align-items:center;gap:8px;">${azalt}<button onclick="mmAdetArtir('${isimEsc}',${u.fiyat},'${ikonEsc}','')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent);color:var(--bg);font-size:1.2rem;cursor:pointer;font-weight:900;">+</button></div>`}`;
     }
     liste.appendChild(card);
   });
