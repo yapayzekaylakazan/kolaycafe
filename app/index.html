@@ -254,120 +254,134 @@
 <!-- YENİ MÜŞTERİ MENÜSÜ -->
 <style>
   #musteri-menu * { box-sizing: border-box; }
+
+  /* HERO BANNER */
   #mm-hero {
-    position: relative;
-    min-height: 160px;
+    position: relative; min-height: 140px;
     background: linear-gradient(135deg, #d4960e 0%, #f0b830 100%);
     display: flex; flex-direction: column;
     align-items: center; justify-content: flex-end;
-    padding-bottom: 20px;
-    overflow: hidden;
+    padding-bottom: 18px; overflow: hidden;
   }
   #mm-hero::before {
     content: ''; position: absolute; inset: 0;
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.3);
   }
   #mm-hero-bg {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
-    opacity: 0.35;
-    transition: opacity 0.5s;
+    opacity: 0.35; transition: opacity 0.5s;
   }
   #mm-logo-wrap {
     position: relative; z-index: 2;
-    width: 72px; height: 72px; border-radius: 18px;
+    width: 64px; height: 64px; border-radius: 16px;
     background: white; display: flex; align-items: center; justify-content: center;
-    font-size: 2.2rem; margin-bottom: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    overflow: hidden;
+    font-size: 2rem; margin-bottom: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3); overflow: hidden;
   }
   #mm-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
   #mm-hero-kafe-adi {
     position: relative; z-index: 2;
     font-family: 'Playfair Display', serif;
-    font-size: 1.4rem; font-weight: 900;
+    font-size: 1.3rem; font-weight: 900;
     color: #fff; text-align: center;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    margin: 0 16px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4); margin: 0 16px;
   }
   #mm-hero-masa {
     position: relative; z-index: 2;
-    font-size: 0.78rem; font-weight: 800;
+    font-size: 0.75rem; font-weight: 800;
     color: rgba(255,255,255,0.85);
-    margin-top: 4px; letter-spacing: 0.5px;
+    margin-top: 3px; letter-spacing: 0.5px;
   }
+
+  /* KATEGORİ TABS - sticky */
   #mm-sticky-header {
     position: sticky; top: 0; z-index: 100;
     background: #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
   }
   #mm-kategori-tabs {
-    display: flex; gap: 8px; padding: 10px 14px;
+    display: flex; gap: 6px; padding: 10px 12px;
     overflow-x: auto; scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
   #mm-kategori-tabs::-webkit-scrollbar { display: none; }
   .mm-tab-btn {
-    white-space: nowrap; padding: 8px 18px;
-    border-radius: 50px; border: 2px solid #eee;
+    white-space: nowrap; padding: 7px 16px;
+    border-radius: 50px; border: 2px solid #e8e8e8;
     font-family: 'Nunito', sans-serif; font-weight: 800;
-    font-size: 0.82rem; cursor: pointer;
-    transition: all 0.2s; background: #f5f5f5;
-    color: #555; flex-shrink: 0;
+    font-size: 0.8rem; cursor: pointer;
+    transition: all 0.18s; background: #f7f7f7;
+    color: #666; flex-shrink: 0;
   }
   .mm-tab-btn.aktif {
     background: var(--mm-renk, #d4960e);
     border-color: var(--mm-renk, #d4960e);
     color: #fff;
   }
+
+  /* ÜRÜN LİSTESİ - yatay liste (menu-online tarzı) */
   #mm-urun-liste {
-    padding: 14px 12px 100px;
-    background: #f5f5f5;
-    min-height: calc(100vh - 280px);
+    padding: 8px 0 100px;
+    background: #fff;
+    min-height: calc(100vh - 240px);
   }
-  .mm-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  }
+  #mm-grid { display: flex; flex-direction: column; }
+
   .mm-urun-kart {
-    background: #fff; border-radius: 16px;
-    overflow: hidden; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    transition: transform 0.15s, box-shadow 0.15s;
-    position: relative;
+    display: flex; align-items: center;
+    padding: 12px 16px; gap: 14px;
+    cursor: pointer; background: #fff;
+    border-bottom: 1px solid #f2f2f2;
+    transition: background 0.12s;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
   }
-  .mm-urun-kart:active { transform: scale(0.97); }
+  .mm-urun-kart:active { background: #fafafa; }
+
+  /* Sol kare resim */
+  .mm-urun-gorsel {
+    width: 80px; height: 80px; border-radius: 12px;
+    overflow: hidden; flex-shrink: 0;
+    background: #f5f5f5;
+  }
   .mm-urun-img {
-    width: 100%; aspect-ratio: 1/1;
+    width: 100%; height: 100%;
     object-fit: cover; display: block;
-    background: #f0f0f0;
   }
   .mm-urun-emoji-box {
-    width: 100%; aspect-ratio: 1/1;
+    width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 3rem; background: #fafafa;
+    font-size: 2.2rem; background: #fafafa;
   }
-  .mm-urun-info { padding: 10px 10px 12px; }
+
+  /* Sağ metin */
+  .mm-urun-bilgi { flex: 1; min-width: 0; }
   .mm-urun-isim {
     font-family: 'Nunito', sans-serif; font-weight: 800;
-    font-size: 0.88rem; color: #1a1a1a; margin-bottom: 6px;
-    line-height: 1.3;
+    font-size: 0.95rem; color: #1a1a1a;
+    margin-bottom: 4px; line-height: 1.3;
+  }
+  .mm-urun-aciklama {
+    font-size: 0.78rem; color: #999;
+    line-height: 1.4; margin-bottom: 6px;
     display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical; overflow: hidden;
   }
   .mm-urun-fiyat {
     font-family: 'Nunito', sans-serif; font-weight: 900;
-    font-size: 1rem; color: var(--mm-renk, #d4960e);
+    font-size: 0.95rem; color: var(--mm-renk, #d4960e);
   }
   .mm-urun-adet-badge {
-    position: absolute; top: 8px; right: 8px;
+    position: absolute; top: 10px; right: 16px;
     background: var(--mm-renk, #d4960e);
     color: #fff; border-radius: 50%;
-    width: 24px; height: 24px;
-    font-size: 0.78rem; font-weight: 900;
+    width: 22px; height: 22px;
+    font-size: 0.75rem; font-weight: 900;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
+
   /* Slide-up ürün detay paneli */
   #mm-detay-overlay {
     display: none; position: fixed; inset: 0;
@@ -376,41 +390,30 @@
   }
   #mm-detay-panel {
     background: #fff; border-radius: 24px 24px 0 0;
-    width: 100%; max-height: 90vh; overflow-y: auto;
+    width: 100%; max-height: 88vh; overflow-y: auto;
     transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.34,1.2,0.64,1);
+    transition: transform 0.32s cubic-bezier(0.34,1.1,0.64,1);
   }
   #mm-detay-panel.acik { transform: translateY(0); }
-  #mm-detay-hero {
-    width: 100%; height: 220px;
-    object-fit: cover; display: block;
-    background: #f0f0f0;
-  }
-  #mm-detay-emoji {
-    width: 100%; height: 180px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 5rem; background: #fafafa;
-  }
   #mm-detay-icerik { padding: 20px 20px 8px; }
   #mm-detay-isim {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.4rem; font-weight: 900; color: #1a1a1a;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.25rem; font-weight: 900; color: #1a1a1a;
     margin: 0 0 6px;
   }
   #mm-detay-aciklama {
-    font-size: 0.88rem; color: #777; line-height: 1.5;
+    font-size: 0.85rem; color: #888; line-height: 1.5;
     margin-bottom: 12px;
   }
   #mm-detay-fiyat {
-    font-size: 1.5rem; font-weight: 900;
+    font-size: 1.4rem; font-weight: 900;
     color: var(--mm-renk, #d4960e); margin-bottom: 16px;
   }
-  #mm-detay-varyantlar { margin-bottom: 16px; }
   .mm-varyant-baslik {
-    font-size: 0.82rem; font-weight: 800; color: #555;
+    font-size: 0.78rem; font-weight: 800; color: #666;
     margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .mm-varyant-liste { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mm-varyant-liste { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .mm-varyant-btn {
     padding: 8px 16px; border-radius: 50px;
     border: 2px solid #eee; background: #f9f9f9;
@@ -420,78 +423,66 @@
   }
   .mm-varyant-btn.secili {
     background: var(--mm-renk, #d4960e);
-    border-color: var(--mm-renk, #d4960e);
-    color: #fff;
-  }
-  #mm-detay-adet-row {
-    display: flex; align-items: center; gap: 16px;
-    margin-bottom: 16px;
+    border-color: var(--mm-renk, #d4960e); color: #fff;
   }
   .mm-adet-btn {
-    width: 40px; height: 40px; border-radius: 50%;
+    width: 38px; height: 38px; border-radius: 50%;
     border: 2px solid #eee; background: #f5f5f5;
-    font-size: 1.3rem; font-weight: 900; cursor: pointer;
+    font-size: 1.2rem; font-weight: 900; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     color: #333; transition: all 0.15s;
   }
   .mm-adet-btn.ekle {
     background: var(--mm-renk, #d4960e);
     border-color: var(--mm-renk, #d4960e); color: #fff;
-    width: 44px; height: 44px;
-  }
-  #mm-detay-adet-sayi {
-    font-size: 1.2rem; font-weight: 900; min-width: 32px;
-    text-align: center; color: #1a1a1a;
+    width: 42px; height: 42px;
   }
   #mm-detay-ekle-btn {
-    width: 100%; padding: 16px; border-radius: 16px;
+    width: 100%; padding: 15px; border-radius: 14px;
     border: none; background: var(--mm-renk, #d4960e);
     color: #fff; font-family: 'Nunito', sans-serif;
     font-weight: 900; font-size: 1rem; cursor: pointer;
-    margin-bottom: 8px;
-    transition: opacity 0.15s;
+    margin-bottom: 8px; transition: opacity 0.15s;
   }
   #mm-detay-ekle-btn:active { opacity: 0.85; }
   #mm-detay-kapat {
-    position: absolute; top: 14px; left: 14px;
-    width: 36px; height: 36px; border-radius: 50%;
-    background: rgba(255,255,255,0.9); border: none;
-    font-size: 1.1rem; cursor: pointer; z-index: 10;
+    position: absolute; top: 12px; left: 12px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(0,0,0,0.08); border: none;
+    font-size: 1rem; cursor: pointer; z-index: 10;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
+
   /* Alt sepet bar */
   #mm-sepet-bar {
     position: fixed; bottom: 0; left: 0; right: 0;
-    padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
     background: #fff; border-top: 1px solid #eee;
     z-index: 500; display: none;
   }
   #mm-sepet-ac-btn {
-    width: 100%; padding: 14px 20px;
-    border-radius: 16px; border: none;
+    width: 100%; padding: 13px 20px;
+    border-radius: 14px; border: none;
     background: var(--mm-renk, #d4960e);
     color: #fff; font-family: 'Nunito', sans-serif;
-    font-weight: 900; font-size: 1rem; cursor: pointer;
+    font-weight: 900; font-size: 0.95rem; cursor: pointer;
     display: flex; align-items: center; justify-content: space-between;
   }
+
+  /* Garson bar */
+  #mm-garson-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: #fff; border-top: 1px solid #eee; z-index: 499;
+  }
+
   /* Sepet modal */
   #mm-sepet-modal {
     display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6); z-index: 9000;
+    background: rgba(0,0,0,0.55); z-index: 9000;
     align-items: flex-end;
-  }
-  #mm-sepet-icerik {
-    background: #fff; border-radius: 24px 24px 0 0;
-    padding: 20px; width: 100%;
-    max-height: 85vh; overflow-y: auto;
-  }
-  /* Garson çağır sticky */
-  #mm-garson-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom));
-    background: #fff; border-top: 1px solid #eee;
-    z-index: 499;
   }
 </style>
 
@@ -534,23 +525,35 @@
 <!-- Ürün Detay Slide-up Panel -->
 <div id="mm-detay-overlay" onclick="mmDetayKapat(event)">
   <div id="mm-detay-panel">
-    <div style="position:relative;">
-      <button id="mm-detay-kapat" onclick="mmDetayKapat()">←</button>
-      <img id="mm-detay-hero-img" src="" alt="" style="width:100%;height:220px;object-fit:cover;display:none;">
-      <div id="mm-detay-emoji-box" style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:5rem;background:#fafafa;display:none;"></div>
+    <!-- Drag handle -->
+    <div style="display:flex;justify-content:center;padding:10px 0 4px;">
+      <div style="width:36px;height:4px;border-radius:2px;background:#ddd;"></div>
     </div>
-    <div id="mm-detay-icerik">
-      <h2 id="mm-detay-isim" style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:900;color:#1a1a1a;margin:0 0 6px;"></h2>
-      <p id="mm-detay-aciklama" style="font-size:0.85rem;color:#888;line-height:1.5;margin:0 0 10px;display:none;"></p>
-      <div id="mm-detay-fiyat" style="font-size:1.4rem;font-weight:900;color:var(--mm-renk,#d4960e);margin-bottom:16px;"></div>
+    <!-- Üst kısım: resim + isim + fiyat yan yana -->
+    <div style="display:flex;gap:14px;padding:12px 18px 14px;border-bottom:1px solid #f2f2f2;position:relative;">
+      <button id="mm-detay-kapat" onclick="mmDetayKapat()" style="position:absolute;top:10px;right:14px;width:30px;height:30px;border-radius:50%;background:#f2f2f2;border:none;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;">✕</button>
+      <!-- Görsel -->
+      <div id="mm-detay-gorsel-wrap" style="width:90px;height:90px;border-radius:14px;overflow:hidden;flex-shrink:0;background:#f5f5f5;">
+        <img id="mm-detay-hero-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+        <div id="mm-detay-emoji-box" style="width:100%;height:100%;display:none;align-items:center;justify-content:center;font-size:2.8rem;"></div>
+      </div>
+      <!-- İsim & fiyat -->
+      <div style="flex:1;padding-right:32px;">
+        <h2 id="mm-detay-isim" style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;color:#1a1a1a;margin:0 0 4px;line-height:1.3;"></h2>
+        <p id="mm-detay-aciklama" style="font-size:0.78rem;color:#999;line-height:1.4;margin:0 0 8px;display:none;"></p>
+        <div id="mm-detay-fiyat" style="font-size:1.2rem;font-weight:900;color:var(--mm-renk,#d4960e);"></div>
+      </div>
+    </div>
+    <div id="mm-detay-icerik" style="padding:16px 18px 8px;">
       <div id="mm-detay-varyantlar"></div>
       <div id="mm-detay-adet-row" style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
         <button class="mm-adet-btn" onclick="mmDetayAdet(-1)">−</button>
-        <span id="mm-detay-adet-sayi" style="font-size:1.2rem;font-weight:900;min-width:32px;text-align:center;">1</span>
+        <span id="mm-detay-adet-sayi" style="font-size:1.1rem;font-weight:900;min-width:28px;text-align:center;">1</span>
         <button class="mm-adet-btn ekle" onclick="mmDetayAdet(1)">+</button>
+        <span style="font-size:0.82rem;color:#aaa;font-weight:600;">adet</span>
       </div>
       <button id="mm-detay-ekle-btn" onclick="mmDetaySepeteEkle()">🛒 Sepete Ekle</button>
-      <div style="height:8px;"></div>
+      <div style="height:10px;"></div>
     </div>
   </div>
 </div>
@@ -760,6 +763,7 @@
     <button class="btn-yeni-kat" onclick="yeniKategoriEkle()">+ Yeni Kategori Ekle</button>
     <div class="form-group"><label>Ürün Adı</label><input type="text" id="urun-adi" placeholder="Örn: Vişneli Soda"></div>
     <div class="form-group"><label>Fiyat (₺)</label><input type="number" id="urun-fiyat" placeholder="35" min="0" inputmode="numeric"></div>
+    <div class="form-group"><label>Açıklama <span style="font-size:0.72rem;color:var(--muted);font-weight:600;">(QR menüde görünür, isteğe bağlı)</span></label><textarea id="urun-aciklama" placeholder="Örn: Taze çekilmiş, sütlü veya sade..." style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;resize:none;height:64px;outline:none;"></textarea></div>
     <div class="form-group">
       <label>Emoji İkon</label>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -3461,12 +3465,15 @@ function urunKaydet(){
   const fiyat=parseFloat(document.getElementById('urun-fiyat').value);
   const ikon=document.getElementById('urun-ikon').value.trim()||'🥤';
   const resim=document.getElementById('urun-resim-url').value.trim()||null;
+  const aciklamaEl=document.getElementById('urun-aciklama');
+  const aciklama=(aciklamaEl?aciklamaEl.value.trim():'')||null;
   if(!isim){toast('Ürün adı girin!');return;}
   if(isNaN(fiyat)||fiyat<0){toast('Geçerli fiyat girin!');return;}
-  URUNLER[kat].push({isim,fiyat,ikon,resim});
+  URUNLER[kat].push({isim,fiyat,ikon,resim,aciklama});
   document.getElementById('urun-adi').value='';
   document.getElementById('urun-fiyat').value='';
   document.getElementById('urun-ikon').value='';
+  if(aciklamaEl) aciklamaEl.value='';
   const goster = document.getElementById('secili-emoji-goster');
   if (goster) goster.textContent = '🥤';
   urunResimSil();
@@ -7110,7 +7117,7 @@ function mmUrunRender(kat) {
   grid.innerHTML = '';
   const urunler = (mmUrunler[kat] || []).filter(u => u.aktif !== false);
   if (urunler.length === 0) {
-    grid.innerHTML = '<p style="color:#aaa;text-align:center;padding:24px;grid-column:1/-1;">Bu kategoride ürün yok</p>';
+    grid.innerHTML = '<p style="color:#aaa;text-align:center;padding:32px 16px;">Bu kategoride ürün yok</p>';
     return;
   }
   urunler.forEach(u => {
@@ -7118,17 +7125,25 @@ function mmUrunRender(kat) {
     const adet = sepetItem ? sepetItem.adet : 0;
     const card = document.createElement('div');
     card.className = 'mm-urun-kart';
-    const isimEsc = (u.isim || '').replace(/"/g, '&quot;').replace(/'/g, "\'");
-    const ikonEsc = (u.ikon || '🍽').replace(/'/g, "\'");
-    const resimEsc = (u.resim || '').replace(/'/g, "\'");
-    const gorsel = u.resim
-      ? `<img class="mm-urun-img" src="${u.resim}" alt="${u.isim}" onerror="this.parentElement.querySelector('.mm-urun-emoji-box').style.display='flex';this.style.display='none'"><div class="mm-urun-emoji-box" style="display:none">${u.ikon || '🍽'}</div>`
-      : `<div class="mm-urun-emoji-box">${u.ikon || '🍽'}</div>`;
-    const adetBadge = adet > 0 ? `<div class="mm-urun-adet-badge">${adet}</div>` : '';
+
+    // Görsel: resim varsa img, yoksa emoji kutusu
+    const gorselHTML = u.resim
+      ? `<div class="mm-urun-gorsel"><img class="mm-urun-img" src="${u.resim}" alt="${u.isim}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="mm-urun-emoji-box" style="display:none">${u.ikon||'🍽'}</div></div>`
+      : `<div class="mm-urun-gorsel"><div class="mm-urun-emoji-box">${u.ikon||'🍽'}</div></div>`;
+
+    const aciklamaHTML = u.aciklama
+      ? `<div class="mm-urun-aciklama">${u.aciklama}</div>`
+      : '';
+
+    const adetBadge = adet > 0
+      ? `<div class="mm-urun-adet-badge">${adet}</div>`
+      : '';
+
     card.innerHTML = `
-      ${gorsel}
-      <div class="mm-urun-info">
+      ${gorselHTML}
+      <div class="mm-urun-bilgi">
         <div class="mm-urun-isim">${u.isim}</div>
+        ${aciklamaHTML}
         <div class="mm-urun-fiyat">${u.fiyat}₺</div>
       </div>
       ${adetBadge}`;
@@ -7154,6 +7169,10 @@ function mmDetayAc(urun) {
     emojiBox.textContent = urun.ikon || '🍽';
     emojiBox.style.display = 'flex';
     img.style.display = 'none';
+  }
+  // Emoji box display fix
+  if (emojiBox.style.display === 'flex') {
+    emojiBox.style.display = 'flex';
   }
 
   document.getElementById('mm-detay-isim').textContent = urun.isim;
