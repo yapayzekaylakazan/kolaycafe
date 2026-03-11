@@ -786,15 +786,23 @@
       <label>Ürün Resmi (opsiyonel)</label>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:8px;align-items:center;">
-          <input type="text" id="urun-resim-url" placeholder="Resim URL girin..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;">
-          <button onclick="document.getElementById('urun-resim-dosya').click()" style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;">📁 Yükle</button>
+          <input type="text" id="urun-resim-url" placeholder="Resim URL girin veya dosya yükleyin..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;">
+          <button onclick="document.getElementById('urun-resim-dosya').click()" id="urun-resim-yukle-btn" style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;min-width:80px;">📁 Yükle</button>
           <input type="file" id="urun-resim-dosya" accept="image/*" style="display:none" onchange="urunResimYukle(this)">
         </div>
-        <div id="urun-resim-onizleme" style="display:none;position:relative;width:80px;height:80px;">
-          <img id="urun-resim-img" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border);">
-          <button onclick="urunResimSil()" style="position:absolute;top:-6px;right:-6px;background:#e04040;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        <div id="urun-resim-yukleniyor" style="display:none;background:var(--surface2);border-radius:10px;padding:10px 14px;margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:20px;height:20px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
+            <span style="font-size:0.82rem;color:var(--muted);font-weight:700;">Resim yükleniyor...</span>
+          </div>
         </div>
-        <div id="urun-resim-yukleniyor" style="display:none;font-size:0.8rem;color:var(--muted);font-weight:700;">⏳ Yükleniyor...</div>
+        <div id="urun-resim-onizleme" style="display:none;position:relative;width:100%;margin-top:8px;">
+          <div style="position:relative;display:inline-block;">
+            <img id="urun-resim-img" style="width:100px;height:100px;object-fit:cover;border-radius:12px;border:1.5px solid var(--border);display:block;">
+            <button onclick="urunResimSil()" style="position:absolute;top:-8px;right:-8px;background:#e04040;color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);">✕</button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--success);font-weight:700;margin-top:6px;">✓ Resim hazır</div>
+        </div>
       </div>
     </div>
     <button class="btn-kaydet" onclick="urunKaydet()">✓ Kaydet</button>
@@ -1589,6 +1597,8 @@
           <input type="url" id="ayar-logo-url" placeholder="https://... (resim linki)"
             style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;"
             oninput="ayarLogoOnizle()">
+          <button onclick="document.getElementById('ayar-logo-dosya').click()" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;white-space:nowrap;flex-shrink:0;">📁 Yükle</button>
+          <input type="file" id="ayar-logo-dosya" accept="image/*" style="display:none" onchange="ayarLogoYukle(this)">
           <div id="ayar-logo-onizleme" style="width:44px;height:44px;border-radius:12px;background:var(--surface2);border:1.5px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">☕</div>
         </div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;font-weight:600;">Google Drive, Cloudinary, ImgBB gibi servislerden link alabilirsiniz</div>
@@ -1597,9 +1607,13 @@
       <!-- Banner URL -->
       <div style="margin-bottom:16px;">
         <div style="font-size:0.8rem;color:var(--text2);font-weight:700;margin-bottom:6px;">📸 Kapak Fotoğrafı URL <span style="font-size:0.72rem;font-weight:600;color:var(--muted);">(isteğe bağlı)</span></div>
-        <input type="url" id="ayar-banner-url" placeholder="https://... (kapak resmi linki)"
-          style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;margin-bottom:6px;"
-          oninput="ayarBannerOnizle()">
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input type="url" id="ayar-banner-url" placeholder="https://... (kapak resmi linki)"
+            style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;"
+            oninput="ayarBannerOnizle()">
+          <button onclick="document.getElementById('ayar-banner-dosya').click()" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;white-space:nowrap;flex-shrink:0;">📁 Yükle</button>
+          <input type="file" id="ayar-banner-dosya" accept="image/*" style="display:none" onchange="ayarBannerYukle(this)">
+        </div>
         <div id="ayar-banner-onizleme" style="width:100%;height:80px;border-radius:12px;background:var(--surface2);border:1.5px solid var(--border);overflow:hidden;display:none;position:relative;">
           <img id="ayar-banner-img" style="width:100%;height:100%;object-fit:cover;">
           <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">
@@ -3320,28 +3334,81 @@ document.getElementById('urun-resim-url').addEventListener('input', function() {
   urunResimOnizlemeGoster(this.value.trim());
 });
 
+// ═══════════════════════════════════════════
+// SUPABASE STORAGE YÜKLEME - ORTAK FONKSİYON
+// ═══════════════════════════════════════════
+const STORAGE_BUCKET = 'kafe-gorseller';
+
+async function storageYukle(dosya, klasor, maxMB = 5) {
+  if (dosya.size > maxMB * 1024 * 1024) {
+    toast('Resim ' + maxMB + 'MB\'dan küçük olmalı!');
+    return null;
+  }
+  const uzanti = dosya.name.split('.').pop().toLowerCase();
+  const dosyaAdi = klasor + '/' + kafeId + '_' + Date.now() + '.' + uzanti;
+  const { error } = await sb.storage.from(STORAGE_BUCKET).upload(dosyaAdi, dosya, { upsert: true });
+  if (error) throw error;
+  const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(dosyaAdi);
+  return data.publicUrl;
+}
+
+// Ürün Resmi Yükleme
 async function urunResimYukle(input) {
   const dosya = input.files[0];
   if (!dosya) return;
-  // 2MB limit
-  if (dosya.size > 2 * 1024 * 1024) { toast('Resim 2MB\'dan küçük olmalı!'); return; }
 
-  document.getElementById('urun-resim-yukleniyor').style.display='block';
-  document.getElementById('urun-resim-onizleme').style.display='none';
+  const yukleniyor = document.getElementById('urun-resim-yukleniyor');
+  yukleniyor.style.display = 'block';
+  document.getElementById('urun-resim-onizleme').style.display = 'none';
 
   try {
-    const dosyaAdi = `urunler/${Date.now()}_${dosya.name.replace(/[^a-z0-9.]/gi,'_')}`;
-    const { error } = await sb.storage.from('urun-resimleri').upload(dosyaAdi, dosya, { upsert: true });
-    if (error) throw error;
-    const { data } = sb.storage.from('urun-resimleri').getPublicUrl(dosyaAdi);
-    document.getElementById('urun-resim-url').value = data.publicUrl;
-    urunResimOnizlemeGoster(data.publicUrl);
+    const url = await storageYukle(dosya, 'urunler');
+    if (!url) return;
+    document.getElementById('urun-resim-url').value = url;
+    urunResimOnizlemeGoster(url);
     toast('✓ Resim yüklendi!');
   } catch(e) {
     console.error(e);
     toast('Resim yüklenemedi: ' + (e.message || 'Hata'));
   } finally {
-    document.getElementById('urun-resim-yukleniyor').style.display='none';
+    yukleniyor.style.display = 'none';
+  }
+}
+
+// Logo Yükleme (Ayarlar)
+async function ayarLogoYukle(input) {
+  const dosya = input.files[0];
+  if (!dosya) return;
+  const kutu = document.getElementById('ayar-logo-onizleme');
+  kutu.innerHTML = '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:8px;">⏳</div>';
+  try {
+    const url = await storageYukle(dosya, 'logolar');
+    if (!url) return;
+    document.getElementById('ayar-logo-url').value = url;
+    ayarLogoOnizle();
+    toast('✓ Logo yüklendi!');
+  } catch(e) {
+    toast('Logo yüklenemedi: ' + (e.message||'Hata'));
+    kutu.innerHTML = '☕';
+  }
+}
+
+// Banner Yükleme (Ayarlar)
+async function ayarBannerYukle(input) {
+  const dosya = input.files[0];
+  if (!dosya) return;
+  const kutu = document.getElementById('ayar-banner-onizleme');
+  kutu.style.display = 'block';
+  kutu.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:80px;color:var(--muted);font-size:0.8rem;font-weight:700;">⏳ Yükleniyor...</div>';
+  try {
+    const url = await storageYukle(dosya, 'bannerlar');
+    if (!url) return;
+    document.getElementById('ayar-banner-url').value = url;
+    ayarBannerOnizle();
+    toast('✓ Kapak fotoğrafı yüklendi!');
+  } catch(e) {
+    toast('Banner yüklenemedi: ' + (e.message||'Hata'));
+    kutu.style.display = 'none';
   }
 }
 
