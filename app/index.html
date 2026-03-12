@@ -142,7 +142,10 @@
   .masa-secilmedi .msi { font-size: 2.5rem; opacity: 0.2; }
 
   /* ── ÜRÜN EKLE ── */
-  .page-urun { overflow-y: auto; padding: 12px; }
+  .page-urun { overflow-y: auto; padding: 12px; flex: 1; min-height: 0; }
+  #urun-sekme-panel-urunler { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+  #urun-sekme-panel-menu { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+  #page-urun { display: none; flex-direction: column; overflow: hidden; }
   .form-group { margin-bottom: 12px; }
   .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text2); margin-bottom: 5px; }
   .form-group input, .form-group select { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 11px; padding: 12px 13px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 600; outline: none; }
@@ -837,7 +840,7 @@
 
   <!-- SEKME 1: ÜRÜNLER -->
   <div id="urun-sekme-panel-urunler">
-  <div class="page-urun">
+  <div class="page-urun" style="flex:1;overflow-y:auto;">
     <div class="page-title">➕ Ürün / Kategori Ekle</div>
     <div class="form-group"><label>Kategori</label><select id="urun-kat"></select></div>
     <button class="btn-yeni-kat" onclick="yeniKategoriEkle()">+ Yeni Kategori Ekle</button>
@@ -1986,7 +1989,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2;">
       <div>
         <div style="font-size:1rem;font-weight:900;color:var(--text);">🧾 Ürün Seçerek Öde</div>
-        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Ödeyecek ürünleri seçin</div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Ödeyecek ürünleri seçin · <span class="split-kalan-bilgi" style="color:var(--accent2);"></span></div>
       </div>
       <button onclick="document.getElementById('split-urun-modal').style.display='none'" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
     </div>
@@ -3405,20 +3408,41 @@ async function splitUrunOde(odemeTipi) {
   // Seçili ürünleri adisyondan kaldır
   seciliIdx.forEach(i => m.siparisler.splice(i, 1));
 
-  // Modal kapat
-  document.getElementById('split-urun-modal').style.display = 'none';
-
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
+  await kolaycafenKaydet(kolaycafen);
 
   if (m.siparisler.length === 0) {
+    // Masa bitti - modal kapat
+    document.getElementById('split-urun-modal').style.display = 'none';
     m.indirim = 0; m.garson = '';
+    masalarRender();
     toast('✅ ' + fmt(toplam) + ' ödendi · Masa kapandı');
-    await kolaycafenKaydet(kolaycafen);
     await masaSyncYaz(seciliMasa);
   } else {
+    // Kalan ürünler var — modal'ı yeni listeyle güncelle, açık kalsın
     toast('✅ ' + fmt(toplam) + ' ödendi · ' + m.siparisler.length + ' ürün kaldı');
-    await kolaycafenKaydet(kolaycafen);
     await masaSyncYaz(seciliMasa);
+
+    // Listeyi yenile, modal açık kalsın
+    const liste = document.getElementById('split-urun-liste');
+    liste.innerHTML = '';
+    m.siparisler.forEach((s, idx) => {
+      const satir = document.createElement('div');
+      satir.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
+      satir.innerHTML = `
+        <input type="checkbox" id="split-cb-${idx}" data-idx="${idx}" data-fiyat="${s.fiyat * s.adet}"
+          style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+        <label for="split-cb-${idx}" style="flex:1;cursor:pointer;">
+          <div style="font-weight:800;font-size:0.9rem;color:var(--text);">${s.isim} ${s.adet > 1 ? '<span style="color:var(--muted);font-size:0.78rem;">x' + s.adet + '</span>' : ''}</div>
+          <div style="font-size:0.8rem;font-weight:900;color:var(--accent2);">${fmt(s.fiyat * s.adet)}</div>
+        </label>`;
+      satir.querySelector('input').addEventListener('change', splitUrunToplam);
+      liste.appendChild(satir);
+    });
+    document.getElementById('split-urun-toplam').textContent = '0,00 ₺';
+    // Modal zaten açık — sadece başlığı güncelle
+    const baslik = document.querySelector('#split-urun-modal .split-kalan-bilgi');
+    if (baslik) baslik.textContent = m.siparisler.length + ' ürün kaldı';
   }
 }
 
