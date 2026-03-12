@@ -838,7 +838,7 @@
   </div>
 
   <!-- SEKME 1: ÜRÜNLER -->
-  <div id="urun-sekme-panel-urunler" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;">
+  <div id="urun-sekme-panel-urunler" style="display:none;">
   <div class="page-urun">
     <div class="page-title">➕ Ürün / Kategori Ekle</div>
     <div class="form-group"><label>Kategori</label><select id="urun-kat"></select></div>
@@ -2870,7 +2870,7 @@ function sayfaGit(sayfa) {
   document.getElementById('nav-'+sayfa).classList.add('active');
   if (sayfa==='rapor') raporRender();
   if (sayfa==='recete') receteListeRender();
-  if (sayfa==='urun') { urunListesiRender(); katYonetimRender(); setTimeout(()=>emojiGridRender('icecek'),50); }
+  if (sayfa==='urun') { urunListesiRender(); katYonetimRender(); setTimeout(()=>emojiGridRender('icecek'),50); urunSekmeGec('urunler'); }
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
   if (sayfa==='stok') stokRender();
   if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
@@ -3853,16 +3853,17 @@ function urunSekmeGec(sekme) {
   const panelMenu = document.getElementById('urun-sekme-panel-menu');
   const btnUrun = document.getElementById('urun-sekme-urunler');
   const btnMenu = document.getElementById('urun-sekme-menu');
+  if (!panelUrun || !panelMenu) return;
   if (sekme === 'urunler') {
-    panelUrun.style.display = 'flex';
-    panelMenu.style.display = 'none';
-    btnUrun.style.color = 'var(--accent2)'; btnUrun.style.borderBottomColor = 'var(--accent2)';
-    btnMenu.style.color = 'var(--muted)'; btnMenu.style.borderBottomColor = 'transparent';
+    panelUrun.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;';
+    panelMenu.style.cssText = 'display:none;';
+    if(btnUrun){ btnUrun.style.color='var(--accent2)'; btnUrun.style.borderBottomColor='var(--accent2)'; }
+    if(btnMenu){ btnMenu.style.color='var(--muted)'; btnMenu.style.borderBottomColor='transparent'; }
   } else {
-    panelUrun.style.display = 'none';
-    panelMenu.style.display = 'flex';
-    btnUrun.style.color = 'var(--muted)'; btnUrun.style.borderBottomColor = 'transparent';
-    btnMenu.style.color = 'var(--accent2)'; btnMenu.style.borderBottomColor = 'var(--accent2)';
+    panelUrun.style.cssText = 'display:none;';
+    panelMenu.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;';
+    if(btnUrun){ btnUrun.style.color='var(--muted)'; btnUrun.style.borderBottomColor='transparent'; }
+    if(btnMenu){ btnMenu.style.color='var(--accent2)'; btnMenu.style.borderBottomColor='var(--accent2)'; }
     dmRender();
   }
 }
