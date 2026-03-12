@@ -580,6 +580,66 @@
 <!-- eski mm-sepet-ikon için geriye dönük compat -->
 <span id="mm-sepet-ikon" style="display:none;"></span>
 
+<!-- DİJİTAL MENÜ ÜRÜN DÜZENLEME MODALI -->
+<div id="dm-duzenle-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9500;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:0 0 20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px 12px;">
+      <div>
+        <div style="font-size:1rem;font-weight:900;color:var(--text);">✏️ Ürün Düzenle</div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;"><span id="dm-modal-kat"></span></div>
+      </div>
+      <button onclick="document.getElementById('dm-duzenle-modal').style.display='none'" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <span id="dm-modal-idx" style="display:none;"></span>
+    <div style="border-top:1px solid var(--border);margin:0 18px 16px;"></div>
+    <div style="padding:0 18px;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Urun Adi</label>
+        <input id="dm-edit-isim" type="text" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.95rem;outline:none;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label style="font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Fiyat</label>
+          <input id="dm-edit-fiyat" type="number" min="0" inputmode="numeric" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.95rem;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Emoji</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div id="dm-edit-ikon-goster" style="width:42px;height:42px;border-radius:10px;background:var(--surface2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">&#x1F37D;</div>
+            <input id="dm-edit-ikon" type="text" maxlength="4" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 8px;color:var(--text);font-family:Nunito,sans-serif;font-size:1.2rem;text-align:center;outline:none;" oninput="document.getElementById('dm-edit-ikon-goster').textContent=this.value||'&#x1F37D;'">
+          </div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Aciklama <span style="font-size:0.68rem;font-weight:600;text-transform:none;">(QR menude gorunur)</span></label>
+        <textarea id="dm-edit-aciklama" placeholder="Ornek: Taze cekilmis, sutlu veya sade..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.88rem;resize:none;height:68px;outline:none;"></textarea>
+      </div>
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Urun Resmi</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input id="dm-edit-resim-url" type="text" placeholder="Resim URL veya dosya yukle..." style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.85rem;outline:none;" oninput="dmResimOnizle()">
+          <button id="dm-resim-yukle-btn" onclick="document.getElementById('dm-resim-dosya').click()" style="padding:10px 13px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;white-space:nowrap;">Yukle</button>
+          <input type="file" id="dm-resim-dosya" accept="image/*" style="display:none" onchange="dmUrunResimYukle(this)">
+        </div>
+        <div id="dm-edit-resim-onizleme" style="display:none;">
+          <img id="dm-edit-resim-img" style="width:90px;height:90px;object-fit:cover;border-radius:12px;border:1.5px solid var(--border);display:block;">
+          <button onclick="dmResimSil()" style="margin-top:4px;padding:4px 10px;border-radius:8px;border:1.5px solid #e04040;background:transparent;color:#e04040;font-family:Nunito,sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Resmi Sil</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:12px;padding:13px 15px;">
+        <div>
+          <div style="font-weight:800;font-size:0.88rem;color:var(--text);">Urun Aktif</div>
+          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Kapali ise QR menude gorunmez</div>
+        </div>
+        <input type="checkbox" id="dm-edit-aktif" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;" checked>
+      </div>
+      <button onclick="dmUrunKaydet()" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--accent);color:var(--bg);font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;cursor:pointer;margin-top:4px;">
+        Degisiklikleri Kaydet
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="auth-screen">
   <div class="auth-logo">☕</div>
   <div class="auth-title">KolayCafe</div>
@@ -744,12 +804,18 @@
           <div class="toplam-onceki" id="toplam-onceki"></div>
           <div class="toplam-tutar" id="toplam-tutar">0,00 ₺</div>
         </div>
-        <div class="odeme-butonlar" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-          <button class="btn-nakit" onclick="tahsilEt('salon-nakit')">💵 Nakit</button>
-          <button class="btn-kart" onclick="tahsilEt('salon-kart')">💳 Kart</button>
-          <button class="btn-cari" id="btn-cari-goster">📋 Cari</button>
-          <button class="btn-ikram" onclick="tahsilEt('ikram')">🎁 İkram</button>
-          <button class="btn-bol" style="grid-column:span 2;" onclick="bolmeGoster()">✂ Hesabı Böl</button>
+        <div class="odeme-butonlar" style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+            <button class="btn-nakit" onclick="tahsilEt('salon-nakit')">💵 Nakit</button>
+            <button class="btn-kart" onclick="tahsilEt('salon-kart')">💳 Kart</button>
+            <button class="btn-cari" id="btn-cari-goster">📋 Cari</button>
+            <button class="btn-ikram" onclick="tahsilEt('ikram')">🎁 İkram</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+            <button class="btn-bol" onclick="splitUrunSec()" style="font-size:0.72rem;padding:9px 6px;">🧾 Ürün Seçerek Öde</button>
+            <button class="btn-bol" onclick="splitEsitBol()" style="font-size:0.72rem;padding:9px 6px;">➗ Adisyonu Böl</button>
+            <button class="btn-bol" onclick="tahsilEt('salon-nakit')" style="font-size:0.72rem;padding:9px 6px;background:var(--success);color:#fff;">✅ Tümünü Öde</button>
+          </div>
         </div>
       </div>
     </div>
@@ -757,6 +823,20 @@
 </div>
 
 <div class="page" id="page-urun">
+  <!-- SEKME BAŞLIKLARI -->
+  <div style="display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;">
+    <button id="urun-sekme-urunler" onclick="urunSekmeGec('urunler')"
+      style="flex:1;padding:13px;border:none;background:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.88rem;cursor:pointer;color:var(--accent2);border-bottom:2px solid var(--accent2);">
+      📋 Ürünler
+    </button>
+    <button id="urun-sekme-menu" onclick="urunSekmeGec('menu')"
+      style="flex:1;padding:13px;border:none;background:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.88rem;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;">
+      🍽️ Dijital Menü
+    </button>
+  </div>
+
+  <!-- SEKME 1: ÜRÜNLER -->
+  <div id="urun-sekme-panel-urunler">
   <div class="page-urun">
     <div class="page-title">➕ Ürün / Kategori Ekle</div>
     <div class="form-group"><label>Kategori</label><select id="urun-kat"></select></div>
@@ -818,6 +898,25 @@
     <div class="urun-listesi-baslik">Mevcut Ürünler</div>
     <div id="urun-listesi"></div>
   </div>
+  </div><!-- /urun-sekme-panel-urunler -->
+
+  <!-- SEKME 2: DİJİTAL MENÜ -->
+  <div id="urun-sekme-panel-menu" style="display:none;">
+
+    <!-- Önizleme header -->
+    <div style="background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📱 QR MENÜ ÖNİZLEME & DÜZENLEME</div>
+      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Ürüne tıklayarak düzenleyebilirsiniz</div>
+    </div>
+
+    <!-- Kategori tabs (önizleme) -->
+    <div id="dm-kat-tabs" style="display:flex;gap:6px;padding:10px 12px;overflow-x:auto;scrollbar-width:none;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:48px;z-index:40;"></div>
+
+    <!-- Ürün listesi (önizleme) -->
+    <div id="dm-urun-liste" style="padding:0;background:#f7f7f7;min-height:300px;"></div>
+
+  </div><!-- /urun-sekme-panel-menu -->
+
 </div>
 
 <div class="page" id="page-gelgid" style="overflow-y:auto;padding:12px;">
@@ -1877,6 +1976,83 @@
 </div>
 
 <!-- CARİ MODAL -->
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SPLIT BILL: ÜRÜN SEÇELİ ÖDE MODALİ        -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="split-urun-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9200;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;">
+    <!-- Başlık -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2;">
+      <div>
+        <div style="font-size:1rem;font-weight:900;color:var(--text);">🧾 Ürün Seçerek Öde</div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Ödeyecek ürünleri seçin</div>
+      </div>
+      <button onclick="document.getElementById('split-urun-modal').style.display='none'" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+
+    <!-- Ürün listesi (checkbox) -->
+    <div id="split-urun-liste" style="padding:10px 14px;flex:1;overflow-y:auto;"></div>
+
+    <!-- Alt tutar + ödeme butonları -->
+    <div style="padding:14px 16px;border-top:1px solid var(--border);background:var(--surface);position:sticky;bottom:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:0.8rem;font-weight:800;color:var(--muted);">SEÇİLEN TOPLAM</span>
+        <span id="split-urun-toplam" style="font-size:1.4rem;font-weight:900;color:var(--accent2);">0,00 ₺</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="splitUrunOde('nakit')" style="padding:13px;border-radius:12px;border:none;background:var(--success);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">💵 Nakit</button>
+        <button onclick="splitUrunOde('kart')" style="padding:13px;border-radius:12px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">💳 Kart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SPLIT BILL: EŞİT BÖLME MODALİ              -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="split-esit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9200;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:22px;width:100%;max-width:360px;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);">
+      <div style="font-size:1rem;font-weight:900;color:var(--text);">➗ Adisyonu Böl</div>
+      <button onclick="document.getElementById('split-esit-modal').style.display='none'" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <div style="padding:18px;">
+      <!-- Kişi sayısı seçici -->
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Kaç kişiye bölünecek?</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+          <button onclick="splitKisiDeg(-1)" style="width:42px;height:42px;border-radius:50%;border:2px solid var(--border);background:var(--surface2);font-size:1.3rem;font-weight:900;cursor:pointer;color:var(--text);">−</button>
+          <span id="split-kisi-sayi" style="font-size:2.2rem;font-weight:900;color:var(--accent2);min-width:40px;text-align:center;">2</span>
+          <button onclick="splitKisiDeg(1)" style="width:42px;height:42px;border-radius:50%;border:2px solid var(--accent);background:var(--accent);font-size:1.3rem;font-weight:900;cursor:pointer;color:var(--bg);">+</button>
+        </div>
+      </div>
+
+      <!-- Hesap özeti -->
+      <div style="background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:0.78rem;color:var(--muted);font-weight:700;">Toplam Tutar</span>
+          <span id="split-esit-toplam" style="font-size:0.88rem;font-weight:900;color:var(--text);">0,00 ₺</span>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.78rem;color:var(--muted);font-weight:700;">Kişi Başına</span>
+          <span id="split-esit-kisi-bas" style="font-size:1.4rem;font-weight:900;color:var(--accent2);">0,00 ₺</span>
+        </div>
+      </div>
+
+      <!-- Ödeme takibi: kaçıncı kişi ödüyor -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Ödeme Durumu</div>
+        <div id="split-esit-durum" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="splitEsitOde('nakit')" style="padding:13px;border-radius:12px;border:none;background:var(--success);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">💵 Nakit</button>
+        <button onclick="splitEsitOde('kart')" style="padding:13px;border-radius:12px;border:none;background:#1a6fb5;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">💳 Kart</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="cari-modal">
   <div class="modal" style="max-width:340px;">
     <div class="modal-baslik">📋 Cari Hesap</div>
@@ -3166,6 +3342,172 @@ async function tahsilEt(odemeTipi) {
 // ════════════════════════════════════════
 // İNDİRİM
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// SPLIT BILL — ÜRÜN SEÇELİ ÖDE
+// ════════════════════════════════════════
+function splitUrunSec() {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  if (m.siparisler.length === 0) { toast('Adisyon boş!'); return; }
+  const liste = document.getElementById('split-urun-liste');
+  liste.innerHTML = '';
+  m.siparisler.forEach((s, idx) => {
+    const satir = document.createElement('div');
+    satir.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
+    satir.innerHTML = `
+      <input type="checkbox" id="split-cb-${idx}" data-idx="${idx}" data-fiyat="${s.fiyat * s.adet}"
+        style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+      <label for="split-cb-${idx}" style="flex:1;cursor:pointer;">
+        <div style="font-weight:800;font-size:0.9rem;color:var(--text);">${s.isim} ${s.adet > 1 ? '<span style="color:var(--muted);font-size:0.78rem;">x'+s.adet+'</span>' : ''}</div>
+        <div style="font-size:0.8rem;font-weight:900;color:var(--accent2);">${fmt(s.fiyat * s.adet)}</div>
+      </label>`;
+    satir.querySelector('input').addEventListener('change', splitUrunToplam);
+    liste.appendChild(satir);
+  });
+  document.getElementById('split-urun-toplam').textContent = '0,00 ₺';
+  document.getElementById('split-urun-modal').style.display = 'flex';
+}
+
+function splitUrunToplam() {
+  const checkboxlar = document.querySelectorAll('#split-urun-liste input[type=checkbox]');
+  let toplam = 0;
+  checkboxlar.forEach(cb => { if (cb.checked) toplam += parseFloat(cb.dataset.fiyat); });
+  document.getElementById('split-urun-toplam').textContent = fmt(toplam);
+}
+
+async function splitUrunOde(odemeTipi) {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  const checkboxlar = document.querySelectorAll('#split-urun-liste input[type=checkbox]:checked');
+  if (checkboxlar.length === 0) { toast('Hiç ürün seçilmedi!'); return; }
+
+  // Seçili indeksleri topla (büyükten küçüğe — splice için)
+  const seciliIdx = Array.from(checkboxlar)
+    .map(cb => parseInt(cb.dataset.idx))
+    .sort((a, b) => b - a);
+
+  const seciliSiparisler = seciliIdx.map(i => ({ ...m.siparisler[i] }));
+  const toplam = seciliSiparisler.reduce((t, s) => t + s.fiyat * s.adet, 0);
+
+  // Kısmi kolaycafen oluştur
+  const kolaycafen = {
+    masa: seciliMasa, masaAd: m.ad,
+    tarih: new Date().toLocaleString('tr-TR'), tarihObj: new Date(),
+    toplam, indirim: 0, garson: m.garson || '',
+    odeme_tipi: 'split-' + odemeTipi,
+    siparisler: seciliSiparisler,
+    dbId: Date.now()
+  };
+  kapaliKolayCafenlar.unshift(kolaycafen);
+  seciliSiparisler.forEach(s => stokDus(s.isim, s.adet));
+  gunlukCiro += toplam; gunlukAdi++;
+
+  // Seçili ürünleri adisyondan kaldır
+  seciliIdx.forEach(i => m.siparisler.splice(i, 1));
+
+  // Modal kapat
+  document.getElementById('split-urun-modal').style.display = 'none';
+
+  kolaycafenGuncelle(); siparisListeRender(); masalarRender();
+
+  if (m.siparisler.length === 0) {
+    m.indirim = 0; m.garson = '';
+    toast('✅ ' + fmt(toplam) + ' ödendi · Masa kapandı');
+    await kolaycafenKaydet(kolaycafen);
+    await masaSyncYaz(seciliMasa);
+  } else {
+    toast('✅ ' + fmt(toplam) + ' ödendi · ' + m.siparisler.length + ' ürün kaldı');
+    await kolaycafenKaydet(kolaycafen);
+    await masaSyncYaz(seciliMasa);
+  }
+}
+
+// ════════════════════════════════════════
+// SPLIT BILL — EŞİT BÖLME
+// ════════════════════════════════════════
+let splitKisiSayisi = 2;
+let splitOdenenKisi = 0;
+
+function splitEsitBol() {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  if (m.siparisler.length === 0) { toast('Adisyon boş!'); return; }
+  splitKisiSayisi = 2;
+  splitOdenenKisi = 0;
+  splitEsitGuncelle();
+  document.getElementById('split-esit-modal').style.display = 'flex';
+}
+
+function splitKisiDeg(delta) {
+  splitKisiSayisi = Math.max(2, Math.min(20, splitKisiSayisi + delta));
+  splitOdenenKisi = 0; // kişi sayısı değişince sayaç sıfırla
+  splitEsitGuncelle();
+}
+
+function splitEsitGuncelle() {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  const ham = masaToplam(m);
+  const son = ham * (1 - (m.indirim || 0) / 100);
+  const kisiBas = son / splitKisiSayisi;
+
+  document.getElementById('split-kisi-sayi').textContent = splitKisiSayisi;
+  document.getElementById('split-esit-toplam').textContent = fmt(son);
+  document.getElementById('split-esit-kisi-bas').textContent = fmt(kisiBas);
+
+  // Ödeme durumu göstergesi
+  const durum = document.getElementById('split-esit-durum');
+  durum.innerHTML = '';
+  for (let i = 0; i < splitKisiSayisi; i++) {
+    const chip = document.createElement('div');
+    const odendi = i < splitOdenenKisi;
+    chip.style.cssText = `padding:5px 12px;border-radius:50px;font-size:0.75rem;font-weight:800;background:${odendi ? 'var(--success)' : 'var(--surface2)'};color:${odendi ? '#fff' : 'var(--muted)'};border:1.5px solid ${odendi ? 'var(--success)' : 'var(--border)'};`;
+    chip.textContent = odendi ? '✓ ' + (i + 1) + '. kişi' : (i + 1) + '. kişi';
+    durum.appendChild(chip);
+  }
+}
+
+async function splitEsitOde(odemeTipi) {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  if (splitOdenenKisi >= splitKisiSayisi) { toast('Tüm kişiler ödedi!'); return; }
+
+  const ham = masaToplam(m);
+  const son = ham * (1 - (m.indirim || 0) / 100);
+  const kisiBas = son / splitKisiSayisi;
+
+  splitOdenenKisi++;
+  const kisiNo = splitOdenenKisi;
+  const kalanKisi = splitKisiSayisi - splitOdenenKisi;
+
+  // Kısmi kolaycafen
+  const kolaycafen = {
+    masa: seciliMasa, masaAd: m.ad,
+    tarih: new Date().toLocaleString('tr-TR'), tarihObj: new Date(),
+    toplam: kisiBas, indirim: 0, garson: m.garson || '',
+    odeme_tipi: 'split-' + odemeTipi,
+    siparisler: [{ isim: `Hesap Bölme (${kisiNo}/${splitKisiSayisi})`, fiyat: kisiBas, adet: 1 }],
+    dbId: Date.now() + kisiNo
+  };
+  kapaliKolayCafenlar.unshift(kolaycafen);
+  gunlukCiro += kisiBas; gunlukAdi++;
+
+  await kolaycafenKaydet(kolaycafen);
+  splitEsitGuncelle();
+
+  if (splitOdenenKisi >= splitKisiSayisi) {
+    // Hepsi ödedi → masayı kapat
+    m.siparisler = []; m.indirim = 0; m.garson = '';
+    document.getElementById('split-esit-modal').style.display = 'none';
+    kolaycafenGuncelle(); siparisListeRender(); masalarRender();
+    toast('✅ Tüm ' + splitKisiSayisi + ' kişi ödedi · Masa kapandı');
+    await masaSyncYaz(seciliMasa);
+  } else {
+    kolaycafenGuncelle();
+    toast('✅ ' + kisiNo + '. kişi ödedi · ' + kalanKisi + ' kişi kaldı · ' + fmt(kisiBas));
+  }
+}
+
 function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=getMasa().indirim||'';modalAc('indirim-modal');}
 function indirimUygula(oran){if(!seciliMasa) return;getMasa().indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
 function indirimUygulaManuel(){const v=parseInt(document.getElementById('indirim-input').value);if(isNaN(v)||v<0||v>100){toast('0-100 arası girin!');return;}indirimUygula(v);}
@@ -3480,58 +3822,232 @@ function urunKaydet(){
   urunListesiRender(); katTabsRender(); katYonetimRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ "'+isim+'" eklendi');
 }
 
+// ════════════════════════════════════════
+// DİJİTAL MENÜ SEKME & DÜZENLEME
+// ════════════════════════════════════════
+function urunSekmeGec(sekme) {
+  const panelUrun = document.getElementById('urun-sekme-panel-urunler');
+  const panelMenu = document.getElementById('urun-sekme-panel-menu');
+  const btnUrun = document.getElementById('urun-sekme-urunler');
+  const btnMenu = document.getElementById('urun-sekme-menu');
+  if (sekme === 'urunler') {
+    panelUrun.style.display = 'block';
+    panelMenu.style.display = 'none';
+    btnUrun.style.color = 'var(--accent2)'; btnUrun.style.borderBottomColor = 'var(--accent2)';
+    btnMenu.style.color = 'var(--muted)'; btnMenu.style.borderBottomColor = 'transparent';
+  } else {
+    panelUrun.style.display = 'none';
+    panelMenu.style.display = 'block';
+    btnUrun.style.color = 'var(--muted)'; btnUrun.style.borderBottomColor = 'transparent';
+    btnMenu.style.color = 'var(--accent2)'; btnMenu.style.borderBottomColor = 'var(--accent2)';
+    dmRender();
+  }
+}
+
+let dmAktifKat = null;
+
+function dmRender() {
+  const katlar = Object.keys(URUNLER);
+  if (!katlar.length) return;
+  if (!dmAktifKat || !URUNLER[dmAktifKat]) dmAktifKat = katlar[0];
+
+  // Kategori tabs
+  const tabs = document.getElementById('dm-kat-tabs');
+  tabs.innerHTML = '';
+  katlar.forEach(kat => {
+    const btn = document.createElement('button');
+    btn.textContent = kat;
+    const aktif = kat === dmAktifKat;
+    btn.style.cssText = `white-space:nowrap;padding:7px 16px;border-radius:50px;border:2px solid ${aktif?'var(--accent)':'#eee'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;background:${aktif?'var(--accent)':'#f7f7f7'};color:${aktif?'var(--bg)':'#666'};flex-shrink:0;`;
+    btn.addEventListener('click', () => { dmAktifKat = kat; dmRender(); });
+    tabs.appendChild(btn);
+  });
+
+  // Ürün listesi
+  const liste = document.getElementById('dm-urun-liste');
+  liste.innerHTML = '';
+  const urunler = URUNLER[dmAktifKat] || [];
+  if (!urunler.length) {
+    liste.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted);font-size:0.85rem;font-weight:700;">Bu kategoride ürün yok</div>';
+    return;
+  }
+  urunler.forEach((u, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-bottom:1px solid #f0f0f0;cursor:pointer;transition:background 0.1s;`;
+    row.onmouseenter = () => row.style.background = '#fafafa';
+    row.onmouseleave = () => row.style.background = '#fff';
+
+    const gorsel = u.resim
+      ? `<img src="${u.resim}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">`
+      : `<div style="width:64px;height:64px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;">${u.ikon||'🍽'}</div>`;
+
+    const aktifBadge = u.aktif === false
+      ? `<span style="background:#fee;color:#e04040;border-radius:6px;padding:2px 7px;font-size:0.7rem;font-weight:800;margin-left:6px;">PASİF</span>`
+      : '';
+
+    row.innerHTML = `
+      ${gorsel}
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:0.9rem;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;">
+          ${u.isim}${aktifBadge}
+        </div>
+        ${u.aciklama ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.aciklama}</div>` : '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Açıklama yok</div>'}
+        <div style="font-weight:900;color:var(--accent2);font-size:0.88rem;margin-top:4px;">${u.fiyat}₺</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+        <button onclick="dmUrunDuzenle('${dmAktifKat}',${idx})" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">✏️ Düzenle</button>
+        <div style="width:36px;height:20px;border-radius:10px;background:${u.aktif===false?'var(--muted)':'var(--success)'};position:relative;cursor:pointer;" onclick="dmAktifToggle('${dmAktifKat}',${idx})">
+          <div style="position:absolute;top:2px;${u.aktif===false?'left:2px':'right:2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:all 0.2s;"></div>
+        </div>
+        <div style="font-size:0.62rem;font-weight:700;color:${u.aktif===false?'var(--muted)':'var(--success)'};">${u.aktif===false?'PASİF':'AKTİF'}</div>
+      </div>`;
+    liste.appendChild(row);
+  });
+}
+
+function dmAktifToggle(kat, idx) {
+  URUNLER[kat][idx].aktif = URUNLER[kat][idx].aktif === false ? true : false;
+  bulutKaydet();
+  dmRender();
+  toast(URUNLER[kat][idx].aktif === false ? '⚫ Ürün pasif yapıldı' : '✅ Ürün aktif yapıldı');
+}
+
+function dmUrunDuzenle(kat, idx) {
+  const u = URUNLER[kat][idx];
+  // Modal aç
+  document.getElementById('dm-modal-kat').textContent = kat;
+  document.getElementById('dm-modal-idx').textContent = idx;
+  document.getElementById('dm-edit-isim').value = u.isim || '';
+  document.getElementById('dm-edit-fiyat').value = u.fiyat || '';
+  document.getElementById('dm-edit-aciklama').value = u.aciklama || '';
+  document.getElementById('dm-edit-ikon').value = u.ikon || '🍽';
+  document.getElementById('dm-edit-ikon-goster').textContent = u.ikon || '🍽';
+  document.getElementById('dm-edit-resim-url').value = u.resim || '';
+  const onizleme = document.getElementById('dm-edit-resim-onizleme');
+  const onizImg = document.getElementById('dm-edit-resim-img');
+  if (u.resim) {
+    onizImg.src = u.resim;
+    onizleme.style.display = 'block';
+  } else {
+    onizleme.style.display = 'none';
+  }
+  document.getElementById('dm-edit-aktif').checked = u.aktif !== false;
+  document.getElementById('dm-duzenle-modal').style.display = 'flex';
+}
+
+async function dmUrunKaydet() {
+  const kat = document.getElementById('dm-modal-kat').textContent;
+  const idx = parseInt(document.getElementById('dm-modal-idx').textContent);
+  const isim = document.getElementById('dm-edit-isim').value.trim();
+  const fiyat = parseFloat(document.getElementById('dm-edit-fiyat').value);
+  const aciklama = document.getElementById('dm-edit-aciklama').value.trim() || null;
+  const ikon = document.getElementById('dm-edit-ikon').value.trim() || '🍽';
+  const resim = document.getElementById('dm-edit-resim-url').value.trim() || null;
+  const aktif = document.getElementById('dm-edit-aktif').checked;
+
+  if (!isim) { toast('Ürün adı girin!'); return; }
+  if (isNaN(fiyat) || fiyat < 0) { toast('Geçerli fiyat girin!'); return; }
+
+  URUNLER[kat][idx] = { ...URUNLER[kat][idx], isim, fiyat, aciklama, ikon, resim, aktif };
+  await bulutKaydet();
+  document.getElementById('dm-duzenle-modal').style.display = 'none';
+  dmRender();
+  urunListesiRender();
+  if (mevcutKat === kat) urunGridRender();
+  toast('✅ "' + isim + '" güncellendi!');
+}
+
+async function dmUrunResimYukle(input) {
+  const dosya = input.files[0];
+  if (!dosya) return;
+  const yukBtn = document.getElementById('dm-resim-yukle-btn');
+  yukBtn.textContent = '⏳';
+  yukBtn.disabled = true;
+  try {
+    const url = await storageYukle(dosya, 'urunler');
+    if (!url) return;
+    document.getElementById('dm-edit-resim-url').value = url;
+    document.getElementById('dm-edit-resim-img').src = url;
+    document.getElementById('dm-edit-resim-onizleme').style.display = 'block';
+    toast('✓ Resim yüklendi!');
+  } catch(e) {
+    toast('Hata: ' + e.message);
+  } finally {
+    yukBtn.textContent = 'Yukle';
+    yukBtn.disabled = false;
+  }
+}
+
+function dmResimOnizle() {
+  const url = document.getElementById('dm-edit-resim-url').value.trim();
+  const onizleme = document.getElementById('dm-edit-resim-onizleme');
+  const img = document.getElementById('dm-edit-resim-img');
+  if (url) {
+    img.src = url;
+    onizleme.style.display = 'block';
+  } else {
+    onizleme.style.display = 'none';
+  }
+}
+
+function dmResimSil() {
+  document.getElementById('dm-edit-resim-url').value = '';
+  document.getElementById('dm-edit-resim-onizleme').style.display = 'none';
+}
+
 function urunListesiRender(){
   katSelectDoldur();
   const liste=document.getElementById('urun-listesi'); liste.innerHTML='';
   Object.entries(URUNLER).forEach(([kat,urunler])=>{
     urunler.forEach((u,idx)=>{
       const item=document.createElement('div'); item.className='urun-listesi-item';
-      const resimOnizleme = u.resim ? `<img src="${u.resim}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">` : `<div style="width:40px;height:40px;border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${u.ikon}</div>`;
+      const resimOnizleme = u.resim
+        ? `<img src="${u.resim}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">`
+        : `<div style="width:40px;height:40px;border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${u.ikon}</div>`;
       item.innerHTML=`
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           ${resimOnizleme}
           <div class="uli-info" style="flex:1;"><div class="uli-isim">${u.isim}</div><div class="uli-cat">${kat}</div></div>
-          <div class="uli-fiyat-wrap"><input class="uli-fiyat-input" type="number" value="${u.fiyat}" min="0" inputmode="numeric"><span class="uli-tl">₺</span></div>
-          <button class="uli-sil">🗑</button>
+          <div class="uli-fiyat-wrap"><input class="uli-fiyat-input" type="number" value="${u.fiyat}" min="0" inputmode="numeric"><span class="uli-tl">&#8378;</span></div>
+          <button class="uli-sil">&#x1F5D1;</button>
         </div>
+        <textarea class="uli-aciklama" placeholder="Aciklama (QR menude gorunur)..." rows="2"
+          style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.78rem;resize:none;outline:none;box-sizing:border-box;margin-bottom:6px;">${u.aciklama||''}</textarea>
         <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" class="uli-resim-url" value="${u.resim||''}" placeholder="Resim URL..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.78rem;outline:none;">
-          <button class="uli-resim-yukle-btn" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;white-space:nowrap;">📁</button>
+          <input type="text" class="uli-resim-url" value="${u.resim||''}" placeholder="Resim URL..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.78rem;outline:none;">
+          <button class="uli-resim-yukle-btn" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;white-space:nowrap;">&#x1F4C1;</button>
           <input type="file" class="uli-resim-dosya" accept="image/*" style="display:none">
-          ${u.resim?`<button class="uli-resim-sil-btn" style="padding:6px 8px;border-radius:8px;border:1.5px solid #e04040;background:transparent;color:#e04040;font-size:0.75rem;cursor:pointer;">✕</button>`:''}
+          ${u.resim ? '<button class="uli-resim-sil-btn" style="padding:6px 8px;border-radius:8px;border:1.5px solid #e04040;background:transparent;color:#e04040;font-size:0.75rem;cursor:pointer;">&#x2715;</button>' : ''}
         </div>`;
-
-      item.querySelector('.uli-fiyat-input').addEventListener('change',e=>{
+      item.querySelector('.uli-fiyat-input').addEventListener('change', e=>{
         const f=parseFloat(e.target.value);
-        if(isNaN(f)||f<0){e.target.value=u.fiyat;toast('Geçersiz fiyat!');return;}
-        URUNLER[kat][idx].fiyat=f; if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ Fiyat güncellendi: '+fmt(f));
+        if(isNaN(f)||f<0){e.target.value=u.fiyat;toast('Gecersiz fiyat!');return;}
+        URUNLER[kat][idx].fiyat=f; if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Fiyat guncellendi');
       });
       item.querySelector('.uli-sil').addEventListener('click',()=>{
         if(!confirm('"'+u.isim+'" silinsin mi?')) return;
-        URUNLER[kat].splice(idx,1); urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Ürün silindi');
+        URUNLER[kat].splice(idx,1); urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Urun silindi');
       });
-      // Resim URL değişince kaydet
+      item.querySelector('.uli-aciklama').addEventListener('change', e=>{
+        URUNLER[kat][idx].aciklama = e.target.value.trim()||null;
+        if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Aciklama guncellendi');
+      });
       item.querySelector('.uli-resim-url').addEventListener('change', e=>{
         URUNLER[kat][idx].resim = e.target.value.trim()||null;
-        urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ Resim güncellendi');
+        urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Resim guncellendi');
       });
-      // Dosya yükleme butonu
       const dosyaInput = item.querySelector('.uli-resim-dosya');
       item.querySelector('.uli-resim-yukle-btn').addEventListener('click', ()=> dosyaInput.click());
       dosyaInput.addEventListener('change', async function(){
         const dosya = this.files[0]; if(!dosya) return;
-        if(dosya.size > 2*1024*1024){toast('Resim 2MB\'dan küçük olmalı!');return;}
-        toast('⏳ Yükleniyor...');
+        toast('Yukleniyor...');
         try {
-          const ad = `urunler/${Date.now()}_${dosya.name.replace(/[^a-z0-9.]/gi,'_')}`;
-          const {error} = await sb.storage.from('urun-resimleri').upload(ad, dosya, {upsert:true});
-          if(error) throw error;
-          const {data} = sb.storage.from('urun-resimleri').getPublicUrl(ad);
-          URUNLER[kat][idx].resim = data.publicUrl;
-          urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('✓ Resim yüklendi!');
-        } catch(e){ toast('Hata: '+(e.message||'Yüklenemedi')); }
+          const url = await storageYukle(dosya, 'urunler');
+          if(!url) return;
+          URUNLER[kat][idx].resim = url;
+          urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Resim yuklendi!');
+        } catch(err){ toast('Hata: '+(err.message||'Yuklenemedi')); }
       });
-      // Resim sil
       const silBtn = item.querySelector('.uli-resim-sil-btn');
       if(silBtn) silBtn.addEventListener('click',()=>{
         URUNLER[kat][idx].resim=null;
