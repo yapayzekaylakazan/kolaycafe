@@ -8384,7 +8384,7 @@ function aiSayfaAc() {
     return;
   }
   // Kullanım sayaçlarını yükle
-  aiKullanımYukle();
+  aiKullanimYukle();
   // İlk defa açılıyorsa otomatik başlat
   if (!aiAnalizVerisi) {
     aiAnalizBaslat();
@@ -8438,7 +8438,7 @@ function aiKilitEkraniGoster() {
   `;
 }
 
-async function aiKullanımYukle() {
+async function aiKullanimYukle() {
   try {
     const bugun = new Date().toISOString().split('T')[0];
     const ayBasi = new Date(); ayBasi.setDate(1); ayBasi.setHours(0,0,0,0);
@@ -8482,7 +8482,7 @@ function aiLimitGoster() {
   }
 }
 
-async function aiKullanımKaydet(tip) {
+async function aiKullanimKaydet(tip) {
   try {
     await sb.from('ai_kullanim').insert({ kafe_id: kafeId, tip });
   } catch(e) {}
@@ -8534,7 +8534,7 @@ async function aiAnalizBaslat() {
 
     // Kullanım kaydet
     aiGunlukAnaliz++;
-    await aiKullanımKaydet('analiz');
+    await aiKullanimKaydet('analiz');
     aiLimitGoster();
 
     clearInterval(progressTimer);
@@ -8911,7 +8911,7 @@ Cafe satış verileri (${v.donemAdi}):
 
     aiSohbetGecmisi.push({ role: 'assistant', content: cevap });
     aiAylikSohbet++;
-    await aiKullanımKaydet('sohbet');
+    await aiKullanimKaydet('sohbet');
     aiLimitGoster();
     // En fazla 10 mesaj tut
     if (aiSohbetGecmisi.length > 10) aiSohbetGecmisi = aiSohbetGecmisi.slice(-10);
