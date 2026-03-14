@@ -73,6 +73,25 @@
   .page { display: none; flex: 1; overflow: hidden; flex-direction: column; min-height: 0; }
   .page.active { display: flex; }
   .page-masalar { overflow-y: auto; padding: 12px; }
+
+  /* ── AI ASİSTAN ── */
+  .ai-donem-tab { background:var(--surface2); border:1.5px solid var(--border); border-radius:20px; padding:5px 12px; color:var(--muted); font-family:'Nunito',sans-serif; font-size:0.72rem; font-weight:800; cursor:pointer; white-space:nowrap; }
+  .ai-donem-tab.active { background:var(--accent); border-color:var(--accent); color:#1a0f00; }
+  .ai-kpi-kart { background:var(--surface2); border-radius:12px; padding:12px; border:1.5px solid var(--border); }
+  .ai-kpi-kart .kpi-label { font-size:0.62rem; color:var(--muted); font-weight:700; margin-bottom:4px; }
+  .ai-kpi-kart .kpi-val { font-size:1.25rem; font-weight:900; }
+  .ai-kpi-kart .kpi-change { font-size:0.68rem; font-weight:700; margin-top:2px; }
+  .ai-urun-satir { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .ai-urun-satir:last-child { border-bottom:none; }
+  .ai-urun-sira { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:900; flex-shrink:0; }
+  .ai-urun-bar-wrap { flex:1; }
+  .ai-urun-bar { height:6px; border-radius:4px; margin-top:3px; }
+  .ai-sohbet-msg { padding:9px 12px; border-radius:12px; font-size:0.83rem; font-weight:600; max-width:90%; line-height:1.45; }
+  .ai-sohbet-msg.user { background:var(--accent); color:#1a0f00; align-self:flex-end; font-weight:800; border-radius:12px 12px 4px 12px; }
+  .ai-sohbet-msg.ai { background:var(--surface3); color:var(--text); align-self:flex-start; border-radius:12px 12px 12px 4px; }
+  .ai-sohbet-msg.loading { background:var(--surface3); color:var(--muted); }
+  .ai-hizli-soru { background:var(--surface3); border:1px solid var(--border); border-radius:20px; padding:5px 10px; font-family:'Nunito',sans-serif; font-size:0.7rem; font-weight:700; color:var(--text2); cursor:pointer; white-space:nowrap; }
+  .ai-hizli-soru:active { background:var(--surface2); }
   .page-title { font-size: 0.95rem; font-weight: 800; color: var(--text2); margin-bottom: 10px; }
 
   /* ── MASALAR ── */
@@ -1843,7 +1862,7 @@
         <div style="font-size:0.73rem;color:var(--text2);line-height:1.7;">✓ 20+ Masa (sınırsız) &nbsp;✓ Tüm Özellikler &nbsp;✓ 🖨️ İndirimli Termal Yazıcı &nbsp;✓ Öncelikli Destek</div>
       </div>
 
-      <a href="mailto:bilgi@kolaycafe.com" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
+      <a href="/cdn-cgi/l/email-protection#9dfff4f1faf4ddf6f2f1fce4fefcfbf8b3fef2f0" style="display:block;width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;">
         📧 Paket Değiştir / İletişim
       </a>
     </div>
@@ -1907,6 +1926,110 @@
   </div>
 </div>
 
+<!-- AI ASİSTAN SAYFASI -->
+<div class="page" id="page-ai" style="overflow-y:auto;padding:0;flex-direction:column;">
+
+  <!-- Header -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 14px 10px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="font-size:1.6rem;line-height:1;">🤖</div>
+      <div>
+        <div style="font-size:1.05rem;font-weight:900;color:var(--accent2);">AI Satış Asistanı</div>
+        <div style="font-size:0.7rem;color:var(--muted);font-weight:600;">Cafen hakkında akıllı analiz ve öneriler</div>
+      </div>
+      <button onclick="aiAnalizBaslat()" id="ai-yenile-btn" style="margin-left:auto;background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">🔄 Analiz Et</button>
+    </div>
+    <!-- Dönem seçimi -->
+    <div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;">
+      <button class="ai-donem-tab active" data-donem="hafta" onclick="aiDonemSec('hafta',this)">Bu Hafta</button>
+      <button class="ai-donem-tab" data-donem="ay" onclick="aiDonemSec('ay',this)">Bu Ay</button>
+      <button class="ai-donem-tab" data-donem="yil" onclick="aiDonemSec('yil',this)">Bu Yıl</button>
+      <button class="ai-donem-tab" data-donem="tum" onclick="aiDonemSec('tum',this)">Tümü</button>
+    </div>
+  </div>
+
+  <!-- İçerik -->
+  <div style="padding:12px;display:flex;flex-direction:column;gap:12px;" id="ai-icerik">
+
+    <!-- Yükleniyor durumu -->
+    <div id="ai-yukleniyor" style="display:none;text-align:center;padding:40px 20px;">
+      <div style="font-size:2.5rem;margin-bottom:12px;">🤖</div>
+      <div style="font-weight:800;color:var(--text2);margin-bottom:6px;">Veriler analiz ediliyor...</div>
+      <div style="font-size:0.8rem;color:var(--muted);">Claude AI satış verilerini inceliyor</div>
+      <div id="ai-progress-bar" style="margin-top:16px;background:var(--surface2);border-radius:10px;height:6px;overflow:hidden;">
+        <div id="ai-progress-fill" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width 0.3s;border-radius:10px;"></div>
+      </div>
+    </div>
+
+    <!-- Boş durum -->
+    <div id="ai-bos" style="text-align:center;padding:40px 20px;">
+      <div style="font-size:3rem;margin-bottom:12px;">📊</div>
+      <div style="font-weight:800;color:var(--text2);margin-bottom:8px;">Satış Analizine Hazır</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:20px;line-height:1.5;">Cafenizin verilerini analiz etmek için butona basın. AI; satış trendlerinizi, en çok satan ürünleri ve gelir fırsatlarını inceler.</div>
+      <button onclick="aiAnalizBaslat()" style="background:var(--accent);color:#1a0f00;border:none;border-radius:12px;padding:12px 24px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;">🚀 Analizi Başlat</button>
+    </div>
+
+    <!-- Hızlı İstatistik Kartları -->
+    <div id="ai-istatistik-kartlar" style="display:none;">
+      <div style="font-size:0.72rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:8px;">📊 DÖNEM ÖZETİ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="ai-kpi-grid"></div>
+    </div>
+
+    <!-- En Çok Satanlar -->
+    <div id="ai-cok-satanlar-kart" style="display:none;background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:1.2rem;">🏆</div>
+        <div style="font-weight:800;font-size:0.9rem;">En Çok Satan Ürünler</div>
+      </div>
+      <div id="ai-cok-satanlar-liste"></div>
+    </div>
+
+    <!-- Yoğun Saatler -->
+    <div id="ai-yogun-saatler-kart" style="display:none;background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:1.2rem;">⏰</div>
+        <div style="font-weight:800;font-size:0.9rem;">Yoğun Saatler & Günler</div>
+      </div>
+      <div id="ai-yogun-icerik"></div>
+    </div>
+
+    <!-- Gelir Trendi -->
+    <div id="ai-trend-kart" style="display:none;background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:1.2rem;">📈</div>
+        <div style="font-weight:800;font-size:0.9rem;">Gelir Trendi</div>
+      </div>
+      <div id="ai-trend-icerik"></div>
+    </div>
+
+    <!-- AI Öneriler -->
+    <div id="ai-oneriler-kart" style="display:none;background:linear-gradient(135deg,rgba(212,150,14,0.12),rgba(240,184,48,0.06));border-radius:14px;padding:14px;border:1.5px solid rgba(212,150,14,0.35);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:1.2rem;">💡</div>
+        <div style="font-weight:800;font-size:0.9rem;color:var(--accent2);">AI Önerileri</div>
+        <div style="margin-left:auto;font-size:0.65rem;background:var(--accent);color:#1a0f00;padding:2px 8px;border-radius:20px;font-weight:900;">Claude AI</div>
+      </div>
+      <div id="ai-oneriler-icerik" style="font-size:0.85rem;color:var(--text);line-height:1.6;"></div>
+    </div>
+
+    <!-- Sohbet Alanı -->
+    <div id="ai-sohbet-kart" style="display:none;background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:1.2rem;">💬</div>
+        <div style="font-weight:800;font-size:0.9rem;">Cafenle İlgili Soru Sor</div>
+      </div>
+      <div id="ai-sohbet-mesajlar" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:300px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;">
+        <input id="ai-soru-inp" type="text" placeholder="Örn: Cumartesi neden daha iyi?" style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:600;outline:none;" />
+        <button onclick="aiSoruGonder()" style="background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:10px 14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">➤</button>
+      </div>
+      <!-- Hızlı sorular -->
+      <div id="ai-hizli-sorular" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" ><div class="nav-icon">🪑</div>Masalar</button>
@@ -1921,6 +2044,7 @@
   <button class="bnav-btn" id="nav-rapor" ><div class="nav-icon">📊</div>Rapor</button>
   <button class="bnav-btn" id="nav-ayarlar" ><div class="nav-icon">⚙️</div>Ayarlar</button>
   <button class="bnav-btn" id="nav-mutfak" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
+  <button class="bnav-btn" id="nav-ai" ><div class="nav-icon">🤖</div>AI Asistan</button>
   <button class="bnav-btn" id="nav-garson-cikis" style="display:none;" ><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
 
@@ -2160,7 +2284,7 @@
   <button id="btn-kilit-cikis" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;display:block;margin:0 auto;">Çıkış Yap</button>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ════════════════════════════════════════
 // SUPABASE BAŞLAT
 // ════════════════════════════════════════
@@ -2479,7 +2603,7 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-rapor').style.display = 'none';
   // Garson modu nav — sadece operasyonel kısımlar
   const _gNavGoster = ['nav-gelal','nav-online','nav-kolaycafen','nav-urun','nav-mutfak','nav-cari','nav-ayarlar','nav-garson-cikis'];
-  const _gNavGizle  = ['nav-rapor','nav-recete','nav-gelgid','nav-stok'];
+  const _gNavGizle  = ['nav-rapor','nav-recete','nav-gelgid','nav-stok','nav-ai'];
   _gNavGoster.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='flex'; });
   _gNavGizle.forEach(id  => { const el=document.getElementById(id); if(el) el.style.display='none'; });
   // Header'da garson adını göster
@@ -2954,6 +3078,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
   if (sayfa==='ayarlar') ayarlarRender();
+  if (sayfa==='ai') aiSayfaAc();
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
 }
 
@@ -3012,6 +3137,7 @@ function paketYetkiUygula(plan) {
 
   // ── NAV MENÜ ──────────────────────────────────────────
   goster('nav-rapor',     p.rapor,   'flex');
+  goster('nav-ai',        p.rapor,   'flex');  // AI asistan rapor paketiyle açılır
   goster('nav-recete',    p.recete,  'flex');
   goster('nav-stok',      p.stok,    'flex');
   goster('nav-gelgid',    p.gelgid,  'flex');
@@ -6606,6 +6732,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ['nav-rapor', 'rapor'],
     ['nav-recete', 'recete'],
     ['nav-ayarlar', 'ayarlar'],
+    ['nav-ai', 'ai'],
   ];
   navBtnler.forEach(([id, sayfa]) => {
     const btn = document.getElementById(id);
@@ -8135,13 +8262,470 @@ async function mmGarsonCagir() {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
   t.textContent = '🔔 Garsonunuz geliyor!';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  document.body.a
+// ── AI ASİSTAN DEĞİŞKENLERİ ──
+let aiAktifDonem = 'hafta';
+let aiSohbetGecmisi = [];
+let aiAnalizVerisi = null;
+let aiHizliSorularListesi = [
+  "En iyi performanslı günüm hangisi?",
+  "Hangi ürünü daha çok tanıtmalıyım?",
+  "Müşteri başına ortalama harcama ne?",
+  "Hangi saatlerde daha fazla personel gerekir?",
+  "Gelirimi artırmak için ne yapabilirim?",
+];
+
+function aiDonemSec(donem, btn) {
+  aiAktifDonem = donem;
+  document.querySelectorAll('.ai-donem-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Eğer daha önce analiz yapıldıysa tekrar çalıştır
+  if (aiAnalizVerisi) aiAnalizBaslat();
 }
 
-// URL PARAM KONTROLÜ — yukarıdaki session bloğunda hallendi
+function aiSayfaAc() {
+  // Sayfa açılınca otomatik başlat (ilk defa)
+  if (!aiAnalizVerisi) {
+    aiAnalizBaslat();
+  }
+}
 
+async function aiAnalizBaslat() {
+  const yukleniyor = document.getElementById('ai-yukleniyor');
+  const bos = document.getElementById('ai-bos');
+  if (yukleniyor) { yukleniyor.style.display = 'block'; }
+  if (bos) { bos.style.display = 'none'; }
 
+  // Progress bar animasyonu
+  const fill = document.getElementById('ai-progress-fill');
+  let pct = 0;
+  const progressTimer = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 15, 90);
+    if (fill) fill.style.width = pct + '%';
+  }, 300);
+
+  try {
+    // 1) Veri hazırlığı
+    const veri = await aiVeriTopla();
+    aiAnalizVerisi = veri;
+
+    // 2) İstatistik kartları
+    aiKpiRender(veri);
+
+    // 3) En çok satanlar
+    aiCokSatanlarRender(veri);
+
+    // 4) Yoğun saatler
+    aiYogunSaatlerRender(veri);
+
+    // 5) Trend
+    aiTrendRender(veri);
+
+    // 6) Claude AI öneriler
+    await aiOnerilerUret(veri);
+
+    // 7) Sohbet paneli
+    aiSohbetPanelAc(veri);
+
+    clearInterval(progressTimer);
+    if (fill) fill.style.width = '100%';
+    setTimeout(() => { if (yukleniyor) yukleniyor.style.display = 'none'; }, 400);
+
+  } catch (e) {
+    clearInterval(progressTimer);
+    if (yukleniyor) yukleniyor.style.display = 'none';
+    if (bos) {
+      bos.style.display = 'block';
+      bos.innerHTML = `<div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+        <div style="font-weight:800;color:var(--text2);margin-bottom:8px;">Veri alınamadı</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:16px;">${e.message}</div>
+        <button onclick="aiAnalizBaslat()" style="background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:10px 20px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;">🔄 Tekrar Dene</button>`;
+    }
+  }
+}
+
+async function aiVeriTopla() {
+  // Dönem başlangıcı hesapla
+  const now = new Date();
+  let baslangic = null;
+  if (aiAktifDonem === 'hafta') {
+    const d = new Date(now); d.setDate(d.getDate() - 7);
+    baslangic = d.toISOString();
+  } else if (aiAktifDonem === 'ay') {
+    const d = new Date(now); d.setMonth(d.getMonth() - 1);
+    baslangic = d.toISOString();
+  } else if (aiAktifDonem === 'yil') {
+    const d = new Date(now); d.setFullYear(d.getFullYear() - 1);
+    baslangic = d.toISOString();
+  }
+
+  let q = sb.from('kolaycafenlar').select('*').eq('kafe_id', kafeId).order('kapanma_zamani', {ascending: true});
+  if (baslangic) q = q.gte('kapanma_zamani', baslangic);
+  const { data, error } = await q;
+  if (error) throw new Error('Supabase hatası: ' + error.message);
+
+  const adisyonlar = data || [];
+
+  // Toplam ciro
+  const toplamCiro = adisyonlar.reduce((s, a) => s + (a.toplam || 0), 0);
+  const adisyonSayisi = adisyonlar.length;
+  const ortHarcama = adisyonSayisi > 0 ? toplamCiro / adisyonSayisi : 0;
+
+  // Ürün sayımı
+  const urunler = {};
+  adisyonlar.forEach(a => {
+    (a.siparisler || []).forEach(s => {
+      const key = s.isim || 'Bilinmiyor';
+      if (!urunler[key]) urunler[key] = { adet: 0, gelir: 0 };
+      urunler[key].adet += (s.adet || 1);
+      urunler[key].gelir += (s.fiyat || 0) * (s.adet || 1);
+    });
+  });
+  const urunSirali = Object.entries(urunler)
+    .map(([isim, d]) => ({ isim, ...d }))
+    .sort((a, b) => b.adet - a.adet);
+
+  // Saat bazlı yoğunluk
+  const saatler = {};
+  const gunler = {};
+  const gunIsimleri = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  adisyonlar.forEach(a => {
+    const tarih = new Date(a.kapanma_zamani || a.created_at);
+    if (isNaN(tarih)) return;
+    const saat = tarih.getHours();
+    const gun = gunIsimleri[tarih.getDay()];
+    saatler[saat] = (saatler[saat] || 0) + 1;
+    gunler[gun] = (gunler[gun] || 0) + 1;
+  });
+
+  const yogunSaatSirali = Object.entries(saatler)
+    .map(([s, c]) => ({ saat: parseInt(s), sayi: c }))
+    .sort((a, b) => b.sayi - a.sayi);
+
+  const yogunGunSirali = Object.entries(gunler)
+    .map(([g, c]) => ({ gun: g, sayi: c }))
+    .sort((a, b) => b.sayi - a.sayi);
+
+  // Günlük ciro (trend)
+  const gunlukCiro = {};
+  adisyonlar.forEach(a => {
+    const tarih = new Date(a.kapanma_zamani || a.created_at);
+    if (isNaN(tarih)) return;
+    const key = tarih.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit' });
+    gunlukCiro[key] = (gunlukCiro[key] || 0) + (a.toplam || 0);
+  });
+
+  // Önceki dönem karşılaştırması
+  let oncekiCiro = 0;
+  if (baslangic) {
+    const oncekiBitis = new Date(baslangic);
+    const sure = now - oncekiBitis;
+    const oncekiBaslangic = new Date(oncekiBitis - sure);
+    const { data: oncekiData } = await sb.from('kolaycafenlar').select('toplam')
+      .eq('kafe_id', kafeId)
+      .gte('kapanma_zamani', oncekiBaslangic.toISOString())
+      .lt('kapanma_zamani', baslangic);
+    oncekiCiro = (oncekiData || []).reduce((s, a) => s + (a.toplam || 0), 0);
+  }
+
+  const trenYuzde = oncekiCiro > 0 ? ((toplamCiro - oncekiCiro) / oncekiCiro * 100).toFixed(1) : null;
+
+  return {
+    adisyonlar, toplamCiro, adisyonSayisi, ortHarcama,
+    urunSirali, yogunSaatSirali, yogunGunSirali,
+    gunlukCiro, trenYuzde, oncekiCiro,
+    donemAdi: { hafta: 'Bu Hafta', ay: 'Bu Ay', yil: 'Bu Yıl', tum: 'Tüm Zamanlar' }[aiAktifDonem]
+  };
+}
+
+function aiKpiRender(v) {
+  const grid = document.getElementById('ai-kpi-grid');
+  const kart = document.getElementById('ai-istatistik-kartlar');
+  if (!grid || !kart) return;
+  kart.style.display = 'block';
+
+  const trenRenk = v.trenYuzde === null ? '' : (parseFloat(v.trenYuzde) >= 0 ? '#3db85a' : '#e04040');
+  const trenIcon = v.trenYuzde === null ? '' : (parseFloat(v.trenYuzde) >= 0 ? '↑' : '↓');
+  const trenText = v.trenYuzde === null ? '' : `<div class="kpi-change" style="color:${trenRenk};">${trenIcon} ${Math.abs(v.trenYuzde)}% önceki döneme göre</div>`;
+
+  grid.innerHTML = `
+    <div class="ai-kpi-kart">
+      <div class="kpi-label">💰 TOPLAM CİRO</div>
+      <div class="kpi-val" style="color:var(--accent2);">${fmt(v.toplamCiro)}</div>
+      ${trenText}
+    </div>
+    <div class="ai-kpi-kart">
+      <div class="kpi-label">🧾 ADİSYON</div>
+      <div class="kpi-val">${v.adisyonSayisi}</div>
+      <div class="kpi-change" style="color:var(--muted);">${v.donemAdi}</div>
+    </div>
+    <div class="ai-kpi-kart">
+      <div class="kpi-label">📊 ORTALAMA</div>
+      <div class="kpi-val">${fmt(v.ortHarcama)}</div>
+      <div class="kpi-change" style="color:var(--muted);">Adisyon başına</div>
+    </div>
+    <div class="ai-kpi-kart">
+      <div class="kpi-label">🛒 ÜRÜN ÇEŞİDİ</div>
+      <div class="kpi-val">${v.urunSirali.length}</div>
+      <div class="kpi-change" style="color:var(--muted);">Farklı ürün</div>
+    </div>
+  `;
+}
+
+function aiCokSatanlarRender(v) {
+  const kart = document.getElementById('ai-cok-satanlar-kart');
+  const liste = document.getElementById('ai-cok-satanlar-liste');
+  if (!kart || !liste) return;
+  if (v.urunSirali.length === 0) return;
+  kart.style.display = 'block';
+
+  const top10 = v.urunSirali.slice(0, 10);
+  const maxAdet = top10[0]?.adet || 1;
+  const renkler = ['#f0b830','#c8a870','#cd7f32','#3b82f6','#10b981','#8b5cf6','#f97316','#06b6d4','#ec4899','#84cc16'];
+  const rozetler = ['🥇','🥈','🥉'];
+
+  liste.innerHTML = top10.map((u, i) => `
+    <div class="ai-urun-satir">
+      <div class="ai-urun-sira" style="background:${renkler[i] || '#555'}22;color:${renkler[i] || '#888'};">
+        ${rozetler[i] || (i+1)}
+      </div>
+      <div class="ai-urun-bar-wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.82rem;font-weight:800;">${u.isim}</span>
+          <span style="font-size:0.72rem;font-weight:700;color:var(--accent2);">${fmt(u.gelir)}</span>
+        </div>
+        <div style="background:var(--surface3);border-radius:4px;height:6px;margin-top:4px;overflow:hidden;">
+          <div class="ai-urun-bar" style="width:${(u.adet/maxAdet*100).toFixed(0)}%;background:${renkler[i] || '#888'};"></div>
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${u.adet} adet satıldı</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function aiYogunSaatlerRender(v) {
+  const kart = document.getElementById('ai-yogun-saatler-kart');
+  const icerik = document.getElementById('ai-yogun-icerik');
+  if (!kart || !icerik) return;
+  if (v.yogunSaatSirali.length === 0) return;
+  kart.style.display = 'block';
+
+  const topSaat = v.yogunSaatSirali.slice(0, 5);
+  const topGun = v.yogunGunSirali.slice(0, 5);
+  const maxS = topSaat[0]?.sayi || 1;
+  const maxG = topGun[0]?.sayi || 1;
+
+  icerik.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:0.68rem;color:var(--muted);font-weight:800;margin-bottom:8px;">EN YOĞUN SAATLER</div>
+      ${topSaat.map((s,i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:48px;font-size:0.75rem;font-weight:800;color:var(--accent2);text-align:right;">${s.saat}:00</div>
+          <div style="flex:1;background:var(--surface3);border-radius:4px;height:8px;overflow:hidden;">
+            <div style="height:100%;width:${(s.sayi/maxS*100).toFixed(0)}%;background:${i===0?'var(--accent2)':'var(--accent)'};border-radius:4px;"></div>
+          </div>
+          <div style="width:30px;font-size:0.7rem;color:var(--muted);font-weight:700;">${s.sayi}</div>
+        </div>`).join('')}
+    </div>
+    <div>
+      <div style="font-size:0.68rem;color:var(--muted);font-weight:800;margin-bottom:8px;">EN YOĞUN GÜNLER</div>
+      ${topGun.map((g,i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:80px;font-size:0.75rem;font-weight:800;color:var(--accent2);text-align:right;">${g.gun}</div>
+          <div style="flex:1;background:var(--surface3);border-radius:4px;height:8px;overflow:hidden;">
+            <div style="height:100%;width:${(g.sayi/maxG*100).toFixed(0)}%;background:${i===0?'#10b981':'#059669'};border-radius:4px;"></div>
+          </div>
+          <div style="width:30px;font-size:0.7rem;color:var(--muted);font-weight:700;">${g.sayi}</div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function aiTrendRender(v) {
+  const kart = document.getElementById('ai-trend-kart');
+  const icerik = document.getElementById('ai-trend-icerik');
+  if (!kart || !icerik) return;
+  const gunler = Object.entries(v.gunlukCiro);
+  if (gunler.length < 2) return;
+  kart.style.display = 'block';
+
+  const son14 = gunler.slice(-14);
+  const maxVal = Math.max(...son14.map(([,c]) => c), 1);
+  const barH = 60;
+
+  icerik.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:3px;height:${barH+30}px;overflow-x:auto;padding-bottom:4px;">
+      ${son14.map(([tarih, ciro]) => {
+        const h = Math.max((ciro / maxVal) * barH, 2);
+        const renk = ciro === Math.max(...son14.map(([,c])=>c)) ? 'var(--accent2)' : 'var(--accent)';
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:28px;flex:1;">
+          <div style="font-size:0.55rem;color:var(--muted);font-weight:700;">${ciro >= 1000 ? (ciro/1000).toFixed(1)+'k' : Math.round(ciro)}</div>
+          <div style="width:100%;height:${h}px;background:${renk};border-radius:4px 4px 2px 2px;"></div>
+          <div style="font-size:0.52rem;color:var(--muted);font-weight:700;white-space:nowrap;">${tarih}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${v.trenYuzde !== null ? `
+      <div style="margin-top:10px;padding:8px 12px;background:${parseFloat(v.trenYuzde)>=0?'rgba(61,184,90,0.1)':'rgba(224,64,64,0.1)'};border-radius:10px;border:1px solid ${parseFloat(v.trenYuzde)>=0?'rgba(61,184,90,0.3)':'rgba(224,64,64,0.3)'};">
+        <span style="font-size:0.8rem;font-weight:800;color:${parseFloat(v.trenYuzde)>=0?'#3db85a':'#e04040'};">
+          ${parseFloat(v.trenYuzde)>=0?'📈 ↑':'📉 ↓'} ${Math.abs(v.trenYuzde)}%
+        </span>
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:600;"> önceki döneme göre</span>
+      </div>` : ''}
+  `;
+}
+
+async function aiOnerilerUret(v) {
+  const kart = document.getElementById('ai-oneriler-kart');
+  const icerik = document.getElementById('ai-oneriler-icerik');
+  if (!kart || !icerik) return;
+  kart.style.display = 'block';
+  icerik.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">🤖 Claude AI analiz ediyor...</div>';
+
+  const prompt = `Sen bir cafe işletme danışmanısın. Aşağıdaki cafe satış verilerini analiz et ve Türkçe, kısa, uygulanabilir 5-6 madde öneri ver.
+
+DÖNEM: ${v.donemAdi}
+TOPLAM CİRO: ${fmt(v.toplamCiro)}
+ADİSYON SAYISI: ${v.adisyonSayisi}
+ORTALAMA HARCAMA: ${fmt(v.ortHarcama)}
+CİRO DEĞİŞİMİ: ${v.trenYuzde !== null ? '%' + v.trenYuzde + ' (önceki döneme göre)' : 'Karşılaştırma verisi yok'}
+
+EN ÇOK SATAN ÜRÜNLER (İlk 5):
+${v.urunSirali.slice(0,5).map((u,i) => `${i+1}. ${u.isim}: ${u.adet} adet, ${fmt(u.gelir)}`).join('\n')}
+
+EN YOĞUN SAATLER: ${v.yogunSaatSirali.slice(0,3).map(s => s.saat+':00 ('+s.sayi+' adisyon)').join(', ')}
+EN YOĞUN GÜNLER: ${v.yogunGunSirali.slice(0,3).map(g => g.gun+' ('+g.sayi+' adisyon)').join(', ')}
+
+Lütfen şunları yap:
+- Her öneriyi "✅" ile başlat
+- Kısa ve doğrudan konuya gir, gereksiz giriş cümlesi yazma
+- Somut, uygulanabilir öneriler ver (kampanya fikirleri, menü optimizasyonu, personel planlaması vs.)
+- Veriyi yorumla, sadece tekrarlama
+- Toplam 5-6 öneri, her biri 1-2 cümle`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const metin = data.content?.[0]?.text || 'Öneri üretilemedi.';
+    // Satırları HTML'e çevir
+    const html = metin.split('\n')
+      .filter(l => l.trim())
+      .map(l => `<div style="padding:6px 0;border-bottom:1px solid rgba(212,150,14,0.1);line-height:1.5;">${l}</div>`)
+      .join('');
+    icerik.innerHTML = html;
+  } catch (e) {
+    icerik.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">AI önerileri şu an alınamıyor. Verileriniz başarıyla analiz edildi.</div>';
+  }
+}
+
+function aiSohbetPanelAc(v) {
+  const kart = document.getElementById('ai-sohbet-kart');
+  if (!kart) return;
+  kart.style.display = 'block';
+
+  // Hızlı sorular
+  const hizliDiv = document.getElementById('ai-hizli-sorular');
+  if (hizliDiv) {
+    hizliDiv.innerHTML = aiHizliSorularListesi.map(s =>
+      `<button class="ai-hizli-soru" onclick="aiHizliSor(this, '${s.replace(/'/g,"\\'")}'">${s}</button>`
+    ).join('');
+  }
+}
+
+function aiHizliSor(btn, soru) {
+  // Hızlı soruya tıklayınca input'a yaz ve gönder
+  const inp = document.getElementById('ai-soru-inp');
+  if (inp) inp.value = soru;
+  aiSoruGonder();
+}
+
+async function aiSoruGonder() {
+  const inp = document.getElementById('ai-soru-inp');
+  const mesajlar = document.getElementById('ai-sohbet-mesajlar');
+  if (!inp || !mesajlar) return;
+
+  const soru = inp.value.trim();
+  if (!soru) return;
+  inp.value = '';
+
+  // Kullanıcı mesajı
+  const userDiv = document.createElement('div');
+  userDiv.className = 'ai-sohbet-msg user';
+  userDiv.textContent = soru;
+  mesajlar.appendChild(userDiv);
+
+  // Yükleniyor
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'ai-sohbet-msg loading';
+  loadDiv.textContent = '🤖 Düşünüyor...';
+  mesajlar.appendChild(loadDiv);
+  mesajlar.scrollTop = mesajlar.scrollHeight;
+
+  // Geçmişe ekle
+  aiSohbetGecmisi.push({ role: 'user', content: soru });
+
+  // Sistem bağlamı oluştur
+  const v = aiAnalizVerisi;
+  const baglamStr = v ? `
+Cafe satış verileri (${v.donemAdi}):
+- Toplam ciro: ${fmt(v.toplamCiro)}, Adisyon: ${v.adisyonSayisi}, Ortalama: ${fmt(v.ortHarcama)}
+- En çok satanlar: ${v.urunSirali.slice(0,5).map(u=>u.isim+' ('+u.adet+' adet)').join(', ')}
+- Yoğun saatler: ${v.yogunSaatSirali.slice(0,3).map(s=>s.saat+':00').join(', ')}
+- Yoğun günler: ${v.yogunGunSirali.slice(0,3).map(g=>g.gun).join(', ')}
+` : '';
+
+  try {
+    const messages = [
+      { role: 'user', content: `Sen bir cafe işletme danışmanısın.${baglamStr ? ' İşte cafe verisi:\n' + baglamStr : ''}\n\nSoru: ${soru}` },
+      ...aiSohbetGecmisi.slice(1) // ilk mesaj zaten yukarıda
+    ];
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: 'Sen KolayCafe için Türkçe konuşan, cafe işletme konusunda uzman bir AI asistansın. Kısa, pratik, samimi cevaplar ver.',
+        messages: aiSohbetGecmisi.length > 1
+          ? aiSohbetGecmisi
+          : [{ role: 'user', content: `${baglamStr ? 'Cafe verileri:\n' + baglamStr + '\n\n' : ''}Soru: ${soru}` }]
+      })
+    });
+    const data = await response.json();
+    const cevap = data.content?.[0]?.text || 'Şu an cevap üretemiyorum.';
+
+    loadDiv.className = 'ai-sohbet-msg ai';
+    loadDiv.textContent = cevap;
+
+    aiSohbetGecmisi.push({ role: 'assistant', content: cevap });
+    // En fazla 10 mesaj tut
+    if (aiSohbetGecmisi.length > 10) aiSohbetGecmisi = aiSohbetGecmisi.slice(-10);
+
+  } catch (e) {
+    loadDiv.className = 'ai-sohbet-msg ai';
+    loadDiv.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+  }
+
+  mesajlar.scrollTop = mesajlar.scrollHeight;
+}
+
+// Enter ile soru gönder
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('ai-soru-inp');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') aiSoruGonder(); });
+});
+ppendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
 </script>
 </body>
 </html>
