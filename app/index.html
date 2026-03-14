@@ -1705,6 +1705,14 @@
       <input type="text" id="yeni-cafe-adi" placeholder="Yeni kafe adı..." style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:10px;">
       <button class="ayar-btn" style="width:100%;" onclick="kafeAdiniGuncelle()">✓ Güncelle</button>
     </div>
+    <!-- AI Paketi -->
+    <div class="ayar-kart" id="ayar-ai-paket-kart">
+      <h3>🤖 AI Asistan Paketi</h3>
+      <div id="ayar-ai-paket-icerik">
+        <!-- JS ile doldurulacak -->
+      </div>
+    </div>
+
     <!-- Dijital Menü Görünümü -->
     <div class="ayar-kart" id="ayar-menu-gorunum-kart">
       <h3>🎨 Dijital Menü Görünümü</h3>
@@ -1938,6 +1946,11 @@
         <div style="font-size:0.7rem;color:var(--muted);font-weight:600;">Cafen hakkında akıllı analiz ve öneriler</div>
       </div>
       <button onclick="aiAnalizBaslat()" id="ai-yenile-btn" style="margin-left:auto;background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">🔄 Analiz Et</button>
+    </div>
+    <!-- Limit göstergeleri -->
+    <div style="display:flex;gap:12px;margin-bottom:6px;">
+      <div id="ai-limit-analiz" style="font-size:0.68rem;font-weight:700;color:var(--muted);"></div>
+      <div id="ai-limit-sohbet" style="font-size:0.68rem;font-weight:700;color:var(--muted);"></div>
     </div>
     <!-- Dönem seçimi -->
     <div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;">
@@ -2803,6 +2816,7 @@ async function kafeVerisiYukle() {
   window._kafeData = data; // Global olarak sakla
   if (data) {
     kafeId = data.id;
+    aiPaketAktif = data.ai_paket === true; // AI paket kontrolü
     // E-posta yoksa auth'tan al ve kaydet
     if (!data.email && kullanici?.email) {
       await sb.from('kafeler').update({ email: kullanici.email }).eq('id', data.id);
@@ -3137,7 +3151,7 @@ function paketYetkiUygula(plan) {
 
   // ── NAV MENÜ ──────────────────────────────────────────
   goster('nav-rapor',     p.rapor,   'flex');
-  goster('nav-ai',        p.rapor,   'flex');  // AI asistan rapor paketiyle açılır
+  goster('nav-ai',        true,      'flex');  // AI asistan her pakette görünür
   goster('nav-recete',    p.recete,  'flex');
   goster('nav-stok',      p.stok,    'flex');
   goster('nav-gelgid',    p.gelgid,  'flex');
@@ -6010,6 +6024,7 @@ function ayarlarRender(){
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
   menuGorunumYukle();
+  aiPaketKartRender();
   // Plan + Yetki kontrolü
   const data = window._kafeData;
   if (data) {
@@ -8263,10 +8278,89 @@ async function mmGarsonCagir() {
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
   t.textContent = '🔔 Garsonunuz geliyor!';
   document.body.a
-// ── AI ASİSTAN DEĞİŞKENLERİ ──
+// ── AI API PROXY (Supabase Edge Function üzerinden) ──
+async function claudeAPI(messages, system = '', maxTokens = 1000) {
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: maxTokens,
+    messages,
+  };
+  if (system) body.system = system;
+
+  // Supabase Edge Function proxy üzerinden çağır (CORS sorunsuz)
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error('Proxy hata: ' + err);
+  }
+  const data = await response.json();
+  return data.content?.[0]?.text || '';
+}
 let aiAktifDonem = 'hafta';
 let aiSohbetGecmisi = [];
 let aiAnalizVerisi = null;
+let aiPaketAktif = false;      // kafeler.ai_paket kolonundan gelir
+let aiGunlukAnaliz = 0;        // bugün yapılan analiz sayısı
+let aiAylikSohbet = 0;         // bu ay yapılan sohbet sayısı
+const AI_GUNLUK_LIMIT = 20;
+const AI_AYLIK_SOHBET_LIMIT = 200;
+
+function aiPaketKartRender() {
+  const el = document.getElementById('ayar-ai-paket-icerik');
+  if (!el) return;
+
+  if (aiPaketAktif) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="background:rgba(61,184,90,0.15);border:1.5px solid rgba(61,184,90,0.4);border-radius:10px;padding:6px 14px;font-size:0.8rem;font-weight:900;color:#3db85a;">✅ Aktif</div>
+        <div style="font-size:0.85rem;font-weight:800;color:var(--accent2);">399₺/ay</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:var(--surface3);border-radius:10px;padding:10px;border:1px solid var(--border);">
+          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📊 GÜNLÜK ANALİZ</div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">${AI_GUNLUK_LIMIT - aiGunlukAnaliz}<span style="font-size:0.7rem;color:var(--muted);font-weight:600;">/${AI_GUNLUK_LIMIT}</span></div>
+          <div style="font-size:0.65rem;color:var(--muted);">kalan hak</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:10px;padding:10px;border:1px solid var(--border);">
+          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">💬 AYLIK SOHBET</div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">${AI_AYLIK_SOHBET_LIMIT - aiAylikSohbet}<span style="font-size:0.7rem;color:var(--muted);font-weight:600;">/${AI_AYLIK_SOHBET_LIMIT}</span></div>
+          <div style="font-size:0.65rem;color:var(--muted);">kalan hak</div>
+        </div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);font-weight:600;">Paket iptali için: <strong>bilgi@kolaycafe.com</strong></div>
+    `;
+  } else {
+    el.innerHTML = `
+      <p style="font-size:0.8rem;color:var(--muted);font-weight:600;margin-bottom:14px;line-height:1.5;">
+        Satış analizi, gelir trendi ve Claude AI önerileri için AI Paketi'ni aktifleştirin.
+      </p>
+      <div style="background:linear-gradient(135deg,rgba(212,150,14,0.1),rgba(240,184,48,0.05));border:1.5px solid rgba(212,150,14,0.3);border-radius:12px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:1.6rem;font-weight:900;color:var(--accent2);margin-bottom:8px;">399₺<span style="font-size:0.85rem;color:var(--muted);font-weight:600;">/ay</span></div>
+        <div style="font-size:0.78rem;color:var(--text2);line-height:1.8;">
+          ✅ Günde 20 satış analizi<br>
+          ✅ Aylık 200 sohbet sorusu<br>
+          ✅ En çok satan ürün raporu<br>
+          ✅ Yoğun saat & gün analizi<br>
+          ✅ Gelir trendi grafiği<br>
+          ✅ Claude AI akıllı öneriler
+        </div>
+      </div>
+      <a href="mailto:bilgi@kolaycafe.com?subject=AI%20Paketi%20Aktivasyon&body=Merhaba%2C%20AI%20Paketini%20aktifle%C5%9Ftirmek%20istiyorum.%20Kafe%20ID%3A%20${kafeId}" 
+         style="display:block;width:100%;background:var(--accent);color:#1a0f00;border:none;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;text-align:center;text-decoration:none;box-sizing:border-box;">
+        🚀 Aktifleştir — 399₺/ay
+      </a>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;text-align:center;">bilgi@kolaycafe.com</div>
+    `;
+  }
+}
 let aiHizliSorularListesi = [
   "En iyi performanslı günüm hangisi?",
   "Hangi ürünü daha çok tanıtmalıyım?",
@@ -8284,13 +8378,124 @@ function aiDonemSec(donem, btn) {
 }
 
 function aiSayfaAc() {
-  // Sayfa açılınca otomatik başlat (ilk defa)
+  // Paket kontrolü
+  if (!aiPaketAktif) {
+    aiKilitEkraniGoster();
+    return;
+  }
+  // Kullanım sayaçlarını yükle
+  aiKullanımYukle();
+  // İlk defa açılıyorsa otomatik başlat
   if (!aiAnalizVerisi) {
     aiAnalizBaslat();
   }
 }
 
+function aiKilitEkraniGoster() {
+  const icerik = document.getElementById('ai-icerik');
+  if (!icerik) return;
+  document.getElementById('ai-yukleniyor').style.display = 'none';
+  document.getElementById('ai-bos').style.display = 'none';
+  document.getElementById('ai-istatistik-kartlar').style.display = 'none';
+  document.getElementById('ai-cok-satanlar-kart').style.display = 'none';
+  document.getElementById('ai-yogun-saatler-kart').style.display = 'none';
+  document.getElementById('ai-trend-kart').style.display = 'none';
+  document.getElementById('ai-oneriler-kart').style.display = 'none';
+  document.getElementById('ai-sohbet-kart').style.display = 'none';
+
+  // Kilit ekranı varsa kaldır, yoksa oluştur
+  let kilit = document.getElementById('ai-kilit-ekrani');
+  if (!kilit) {
+    kilit = document.createElement('div');
+    kilit.id = 'ai-kilit-ekrani';
+    icerik.appendChild(kilit);
+  }
+  kilit.style.display = 'flex';
+  kilit.innerHTML = `
+    <div style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <div style="font-size:3.5rem;">🤖</div>
+      <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">AI Asistan</div>
+      <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;max-width:300px;">
+        Satış analizi, gelir trendi ve akıllı öneriler için <strong style="color:var(--text);">AI Paketi</strong> gereklidir.
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(212,150,14,0.15),rgba(240,184,48,0.08));border:1.5px solid rgba(212,150,14,0.4);border-radius:16px;padding:20px;width:100%;max-width:280px;">
+        <div style="font-size:0.7rem;color:var(--muted);font-weight:800;letter-spacing:1px;margin-bottom:8px;">🤖 AI PAKETİ</div>
+        <div style="font-size:2rem;font-weight:900;color:var(--accent2);margin-bottom:4px;">399₺<span style="font-size:0.9rem;color:var(--muted);font-weight:600;">/ay</span></div>
+        <div style="font-size:0.72rem;color:var(--text2);line-height:1.7;margin-bottom:16px;">
+          ✅ Günde 20 analiz hakkı<br>
+          ✅ Aylık 200 sohbet sorusu<br>
+          ✅ Satış & gelir trend analizi<br>
+          ✅ En çok satan ürün raporu<br>
+          ✅ Claude AI akıllı öneriler<br>
+          ✅ İşletme danışmanı sohbeti
+        </div>
+        <button onclick="sayfaGit('ayarlar')" style="width:100%;background:var(--accent);color:#1a0f00;border:none;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;">
+          🚀 Paketi Aktifleştir
+        </button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);">Aktivasyon için: <strong>bilgi@kolaycafe.com</strong></div>
+    </div>
+  `;
+}
+
+async function aiKullanımYukle() {
+  try {
+    const bugun = new Date().toISOString().split('T')[0];
+    const ayBasi = new Date(); ayBasi.setDate(1); ayBasi.setHours(0,0,0,0);
+
+    // Bugünkü analiz sayısı
+    const { data: gunData } = await sb.from('ai_kullanim')
+      .select('id')
+      .eq('kafe_id', kafeId)
+      .eq('tip', 'analiz')
+      .gte('created_at', bugun + 'T00:00:00')
+      .lt('created_at', bugun + 'T23:59:59');
+    aiGunlukAnaliz = (gunData || []).length;
+
+    // Bu ayki sohbet sayısı
+    const { data: ayData } = await sb.from('ai_kullanim')
+      .select('id')
+      .eq('kafe_id', kafeId)
+      .eq('tip', 'sohbet')
+      .gte('created_at', ayBasi.toISOString());
+    aiAylikSohbet = (ayData || []).length;
+
+    // Limit göstergelerini güncelle
+    aiLimitGoster();
+  } catch(e) {
+    // ai_kullanim tablosu yoksa sessizce geç
+  }
+}
+
+function aiLimitGoster() {
+  const analizEl = document.getElementById('ai-limit-analiz');
+  const sohbetEl = document.getElementById('ai-limit-sohbet');
+  if (analizEl) {
+    const kalan = AI_GUNLUK_LIMIT - aiGunlukAnaliz;
+    analizEl.textContent = `Bugün ${kalan} analiz hakkın kaldı`;
+    analizEl.style.color = kalan <= 3 ? '#e04040' : 'var(--muted)';
+  }
+  if (sohbetEl) {
+    const kalan = AI_AYLIK_SOHBET_LIMIT - aiAylikSohbet;
+    sohbetEl.textContent = `Bu ay ${kalan} sohbet hakkın kaldı`;
+    sohbetEl.style.color = kalan <= 10 ? '#e04040' : 'var(--muted)';
+  }
+}
+
+async function aiKullanımKaydet(tip) {
+  try {
+    await sb.from('ai_kullanim').insert({ kafe_id: kafeId, tip });
+  } catch(e) {}
+}
+
 async function aiAnalizBaslat() {
+  // Paket kontrolü
+  if (!aiPaketAktif) { aiKilitEkraniGoster(); return; }
+  // Günlük limit kontrolü
+  if (aiGunlukAnaliz >= AI_GUNLUK_LIMIT) {
+    toast(`⛔ Bugünkü ${AI_GUNLUK_LIMIT} analiz hakkınız doldu. Yarın yenilenir.`);
+    return;
+  }
   const yukleniyor = document.getElementById('ai-yukleniyor');
   const bos = document.getElementById('ai-bos');
   if (yukleniyor) { yukleniyor.style.display = 'block'; }
@@ -8326,6 +8531,11 @@ async function aiAnalizBaslat() {
 
     // 7) Sohbet paneli
     aiSohbetPanelAc(veri);
+
+    // Kullanım kaydet
+    aiGunlukAnaliz++;
+    await aiKullanımKaydet('analiz');
+    aiLimitGoster();
 
     clearInterval(progressTimer);
     if (fill) fill.style.width = '100%';
@@ -8604,17 +8814,11 @@ Lütfen şunları yap:
 - Toplam 5-6 öneri, her biri 1-2 cümle`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await response.json();
-    const metin = data.content?.[0]?.text || 'Öneri üretilemedi.';
+    const metin = await claudeAPI(
+      [{ role: 'user', content: prompt }],
+      '',
+      1000
+    );
     // Satırları HTML'e çevir
     const html = metin.split('\n')
       .filter(l => l.trim())
@@ -8654,6 +8858,12 @@ async function aiSoruGonder() {
 
   const soru = inp.value.trim();
   if (!soru) return;
+
+  // Aylık sohbet limiti
+  if (aiAylikSohbet >= AI_AYLIK_SOHBET_LIMIT) {
+    toast(`⛔ Bu ayki ${AI_AYLIK_SOHBET_LIMIT} sohbet hakkınız doldu.`);
+    return;
+  }
   inp.value = '';
 
   // Kullanıcı mesajı
@@ -8688,25 +8898,21 @@ Cafe satış verileri (${v.donemAdi}):
       ...aiSohbetGecmisi.slice(1) // ilk mesaj zaten yukarıda
     ];
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        system: 'Sen KolayCafe için Türkçe konuşan, cafe işletme konusunda uzman bir AI asistansın. Kısa, pratik, samimi cevaplar ver.',
-        messages: aiSohbetGecmisi.length > 1
-          ? aiSohbetGecmisi
-          : [{ role: 'user', content: `${baglamStr ? 'Cafe verileri:\n' + baglamStr + '\n\n' : ''}Soru: ${soru}` }]
-      })
-    });
-    const data = await response.json();
-    const cevap = data.content?.[0]?.text || 'Şu an cevap üretemiyorum.';
+    const cevap = await claudeAPI(
+      aiSohbetGecmisi.length > 1
+        ? aiSohbetGecmisi
+        : [{ role: 'user', content: `${baglamStr ? 'Cafe verileri:\n' + baglamStr + '\n\n' : ''}Soru: ${soru}` }],
+      'Sen KolayCafe için Türkçe konuşan, cafe işletme konusunda uzman bir AI asistansın. Kısa, pratik, samimi cevaplar ver.',
+      600
+    );
 
     loadDiv.className = 'ai-sohbet-msg ai';
     loadDiv.textContent = cevap;
 
     aiSohbetGecmisi.push({ role: 'assistant', content: cevap });
+    aiAylikSohbet++;
+    await aiKullanımKaydet('sohbet');
+    aiLimitGoster();
     // En fazla 10 mesaj tut
     if (aiSohbetGecmisi.length > 10) aiSohbetGecmisi = aiSohbetGecmisi.slice(-10);
 
