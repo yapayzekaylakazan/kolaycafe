@@ -2661,12 +2661,13 @@ async function garsonGiris(isim, kafeData) {
           if (m) {
             const eskiJson = JSON.stringify(m.siparisler);
             const yeniJson = JSON.stringify(am.siparisler);
-            if (eskiJson !== yeniJson) {
+            if (eskiJson !== yeniJson || (am.not||'') !== (m.not||'')) {
               m.siparisler = am.siparisler || [];
               m.garson = am.garson || '';
               m.indirim = am.indirim || 0;
               m.kisi_sayisi = am.kisi_sayisi || 0;
               m.hesap_istendi = am.hesap_istendi || false;
+              if (am.not !== undefined) m.not = am.not || '';
               degisti = true;
             }
           }
@@ -2699,6 +2700,23 @@ async function uygulamaBaslat(user) {
   document.getElementById('ayar-email').textContent = user.email;
   await kafeVerisiYukle();
   await kolaycafenVerisiYukle();
+  // Aktif masaları yükle (sipariş, garson, not, kisi_sayisi vb.)
+  try {
+    const {data: amData} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+    if (amData?.aktif_masalar) {
+      amData.aktif_masalar.forEach(am => {
+        const m = masalar.find(x => x.id === am.id);
+        if (m) {
+          m.siparisler = am.siparisler || [];
+          m.garson = am.garson || '';
+          m.indirim = am.indirim || 0;
+          m.kisi_sayisi = am.kisi_sayisi || 0;
+          m.hesap_istendi = am.hesap_istendi || false;
+          if (am.not) m.not = am.not; // aktif masanın notunu öncelikle al
+        }
+      });
+    }
+  } catch(e) { console.log('Aktif masa yükleme hatası:', e); }
   masalarRender();
   urunListesiRender();
   setSyncOnline(true);
@@ -2772,12 +2790,13 @@ async function uygulamaBaslat(user) {
           // Supabase'den gelen veriyi her zaman uygula (mobil<->PC çift yönlü sync)
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
-          if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0) || (am.kisi_sayisi||0) !== (m.kisi_sayisi||0)) {
+          if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0) || (am.kisi_sayisi||0) !== (m.kisi_sayisi||0) || (am.not||'') !== (m.not||'')) {
             m.siparisler = am.siparisler || [];
             m.garson = am.garson || '';
             m.indirim = am.indirim || 0;
             m.kisi_sayisi = am.kisi_sayisi || 0;
             m.hesap_istendi = am.hesap_istendi || false;
+            if (am.not !== undefined) m.not = am.not || '';
             degisti = true;
           }
         } else if (m.siparisler.length > 0) {
