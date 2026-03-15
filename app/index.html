@@ -1,4 +1,19 @@
-<script>function aiVerileriYukle(donem) { console.log(donem + " verileri yukleniyor..."); if(typeof kafe_id !== "undefined") { console.log("Kafe ID bulundu, analiz basliyor."); /* Gerçek veri çekme komutu buraya gelecek */ } else { console.error("Oturum acilmamis."); } }</script>
+<script>
+function aiAnalizBaslat() {
+  console.log("Analiz butonu tetiklendi.");
+  const donem = document.getElementById("ai-donem-sec")?.value || "hafta";
+  aiVerileriYukle(donem);
+}
+function aiVerileriYukle(donem) {
+  console.log(donem + " verileri icin motor calisti.");
+  if (typeof kafe_id !== "undefined") {
+    console.log("Veri cekme islemi basliyor...");
+    /* Burada orijinal ana fonksiyonunuzu tetikliyoruz */
+    if (window.aiAnalizMotoru) window.aiAnalizMotoru(donem);
+  } else {
+    console.error("Kullanici oturumu bulunamadi.");
+  }
+}</script>
 <script>function aiAnalizBaslat() { console.log("Analiz baslatiliyor..."); const donem = document.getElementById("ai-donem-sec")?.value || "hafta"; if(typeof aiVerileriYukle === "function") { aiVerileriYukle(donem); } else { console.error("Sistem henuz hazir degil, lütfen bekleyin."); } }</script>
 <!DOCTYPE html>
 <html lang="tr">
