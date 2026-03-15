@@ -1,18 +1,3 @@
-  console.log("Analiz butonu tetiklendi.");
-  const donem = document.getElementById("ai-donem-sec")?.value || "hafta";
-  aiVerileriYukle(donem);
-}
-function aiVerileriYukle(donem) {
-  console.log(donem + " verileri icin motor calisti.");
-  if (typeof kafe_id !== "undefined") {
-    console.log("Veri cekme islemi basliyor...");
-    /* Burada orijinal ana fonksiyonunuzu tetikliyoruz */
-    if (window.aiAnalizMotoru) window.aiAnalizMotoru(donem);
-  } else {
-    console.error("Kullanici oturumu bulunamadi.");
-  }
-}</script>
-<script>function aiAnalizBaslat() { console.log("Analiz baslatiliyor..."); const donem = document.getElementById("ai-donem-sec")?.value || "hafta"; if(typeof aiVerileriYukle === "function") { aiVerileriYukle(donem); } else { console.error("Sistem henuz hazir degil, lütfen bekleyin."); } }</script>
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -2313,18 +2298,6 @@ function aiVerileriYukle(donem) {
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-function aiAnalizBaslat() { 
-  console.log("Analiz baslatiliyor..."); 
-  if(typeof aiOnerilerUret === "function") { 
-    aiOnerilerUret(); 
-  } else { 
-    alert("Analiz fonksiyonu henuz yuklenmedi, lutfen sayfayi yenileyin."); 
-  } 
-}
-function aiOnerilerUret() { console.log("AI Onerileri uretiliyor..."); }
-function aiSoruGonder() { console.log("Soru gonderiliyor..."); }
-function aiAnalizBaslat() { console.log("Analiz baslatiliyor..."); if(typeof aiOnerilerUret === "function") aiOnerilerUret(); }
-function aiSayfaAc() { console.log("AI Sayfa Ac fonksiyonu yuklendi!"); }
 // ════════════════════════════════════════
 // SUPABASE BAŞLAT
 // ════════════════════════════════════════
