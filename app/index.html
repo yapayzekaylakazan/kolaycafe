@@ -2298,39 +2298,18 @@
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-function aiAnalizBaslat() {
-  console.log("Analiz baslatiliyor...");
-  const btn = document.querySelector(".ai-analiz-btn");
-  if(btn) btn.disabled = true;
-  const donem = document.getElementById("ai-donem-sec")?.value || "hafta";
-  // Orijinal analiz fonksiyonunu tetikle
-  if(typeof aiKullanimiKaydet === "function") {
-    aiKullanimiKaydet("analiz").then(() => {
-      if(typeof aiVerileriYukle === "function") aiVerileriYukle(donem);
-    });
-  } else {
-    if(typeof aiVerileriYukle === "function") aiVerileriYukle(donem);
-  }
-}
+function aiAnalizBaslat() { 
+  console.log("Analiz baslatiliyor..."); 
+  if(typeof aiOnerilerUret === "function") { 
+    aiOnerilerUret(); 
+  } else { 
     alert("Analiz fonksiyonu henuz yuklenmedi, lutfen sayfayi yenileyin."); 
   } 
 }
 function aiOnerilerUret() { console.log("AI Onerileri uretiliyor..."); }
 function aiSoruGonder() { console.log("Soru gonderiliyor..."); }
-function aiAnalizBaslat() {
-  console.log("Analiz baslatiliyor...");
-  const btn = document.querySelector(".ai-analiz-btn");
-  if(btn) btn.disabled = true;
-  const donem = document.getElementById("ai-donem-sec")?.value || "hafta";
-  // Orijinal analiz fonksiyonunu tetikle
-  if(typeof aiKullanimiKaydet === "function") {
-    aiKullanimiKaydet("analiz").then(() => {
-      if(typeof aiVerileriYukle === "function") aiVerileriYukle(donem);
-    });
-  } else {
-    if(typeof aiVerileriYukle === "function") aiVerileriYukle(donem);
-  }
-}
+function aiAnalizBaslat() { console.log("Analiz baslatiliyor..."); if(typeof aiOnerilerUret === "function") aiOnerilerUret(); }
+function aiSayfaAc() { console.log("AI Sayfa Ac fonksiyonu yuklendi!"); }
 // ════════════════════════════════════════
 // SUPABASE BAŞLAT
 // ════════════════════════════════════════
@@ -8521,20 +8500,9 @@ async function aiKullanimKaydet(tip) {
   } catch(e) {}
 }
 
-function aiAnalizBaslat() {
-  console.log("Analiz baslatiliyor...");
-  const btn = document.querySelector(".ai-analiz-btn");
-  if(btn) btn.disabled = true;
-  const donem = document.getElementById("ai-donem-sec")?.value || "hafta";
-  // Orijinal analiz fonksiyonunu tetikle
-  if(typeof aiKullanimiKaydet === "function") {
-    aiKullanimiKaydet("analiz").then(() => {
-      if(typeof aiVerileriYukle === "function") aiVerileriYukle(donem);
-    });
-  } else {
-    if(typeof aiVerileriYukle === "function") aiVerileriYukle(donem);
-  }
-}
+async function aiAnalizBaslat() {
+  // Paket kontrolü
+  if (!aiPaketAktif) { aiKilitEkraniGoster(); return; }
   // Günlük limit kontrolü
   if (aiGunlukAnaliz >= AI_GUNLUK_LIMIT) {
     toast(`⛔ Bugünkü ${AI_GUNLUK_LIMIT} analiz hakkınız doldu. Yarın yenilenir.`);
