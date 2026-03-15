@@ -2711,14 +2711,11 @@ async function uygulamaBaslat(user) {
       filter: 'kafe_id=eq.'+kafeId
     }, async (payload) => {
       const a = payload.new;
-      // Zaten listede var mı kontrol et (çift kayıt önle)
-      const created = new Date(a.created_at).getTime();
-      const varMi = kapaliKolayCafenlar.find(k => {
-        if (k.tarihObj && Math.abs(k.tarihObj.getTime() - created) < 3000 && k.masa === a.masa_no) return true;
-        return false;
-      });
+      // Zaten listede var mı kontrol et (çift kayıt önle) - id bazlı
+      const varMi = kapaliKolayCafenlar.find(k => k.id === a.id);
       if (!varMi) {
         kapaliKolayCafenlar.unshift({
+          id: a.id,
           masa: a.masa_no,
           masaAd: a.masa_ad||'Masa '+a.masa_no,
           tarih: new Date(a.created_at).toLocaleString('tr-TR'),
@@ -3346,7 +3343,7 @@ function kolaycafenGuncelle() {
     banner.style.display='none';
   }
   const gc = document.getElementById('garson-chip');
-  gc.textContent = m.garson?'👤 '+m.garson:'👤 Garson';
+  gc.textContent = m.garson ? '👤 ' + m.garson : '👤 Garson';
   katTabsRender(); urunGridRender(); siparisListeRender();
 }
 
@@ -3610,7 +3607,91 @@ async function tahsilEt(odemeTipi) {
 }
 
 // ════════════════════════════════════════
-// İNDİRİM
+// ADİSYON GERİ AL / SİL
+// ════════════════════════════════════════
+async function adisyonGeriAl(a) {
+  if (!confirm(`"${a.masaAd}" adisyonu geri alınacak.\nSiparişler masaya yüklenecek, stoklar iade edilecek.\nEmin misiniz?`)) return;
+
+  // 1. Masayı bul
+  const m = masalar.find(x => x.id == a.masa);
+  if (!m) { toast('⚠️ Masa bulunamadı, sadece listeden kaldırıldı.'); }
+
+  if (m) {
+    // 2. Siparişleri masaya geri yükle (mevcut siparişlere ekle)
+    a.siparisler.forEach(s => {
+      const mevcut = m.siparisler.find(x => x.isim === s.isim && x.fiyat === s.fiyat);
+      if (mevcut) mevcut.adet += s.adet;
+      else m.siparisler.push({...s});
+    });
+
+    // 3. Stokları geri ver
+    a.siparisler.forEach(s => stokArtir(s.isim, s.adet));
+
+    // 4. Ciro ve istatistiklerden düş
+    if (a.toplam > 0) {
+      gunlukCiro = Math.max(0, gunlukCiro - a.toplam);
+      gunlukAdi = Math.max(0, gunlukAdi - 1);
+      a.siparisler.forEach(s => {
+        if (gunlukSatis[s.isim]) {
+          gunlukSatis[s.isim].adet = Math.max(0, gunlukSatis[s.isim].adet - s.adet);
+          gunlukSatis[s.isim].toplam = Math.max(0, gunlukSatis[s.isim].toplam - s.fiyat * s.adet);
+        }
+      });
+    }
+
+    // 5. Masayı sync et
+    await masaSyncYaz(m.id);
+  }
+
+  // 6. Supabase'den sil
+  if (a.id) {
+    try { await sb.from('kolaycafenlar').delete().eq('id', a.id); } catch(e) { console.error(e); }
+  }
+
+  // 7. Local listeden kaldır
+  kapaliKolayCafenlar = kapaliKolayCafenlar.filter(x => x !== a);
+
+  masalarRender();
+  kolaycafenGuncelle();
+  raporRender();
+  toast('↩ Adisyon geri alındı — ' + a.masaAd);
+}
+
+async function adisyonSil(a) {
+  if (!confirm(`"${a.masaAd}" adisyonu silinecek.\nMasa açılmayacak, sadece listeden kaldırılacak.\nEmin misiniz?`)) return;
+
+  // Supabase'den sil
+  if (a.id) {
+    try { await sb.from('kolaycafenlar').delete().eq('id', a.id); } catch(e) { console.error(e); }
+  }
+
+  // Ciro düzelt
+  if (a.toplam > 0) {
+    gunlukCiro = Math.max(0, gunlukCiro - a.toplam);
+    gunlukAdi = Math.max(0, gunlukAdi - 1);
+  }
+
+  // Local listeden kaldır
+  kapaliKolayCafenlar = kapaliKolayCafenlar.filter(x => x !== a);
+
+  raporRender();
+  toast('🗑 Adisyon silindi');
+}
+
+function stokArtir(urunAdi, adet) {
+  let degisti = false;
+  for (const [kat, urunler] of Object.entries(URUNLER)) {
+    const u = urunler.find(x => x.isim === urunAdi);
+    if (u && u.stok !== null && u.stok !== undefined) {
+      u.stok += adet;
+      degisti = true;
+      break;
+    }
+  }
+  if (degisti) { urunGridRender(); bulutKaydet(); }
+}
+
+
 // ════════════════════════════════════════
 // ════════════════════════════════════════
 // SPLIT BILL — ÜRÜN SEÇELİ ÖDE
@@ -5448,7 +5529,13 @@ async function raporRenderTam() {
             ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${a.garson}</div>`:''}
             <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
             ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteri_adi&&!gelal?' — '+a.musteri_adi:''}</div>`:''}
-            <button class="fis-al-btn">🖨 Fiş Al</button>`;
+            <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+              <button class="fis-al-btn" style="flex:1;">🖨 Fiş Al</button>
+              <button class="adisyon-geri-al-btn" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid var(--accent2);background:transparent;color:var(--accent2);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">↩ Geri Al</button>
+              <button class="adisyon-sil-btn" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">🗑 Sil</button>
+            </div>`;
+          div.querySelector('.adisyon-geri-al-btn').addEventListener('click',()=>adisyonGeriAl(a));
+          div.querySelector('.adisyon-sil-btn').addEventListener('click',()=>adisyonSil(a));
           div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
           kl.appendChild(div);
         });
@@ -7614,6 +7701,8 @@ window.receteMaliyetGuncelle = receteMaliyetGuncelle;
 window.receteKaydet = receteKaydet;
 window.gelAlSil = gelAlSil;
 window.gelAlKatSec = gelAlKatSec;
+window.adisyonGeriAl = adisyonGeriAl;
+window.adisyonSil = adisyonSil;
 
 (async ()=>{
   // QR ile gelen müşteri ise session kontrolü yapma, direkt menüyü aç
