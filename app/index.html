@@ -176,9 +176,6 @@
   .si-sayi { font-size: 0.95rem; font-weight: 900; color: var(--accent2); min-width: 20px; text-align: center; }
   .si-fiyat { font-size: 0.85rem; font-weight: 800; color: var(--text2); min-width: 56px; text-align: right; }
   .si-sil { background: none; border: none; color: var(--muted); font-size: 0.9rem; cursor: pointer; }
-  .si-not-btn { background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; padding: 2px 3px; flex-shrink: 0; }
-  .si-not-btn.var { color: var(--accent2); }
-  .si-not-text { font-size: 0.62rem; color: var(--accent2); font-weight: 700; margin-top: 2px; background: rgba(212,150,14,0.12); border-radius: 5px; padding: 1px 5px; display: inline-block; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kolaycafen-footer { padding: 8px 12px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
   .toplam-alan { flex: 1; }
   .toplam-etiket { font-size: 0.68rem; color: var(--muted); font-weight: 700; }
@@ -2091,19 +2088,6 @@
   </div>
 </div>
 
-<!-- SİPARİŞ NOTU MODALI -->
-<div class="modal-overlay" id="siparis-not-modal">
-  <div class="modal" style="max-width:340px;">
-    <div class="modal-baslik">📝 Sipariş Notu</div>
-    <div id="siparis-not-urun-adi" style="font-size:0.85rem;color:var(--text2);font-weight:700;margin-bottom:10px;"></div>
-    <textarea id="siparis-not-input" maxlength="60" placeholder="örn: az şekerli, demli, buz ekle, az pişmiş..." rows="3"
-      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;resize:none;margin-bottom:13px;"></textarea>
-    <button id="siparis-not-kaydet" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Kaydet</button>
-    <button id="siparis-not-temizle" style="width:100%;padding:10px;border-radius:11px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:7px;">🗑 Notu Sil</button>
-    <button onclick="modalKapat('siparis-not-modal')" class="modal-kapat">İptal</button>
-  </div>
-</div>
-
 <div class="modal-overlay" id="garson-modal">
   <div class="modal" style="max-width:340px;">
     <div class="modal-baslik">👤 Garson Seç</div>
@@ -2681,6 +2665,8 @@ async function garsonGiris(isim, kafeData) {
               m.siparisler = am.siparisler || [];
               m.garson = am.garson || '';
               m.indirim = am.indirim || 0;
+              m.kisi_sayisi = am.kisi_sayisi || 0;
+              m.hesap_istendi = am.hesap_istendi || false;
               degisti = true;
             }
           }
@@ -2689,7 +2675,7 @@ async function garsonGiris(isim, kafeData) {
         masalar.forEach(m => {
           const halaAktif = data.aktif_masalar.find(am=>am.id===m.id);
           if (!halaAktif && m.siparisler.length > 0) {
-            m.siparisler = []; m.garson = ''; m.indirim = 0;
+            m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
             degisti = true;
           }
         });
@@ -2782,16 +2768,25 @@ async function uygulamaBaslat(user) {
       let degisti = false;
       masalar.forEach(m => {
         const am = aktif.find(x=>x.id===m.id);
-        if (am && m.siparisler.length === 0) {
-          m.siparisler = am.siparisler || [];
-          m.garson = am.garson || '';
-          m.indirim = am.indirim || 0;
+        if (am) {
+          // Supabase'den gelen veriyi her zaman uygula (mobil<->PC çift yönlü sync)
+          const eskiJson = JSON.stringify(m.siparisler);
+          const yeniJson = JSON.stringify(am.siparisler||[]);
+          if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0) || (am.kisi_sayisi||0) !== (m.kisi_sayisi||0)) {
+            m.siparisler = am.siparisler || [];
+            m.garson = am.garson || '';
+            m.indirim = am.indirim || 0;
+            m.kisi_sayisi = am.kisi_sayisi || 0;
+            m.hesap_istendi = am.hesap_istendi || false;
+            degisti = true;
+          }
+        } else if (m.siparisler.length > 0) {
+          // Supabase'de yok ama lokalde dolu = baska cihaz kapatti
+          m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
           degisti = true;
         }
-        // NOT: "Supabase'de yok ama lokalde var" durumunu subscription'da işleme
-        // Bu sadece interval'de ve sadece transfer/split dışında işlensin
       });
-      if (degisti) { masalarRender(); siparisListeRender(); }
+      if (degisti) { masalarRender(); if(seciliMasa) siparisListeRender(); }
       setSyncOnline(true);
     })
     .subscribe();
@@ -2810,6 +2805,8 @@ async function uygulamaBaslat(user) {
             m.siparisler = am.siparisler;
             m.garson = am.garson || '';
             m.indirim = am.indirim || 0;
+            m.kisi_sayisi = am.kisi_sayisi || 0;
+            m.hesap_istendi = am.hesap_istendi || false;
             degisti = true;
           }
           // Garson çağrısı kontrolü - yeni çağrı geldi mi?
@@ -3028,7 +3025,9 @@ async function masaSyncYaz(masaId) {
       const masaData = {
         id:m.id, ad:m.ad, not:m.not||'',
         siparisler:m.siparisler,
-        garson:m.garson||'', indirim:m.indirim||0
+        garson:m.garson||'', indirim:m.indirim||0,
+        kisi_sayisi:m.kisi_sayisi||0,
+        hesap_istendi:m.hesap_istendi||false
       };
       if (idx >= 0) aktif[idx] = masaData;
       else aktif.push(masaData);
@@ -3279,14 +3278,13 @@ function masalarRender() {
         <div class="mk-footer">
           <div class="mk-tutar">${fmt(toplam)}</div>
           <div class="mk-adet">${adetToplam}</div>
-        </div>` : `<div style="flex:1;display:flex;align-items:center;justify-content:center;"><div style="font-size:0.6rem;color:var(--muted);font-weight:700;">Boş</div></div>`}
+        </div>` : `<div style="flex:1;display:flex;align-items:center;justify-content:center;">${m.not ? `<div style="font-size:0.6rem;color:var(--accent2);font-weight:800;text-align:center;padding:0 4px;word-break:break-word;line-height:1.3;">📝 ${m.not}</div>` : `<div style="font-size:0.6rem;color:var(--muted);font-weight:700;">Boş</div>`}</div>`}
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
-      ${m.not ? `<div style="position:absolute;bottom:4px;left:4px;font-size:0.5rem;color:var(--accent2);font-weight:800;max-width:50px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;pointer-events:none;">📝${m.not}</div>` : ''}
-      <button class="masa-qr-btn">QR</button>
+
       <button class="masa-not-btn">✏️</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
-      btn.querySelector(".masa-qr-btn").addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
+      const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       // Garson çağrı kapat butonu
       
       btn.addEventListener('click',()=>{
@@ -3505,9 +3503,7 @@ function siparisListeRender() {
         <div style="flex:1;min-width:0;">
           <div class="si-isim">${s.isim}</div>
           ${metaBilgi?`<div class="si-meta">🕐 ${metaBilgi}</div>`:''}
-          ${s.not?`<div class="si-not-text">📝 ${s.not}</div>`:''}
         </div>
-        <button class="si-not-btn${s.not?' var':''}" onclick="siparisNotAc(${i})" title="Sipariş notu">📝</button>
         <div class="si-miktar">
           <button class="si-btn" onclick="mikDeg(${i},-1)">−</button>
           <span class="si-sayi">${s.adet}</span>
@@ -3522,27 +3518,6 @@ function siparisListeRender() {
   const oncEl=document.getElementById('toplam-onceki');
   if(ind>0){oncEl.style.display='block';oncEl.textContent=fmt(ham);document.getElementById('toplam-tutar').textContent=fmt(son)+' (-%'+ind+')';}
   else{oncEl.style.display='none';document.getElementById('toplam-tutar').textContent=fmt(ham);}
-}
-
-function siparisNotAc(idx) {
-  if(!seciliMasa) return;
-  const m = getMasa(); if(!m) return;
-  const s = m.siparisler[idx]; if(!s) return;
-  document.getElementById('siparis-not-urun-adi').textContent = '✦ ' + s.isim;
-  document.getElementById('siparis-not-input').value = s.not || '';
-  document.getElementById('siparis-not-kaydet').onclick = () => {
-    const not = document.getElementById('siparis-not-input').value.trim().substring(0,60);
-    m.siparisler[idx].not = not || undefined;
-    modalKapat('siparis-not-modal');
-    siparisListeRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
-  };
-  document.getElementById('siparis-not-temizle').onclick = () => {
-    delete m.siparisler[idx].not;
-    modalKapat('siparis-not-modal');
-    siparisListeRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
-  };
-  modalAc('siparis-not-modal');
-  setTimeout(()=>document.getElementById('siparis-not-input').focus(),150);
 }
 
 function mikDeg(idx,d) {
@@ -3973,6 +3948,7 @@ function kisiSayisiUygula(sayi) {
   }
   seciliMasa = _kisiModalMasaId;
   masalarRender(); kolaycafenGuncelle(); sayfaGit('kolaycafen');
+  if (_kisiModalMasaId) masaSyncYaz(_kisiModalMasaId);
 }
 
 function masaHesapIste(masaId) {
@@ -4046,8 +4022,8 @@ async function transferYap(hedefId){
   });
   const kid=seciliMasa;
   if(!h.garson&&k.garson) h.garson=k.garson;
-  if(!h.kisiSayisi && k.kisiSayisi) h.kisiSayisi=k.kisiSayisi; // Kişi sayısını taşı
-  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0; k.kisiSayisi=0;
+  if(!h.kisi_sayisi && k.kisi_sayisi) h.kisi_sayisi=k.kisi_sayisi;
+  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0; k.kisi_sayisi=0; k.hesap_istendi=false;
   modalKapat('transfer-modal');
   seciliMasa=hedefId;
   masalarRender();
@@ -4059,7 +4035,7 @@ async function transferYap(hedefId){
     aktif = aktif.filter(x=>x.id!==kid);
     // Hedef masayı güncelle
     const hidx = aktif.findIndex(x=>x.id===hedefId);
-    const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:[...h.siparisler],garson:h.garson||'',indirim:h.indirim||0};
+    const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:[...h.siparisler],garson:h.garson||'',indirim:h.indirim||0,kisi_sayisi:h.kisi_sayisi||0,hesap_istendi:h.hesap_istendi||false};
     if(hidx>=0) aktif[hidx]=hData; else aktif.push(hData);
     await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
     toast('↔ Masa '+kid+' → Masa '+hedefId+' ✓');
@@ -6688,7 +6664,7 @@ function masaSilOnay() {
 // FİŞ
 // ════════════════════════════════════════
 function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=''){
-  const satirlar=siparisler.map(s=>`<div class="fis-row"><span>${s.isim} x${s.adet}${s.not?` <span style="font-size:10px;color:#888;">(${s.not})</span>`:''}</span><span>${fmt(s.fiyat*s.adet)}</span></div>`).join('');
+  const satirlar=siparisler.map(s=>`<div class="fis-row"><span>${s.isim} x${s.adet}</span><span>${fmt(s.fiyat*s.adet)}</span></div>`).join('');
   const el=document.getElementById('fis-yazdir-icerik');
   el.dataset.masa=masaNo; el.dataset.tarih=tarih;
   el.dataset.siparisler=JSON.stringify(siparisler); el.dataset.toplam=toplam;
