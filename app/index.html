@@ -3328,6 +3328,15 @@ function kolaycafenGuncelle() {
   document.getElementById('kolaycafen-icerik').style.display='flex';
   const m = getMasa(); if(!m) return;
   document.getElementById('kolaycafen-masa-basligi').textContent = m.ad;
+  const notChip = document.getElementById('masa-not-chip');
+  if (notChip) {
+    if (m.not) {
+      notChip.textContent = '📝 ' + m.not;
+      notChip.style.display = 'inline-block';
+    } else {
+      notChip.style.display = 'none';
+    }
+  }
   // Garson çağrı banner
   const banner = document.getElementById('garson-cagri-banner');
   if(m.garson_cagri) {
