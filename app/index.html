@@ -8531,7 +8531,10 @@ async function mmGarsonCagir() {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
   t.textContent = '🔔 Garsonunuz geliyor!';
-  document.body.a
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 // ── AI API PROXY (Supabase Edge Function üzerinden) ──
 async function claudeAPI(messages, system = '', maxTokens = 1000) {
   const body = {
@@ -9183,9 +9186,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('ai-soru-inp');
   if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') aiSoruGonder(); });
 });
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
-}
 </script>
 </body>
 </html>
