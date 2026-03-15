@@ -1,4 +1,4 @@
-<script>function aiAnalizBaslat() { console.log("Analiz tetiklendi"); if(typeof aiVerileriYukle === "function") { aiVerileriYukle(document.getElementById("ai-donem-sec")?.value || "hafta"); } else { console.error("Sistem yukleniyor, lutfen bekleyin."); } }</script>
+<script>function aiAnalizBaslat() { console.log("Analiz baslatiliyor..."); const donem = document.getElementById("ai-donem-sec")?.value || "hafta"; if(typeof aiVerileriYukle === "function") { aiVerileriYukle(donem); } else { console.error("Sistem henuz hazir degil, lütfen bekleyin."); } }</script>
 <!DOCTYPE html>
 <html lang="tr">
 <head>
