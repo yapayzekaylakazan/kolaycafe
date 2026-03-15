@@ -126,12 +126,19 @@
   .mk-adet   { background:var(--accent); color:var(--bg); border-radius:50%; width:18px; height:18px; font-size:0.52rem; font-weight:900; display:flex; align-items:center; justify-content:center; }
   .mk-kisi   { font-size:0.55rem; font-weight:700; color:var(--muted); }
   .mk-sure   { font-size:0.58rem; font-weight:800; color:var(--accent2); }
-  /* Küçük butonlar sağ üst */
-  .masa-not-btn, .masa-qr-btn { position:absolute; bottom:5px; right:4px; background:none; border:none; font-size:0.65rem; cursor:pointer; padding:2px; opacity:0.5; line-height:1; }
-  .masa-qr-btn { right:22px; }
+  /* Küçük butonlar - sağ üst köşe, sadece hover'da görünür */
+  .masa-not-btn, .masa-qr-btn {
+    position: absolute; top: 4px; right: 4px;
+    background: var(--surface3); border: 1px solid var(--border);
+    border-radius: 5px; font-size: 0.65rem; cursor: pointer;
+    padding: 2px 4px; opacity: 0; line-height: 1;
+    transition: opacity 0.15s; z-index: 2;
+  }
+  .masa-qr-btn { right: 28px; }
+  .masa-kart:hover .masa-not-btn,
+  .masa-kart:hover .masa-qr-btn { opacity: 0.75; }
+  .masa-not-btn:hover, .masa-qr-btn:hover { opacity: 1 !important; background: var(--surface) !important; }
   .masa-kart .mb { display:none; } /* eski badge gizle */
-  .masa-qr-btn { position: absolute; bottom: 3px; left: 3px; background: none; border: none; font-size: 0.65rem; color: var(--muted); cursor: pointer; padding: 2px; }
-  .masa-not-btn { position: absolute; bottom: 3px; right: 3px; background: none; border: none; font-size: 0.65rem; color: var(--muted); cursor: pointer; padding: 2px; }
 
   /* ── ADİSYON ── */
   .page-kolaycafen { flex-direction: column; overflow: hidden; display: flex; min-height: 0; }
@@ -3261,7 +3268,7 @@ function masalarRender() {
         </div>` : `<div style="flex:1;display:flex;align-items:center;justify-content:center;"><div style="font-size:0.6rem;color:var(--muted);font-weight:700;">Boş</div></div>`}
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
-      ${m.not ? `<div style="position:absolute;top:26px;right:3px;font-size:0.5rem;color:var(--accent2);font-weight:800;max-width:42px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">📝${m.not}</div>` : ''}
+      ${m.not ? `<div style="position:absolute;bottom:4px;left:4px;font-size:0.5rem;color:var(--accent2);font-weight:800;max-width:50px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;pointer-events:none;">📝${m.not}</div>` : ''}
       <button class="masa-not-btn">✏️</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
