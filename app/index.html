@@ -8929,7 +8929,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('ai-soru-inp');
   if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') aiSoruGonder(); });
 });
-ppendChild(t);
+  document.body.appendChild(t);
   setTimeout(()=>t.remove(),3000);
 }
 </script>
