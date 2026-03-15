@@ -2668,7 +2668,7 @@ async function garsonGiris(isim, kafeData) {
         if (degisti) { masalarRender(); siparisListeRender(); }
       }
       // Cari işlemleri de güncelle (her 10 saniyede)
-      if (Date.now() % 3000 < 2100) await kolaycafenVerisiYukle();
+      if (Date.now() % 3000 < 50100) await kolaycafenVerisiYukle();
     } catch(e) { console.log('Garson sync hatası:', e); }
   }, 2000);
 }
@@ -4959,7 +4959,7 @@ async function onlineListeRender() {
   if (aktifOnlineFiltre === 'teslim') {
     const { data } = await sb.from('online_siparisler')
       .select('*').eq('kafe_id', kafeId).eq('durum', 'teslim')
-      .order('created_at', {ascending:false}).limit(20);
+      .order('created_at', {ascending:false}).limit(500);
     goruntur = data || [];
   }
 
