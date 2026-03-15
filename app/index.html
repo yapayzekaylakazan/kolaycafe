@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KolayCafe">
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -627,6 +627,9 @@
     <button onclick="mmSiparisGonder()" id="mm-siparis-btn" style="width:100%;padding:15px;border-radius:14px;border:none;background:var(--mm-renk,#d4960e);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">
       ✅ Siparişi Gönder
     </button>
+    <button onclick="mmGarsonCagir()" id="mm-garson-cagir-btn" style="width:100%;padding:13px;border-radius:14px;border:2px solid var(--mm-renk,#d4960e);background:#fff;color:var(--mm-renk,#d4960e);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;margin-top:10px;">
+      🔔 Garson Çağır
+    </button>
   </div>
 </div>
 
@@ -795,6 +798,7 @@
     <div class="hstat">Dolu: <span id="hstat-dolu">0/—</span></div>
     <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span></div>
     <div class="hstat">Günlük: <span id="hstat-ciro">0₺</span></div>
+    <button class="cikis-btn" id="tamekran-btn" onclick="tamEkranToggle()" title="Tam Ekran">⛶</button>
     <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
   </div>
 </div>
@@ -809,6 +813,7 @@
         + Masa Ekle
       </button>
     </div>
+    <div id="masa-grup-tabs" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px;"></div>
     <div class="masalar-grid" id="masalar-grid"></div>
   </div>
 </div>
@@ -2078,7 +2083,15 @@
     <label style="font-size:0.72rem;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Masa Adı</label>
     <input type="text" id="masa-ad-input" maxlength="16" placeholder="örn: Bahçe, Teras, VIP..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;outline:none;margin-bottom:11px;">
     <label style="font-size:0.72rem;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Kısa Not</label>
-    <input type="text" id="not-input" maxlength="20" placeholder="örn: pencere, sigara..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:13px;">
+    <input type="text" id="not-input" maxlength="20" placeholder="örn: pencere, sigara..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:11px;">
+    <label style="font-size:0.72rem;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Grup</label>
+    <select id="masa-grup-input" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:13px;">
+      <option value="">— Grup yok —</option>
+      <option value="Salon">🪑 Salon</option>
+      <option value="Bahçe">🌿 Bahçe</option>
+      <option value="Teras">☀️ Teras</option>
+      <option value="VIP">⭐ VIP</option>
+    </select>
     <button id="not-modal-kaydet" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Kaydet</button>
     <button onclick="modalKapat('not-modal')" class="modal-kapat">İptal</button>
     <button onclick="masaSilOnay()"
@@ -2346,7 +2359,7 @@ const PAKETLER = {
 };
 let aktifPaket = 'deneme'; // cafeVerisiYukle'de güncellenir
 
-let masalar = Array.from({length:20}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0}));
+let masalar = Array.from({length:20}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0, grup:''}));
 let garsonlar = [];
 let URUNLER = {
   'Sıcak İçecekler': [
@@ -2612,12 +2625,12 @@ async function garsonGiris(isim, kafeData) {
   // Masaları pakete göre ayarla (pro=20, diğerleri paket sayısı)
   const _masaSayisi = _paket.masa >= 999 ? Math.max(20, (window._kafeData?.masalar?.length || 0)) : _paket.masa;
   masalar = Array.from({length: _masaSayisi}, (_,i) => ({
-    id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0
+    id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0, grup:''
   }));
   if (kafeData.masalar) {
     kafeData.masalar.forEach(k => {
       const m = masalar.find(x=>x.id===k.id);
-      if (m) { m.ad = k.ad; m.not = k.not||''; }
+      if (m) { m.ad = k.ad; m.not = k.not||''; m.grup = k.grup||''; }
     });
   }
   // Garson modunda arayüzü ayarla
@@ -2952,7 +2965,7 @@ async function kafeVerisiYukle() {
     const _masaSayisi = paket.masa >= 999 ? Math.max(20, _eskiMasalar.length) : paket.masa;
     masalar = Array.from({length: _masaSayisi}, (_,i) => {
       const eski = _eskiMasalar.find(x=>x.id===i+1);
-      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0};
+      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0, grup:eski?.grup||''};
     });
     document.getElementById('ayar-plan').textContent = paket.ad;
     const _planRenkMap = {pro:'#7c3aed',elite:'#f97316',ultra:'#2d7a3a',platin:'#1a6fb5',gold:'#b8860b',grow:'#22c55e',start:'#64748b'};
@@ -3069,7 +3082,7 @@ function bulutKaydet() {
     if (!kafeId) return;
     try {
       if (!garsonModu) {
-        const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
+        const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||'',grup:m.grup||''}));
         const {error} = await sb.from('kafeler').update({
           urunler: URUNLER,
           masalar: masaKayit,
@@ -3230,12 +3243,33 @@ function masaErisimVar(masaId) {
   return masaId <= paket.masa;
 }
 
+let _aktifGrupFiltre = '';
+
+function masaGrupTabsRender() {
+  const tabsEl = document.getElementById('masa-grup-tabs');
+  if (!tabsEl) return;
+  const gruplar = [...new Set(masalar.map(m=>m.grup||'').filter(g=>g))];
+  if (gruplar.length === 0) { tabsEl.style.display='none'; return; }
+  tabsEl.style.display = 'flex';
+  const tabStyle = (aktif) => `background:${aktif?'var(--accent)':'var(--surface2)'};border:1.5px solid ${aktif?'var(--accent)':'var(--border)'};border-radius:20px;padding:5px 13px;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;color:${aktif?'var(--bg)':'var(--muted)'};white-space:nowrap;`;
+  tabsEl.innerHTML = '<button style="' + tabStyle(!_aktifGrupFiltre) + '" onclick="masaGrupFiltrele(\'\')">Tümü</button>' +
+    gruplar.map(g=>'<button style="' + tabStyle(_aktifGrupFiltre===g) + '" onclick="masaGrupFiltrele(\'' + g + '\')">' + g + '</button>').join('');
+}
+
+function masaGrupFiltrele(grup) {
+  _aktifGrupFiltre = grup;
+  masaGrupTabsRender();
+  masalarRender();
+}
+
 function masalarRender() {
   const grid = document.getElementById('masalar-grid');
   grid.innerHTML = '';
+  masaGrupTabsRender();
   let dolu = 0;
   const paket = PAKETLER[aktifPaket] || PAKETLER.deneme;
-  masalar.forEach(m => {
+  const gosterilecek = _aktifGrupFiltre ? masalar.filter(m=>(m.grup||'')===_aktifGrupFiltre) : masalar;
+  gosterilecek.forEach(m => {
     const erisim = masaErisimVar(m.id);
     const toplam = masaToplam(m);
     const var_ = m.siparisler.length>0;
@@ -3345,9 +3379,13 @@ function masaNotDuzenle(id) {
   document.getElementById('not-modal-baslik').textContent = 'Masa '+id+' Ayarları';
   document.getElementById('masa-ad-input').value = m.ad;
   document.getElementById('not-input').value = m.not||'';
+  const grupInp = document.getElementById('masa-grup-input');
+  if (grupInp) grupInp.value = m.grup||'';
   document.getElementById('not-modal-kaydet').onclick = () => {
     masalar[id-1].ad = (document.getElementById('masa-ad-input').value.trim()||('Masa '+id)).substring(0,16);
     masalar[id-1].not = document.getElementById('not-input').value.trim().substring(0,20);
+    const gInp = document.getElementById('masa-grup-input');
+    if (gInp) masalar[id-1].grup = gInp.value;
     modalKapat('not-modal');
     masalarRender();
     if(seciliMasa===id) kolaycafenGuncelle();
@@ -3517,17 +3555,20 @@ function siparisListeRender() {
     m.siparisler.forEach((s,i)=>{
       const item=document.createElement('div');
       item.className='siparis-item';
+      item.style.flexWrap='wrap';
       const metaBilgi=s.eklemeler&&s.eklemeler.length>0?[...new Set(s.eklemeler.map(e=>e.saat+(e.garson?' · '+e.garson:'')))].join(' / '):(s.ilkSaat?(s.ilkSaat+(s.ilkGarson?' · '+s.ilkGarson:'')):'');
       item.innerHTML=`
         <div style="flex:1;min-width:0;">
           <div class="si-isim">${s.isim}</div>
           ${metaBilgi?`<div class="si-meta">🕐 ${metaBilgi}</div>`:''}
+          ${s.not?`<div style="font-size:0.68rem;color:var(--accent2);font-weight:700;margin-top:2px;cursor:pointer;" onclick="siparisNotDuzenle(${i})">📝 ${s.not}</div>`:''}
         </div>
         <div class="si-miktar">
           <button class="si-btn" onclick="mikDeg(${i},-1)">−</button>
           <span class="si-sayi">${s.adet}</span>
           <button class="si-btn" onclick="mikDeg(${i},1)">+</button>
         </div>
+        <button title="Sipariş notu" onclick="siparisNotDuzenle(${i})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.72rem;padding:2px 5px;cursor:pointer;margin-right:2px;">${s.not?'📝':'✎'}</button>
         <span class="si-fiyat">${fmt(s.fiyat*s.adet)}</span>
         <button class="si-sil" onclick="siparisKaldir(${i})">✕</button>`;
       liste.appendChild(item);
@@ -3537,6 +3578,18 @@ function siparisListeRender() {
   const oncEl=document.getElementById('toplam-onceki');
   if(ind>0){oncEl.style.display='block';oncEl.textContent=fmt(ham);document.getElementById('toplam-tutar').textContent=fmt(son)+' (-%'+ind+')';}
   else{oncEl.style.display='none';document.getElementById('toplam-tutar').textContent=fmt(ham);}
+}
+
+function siparisNotDuzenle(idx) {
+  if(!seciliMasa) return;
+  const m = getMasa(); if(!m) return;
+  const s = m.siparisler[idx]; if(!s) return;
+  const mevcutNot = s.not || '';
+  const yeniNot = prompt('📝 ' + s.isim + ' için sipariş notu:', mevcutNot);
+  if (yeniNot === null) return; // iptal
+  m.siparisler[idx].not = yeniNot.trim().substring(0, 60);
+  siparisListeRender();
+  masaSyncYaz(seciliMasa);
 }
 
 function mikDeg(idx,d) {
@@ -4023,7 +4076,8 @@ function transferGoster(){
   masalar.forEach(m=>{
     const btn=document.createElement('button');
     btn.className='tr-btn'+(m.siparisler.length>0?' dolu-t':'');
-    btn.textContent=m.id; if(m.id===seciliMasa) btn.disabled=true;
+    btn.disabled = m.id===seciliMasa;
+    btn.innerHTML = `<strong>${m.id}</strong>${m.not?`<br><span style="font-size:0.6rem;color:var(--accent2);font-weight:700;">📝 ${m.not}</span>`:''}${m.ad&&m.ad!=='Masa '+m.id?`<br><span style="font-size:0.6rem;color:var(--muted);">${m.ad}</span>`:''}`;
     btn.onclick=()=>transferYap(m.id);
     grid.appendChild(btn);
   });
@@ -6186,7 +6240,7 @@ function ayarlarRender(){
     const _masaSayisi = paket.masa >= 999 ? Math.max(20, _eskiMasalar.length) : paket.masa;
     masalar = Array.from({length: _masaSayisi}, (_,i) => {
       const eski = _eskiMasalar.find(x=>x.id===i+1);
-      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0};
+      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0, grup:eski?.grup||''};
     });
     document.getElementById('ayar-plan').textContent = paket.ad;
     document.getElementById('ayar-plan').className = 'plan-badge ' + (['pro','elite','ultra','platin','gold','grow','start'].includes(plan)?'plan-pro':'plan-ucretsiz');
@@ -7825,11 +7879,32 @@ window.masaSilOnay = masaSilOnay;
   }
 })();
 
+
+// ════════════════════════════════════════
+// TAM EKRAN (KİOSK) MODU
+// ════════════════════════════════════════
+function tamEkranToggle() {
+  const btn = document.getElementById('tamekran-btn');
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      if (btn) btn.textContent = '✕ Tam Ekran';
+    }).catch(() => toast('Tam ekran desteklenmiyor'));
+  } else {
+    document.exitFullscreen().then(() => {
+      if (btn) btn.textContent = '⛶';
+    });
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('tamekran-btn');
+  if (btn) btn.textContent = document.fullscreenElement ? '✕ Tam Ekran' : '⛶';
+});
+
 // PWA Service Worker
 // SW temizle
 if ('serviceWorker' in navigator) {
   // SW'yi kaydet - network-first cache temizleyici olarak
-  navigator.serviceWorker.register('/sw.js')
+  navigator.serviceWorker.register('../sw.js', { scope: '../' })
     .then(reg => {
       // Yeni SW varsa hemen aktiflleştir
       reg.addEventListener('updatefound', () => {
