@@ -3347,7 +3347,7 @@ function kolaycafenGuncelle() {
   }
   const gc = document.getElementById('garson-chip');
   gc.textContent = m.garson?'👤 '+m.garson:'👤 Garson';
-  document.getElementById('indirim-chip-goster').innerHTML = m.indirim>0?`<span class="indirim-chip">-%${m.indirim}</span>`:'';
+  gc.textContent = m.garson ? '👤 ' + m.garson : '👤 Garson';
   katTabsRender(); urunGridRender(); siparisListeRender();
 }
 
