@@ -2074,6 +2074,12 @@
     <input type="text" id="not-input" maxlength="20" placeholder="örn: pencere, sigara..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:13px;">
     <button id="not-modal-kaydet" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Kaydet</button>
     <button onclick="modalKapat('not-modal')" class="modal-kapat">İptal</button>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+      <button id="masa-sil-btn" onclick="masaSilOnay()"
+        style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:800;cursor:pointer;opacity:0.7;">
+        🗑 Bu Masayı Sil
+      </button>
+    </div>
   </div>
 </div>
 
@@ -3295,6 +3301,7 @@ function masalarRender() {
 function masaToplam(m) { return m.siparisler.reduce((s,o)=>s+o.fiyat*o.adet,0); }
 
 function masaNotDuzenle(id) {
+  _notModalMasaId = id;
   const m = masalar[id-1];
   document.getElementById('not-modal-baslik').textContent = 'Masa '+id+' Ayarları';
   document.getElementById('masa-ad-input').value = m.ad;
@@ -3884,6 +3891,7 @@ async function splitEsitOde(odemeTipi) {
 // KİŞİ SAYISI & MASA DURUM
 // ════════════════════════════════════════
 let _kisiModalMasaId = null;
+let _notModalMasaId = null;
 
 function masaKisiSayisiSor(masaId) {
   _kisiModalMasaId = masaId;
@@ -3993,7 +4001,8 @@ async function transferYap(hedefId){
   });
   const kid=seciliMasa;
   if(!h.garson&&k.garson) h.garson=k.garson;
-  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0;
+  if(!h.kisiSayisi && k.kisiSayisi) h.kisiSayisi=k.kisiSayisi; // Kişi sayısını taşı
+  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0; k.kisiSayisi=0;
   modalKapat('transfer-modal');
   seciliMasa=hedefId;
   masalarRender();
@@ -6603,6 +6612,34 @@ function ekstraMasaEkle() {
 }
 
 // ════════════════════════════════════════
+// MASA SİL
+// ════════════════════════════════════════
+function masaSilOnay() {
+  // Hangi masanın ayarları açık?
+  const modal = document.getElementById('not-modal');
+  const baslik = document.getElementById('not-modal-baslik');
+  // not-modal açıkken seciliMasa kullan
+  const masaId = _notModalMasaId !== undefined ? _notModalMasaId : seciliMasa;
+  if (!masaId) return;
+  const m = masalar.find(x => x.id === masaId);
+  if (!m) return;
+
+  if (m.siparisler && m.siparisler.length > 0) {
+    toast('⚠️ ' + m.ad + ' açık adisyonu var! Önce kapat.');
+    return;
+  }
+
+  if (!confirm('"' + m.ad + '" silinecek. Bu işlem geri alınamaz!\n\nEmin misiniz?')) return;
+
+  // Masayı sil
+  masalar = masalar.filter(x => x.id !== masaId);
+  modalKapat('not-modal');
+  masalarRender();
+  bulutKaydet();
+  toast('🗑 ' + m.ad + ' silindi');
+}
+
+// ════════════════════════════════════════
 // FİŞ
 // ════════════════════════════════════════
 function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=''){
@@ -7703,6 +7740,7 @@ window.gelAlSil = gelAlSil;
 window.gelAlKatSec = gelAlKatSec;
 window.adisyonGeriAl = adisyonGeriAl;
 window.adisyonSil = adisyonSil;
+window.masaSilOnay = masaSilOnay;
 
 (async ()=>{
   // QR ile gelen müşteri ise session kontrolü yapma, direkt menüyü aç
