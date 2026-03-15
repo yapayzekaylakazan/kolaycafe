@@ -3259,7 +3259,7 @@ function masalarRender() {
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
       ${m.not ? `<div style="position:absolute;top:26px;right:3px;font-size:0.5rem;color:var(--accent2);font-weight:800;max-width:42px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">📝${m.not}</div>` : ''}
-      <button class="masa-not-btn" title="${m.not||`Not ekle`}">✏️</button>
+      <button class="masa-not-btn">✏️</button>
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       // Garson çağrı kapat butonu
