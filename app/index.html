@@ -1230,7 +1230,7 @@
       <div id="recete-malzemeler" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
       <!-- Notlar -->
       <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:6px;">HAZIRLIK NOTU</div>
-      <textarea id="recete-not" oninput="const m=masalar.find(x=>x.id==suankiMasaId); if(m){m.not=this.value; bulutKaydet();}" oninput="notGuncelle(this.value); bulutKaydet()" oninput="notGuncelle(this.value); bulutKaydet()" placeholder="Hazırlanış notları..." rows="3"
+      <textarea id="recete-not" placeholder="Hazırlanış notları..." rows="3"
         style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;resize:none;"></textarea>
       <!-- Maliyet özeti -->
       <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-top:14px;">
@@ -2598,7 +2598,7 @@ async function garsonGiris(isim, kafeData) {
   aktifPaket = kafeData.plan || 'pro';
   const _paket = PAKETLER[aktifPaket] || PAKETLER.pro;
   // Masaları pakete göre ayarla (pro=20, diğerleri paket sayısı)
-  const _masaSayisi = _paket.masa >= 999 ? 20 : _paket.masa;
+  const _masaSayisi = _paket.masa >= 999 ? Math.max(20, (window._kafeData?.masalar?.length || 0)) : _paket.masa;
   masalar = Array.from({length: _masaSayisi}, (_,i) => ({
     id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0
   }));
@@ -2906,8 +2906,9 @@ async function kafeVerisiYukle() {
     aktifPaket = plan;
     const paket = PAKETLER[plan] || PAKETLER.deneme;
     // Masaları pakete göre oluştur
-    const _masaSayisi = paket.masa >= 999 ? 20 : paket.masa;
     const _eskiMasalar = data.masalar || [];
+    // Pro pakette kayıtlı masa sayısı kadar veya en az 20
+    const _masaSayisi = paket.masa >= 999 ? Math.max(20, _eskiMasalar.length) : paket.masa;
     masalar = Array.from({length: _masaSayisi}, (_,i) => {
       const eski = _eskiMasalar.find(x=>x.id===i+1);
       return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0};
@@ -3000,7 +3001,7 @@ async function masaSyncYaz(masaId) {
       // Masada sipariş var - güncelle veya ekle
       const idx = aktif.findIndex(x=>x.id===masaId);
       const masaData = {
-        id:m.id, ad:m.ad, not:m.not||'',siparisler:m.siparisler||[],
+        id:m.id, ad:m.ad, not:m.not||'',
         siparisler:m.siparisler,
         garson:m.garson||'', indirim:m.indirim||0
       };
@@ -3025,7 +3026,7 @@ function bulutKaydet() {
     if (!kafeId) return;
     try {
       if (!garsonModu) {
-        const masaKayit = masalar.map(m=>({id:m.id, ad:m.ad, not:m.not||'',siparisler:m.siparisler||[], siparisler:m.siparisler||[]}));
+        const masaKayit = masalar.map(m=>({id:m.id,ad:m.ad,not:m.not||''}));
         const {error} = await sb.from('kafeler').update({
           urunler: URUNLER,
           masalar: masaKayit,
@@ -4959,7 +4960,7 @@ async function onlineListeRender() {
   if (aktifOnlineFiltre === 'teslim') {
     const { data } = await sb.from('online_siparisler')
       .select('*').eq('kafe_id', kafeId).eq('durum', 'teslim')
-      .order('created_at', {ascending:false}).limit(500);
+      .order('created_at', {ascending:false}).limit(20);
     goruntur = data || [];
   }
 
@@ -6034,8 +6035,9 @@ function ayarlarRender(){
     aktifPaket = plan;
     const paket = PAKETLER[plan] || PAKETLER.deneme;
     // Masaları pakete göre oluştur
-    const _masaSayisi = paket.masa >= 999 ? 20 : paket.masa;
     const _eskiMasalar = data.masalar || [];
+    // Pro pakette kayıtlı masa sayısı kadar veya en az 20
+    const _masaSayisi = paket.masa >= 999 ? Math.max(20, _eskiMasalar.length) : paket.masa;
     masalar = Array.from({length: _masaSayisi}, (_,i) => {
       const eski = _eskiMasalar.find(x=>x.id===i+1);
       return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0};
@@ -8099,7 +8101,7 @@ function mmDetaySepeteEkle() {
   const toplamFiyat = u.fiyat + ekFiyat;
   const isimKey = u.isim + (mmDetayVaryant ? ' - ' + mmDetayVaryant.isim : '');
 
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < mmDetayAdetSayi; i++) {
     const item = mmSepet.find(s => s.isim === isimKey);
     if (item) item.adet++;
     else mmSepet.push({isim: isimKey, fiyat: toplamFiyat, ikon: u.ikon || '🍽', resim: u.resim || null, adet: 1});
