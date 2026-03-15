@@ -176,6 +176,9 @@
   .si-sayi { font-size: 0.95rem; font-weight: 900; color: var(--accent2); min-width: 20px; text-align: center; }
   .si-fiyat { font-size: 0.85rem; font-weight: 800; color: var(--text2); min-width: 56px; text-align: right; }
   .si-sil { background: none; border: none; color: var(--muted); font-size: 0.9rem; cursor: pointer; }
+  .si-not-btn { background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; padding: 2px 3px; flex-shrink: 0; }
+  .si-not-btn.var { color: var(--accent2); }
+  .si-not-text { font-size: 0.62rem; color: var(--accent2); font-weight: 700; margin-top: 2px; background: rgba(212,150,14,0.12); border-radius: 5px; padding: 1px 5px; display: inline-block; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kolaycafen-footer { padding: 8px 12px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
   .toplam-alan { flex: 1; }
   .toplam-etiket { font-size: 0.68rem; color: var(--muted); font-weight: 700; }
@@ -2088,6 +2091,19 @@
   </div>
 </div>
 
+<!-- SİPARİŞ NOTU MODALI -->
+<div class="modal-overlay" id="siparis-not-modal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-baslik">📝 Sipariş Notu</div>
+    <div id="siparis-not-urun-adi" style="font-size:0.85rem;color:var(--text2);font-weight:700;margin-bottom:10px;"></div>
+    <textarea id="siparis-not-input" maxlength="60" placeholder="örn: az şekerli, demli, buz ekle, az pişmiş..." rows="3"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;resize:none;margin-bottom:13px;"></textarea>
+    <button id="siparis-not-kaydet" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Kaydet</button>
+    <button id="siparis-not-temizle" style="width:100%;padding:10px;border-radius:11px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:7px;">🗑 Notu Sil</button>
+    <button onclick="modalKapat('siparis-not-modal')" class="modal-kapat">İptal</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="garson-modal">
   <div class="modal" style="max-width:340px;">
     <div class="modal-baslik">👤 Garson Seç</div>
@@ -3267,9 +3283,10 @@ function masalarRender() {
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
       ${m.not ? `<div style="position:absolute;bottom:4px;left:4px;font-size:0.5rem;color:var(--accent2);font-weight:800;max-width:50px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;pointer-events:none;">📝${m.not}</div>` : ''}
+      <button class="masa-qr-btn">QR</button>
       <button class="masa-not-btn">✏️</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
-      const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
+      btn.querySelector(".masa-qr-btn").addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       // Garson çağrı kapat butonu
       
       btn.addEventListener('click',()=>{
@@ -3488,7 +3505,9 @@ function siparisListeRender() {
         <div style="flex:1;min-width:0;">
           <div class="si-isim">${s.isim}</div>
           ${metaBilgi?`<div class="si-meta">🕐 ${metaBilgi}</div>`:''}
+          ${s.not?`<div class="si-not-text">📝 ${s.not}</div>`:''}
         </div>
+        <button class="si-not-btn${s.not?' var':''}" onclick="siparisNotAc(${i})" title="Sipariş notu">📝</button>
         <div class="si-miktar">
           <button class="si-btn" onclick="mikDeg(${i},-1)">−</button>
           <span class="si-sayi">${s.adet}</span>
@@ -3503,6 +3522,27 @@ function siparisListeRender() {
   const oncEl=document.getElementById('toplam-onceki');
   if(ind>0){oncEl.style.display='block';oncEl.textContent=fmt(ham);document.getElementById('toplam-tutar').textContent=fmt(son)+' (-%'+ind+')';}
   else{oncEl.style.display='none';document.getElementById('toplam-tutar').textContent=fmt(ham);}
+}
+
+function siparisNotAc(idx) {
+  if(!seciliMasa) return;
+  const m = getMasa(); if(!m) return;
+  const s = m.siparisler[idx]; if(!s) return;
+  document.getElementById('siparis-not-urun-adi').textContent = '✦ ' + s.isim;
+  document.getElementById('siparis-not-input').value = s.not || '';
+  document.getElementById('siparis-not-kaydet').onclick = () => {
+    const not = document.getElementById('siparis-not-input').value.trim().substring(0,60);
+    m.siparisler[idx].not = not || undefined;
+    modalKapat('siparis-not-modal');
+    siparisListeRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
+  };
+  document.getElementById('siparis-not-temizle').onclick = () => {
+    delete m.siparisler[idx].not;
+    modalKapat('siparis-not-modal');
+    siparisListeRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
+  };
+  modalAc('siparis-not-modal');
+  setTimeout(()=>document.getElementById('siparis-not-input').focus(),150);
 }
 
 function mikDeg(idx,d) {
@@ -6648,7 +6688,7 @@ function masaSilOnay() {
 // FİŞ
 // ════════════════════════════════════════
 function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=''){
-  const satirlar=siparisler.map(s=>`<div class="fis-row"><span>${s.isim} x${s.adet}</span><span>${fmt(s.fiyat*s.adet)}</span></div>`).join('');
+  const satirlar=siparisler.map(s=>`<div class="fis-row"><span>${s.isim} x${s.adet}${s.not?` <span style="font-size:10px;color:#888;">(${s.not})</span>`:''}</span><span>${fmt(s.fiyat*s.adet)}</span></div>`).join('');
   const el=document.getElementById('fis-yazdir-icerik');
   el.dataset.masa=masaNo; el.dataset.tarih=tarih;
   el.dataset.siparisler=JSON.stringify(siparisler); el.dataset.toplam=toplam;
