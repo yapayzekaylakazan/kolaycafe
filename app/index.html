@@ -4959,7 +4959,7 @@ async function onlineListeRender() {
   if (aktifOnlineFiltre === 'teslim') {
     const { data } = await sb.from('online_siparisler')
       .select('*').eq('kafe_id', kafeId).eq('durum', 'teslim')
-      .order('created_at', {ascending:false}).limit(20);
+      .order('created_at', {ascending:false}).limit(500);
     goruntur = data || [];
   }
 
