@@ -2298,6 +2298,16 @@
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function aiAnalizBaslat() { 
+  console.log("Analiz baslatiliyor..."); 
+  if(typeof aiOnerilerUret === "function") { 
+    aiOnerilerUret(); 
+  } else { 
+    alert("Analiz fonksiyonu henuz yuklenmedi, lutfen sayfayi yenileyin."); 
+  } 
+}
+function aiOnerilerUret() { console.log("AI Onerileri uretiliyor..."); }
+function aiSoruGonder() { console.log("Soru gonderiliyor..."); }
 function aiAnalizBaslat() { console.log("Analiz baslatiliyor..."); if(typeof aiOnerilerUret === "function") aiOnerilerUret(); }
 function aiSayfaAc() { console.log("AI Sayfa Ac fonksiyonu yuklendi!"); }
 // ════════════════════════════════════════
