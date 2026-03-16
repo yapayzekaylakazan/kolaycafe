@@ -273,8 +273,11 @@ async function yukle(){
   const yeniCagriler=[];
 
   aktifMasalar.forEach(masa=>{
+    const isDijitalMenu = String(masa.id).startsWith('dm_');
     const kayitliMasa=kayitliMasalar.find(m=>Number(m.id)===Number(masa.id));
-    const masaAdi=(kayitliMasa&&kayitliMasa.ad)?kayitliMasa.ad:(masa.ad||'Masa '+masa.id);
+    const masaAdi = isDijitalMenu
+      ? (masa.ad || '🍽️ Dijital Menü')
+      : ((kayitliMasa&&kayitliMasa.ad)?kayitliMasa.ad:(masa.ad||'Masa '+masa.id));
 
     // Garson çağrısı var mı?
     if(masa.garson_cagri){
@@ -465,11 +468,18 @@ async function teslim(masaNo){
   const aktifMasalar=data?.aktif_masalar||[];
   const masa=aktifMasalar.find(m=>Number(m.id)===Number(masaNo)||String(m.id)===String(masaNo));
   if(!masa)return;
-  // Müşteri siparişlerini normal siparişe çevir (mutfak_teslim işaretle)
-  masa.siparisler=(masa.siparisler||[]).map(s=>s.musteri?{...s,musteri:false,mutfak_teslim:true}:s);
-  masa.mutfak_durum=null;masa.mutfak_zaman=null;
+  const isDijitalMenu = String(masaNo).startsWith('dm_');
+  if(isDijitalMenu){
+    // Dijital menü siparişi: teslim sonrası listeden tamamen kaldır
+    const idx = aktifMasalar.findIndex(m=>String(m.id)===String(masaNo));
+    if(idx>-1) aktifMasalar.splice(idx,1);
+  } else {
+    // Normal masa: müşteri siparişlerini normal siparişe çevir
+    masa.siparisler=(masa.siparisler||[]).map(s=>s.musteri?{...s,musteri:false,mutfak_teslim:true}:s);
+    masa.mutfak_durum=null;masa.mutfak_zaman=null;
+  }
   await sb.from('kafeler').update({aktif_masalar:aktifMasalar}).eq('id',kafeId);
-  toast('🏁 Teslim edildi — masa hesabına eklendi');
+  toast(isDijitalMenu?'🏁 Dijital menü siparişi teslim edildi':'🏁 Teslim edildi — masa hesabına eklendi');
   await yukle();
 }
 
