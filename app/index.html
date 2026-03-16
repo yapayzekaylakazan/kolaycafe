@@ -2954,6 +2954,10 @@ async function garsonGiris(isim, kafeData) {
       if (data?.aktif_masalar) {
         let degisti = false;
         data.aktif_masalar.forEach(am => {
+          // Masalar dizisinde yoksa ekle (paket limiti dışı masa koruması)
+          if (!masalar.find(x=>x.id===am.id)) {
+            masalar.push({id:am.id, ad:am.ad||'Masa '+am.id, siparisler:[], not:am.not||'', garson:'', indirim:0, grup:am.grup||''});
+          }
           const m = masalar.find(x=>x.id===am.id);
           if (m) {
             const eskiJson = JSON.stringify(m.siparisler);
@@ -3173,6 +3177,18 @@ const APP_TEMALAR = {
 };
 
 let _aktifAppTema = 'kahve';
+
+// _renkAciklastir: hex rengi belirtilen miktar kadar açar (tema vurgu tonu için)
+function _renkAciklastir(hex, miktar) {
+  try {
+    const h = (hex||'').replace('#','');
+    if (h.length < 6) return hex;
+    let r = Math.min(255, parseInt(h.slice(0,2),16) + miktar);
+    let g = Math.min(255, parseInt(h.slice(2,4),16) + miktar);
+    let b = Math.min(255, parseInt(h.slice(4,6),16) + miktar);
+    return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  } catch(e) { return hex; }
+}
 
 function _hexToRgb(hex) {
   const h = (hex||'').replace('#','');
@@ -3904,6 +3920,11 @@ window.grupSil = grupSil;
 
 function masalarRender() {
   const grid = document.getElementById('masalar-grid');
+  if (!grid) return;
+  // Masalar dizisi boşsa fallback: 12 varsayılan masa oluştur
+  if (!masalar || masalar.length === 0) {
+    masalar = Array.from({length:12}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), siparisler:[], not:'', garson:'', indirim:0, grup:''}));
+  }
   grid.innerHTML = '';
   masaGrupTabsRender();
   let dolu = 0;
