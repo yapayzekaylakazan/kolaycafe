@@ -1010,7 +1010,12 @@
     <!-- KATEGORİ YÖNETİMİ -->
     <div style="margin-top:20px;margin-bottom:6px;font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📂 Kategoriler</div>
     <div id="kat-yonetim-liste"></div>
-    <button id="dondurma-ekle-btn" onclick="dondurmaKategoriEkle()" style="width:100%;padding:10px;border-radius:11px;border:2px dashed #d4960e;background:rgba(212,150,14,0.07);color:#d4960e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;margin-top:6px;display:none;">🍦 Dondurma Kategorisini Hazır Ekle</button>
+    <div id="hazir-kategori-butonlar" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+      <button id="dondurma-ekle-btn"  onclick="dondurmaKategoriEkle()"  style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #d4960e;background:rgba(212,150,14,0.07);color:#d4960e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🍦 Dondurma Kategorisini Hazır Ekle</button>
+      <button id="kahve-ekle-btn"     onclick="kahveKategoriEkle()"     style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #6f4e37;background:rgba(111,78,55,0.07);color:#8B5E3C;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">☕ Kahve Kategorisini Hazır Ekle</button>
+      <button id="tatli-ekle-btn"     onclick="tatliKategoriEkle()"     style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #e879a0;background:rgba(232,121,160,0.07);color:#e879a0;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🍰 Tatlı Kategorisini Hazır Ekle</button>
+      <button id="pide-ekle-btn"      onclick="pideKategoriEkle()"      style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #c0822a;background:rgba(192,130,42,0.07);color:#c0822a;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🫓 Pide Kategorisini Hazır Ekle</button>
+    </div>
 
     <div class="urun-listesi-baslik">Mevcut Ürünler</div>
     <div id="urun-listesi"></div>
@@ -3782,12 +3787,19 @@ function katYonetimRender() {
   const el = document.getElementById('kat-yonetim-liste');
   if (!el) return;
   const katlar = Object.keys(URUNLER);
-  // Dondurma butonu: kategori yoksa göster
-  const dBtn = document.getElementById('dondurma-ekle-btn');
-  if (dBtn) {
-    const varMi = katlar.some(k => k.toLowerCase().includes('dondurma'));
-    dBtn.style.display = varMi ? 'none' : 'block';
-  }
+  // Hazır kategori butonları: kategori yoksa göster
+  const _hazirlar = [
+    {btnId:'dondurma-ekle-btn', anahtar:'dondurma'},
+    {btnId:'kahve-ekle-btn',    anahtar:'kahve'},
+    {btnId:'tatli-ekle-btn',    anahtar:'tatlı'},
+    {btnId:'pide-ekle-btn',     anahtar:'pide'},
+  ];
+  _hazirlar.forEach(({btnId, anahtar}) => {
+    const b = document.getElementById(btnId);
+    if (!b) return;
+    const varMi = katlar.some(k => k.toLowerCase().includes(anahtar));
+    b.style.display = varMi ? 'none' : 'block';
+  });
   if (!katlar.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
     return;
@@ -7754,8 +7766,8 @@ function katSiralayukari(kat) {
     else if (i !== idx) yeni[k] = URUNLER[k];
   });
   URUNLER = yeni; mevcutKat = kat;
-  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
-  toast('↑ Kategori taşındı');
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender();
+  _katSiralaKaydet();
 }
 function katSiralaasagi(kat) {
   const katlar = Object.keys(URUNLER);
@@ -7767,8 +7779,26 @@ function katSiralaasagi(kat) {
     else if (i !== idx + 1) yeni[k] = URUNLER[k];
   });
   URUNLER = yeni; mevcutKat = kat;
-  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
-  toast('↓ Kategori taşındı');
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender();
+  _katSiralaKaydet();
+}
+// Sıralama için debounced kayıt — hızlı tıklamalarda son hali yazar
+let _siralaTimeout = null;
+function _katSiralaKaydet() {
+  clearTimeout(_siralaTimeout);
+  const ind = document.getElementById('kayit-durum');
+  if (ind) { ind.style.display='inline'; ind.textContent='⏳ kaydediliyor...'; ind.style.color='var(--muted)'; }
+  _siralaTimeout = setTimeout(async () => {
+    if (!kafeId) { toast('⚠️ Oturum bulunamadı, yeniden giriş yapın'); return; }
+    try {
+      const {error} = await sb.from('kafeler').update({ urunler: URUNLER }).eq('id', kafeId);
+      if (error) throw error;
+      if (ind) { ind.textContent='✓ sıralama kaydedildi'; ind.style.color='#22c55e'; setTimeout(()=>{ind.style.display='none';},2500); }
+    } catch(e) {
+      toast('⚠️ Kayıt hatası: ' + (e.message||'bilinmiyor'));
+      if (ind) { ind.textContent='⚠️ kayıt hatası!'; ind.style.color='var(--danger)'; }
+    }
+  }, 600);
 }
 window.katSiralayukari = katSiralayukari;
 window.katSiralaasagi = katSiralaasagi;
@@ -7811,6 +7841,96 @@ function dondurmaKategoriEkle() {
   toast('🍦 Dondurma kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
 }
 window.dondurmaKategoriEkle = dondurmaKategoriEkle;
+
+// ════════════════════════════════════════
+// KAHVE KATEGORİSİ HAZIR EKLE
+// ════════════════════════════════════════
+function kahveKategoriEkle() {
+  const katAd = '☕ Kahveler';
+  if (URUNLER[katAd]) { toast('☕ Kahve kategorisi zaten mevcut!'); return; }
+  const _kahveVaryantlar = [
+    {ad:'Şeker', tip:'radio', zorunlu:true, secenekler:[
+      {isim:'Sade', fiyatFark:0}, {isim:'Az Şekerli', fiyatFark:0},
+      {isim:'Orta', fiyatFark:0}, {isim:'Çok Şekerli', fiyatFark:0}
+    ]},
+    {ad:'Boyut', tip:'radio', zorunlu:false, secenekler:[
+      {isim:'Küçük', fiyatFark:0}, {isim:'Orta', fiyatFark:10}, {isim:'Büyük', fiyatFark:20}
+    ]},
+    {ad:'Süt Tipi', tip:'radio', zorunlu:false, secenekler:[
+      {isim:'Normal', fiyatFark:0}, {isim:'Badem Sütü', fiyatFark:15}, {isim:'Yulaf Sütü', fiyatFark:15}
+    ]},
+    {ad:'Sıcaklık', tip:'radio', zorunlu:false, secenekler:[
+      {isim:'Sıcak', fiyatFark:0}, {isim:'Soğuk (Iced)', fiyatFark:5}
+    ]},
+    {ad:'Ekstralar', tip:'checkbox', zorunlu:false, secenekler:[
+      {isim:'Ekstra Shot', fiyatFark:10}, {isim:'Şurup', fiyatFark:10}, {isim:'Krema', fiyatFark:10}
+    ]}
+  ];
+  const kahveler = [
+    'Espresso','Americano','Latte','Cappuccino','Flat White',
+    'Macchiato','Mocha','Cortado','Türk Kahvesi','Filtre Kahve',
+    'Cold Brew','Affogato'
+  ];
+  URUNLER[katAd] = kahveler.map(isim => ({
+    isim, fiyat: 55, ikon: '☕', stok: null, varyantlar: _kahveVaryantlar
+  }));
+  mevcutKat = katAd;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('☕ Kahve kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
+}
+window.kahveKategoriEkle = kahveKategoriEkle;
+
+// ════════════════════════════════════════
+// TATLI KATEGORİSİ HAZIR EKLE
+// ════════════════════════════════════════
+function tatliKategoriEkle() {
+  const katAd = '🍰 Tatlılar';
+  if (URUNLER[katAd]) { toast('🍰 Tatlı kategorisi zaten mevcut!'); return; }
+  const tatlilar = [
+    {isim:'Cheesecake',      fiyat:90,  ikon:'🍰'},
+    {isim:'Tiramisu',        fiyat:95,  ikon:'🍮'},
+    {isim:'Waffle',          fiyat:110, ikon:'🧇'},
+    {isim:'Brownie',         fiyat:75,  ikon:'🍫'},
+    {isim:'Sütlaç',          fiyat:65,  ikon:'🥛'},
+    {isim:'Kazandibi',       fiyat:60,  ikon:'🍮'},
+    {isim:'Muhallebi',       fiyat:55,  ikon:'🍮'},
+    {isim:'Profiterol',      fiyat:85,  ikon:'🍬'},
+    {isim:'Magnolia',        fiyat:80,  ikon:'🍰'},
+    {isim:'Fıstıklı Baklava',fiyat:70,  ikon:'🍯'},
+  ];
+  URUNLER[katAd] = tatlilar.map(t => ({...t, stok:null, varyantlar:[]}));
+  mevcutKat = katAd;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('🍰 Tatlı kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
+}
+window.tatliKategoriEkle = tatliKategoriEkle;
+
+// ════════════════════════════════════════
+// PİDE KATEGORİSİ HAZIR EKLE
+// ════════════════════════════════════════
+function pideKategoriEkle() {
+  const katAd = '🫓 Pideler';
+  if (URUNLER[katAd]) { toast('🫓 Pide kategorisi zaten mevcut!'); return; }
+  const _pideVaryant = [{
+    ad:'Porsiyon', tip:'radio', zorunlu:true, secenekler:[
+      {isim:'Tek',           fiyatFark:0},
+      {isim:'Buçuk (1.5)',   fiyatFark:30},
+      {isim:'Duble',         fiyatFark:60}
+    ]
+  }];
+  const pideler = [
+    'Karışık Pide','Kuşbaşılı Pide','Kıymalı Pide','Kaşarlı Pide',
+    'Sucuklu Pide','Yumurtalı Pide','Ispanaklı Pide','Peynirli Pide',
+    'Pastırmalı Pide','Sebzeli Pide'
+  ];
+  URUNLER[katAd] = pideler.map(isim => ({
+    isim, fiyat: 120, ikon: '🫓', stok: null, varyantlar: _pideVaryant
+  }));
+  mevcutKat = katAd;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('🫓 Pide kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
+}
+window.pideKategoriEkle = pideKategoriEkle;
 window.kafeAdiniGuncelle = kafeAdiniGuncelle;
 window.kafeKoduGuncelle = kafeKoduGuncelle;
 window.garsonEkleAyar = garsonEkleAyar;
