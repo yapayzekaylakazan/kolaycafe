@@ -3841,7 +3841,12 @@ function katYonetimRender() {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
     return;
   }
-  el.innerHTML = katlar.map((kat, ki) => {
+  // Kaydet barı — sıralama değişince gösterilir
+  const _kaydetBarHtml = `<div id="kat-sirala-kaydet-bar" style="display:none;margin-bottom:10px;padding:10px 14px;background:#f0b94018;border:1.5px solid var(--accent);border-radius:12px;align-items:center;justify-content:space-between;gap:10px;">
+    <span style="font-size:0.8rem;font-weight:800;color:var(--accent);">⚠️ Sıralama değiştirildi — kaydet!</span>
+    <button onclick="katSiralamaKaydetManuel()" style="padding:7px 16px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">💾 Sıralamayı Kaydet</button>
+  </div>`;
+  el.innerHTML = _kaydetBarHtml + katlar.map((kat, ki) => {
     const sayi = (URUNLER[kat]||[]).length;
     const ilk = ki === 0, son = ki === katlar.length - 1;
     const katEsc = kat.replace(/'/g,"\\'");
@@ -7854,7 +7859,7 @@ function katSiralayukari(kat) {
   });
   URUNLER = yeni; mevcutKat = kat;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender();
-  _katSiralaKaydet();
+  _katSiralaKaydetBarGoster();
 }
 function katSiralaasagi(kat) {
   const katlar = Object.keys(URUNLER);
@@ -7867,25 +7872,35 @@ function katSiralaasagi(kat) {
   });
   URUNLER = yeni; mevcutKat = kat;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender();
-  _katSiralaKaydet();
+  _katSiralaKaydetBarGoster();
 }
-// Sıralama için debounced kayıt — hızlı tıklamalarda son hali yazar
+
+function _katSiralaKaydetBarGoster() {
+  // Kaydet barını göster
+  const bar = document.getElementById('kat-sirala-kaydet-bar');
+  if (bar) bar.style.display = 'flex';
+}
+
+async function katSiralamaKaydetManuel() {
+  const bar = document.getElementById('kat-sirala-kaydet-bar');
+  const btn = bar ? bar.querySelector('button') : null;
+  if (btn) { btn.textContent = '⏳ Kaydediliyor...'; btn.disabled = true; }
+  if (!kafeId) { toast('⚠️ Oturum bulunamadı, yeniden giriş yapın'); return; }
+  try {
+    const {error} = await sb.from('kafeler').update({ urunler: URUNLER }).eq('id', kafeId);
+    if (error) throw error;
+    toast('✅ Kategori sıralaması kaydedildi!');
+    if (bar) bar.style.display = 'none';
+  } catch(e) {
+    toast('⚠️ Kayıt hatası: ' + (e.message||'bilinmiyor'));
+    if (btn) { btn.textContent = '💾 Sıralamayı Kaydet'; btn.disabled = false; }
+  }
+}
+
+// Eski debounced kayıt — artık kullanılmıyor ama geriye dönük uyumluluk için
 let _siralaTimeout = null;
 function _katSiralaKaydet() {
-  clearTimeout(_siralaTimeout);
-  const ind = document.getElementById('kayit-durum');
-  if (ind) { ind.style.display='inline'; ind.textContent='⏳ kaydediliyor...'; ind.style.color='var(--muted)'; }
-  _siralaTimeout = setTimeout(async () => {
-    if (!kafeId) { toast('⚠️ Oturum bulunamadı, yeniden giriş yapın'); return; }
-    try {
-      const {error} = await sb.from('kafeler').update({ urunler: URUNLER }).eq('id', kafeId);
-      if (error) throw error;
-      if (ind) { ind.textContent='✓ sıralama kaydedildi'; ind.style.color='#22c55e'; setTimeout(()=>{ind.style.display='none';},2500); }
-    } catch(e) {
-      toast('⚠️ Kayıt hatası: ' + (e.message||'bilinmiyor'));
-      if (ind) { ind.textContent='⚠️ kayıt hatası!'; ind.style.color='var(--danger)'; }
-    }
-  }, 600);
+  _katSiralaKaydetBarGoster();
 }
 window.katSiralayukari = katSiralayukari;
 window.katSiralaasagi = katSiralaasagi;
