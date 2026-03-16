@@ -1910,10 +1910,9 @@
 
     <!-- MASA GRUPLARI -->
     <div class="ayar-kart" id="ayar-masa-grup-kart">
-      <h3>🗂️ Masa Grupları</h3>
-      <p style="font-size:0.76rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Her masaya Salon, Bahçe, Teras veya VIP grubu atayın. Masalar ekranında filtre olarak görünür.</p>
-      <div id="ayar-masa-grup-liste" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
-      <button onclick="masaGrupTopluKaydet()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">✓ Grupları Kaydet</button>
+      <h3>🗂️ Masa Yönetimi</h3>
+      <p style="font-size:0.76rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Masaları düzenleyin, silin veya grup atayın.</p>
+      <div id="ayar-masa-liste" style="display:flex;flex-direction:column;gap:4px;"></div>
     </div>
 
     <!-- KUPON YÖNETİMİ - Sadece Pro/Admin -->
@@ -7315,38 +7314,92 @@ window.sifreSifirla = sifreSifirla;
 window.sifreGoster = sifreGoster;
 window.masaNotDuzenle = masaNotDuzenle;
 
+const _GRUP_EMOJI = {'Salon':'🪑','Bahçe':'🌿','Teras':'☀️','VIP':'⭐','Havuz':'🏊','Bar':'🍹','Kafe':'☕','Dış Alan':'🌳'};
+
 function masaGrupListeRender() {
-  const liste = document.getElementById('ayar-masa-grup-liste');
+  const liste = document.getElementById('ayar-masa-liste');
   if (!liste) return;
-  const grupEmoji = {'Salon':'🪑','Bahçe':'🌿','Teras':'☀️','VIP':'⭐'};
-  liste.innerHTML = masalar.map(m => `
-    <div style="display:flex;align-items:center;gap:8px;background:var(--surface3);border-radius:10px;padding:8px 10px;">
-      <div style="min-width:60px;font-size:0.8rem;font-weight:800;color:var(--text2);">Masa ${m.id}</div>
-      <div style="flex:1;font-size:0.78rem;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.ad !== 'Masa '+m.id ? m.ad : ''}</div>
-      <select data-masa-id="${m.id}" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;outline:none;cursor:pointer;">
-        <option value="">— Grup yok —</option>
-        <option value="Salon" ${m.grup==='Salon'?'selected':''}>🪑 Salon</option>
-        <option value="Bahçe" ${m.grup==='Bahçe'?'selected':''}>🌿 Bahçe</option>
-        <option value="Teras" ${m.grup==='Teras'?'selected':''}>☀️ Teras</option>
-        <option value="VIP" ${m.grup==='VIP'?'selected':''}>⭐ VIP</option>
-      </select>
-    </div>
-  `).join('');
+
+  // Grupları başlık olarak göster, altında masaları listele
+  const gruplar = [..._sabitGruplar, ''];  // sonunda grupsuzlar
+  let html = '';
+
+  gruplar.forEach(g => {
+    const grubuMasalar = masalar.filter(m => (m.grup||'') === g);
+    if (grubuMasalar.length === 0) return;
+    const baslik = g ? (_GRUP_EMOJI[g]||'🏷️') + ' ' + g : '📦 Grupsuz';
+    html += `<div style="font-size:0.7rem;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:1px;padding:10px 4px 4px;">${baslik} <span style="color:var(--muted);font-weight:700;">(${grubuMasalar.length})</span></div>`;
+    grubuMasalar.forEach(m => {
+      const dolu = m.siparisler && m.siparisler.length > 0;
+      html += `
+      <div id="ayar-masa-satir-${m.id}" style="display:flex;align-items:center;gap:6px;background:var(--surface3);border-radius:10px;padding:7px 10px;margin-bottom:3px;">
+        <div style="font-size:0.78rem;font-weight:900;color:var(--text2);min-width:28px;">${m.id}</div>
+        <input id="ayar-masa-ad-${m.id}" value="${m.ad}" maxlength="16"
+          style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.8rem;font-weight:700;outline:none;min-width:0;"
+          onchange="ayarMasaAdKaydet(${m.id},this.value)">
+        <select onchange="ayarMasaGrupKaydet(${m.id},this.value)"
+          style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:5px 6px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.75rem;font-weight:700;outline:none;cursor:pointer;max-width:90px;">
+          <option value="">Grupsuz</option>
+          ${_sabitGruplar.map(sg => `<option value="${sg}" ${m.grup===sg?'selected':''}>${_GRUP_EMOJI[sg]||''} ${sg}</option>`).join('')}
+        </select>
+        <button onclick="ayarMasaSil(${m.id})" ${dolu?'disabled title="Açık adisyon var"':''} 
+          style="padding:5px 9px;border-radius:8px;border:1px solid ${dolu?'var(--border)':'var(--danger)'};background:transparent;color:${dolu?'var(--muted)':'var(--danger)'};font-family:Nunito,sans-serif;font-size:0.72rem;font-weight:800;cursor:${dolu?'not-allowed':'pointer'};flex-shrink:0;">
+          🗑
+        </button>
+      </div>`;
+    });
+  });
+
+  // Yeni masa ekle butonu
+  html += `<button onclick="ayarYeniMasaEkle()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-family:Nunito,sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">+ Yeni Masa Ekle</button>`;
+
+  liste.innerHTML = html;
 }
 
-function masaGrupTopluKaydet() {
-  const liste = document.getElementById('ayar-masa-grup-liste');
-  if (!liste) return;
-  liste.querySelectorAll('select[data-masa-id]').forEach(sel => {
-    const id = parseInt(sel.dataset.masaId);
-    const m = masalar.find(x=>x.id===id);
-    if (m) m.grup = sel.value;
-  });
+function ayarMasaAdKaydet(id, yeniAd) {
+  const m = masalar.find(x=>x.id===id);
+  if (!m) return;
+  m.ad = (yeniAd.trim() || 'Masa '+id).substring(0,16);
   bulutKaydet();
   masalarRender();
-  toast('✓ Masa grupları kaydedildi!');
 }
-window.masaGrupTopluKaydet = masaGrupTopluKaydet;
+
+function ayarMasaGrupKaydet(id, grup) {
+  const m = masalar.find(x=>x.id===id);
+  if (!m) return;
+  m.grup = grup;
+  bulutKaydet();
+  masalarRender();
+  setTimeout(() => masaGrupListeRender(), 300);
+}
+
+function ayarMasaSil(id) {
+  const m = masalar.find(x=>x.id===id);
+  if (!m) return;
+  if (m.siparisler && m.siparisler.length > 0) { toast('⚠️ Açık adisyonu olan masa silinemez!'); return; }
+  if (!confirm('"' + m.ad + '" silinecek. Emin misiniz?')) return;
+  masalar = masalar.filter(x=>x.id!==id);
+  bulutKaydet();
+  masalarRender();
+  masaGrupListeRender();
+  toast('✓ ' + m.ad + ' silindi');
+}
+
+function ayarYeniMasaEkle() {
+  const yeniId = masalar.length > 0 ? Math.max(...masalar.map(m=>m.id)) + 1 : 1;
+  masalar.push({id:yeniId, ad:'Masa '+yeniId, siparisler:[], not:'', garson:'', indirim:0, grup:_sabitGruplar[0]||''});
+  bulutKaydet();
+  masalarRender();
+  masaGrupListeRender();
+  toast('✓ Masa '+yeniId+' eklendi');
+  // Sayfayı en alta kaydır
+  setTimeout(()=>{ const el=document.getElementById('ayar-masa-satir-'+yeniId); if(el) el.scrollIntoView({behavior:'smooth'}); },100);
+}
+
+window.ayarMasaAdKaydet = ayarMasaAdKaydet;
+window.ayarMasaGrupKaydet = ayarMasaGrupKaydet;
+window.ayarMasaSil = ayarMasaSil;
+window.ayarYeniMasaEkle = ayarYeniMasaEkle;
 window.transferYap = transferYap;
 window.splitOde = splitOde;
 window.mikDeg = mikDeg;
