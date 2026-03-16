@@ -23,6 +23,9 @@
     --bg: #1a1205; --surface: #241a08; --surface2: #2e2210; --surface3: #3a2c18;
     --accent: #d4960e; --accent2: #f0b830; --text: #fff8ee; --text2: #c8a870;
     --muted: #7a6040; --success: #3db85a; --danger: #e04040;
+    --status-dolu: #3b82f6; --status-hesap: #f59e0b;
+    --status-dolu-bg: rgba(59,130,246,0.10); --status-hesap-bg: rgba(245,158,11,0.12);
+    --accent2-glow: 0 0 14px rgba(240,184,48,0.35);
     --border: rgba(212,150,14,0.2); --radius: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -107,17 +110,17 @@
   .masa-kart:active { transform: scale(0.97); }
   /* Durum renkleri */
   .masa-kart.bos          { border-color: var(--border); opacity: 0.7; }
-  .masa-kart.siparis-alindi { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
-  .masa-kart.dolu           { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
-  .masa-kart.hesap-istendi  { border-color: #f59e0b; background: rgba(245,158,11,0.12); }
-  .masa-kart.secili         { border-color: var(--accent2) !important; box-shadow: 0 0 14px rgba(240,184,48,0.35); }
+  .masa-kart.siparis-alindi { border-color: var(--status-dolu); background: var(--status-dolu-bg); }
+  .masa-kart.dolu           { border-color: var(--status-dolu); background: var(--status-dolu-bg); }
+  .masa-kart.hesap-istendi  { border-color: var(--status-hesap); background: var(--status-hesap-bg); }
+  .masa-kart.secili         { border-color: var(--accent2) !important; box-shadow: var(--accent2-glow); }
   /* Kart içi elemanlar */
   .mk-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
   .mk-no { font-size:1rem; font-weight:900; color:var(--accent2); line-height:1; }
   .mk-durum { font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:4px; }
   .mk-durum.bos      { background:var(--surface3); color:var(--muted); }
-  .mk-durum.dolu     { background:#3b82f6; color:#fff; }
-  .mk-durum.hesap    { background:#f59e0b; color:#fff; }
+  .mk-durum.dolu     { background:var(--status-dolu); color:#fff; }
+  .mk-durum.hesap    { background:var(--status-hesap); color:#fff; }
   .mk-ad   { font-size:0.62rem; font-weight:800; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
   .mk-row  { display:flex; align-items:center; gap:3px; font-size:0.58rem; font-weight:700; color:var(--muted); }
   .mk-row span { font-weight:800; color:var(--text2); }
@@ -3171,6 +3174,13 @@ const APP_TEMALAR = {
 
 let _aktifAppTema = 'kahve';
 
+function _hexToRgb(hex) {
+  const h = (hex||'').replace('#','');
+  if (h.length < 6) return '59,130,246';
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return isNaN(r) ? '59,130,246' : `${r},${g},${b}`;
+}
+
 function appTemaUygula(temaAdi) {
   const t = APP_TEMALAR[temaAdi];
   if (!t) return;
@@ -3186,6 +3196,17 @@ function appTemaUygula(temaAdi) {
   root.style.setProperty('--accent', t.accent);
   root.style.setProperty('--accent2', t.accent2);
   root.style.setProperty('--border', t.border);
+  // Status renkleri — koyu/açık temaya göre uyarla
+  const statusDolu  = t.koyu ? '#3b82f6' : '#1d6fa6';
+  const statusHesap = t.koyu ? '#f59e0b' : '#c47a0a';
+  root.style.setProperty('--status-dolu',  statusDolu);
+  root.style.setProperty('--status-hesap', statusHesap);
+  const [dr,dg,db] = _hexToRgb(statusDolu).split(',');
+  const [hr,hg,hb] = _hexToRgb(statusHesap).split(',');
+  const [ar,ag,ab] = _hexToRgb(t.accent2).split(',');
+  root.style.setProperty('--status-dolu-bg',  `rgba(${dr},${dg},${db},0.10)`);
+  root.style.setProperty('--status-hesap-bg', `rgba(${hr},${hg},${hb},0.12)`);
+  root.style.setProperty('--accent2-glow',    `0 0 14px rgba(${ar},${ag},${ab},0.35)`);
   // Vurgu ince ayar inputunu güncelle
   const vurguInp = document.getElementById('app-vurgu-renk');
   if (vurguInp) vurguInp.value = t.accent;
@@ -3201,7 +3222,7 @@ function appTemaUygula(temaAdi) {
 
 function appVurguRenkDegisti(renk) {
   document.documentElement.style.setProperty('--accent', renk);
-  document.documentElement.style.setProperty('--accent2', _renkAciklaştir ? _renkAciklaştir(renk, 20) : renk);
+  document.documentElement.style.setProperty('--accent2', _renkAciklastir ? _renkAciklastir(renk, 20) : renk);
   const oniz = document.getElementById('app-vurgu-onizleme');
   if (oniz) { oniz.style.background = renk; }
 }
@@ -3224,7 +3245,7 @@ async function appTemaKaydet() {
   if (window._kafeData) { window._kafeData.app_tema = _aktifAppTema; window._kafeData.app_vurgu = vurguRenk; }
   // Vurgu ince ayarını da uygula
   document.documentElement.style.setProperty('--accent', vurguRenk);
-  document.documentElement.style.setProperty('--accent2', _renkAciklaştir ? _renkAciklaştir(vurguRenk, 20) : vurguRenk);
+  document.documentElement.style.setProperty('--accent2', _renkAciklastir ? _renkAciklastir(vurguRenk, 20) : vurguRenk);
   toast('✅ Tema kaydedildi!');
 }
 
@@ -3235,7 +3256,7 @@ function appTemaYukle(data) {
   // Vurgu ince ayarı varsa üstüne uygula
   if (data.app_vurgu) {
     document.documentElement.style.setProperty('--accent', data.app_vurgu);
-    document.documentElement.style.setProperty('--accent2', _renkAciklaştir ? _renkAciklaştir(data.app_vurgu, 20) : data.app_vurgu);
+    document.documentElement.style.setProperty('--accent2', _renkAciklastir ? _renkAciklastir(data.app_vurgu, 20) : data.app_vurgu);
     const vurguInp = document.getElementById('app-vurgu-renk');
     if (vurguInp) vurguInp.value = data.app_vurgu;
     const vurguOniz = document.getElementById('app-vurgu-onizleme');
