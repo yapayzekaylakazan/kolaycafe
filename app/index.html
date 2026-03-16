@@ -2989,11 +2989,36 @@ async function kafeVerisiYukle() {
     const paket = PAKETLER[plan] || PAKETLER.deneme;
     // Masaları pakete göre oluştur
     const _eskiMasalar = data.masalar || [];
-    // Pro pakette kayıtlı masa sayısı kadar veya en az 20
-    const _masaSayisi = paket.masa >= 999 ? Math.max(20, _eskiMasalar.length) : paket.masa;
+    // Pro pakette: kayıtlı masalar varsa onları kullan, yoksa grup başına varsayılan sayı
+    let _masaSayisi;
+    if (paket.masa >= 999) {
+      if (_eskiMasalar.length > 0) {
+        _masaSayisi = _eskiMasalar.length;
+      } else {
+        // İlk açılış: Salon 25, diğer her grup için 10, toplam 55
+        _masaSayisi = 25 + (_sabitGruplar.filter(g=>g!=='Salon').length * 10);
+      }
+    } else {
+      _masaSayisi = paket.masa;
+    }
     masalar = Array.from({length: _masaSayisi}, (_,i) => {
       const eski = _eskiMasalar.find(x=>x.id===i+1);
-      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0, grup:eski?.grup||''};
+      // Grup atanmamışsa ilk açılışta gruba göre otomatik ata
+      let otomatikGrup = eski?.grup || '';
+      if (!otomatikGrup && _eskiMasalar.length === 0 && paket.masa >= 999) {
+        // Salon: 1-25, Bahçe: 26-35, Teras: 36-45, VIP: 46-55
+        const idx = i + 1;
+        const grupSinirlar = [];
+        let baslangic = 1;
+        _sabitGruplar.forEach(g => {
+          const sayi = g === 'Salon' ? 25 : 10;
+          grupSinirlar.push({grup: g, baslangic, bitis: baslangic + sayi - 1});
+          baslangic += sayi;
+        });
+        const bulunan = grupSinirlar.find(s => idx >= s.baslangic && idx <= s.bitis);
+        if (bulunan) otomatikGrup = bulunan.grup;
+      }
+      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0, grup:otomatikGrup};
     });
     document.getElementById('ayar-plan').textContent = paket.ad;
     const _planRenkMap = {pro:'#7c3aed',elite:'#f97316',ultra:'#2d7a3a',platin:'#1a6fb5',gold:'#b8860b',grow:'#22c55e',start:'#64748b'};
@@ -3361,16 +3386,23 @@ function grupEkle() {
   const inp = document.getElementById('yeni-grup-inp');
   if (!inp) return;
   const yeniGrup = inp.value.trim();
-  if (!yeniGrup) { toast('Grup ad\u0131 bo\u015f olamaz'); return; }
+  if (!yeniGrup) { toast('Grup adı boş olamaz'); return; }
   if (_sabitGruplar.map(g => g.toLowerCase()).includes(yeniGrup.toLowerCase())) { toast('Bu grup zaten var'); return; }
   _sabitGruplar.push(yeniGrup);
+  // Gruba varsayılan masa sayısı otomatik ekle
+  const varsayilanSayi = yeniGrup === 'Salon' ? 25 : 10;
+  for (let i = 0; i < varsayilanSayi; i++) {
+    const yeniId = masalar.length + 1;
+    masalar.push({id: yeniId, ad: 'Masa ' + yeniId, siparisler: [], not: '', garson: '', indirim: 0, grup: yeniGrup});
+  }
   inp.value = '';
-  toast('\u2713 "' + yeniGrup + '" grubu eklendi');
-  // Modalı yenile
+  toast('✓ "' + yeniGrup + '" eklendi — ' + varsayilanSayi + ' masa hazırlandı');
+  bulutKaydet();
   const ic = document.getElementById('grup-duzenle-icerik');
   if (ic && window._grupDuzenleRender) ic.innerHTML = window._grupDuzenleRender();
   setTimeout(() => { const inp2 = document.getElementById('yeni-grup-inp'); if (inp2) inp2.focus(); }, 50);
   masaGrupTabsRender();
+  masalarRender();
 }
 
 function grupSil(grup) {
@@ -6375,11 +6407,36 @@ function ayarlarRender(){
     const paket = PAKETLER[plan] || PAKETLER.deneme;
     // Masaları pakete göre oluştur
     const _eskiMasalar = data.masalar || [];
-    // Pro pakette kayıtlı masa sayısı kadar veya en az 20
-    const _masaSayisi = paket.masa >= 999 ? Math.max(20, _eskiMasalar.length) : paket.masa;
+    // Pro pakette: kayıtlı masalar varsa onları kullan, yoksa grup başına varsayılan sayı
+    let _masaSayisi;
+    if (paket.masa >= 999) {
+      if (_eskiMasalar.length > 0) {
+        _masaSayisi = _eskiMasalar.length;
+      } else {
+        // İlk açılış: Salon 25, diğer her grup için 10, toplam 55
+        _masaSayisi = 25 + (_sabitGruplar.filter(g=>g!=='Salon').length * 10);
+      }
+    } else {
+      _masaSayisi = paket.masa;
+    }
     masalar = Array.from({length: _masaSayisi}, (_,i) => {
       const eski = _eskiMasalar.find(x=>x.id===i+1);
-      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0, grup:eski?.grup||''};
+      // Grup atanmamışsa ilk açılışta gruba göre otomatik ata
+      let otomatikGrup = eski?.grup || '';
+      if (!otomatikGrup && _eskiMasalar.length === 0 && paket.masa >= 999) {
+        // Salon: 1-25, Bahçe: 26-35, Teras: 36-45, VIP: 46-55
+        const idx = i + 1;
+        const grupSinirlar = [];
+        let baslangic = 1;
+        _sabitGruplar.forEach(g => {
+          const sayi = g === 'Salon' ? 25 : 10;
+          grupSinirlar.push({grup: g, baslangic, bitis: baslangic + sayi - 1});
+          baslangic += sayi;
+        });
+        const bulunan = grupSinirlar.find(s => idx >= s.baslangic && idx <= s.bitis);
+        if (bulunan) otomatikGrup = bulunan.grup;
+      }
+      return {id:i+1, ad: eski?.ad||'Masa '+(i+1), siparisler:[], not:eski?.not||'', garson:'', indirim:0, grup:otomatikGrup};
     });
     document.getElementById('ayar-plan').textContent = paket.ad;
     document.getElementById('ayar-plan').className = 'plan-badge ' + (['pro','elite','ultra','platin','gold','grow','start'].includes(plan)?'plan-pro':'plan-ucretsiz');
