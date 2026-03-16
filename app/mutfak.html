@@ -82,6 +82,38 @@
     .btn-tamam{background:var(--green);color:#0a0a0a;}
     .btn-iptal{background:#ef444418;color:var(--red);border:1.5px solid var(--red);}
 
+    /* VARYANT ÖZET */
+    .varyant-ozet{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
+    .varyant-pill{background:#f0b94018;color:var(--accent);border:1px solid #f0b94040;border-radius:6px;padding:1px 7px;font-size:.68rem;font-weight:800;}
+    .urun-sol{flex-direction:column;align-items:flex-start!important;}
+    .urun-sol-ust{display:flex;align-items:center;gap:7px;}
+
+    /* KART TIKLANABILIR */
+    .kart{cursor:pointer;}
+    .kart:hover{filter:brightness(1.06);}
+    .kart .aksiyonlar button{cursor:pointer;}
+
+    /* DETAY MODALİ */
+    .detay-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0 0 0 0;}
+    .detay-panel{background:var(--bg2);border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;padding:0 0 32px 0;animation:slideIn .28s ease;}
+    .detay-handle{width:40px;height:4px;background:var(--border);border-radius:4px;margin:12px auto 0;}
+    .detay-header{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .detay-masa{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;}
+    .detay-kapat{background:var(--surface2);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+    .detay-meta{padding:10px 18px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+    .detay-badge{padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:900;}
+    .detay-urunler{padding:12px 18px;}
+    .detay-urun-baslik{font-size:.7rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+    .detay-urun-satir{background:var(--surface);border-radius:10px;padding:10px 12px;margin-bottom:7px;}
+    .detay-urun-ust{display:flex;align-items:center;justify-content:space-between;}
+    .detay-urun-isim{font-weight:800;font-size:.92rem;display:flex;align-items:center;gap:6px;}
+    .detay-urun-fiyat{font-weight:900;font-size:.85rem;color:var(--accent);}
+    .detay-urun-varyantlar{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+    .detay-urun-pill{background:#f0b94015;color:var(--accent);border:1px solid #f0b94035;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;}
+    .detay-not{margin:0 18px 12px;background:var(--surface);border-radius:10px;padding:9px 12px;font-size:.8rem;color:var(--accent);font-weight:700;}
+    .detay-aksiyonlar{padding:0 18px;display:flex;gap:8px;}
+    .detay-akbtn{flex:1;padding:11px;border-radius:11px;border:none;font-family:'Nunito',sans-serif;font-weight:900;font-size:.82rem;cursor:pointer;}
+
     /* BOŞ */
     .bos{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;text-align:center;color:var(--muted);grid-column:1/-1;}
     .bos .ikon{font-size:3.5rem;margin-bottom:14px;opacity:.35;}
@@ -154,6 +186,24 @@
     </div>
   </div>
   <div class="grid" id="grid"></div>
+
+  <!-- DETAY MODALİ -->
+  <div class="detay-overlay" id="detay-overlay" style="display:none;" onclick="if(event.target===this)detayKapat()">
+    <div class="detay-panel" id="detay-panel">
+      <div class="detay-handle"></div>
+      <div class="detay-header">
+        <div>
+          <div class="detay-masa" id="detay-masa-adi"></div>
+          <div style="font-size:.75rem;color:var(--muted);font-weight:700;margin-top:2px;" id="detay-alt"></div>
+        </div>
+        <button class="detay-kapat" onclick="detayKapat()">✕</button>
+      </div>
+      <div class="detay-meta" id="detay-meta"></div>
+      <div class="detay-urunler" id="detay-urunler"></div>
+      <div id="detay-not-wrap"></div>
+      <div class="detay-aksiyonlar" id="detay-aksiyonlar"></div>
+    </div>
+  </div>
 
   <!-- YOLA ÇIKANLAR / GEÇMİŞ -->
   <div class="gecmis-bolum">
@@ -293,11 +343,12 @@ async function yukle(){
     const mSip=masa.siparisler.filter(s=>s.musteri===true);
     if(mSip.length===0)return;
 
-    // Ürünleri grupla — adet field varsa kullan, yoksa say
+    // Ürünleri grupla — isim + secimOzeti kombinasyonu (farklı varyantlar ayrı satır)
     const gruplu={};
     mSip.forEach(s=>{
-      const k=s.isim;
-      if(!gruplu[k])gruplu[k]={isim:s.isim,ikon:s.ikon||'🍽️',adet:0};
+      const ozet=s.secimOzeti||'';
+      const k=s.isim+'|||'+ozet;
+      if(!gruplu[k])gruplu[k]={isim:s.isim,ikon:s.ikon||'🍽️',adet:0,secimOzeti:ozet,fiyat:s.fiyat||0};
       gruplu[k].adet+=(s.adet||1);
     });
 
@@ -306,9 +357,11 @@ async function yukle(){
       masaNo:masa.id,
       masaAdi:masaAdi,
       urunler:Object.values(gruplu),
+      hamSiparisler:mSip,
       durum:masa.mutfak_durum||'bekliyor',
       zaman:masa.mutfak_zaman?new Date(masa.mutfak_zaman).getTime():Date.now()-10000,
-      not:masa.not||''
+      not:masa.not||'',
+      garson:masa.garson||''
     });
   });
 
@@ -349,28 +402,13 @@ async function yukleOnline() {
 
 function render(){
   const grid=document.getElementById('grid');
-
-  // Garson çağrı kartlarını en üste ekle
-  let cagriHTML = '';
-  garsonCagriler.forEach(c=>{
-    cagriHTML += `<div class="kart" style="border-color:#ef4444;animation:pulse 1s infinite;">
-      <div class="kh" style="background:#ef444415;">
-        <div>
-          <div class="masa-no" style="color:#ef4444;">🔔 ${c.masaAdi}</div>
-          <div class="durum-lbl" style="color:#ef4444;">GARSON ÇAĞIRIYOR${c.saat?' · '+c.saat:''}</div>
-        </div>
-      </div>
-      <div class="aksiyonlar">
-        <button class="ak-btn btn-tamam" onclick="garsonCagriKapatMutfak('${c.masaNo}')">✓ Gidiyorum</button>
-      </div>
-    </div>`;
-  });
+  grid.innerHTML = ''; // Her render'da temizle
 
   const filtreli=aktifFiltre==='hepsi'?siparisler:siparisler.filter(s=>s.durum===aktifFiltre);
   const onlineFiltreli = aktifFiltre==='hepsi' ? onlineSiparislerMutfak :
     aktifFiltre==='bekliyor' ? onlineSiparislerMutfak.filter(s=>s.durum==='bekleniyor') :
     aktifFiltre==='hazirlaniyor' ? onlineSiparislerMutfak.filter(s=>s.durum==='hazirlaniyor') : [];
-  
+
   const toplamBekleyen = siparisler.filter(s=>s.durum==='bekliyor').length + onlineSiparislerMutfak.filter(s=>s.durum==='bekleniyor').length;
   const toplamHazirlaniyor = siparisler.filter(s=>s.durum==='hazirlaniyor').length + onlineSiparislerMutfak.filter(s=>s.durum==='hazirlaniyor').length;
   document.getElementById('sc-b').textContent='⏳ '+toplamBekleyen;
@@ -382,17 +420,41 @@ function render(){
     return;
   }
 
-  // Online sipariş kartları
+  // 1) Garson çağrı kartları (en üstte)
+  garsonCagriler.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='kart';
+    el.style.cssText='border-color:#ef4444;animation:pulse 1s infinite;';
+    el.innerHTML=`<div class="kh" style="background:#ef444415;">
+        <div>
+          <div class="masa-no" style="color:#ef4444;">🔔 ${c.masaAdi}</div>
+          <div class="durum-lbl" style="color:#ef4444;">GARSON ÇAĞIRIYOR${c.saat?' · '+c.saat:''}</div>
+        </div>
+      </div>
+      <div class="aksiyonlar">
+        <button class="ak-btn btn-tamam" onclick="garsonCagriKapatMutfak('${c.masaNo}')">✓ Gidiyorum</button>
+      </div>`;
+    grid.appendChild(el);
+  });
+
+  // 2) Online sipariş kartları
   onlineFiltreli.forEach(s => {
     const durRenk = s.durum==='bekleniyor'?'#f0b830':'#3b82f6';
     const durLbl = s.durum==='bekleniyor'?'⏳ Bekliyor':'👨‍🍳 Hazırlanıyor';
-    const urunHTML = (s.siparisler||[]).map(u=>`<div class="urun"><div class="urun-sol"><span>${u.ikon||'📦'}</span><span>${u.isim}</span></div><span class="adet">x${u.adet}</span></div>`).join('');
+    const urunHTML = (s.siparisler||[]).map(u=>{
+      const pillHtml = u.secimOzeti ? u.secimOzeti.split(',').map(p=>`<span class="varyant-pill">${p.trim()}</span>`).join('') : '';
+      const ozHtml = pillHtml ? `<div class="varyant-ozet">${pillHtml}</div>` : '';
+      return `<div class="urun"><div class="urun-sol"><div class="urun-sol-ust"><span>${u.ikon||'📦'}</span><span>${u.isim}</span></div>${ozHtml}</div><span class="adet">x${u.adet}</span></div>`;
+    }).join('');
     const notHTML = s.siparis_notu ? `<div class="not">📝 ${s.siparis_notu}</div>` : '';
     const adresHTML = s.adres ? `<div class="not">📍 ${s.adres}</div>` : '';
     const akBtn = s.durum==='bekleniyor'
       ? `<button class="ak-btn btn-hazirla" onclick="onlineDurumGuncelleMutfak('${s.id}','hazirlaniyor')">👨‍🍳 Hazırlanıyor</button><button class="ak-btn btn-iptal" onclick="onlineDurumGuncelleMutfak('${s.id}','iptal')">✕ İptal</button>`
       : `<button class="ak-btn btn-tamam" onclick="onlineDurumGuncelleMutfak('${s.id}','yolda')">🛵 Yola Çıktı</button>`;
-    cagriHTML += `<div class="kart" style="border-color:${durRenk};">
+    const onlineKartEl = document.createElement('div');
+    onlineKartEl.className = 'kart';
+    onlineKartEl.style.borderColor = durRenk;
+    onlineKartEl.innerHTML = `
       <div class="kh" style="background:${durRenk}15;">
         <div>
           <div class="masa-no" style="color:${durRenk};">🌐 Online #${s.siparis_no}</div>
@@ -401,17 +463,23 @@ function render(){
       </div>
       <div class="urunler">${urunHTML}</div>
       ${notHTML}${adresHTML}
-      <div class="aksiyonlar">${akBtn}</div>
-    </div>`;
+      <div class="aksiyonlar">${akBtn}</div>`;
+    onlineKartEl.addEventListener('click', (e)=>{
+      if(e.target.closest('.aksiyonlar')) return;
+      detayAcOnline(s);
+    });
+    grid.appendChild(onlineKartEl);
   });
-
-  grid.innerHTML=cagriHTML;
   const sirala={bekliyor:0,hazirlaniyor:1,hazir:2};
   [...filtreli].sort((a,b)=>(sirala[a.durum]||0)-(sirala[b.durum]||0)).forEach(s=>{
     const sure=sureFmt(Date.now()-s.zaman);
     const dur=s.durum;
     const durLbl=dur==='bekliyor'?'⏳ Bekliyor':dur==='hazirlaniyor'?'👨‍🍳 Hazırlanıyor':'✅ Hazır';
-    const urunHTML=s.urunler.map(u=>`<div class="urun"><div class="urun-sol"><span>${u.ikon}</span><span>${u.isim}</span></div><span class="adet">x${u.adet}</span></div>`).join('');
+    const urunHTML=s.urunler.map(u=>{
+      const pillHtml=u.secimOzeti?u.secimOzeti.split(',').map(p=>`<span class="varyant-pill">${p.trim()}</span>`).join(''):'';
+      const ozHtml=pillHtml?`<div class="varyant-ozet">${pillHtml}</div>`:'';
+      return `<div class="urun"><div class="urun-sol"><div class="urun-sol-ust"><span>${u.ikon}</span><span>${u.isim}</span></div>${ozHtml}</div><span class="adet">x${u.adet}</span></div>`;
+    }).join('');
     const notHTML=s.not?`<div class="not">📝 ${s.not}</div>`:'';
     const akHTML=dur==='bekliyor'
       ?`<button class="ak-btn btn-hazirla" onclick="durumGuncelle('${s.masaNo}','hazirlaniyor')">👨‍🍳 Hazırlanıyor</button><button class="ak-btn btn-iptal" onclick="durumGuncelle('${s.masaNo}','iptal')">✕ İptal</button>`
@@ -429,8 +497,127 @@ function render(){
       <div class="urunler">${urunHTML}</div>
       ${notHTML}
       <div class="aksiyonlar">${akHTML}</div>`;
+    // Kart başlığına tıklayınca detay modal aç (aksiyonlar butonlarına tıklamak kapatmasın)
+    kart.addEventListener('click', (e)=>{
+      if(e.target.closest('.aksiyonlar')) return;
+      detayAc(s);
+    });
     grid.appendChild(kart);
   });
+}
+
+// ── DETAY MODALİ ──
+let _detaySiparis = null;
+
+function detayAc(s) {
+  _detaySiparis = s;
+  const dur = s.durum;
+  const durRenk = dur==='bekliyor'?'var(--orange)':dur==='hazirlaniyor'?'var(--blue)':'var(--green)';
+  const durLbl = dur==='bekliyor'?'⏳ Bekliyor':dur==='hazirlaniyor'?'👨‍🍳 Hazırlanıyor':'✅ Hazır';
+  const sure = sureFmt(Date.now()-s.zaman);
+
+  document.getElementById('detay-masa-adi').textContent = s.masaAdi;
+  document.getElementById('detay-masa-adi').style.color = durRenk;
+  document.getElementById('detay-alt').textContent = s.garson ? '👤 ' + s.garson : '';
+
+  // Meta bilgiler
+  document.getElementById('detay-meta').innerHTML = `
+    <span class="detay-badge" style="background:${durRenk}18;color:${durRenk};">${durLbl}</span>
+    <span class="detay-badge" style="background:var(--surface2);color:var(--muted);">⏱ ${sure}</span>
+    <span class="detay-badge" style="background:var(--surface2);color:var(--muted);">🛒 ${s.urunler.reduce((t,u)=>t+u.adet,0)} ürün</span>
+  `;
+
+  // Ürün listesi (varyantlı)
+  const urunlerHTML = s.urunler.map(u => {
+    const pillHtml = u.secimOzeti
+      ? u.secimOzeti.split(',').map(p=>`<span class="detay-urun-pill">${p.trim()}</span>`).join('')
+      : '';
+    const ozHtml = pillHtml ? `<div class="detay-urun-varyantlar">${pillHtml}</div>` : '';
+    const fiyatHtml = u.fiyat ? `<span class="detay-urun-fiyat">${(u.fiyat * u.adet).toLocaleString('tr-TR')} ₺</span>` : '';
+    return `<div class="detay-urun-satir">
+      <div class="detay-urun-ust">
+        <div class="detay-urun-isim">
+          <span>${u.ikon}</span>
+          <span>${u.isim}</span>
+          <span style="background:var(--surface2);border-radius:6px;padding:1px 8px;font-size:.75rem;font-weight:900;color:var(--accent);">x${u.adet}</span>
+        </div>
+        ${fiyatHtml}
+      </div>
+      ${ozHtml}
+    </div>`;
+  }).join('');
+  document.getElementById('detay-urunler').innerHTML = `<div class="detay-urun-baslik">📋 Sipariş Detayı</div>${urunlerHTML}`;
+
+  // Not
+  document.getElementById('detay-not-wrap').innerHTML = s.not
+    ? `<div class="detay-not">📝 Not: ${s.not}</div>` : '';
+
+  // Aksiyon butonları
+  let akHTML = '';
+  if(dur==='bekliyor'){
+    akHTML = `<button class="detay-akbtn" style="background:#3b82f618;color:var(--blue);border:1.5px solid var(--blue);" onclick="durumGuncelle('${s.masaNo}','hazirlaniyor');detayKapat()">👨‍🍳 Hazırlanıyor</button>
+              <button class="detay-akbtn" style="background:#ef444418;color:var(--red);border:1.5px solid var(--red);" onclick="durumGuncelle('${s.masaNo}','iptal');detayKapat()">✕ İptal</button>`;
+  } else if(dur==='hazirlaniyor'){
+    akHTML = `<button class="detay-akbtn" style="background:var(--green);color:#0a0a0a;" onclick="durumGuncelle('${s.masaNo}','hazir');detayKapat()">✅ Hazır!</button>
+              <button class="detay-akbtn" style="background:#ef444418;color:var(--red);border:1.5px solid var(--red);" onclick="durumGuncelle('${s.masaNo}','iptal');detayKapat()">✕ İptal</button>`;
+  } else {
+    akHTML = `<button class="detay-akbtn" style="background:#22c55e22;color:var(--green);border:1.5px solid var(--green);" onclick="teslim('${s.masaNo}');detayKapat()">🏁 Teslim Edildi</button>`;
+  }
+  document.getElementById('detay-aksiyonlar').innerHTML = akHTML;
+
+  document.getElementById('detay-overlay').style.display = 'flex';
+}
+
+function detayKapat() {
+  document.getElementById('detay-overlay').style.display = 'none';
+  _detaySiparis = null;
+}
+
+function detayAcOnline(s) {
+  const durRenk = s.durum==='bekleniyor'?'#f0b830':'#3b82f6';
+  const durLbl = s.durum==='bekleniyor'?'⏳ Bekliyor':'👨‍🍳 Hazırlanıyor';
+  const sure = new Date(s.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+
+  document.getElementById('detay-masa-adi').textContent = '🌐 Online #' + s.siparis_no;
+  document.getElementById('detay-masa-adi').style.color = durRenk;
+  document.getElementById('detay-alt').textContent = s.musteri_ad + ' · ' + s.musteri_tel;
+
+  document.getElementById('detay-meta').innerHTML = `
+    <span class="detay-badge" style="background:${durRenk}18;color:${durRenk};">${durLbl}</span>
+    <span class="detay-badge" style="background:var(--surface2);color:var(--muted);">🕐 ${sure}</span>
+    ${s.adres ? `<span class="detay-badge" style="background:var(--surface2);color:var(--muted);">📍 ${s.adres}</span>` : ''}
+    <span class="detay-badge" style="background:var(--surface2);color:var(--muted);">💰 ${(s.toplam||0).toLocaleString('tr-TR')} ₺</span>
+  `;
+
+  const urunlerHTML = (s.siparisler||[]).map(u => {
+    const pillHtml = u.secimOzeti
+      ? u.secimOzeti.split(',').map(p=>`<span class="detay-urun-pill">${p.trim()}</span>`).join('')
+      : '';
+    const ozHtml = pillHtml ? `<div class="detay-urun-varyantlar">${pillHtml}</div>` : '';
+    return `<div class="detay-urun-satir">
+      <div class="detay-urun-ust">
+        <div class="detay-urun-isim">
+          <span>${u.ikon||'📦'}</span>
+          <span>${u.isim}</span>
+          <span style="background:var(--surface2);border-radius:6px;padding:1px 8px;font-size:.75rem;font-weight:900;color:var(--accent);">x${u.adet}</span>
+        </div>
+        ${u.fiyat ? `<span class="detay-urun-fiyat">${(u.fiyat*u.adet).toLocaleString('tr-TR')} ₺</span>` : ''}
+      </div>
+      ${ozHtml}
+    </div>`;
+  }).join('');
+  document.getElementById('detay-urunler').innerHTML = `<div class="detay-urun-baslik">📋 Sipariş Detayı</div>${urunlerHTML}`;
+
+  document.getElementById('detay-not-wrap').innerHTML = s.siparis_notu
+    ? `<div class="detay-not">📝 Not: ${s.siparis_notu}</div>` : '';
+
+  let akHTML = s.durum==='bekleniyor'
+    ? `<button class="detay-akbtn" style="background:#3b82f618;color:var(--blue);border:1.5px solid var(--blue);" onclick="onlineDurumGuncelleMutfak('${s.id}','hazirlaniyor');detayKapat()">👨‍🍳 Hazırlanıyor</button>
+       <button class="detay-akbtn" style="background:#ef444418;color:var(--red);border:1.5px solid var(--red);" onclick="onlineDurumGuncelleMutfak('${s.id}','iptal');detayKapat()">✕ İptal</button>`
+    : `<button class="detay-akbtn" style="background:var(--green);color:#0a0a0a;" onclick="onlineDurumGuncelleMutfak('${s.id}','yolda');detayKapat()">🛵 Yola Çıktı</button>`;
+  document.getElementById('detay-aksiyonlar').innerHTML = akHTML;
+
+  document.getElementById('detay-overlay').style.display = 'flex';
 }
 
 async function garsonCagriKapatMutfak(masaNo){
