@@ -1912,6 +1912,7 @@
     <div class="ayar-kart" id="ayar-masa-grup-kart">
       <h3>🗂️ Masa Yönetimi</h3>
       <p style="font-size:0.76rem;color:var(--muted);font-weight:600;margin-bottom:12px;">Masaları düzenleyin, silin veya grup atayın.</p>
+      <button onclick="masalariTemizleYenidenDuzelt()" style="width:100%;margin-bottom:10px;padding:10px;border-radius:10px;border:1.5px solid var(--accent);background:rgba(212,150,14,0.08);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;">🔧 Masaları Düzenle — Numaraları Sıfırla</button>
       <div id="ayar-masa-liste" style="display:flex;flex-direction:column;gap:4px;"></div>
     </div>
 
@@ -7411,6 +7412,44 @@ function masaGrupListeRender() {
 }
 
 // Masaları doğrudan Supabase'e kaydet (garson modunda da çalışır çünkü kafeId admin'e ait)
+function masalariTemizleYenidenDuzelt() {
+  if (!confirm("Tüm masalar gruplarına göre 1'den başlayarak yeniden numaralandırılacak.\n\nAçık adisyon yoksa devam edin. Emin misiniz?")) return;
+  const acikAdisyon = masalar.some(m => m.siparisler && m.siparisler.length > 0);
+  if (acikAdisyon) { toast('⚠️ Açık adisyon var! Önce tüm masaları kapat.'); return; }
+
+  // Her grubu sırayla işle, 1'den başlayarak numaralandır
+  let sayac = 1;
+  const yeniMasalar = [];
+  _sabitGruplar.forEach(g => {
+    const grubunMasalari = masalar.filter(m => m.grup === g);
+    grubunMasalari.forEach(m => {
+      yeniMasalar.push({
+        id: sayac,
+        ad: 'Masa ' + sayac,
+        siparisler: [],
+        not: '',
+        garson: '',
+        indirim: 0,
+        grup: g
+      });
+      sayac++;
+    });
+  });
+  // Grupsuz masalar en sona
+  const grupsuzlar = masalar.filter(m => !m.grup);
+  grupsuzlar.forEach(m => {
+    yeniMasalar.push({ id: sayac, ad: 'Masa ' + sayac, siparisler: [], not: '', garson: '', indirim: 0, grup: _sabitGruplar[0] || '' });
+    sayac++;
+  });
+
+  masalar = yeniMasalar;
+  masalariKaydet("✓ Masalar düzeltildi — " + masalar.length + " masa, 1'den başlayarak numaralandı");
+  masalarRender();
+  masaGrupListeRender();
+  toast('✓ ' + masalar.length + ' masa yeniden numaralandırıldı!');
+}
+window.masalariTemizleYenidenDuzelt = masalariTemizleYenidenDuzelt;
+
 async function masalariKaydet(mesaj) {
   if (!kafeId) return;
   const masaKayit = masalar.map(m=>({id:m.id, ad:m.ad, not:m.not||'', grup:m.grup||''}));
