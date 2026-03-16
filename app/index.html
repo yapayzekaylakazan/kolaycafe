@@ -2664,9 +2664,20 @@ async function garsonGiris(isim, kafeData) {
     if (!kafeId) return;
     try {
       const {data} = await sb.from('kafeler')
-        .select('aktif_masalar')
+        .select('aktif_masalar, masalar')
         .eq('id', kafeId)
         .single();
+      // Yeni masalar eklenmiş olabilir - masalar kolonunu güncelle
+      if (data?.masalar) {
+        data.masalar.forEach(k => {
+          if (!masalar.find(x=>x.id===k.id)) {
+            masalar.push({id:k.id, ad:k.ad, siparisler:[], not:k.not||'', garson:'', indirim:0, grup:k.grup||'', kisi_sayisi:0, hesap_istendi:false});
+          } else {
+            const m = masalar.find(x=>x.id===k.id);
+            if (m) { m.ad = k.ad; }
+          }
+        });
+      }
       if (data?.aktif_masalar) {
         let degisti = false;
         data.aktif_masalar.forEach(am => {
@@ -3074,6 +3085,7 @@ async function masaSyncYaz(masaId) {
 }
 
 function bulutKaydet() {
+  if (garsonModu) return; // Garson modu: sadece masaSyncYaz kullanılır
   const ind = document.getElementById('kayit-durum');
   if (ind) { ind.style.display='inline'; ind.textContent='⏳ kaydediliyor...'; ind.style.color='var(--muted)'; }
   _kayitBekliyor = true;
@@ -3244,23 +3256,36 @@ function masaErisimVar(masaId) {
 }
 
 let _aktifGrupFiltre = '';
+let _aktifDoluFiltreStr = '';
 
 function masaGrupTabsRender() {
   const tabsEl = document.getElementById('masa-grup-tabs');
   if (!tabsEl) return;
   const gruplar = [...new Set(masalar.map(m=>m.grup||'').filter(g=>g))];
-  if (gruplar.length === 0) { tabsEl.style.display='none'; return; }
   tabsEl.style.display = 'flex';
-  const tabStyle = (aktif) => `background:${aktif?'var(--accent)':'var(--surface2)'};border:1.5px solid ${aktif?'var(--accent)':'var(--border)'};border-radius:20px;padding:5px 13px;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;color:${aktif?'var(--bg)':'var(--muted)'};white-space:nowrap;`;
-  tabsEl.innerHTML = '<button style="' + tabStyle(!_aktifGrupFiltre) + '" onclick="masaGrupFiltrele(\'\')">Tümü</button>' +
-    gruplar.map(g=>'<button style="' + tabStyle(_aktifGrupFiltre===g) + '" onclick="masaGrupFiltrele(\'' + g + '\')">' + g + '</button>').join('');
+  const ts = (aktif) => 'background:' + (aktif?'var(--accent)':'var(--surface2)') + ';border:1.5px solid ' + (aktif?'var(--accent)':'var(--border)') + ';border-radius:20px;padding:5px 12px;font-family:Nunito,sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;color:' + (aktif?'var(--bg)':'var(--muted)') + ';white-space:nowrap;';
+  let html = '<button style="' + ts(!_aktifDoluFiltreStr) + '" onclick="masaDoluFiltreUygula(\'\')">T\u00fcm\u00fc</button>' +
+    '<button style="' + ts(_aktifDoluFiltreStr==='dolu') + '" onclick="masaDoluFiltreUygula(\'dolu\')">\u{1F535} Dolu</button>' +
+    '<button style="' + ts(_aktifDoluFiltreStr==='bos') + '" onclick="masaDoluFiltreUygula(\'bos\')">\u2B1C Bo\u015f</button>';
+  if (gruplar.length > 0) {
+    html += '<span style="margin:0 6px;color:var(--muted);line-height:2;">|</span>';
+    html += gruplar.map(g=>'<button style="' + ts(_aktifGrupFiltre===g) + '" onclick="masaGrupFiltrele(\'' + g + '\')">' + g + '</button>').join('');
+  }
+  tabsEl.innerHTML = html;
 }
 
-function masaGrupFiltrele(grup) {
-  _aktifGrupFiltre = grup;
+function masaDoluFiltreUygula(tip) {
+  _aktifDoluFiltreStr = tip;
   masaGrupTabsRender();
   masalarRender();
 }
+
+function masaGrupFiltrele(grup) {
+  _aktifGrupFiltre = _aktifGrupFiltre === grup ? '' : grup;
+  masaGrupTabsRender();
+  masalarRender();
+}
+
 
 function masalarRender() {
   const grid = document.getElementById('masalar-grid');
@@ -3335,6 +3360,7 @@ function masalarRender() {
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
 
+      <button class="masa-qr-btn">📷</button>
       <button class="masa-not-btn">✏️</button>`;
       btn.querySelector(".masa-not-btn").addEventListener("click",e=>{e.stopPropagation();masaNotDuzenle(m.id);});
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
@@ -3692,7 +3718,7 @@ async function tahsilEt(odemeTipi) {
     gunlukSatis[s.isim].adet+=s.adet;
     gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;
   });
-  m.siparisler=[]; m.indirim=0; m.garson='';
+  m.siparisler=[]; m.indirim=0; m.garson=''; m.kisi_sayisi=0; m.hesap_istendi=false;
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
   const tipEtiket = {
     'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart',
@@ -8826,8 +8852,8 @@ async function aiVeriTopla() {
     baslangic = d.toISOString();
   }
 
-  let q = sb.from('kolaycafenlar').select('*').eq('kafe_id', kafeId).order('kapanma_zamani', {ascending: true});
-  if (baslangic) q = q.gte('kapanma_zamani', baslangic);
+  let q = sb.from('kolaycafenlar').select('*').eq('kafe_id', kafeId).order('created_at', {ascending: true});
+  if (baslangic) q = q.gte('created_at', baslangic);
   const { data, error } = await q;
   if (error) throw new Error('Supabase hatası: ' + error.message);
 
@@ -8857,7 +8883,7 @@ async function aiVeriTopla() {
   const gunler = {};
   const gunIsimleri = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
   adisyonlar.forEach(a => {
-    const tarih = new Date(a.kapanma_zamani || a.created_at);
+    const tarih = new Date(a.created_at);
     if (isNaN(tarih)) return;
     const saat = tarih.getHours();
     const gun = gunIsimleri[tarih.getDay()];
@@ -8876,7 +8902,7 @@ async function aiVeriTopla() {
   // Günlük ciro (trend)
   const gunlukCiro = {};
   adisyonlar.forEach(a => {
-    const tarih = new Date(a.kapanma_zamani || a.created_at);
+    const tarih = new Date(a.created_at);
     if (isNaN(tarih)) return;
     const key = tarih.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit' });
     gunlukCiro[key] = (gunlukCiro[key] || 0) + (a.toplam || 0);
@@ -8890,8 +8916,8 @@ async function aiVeriTopla() {
     const oncekiBaslangic = new Date(oncekiBitis - sure);
     const { data: oncekiData } = await sb.from('kolaycafenlar').select('toplam')
       .eq('kafe_id', kafeId)
-      .gte('kapanma_zamani', oncekiBaslangic.toISOString())
-      .lt('kapanma_zamani', baslangic);
+      .gte('created_at', oncekiBaslangic.toISOString())
+      .lt('created_at', baslangic);
     oncekiCiro = (oncekiData || []).reduce((s, a) => s + (a.toplam || 0), 0);
   }
 
