@@ -3337,23 +3337,30 @@ function masaGrupTabsRender() {
 
   const grupEmoji = {'Salon':'\u{1fa91}','Bah\u00e7e':'\u{1f33f}','Teras':'\u2600\ufe0f','VIP':'\u2b50','Havuz':'\u{1f3ca}','Bar':'\u{1f379}','Kafe':'\u2615','D\u0131\u015f Alan':'\u{1f333}'};
 
-  // SATIR 1: Tüm gruplar (sabit liste) + Düzenle butonu — garson modunda Düzenle gizli
-  let html1 = '<button style="' + ts(_aktifGrupFiltre === '') + '" onclick="masaGrupFiltrele(\'\')">T\u00fcm\u00fc</button>';
+  // SATIR 1: Tümü (her iki filtreyi sıfırlar) + Gruplar + Düzenle
+  const tumüAktif = _aktifGrupFiltre === '' && !_aktifDoluFiltreStr;
+  let html1 = '<button style="' + ts(tumüAktif) + '" onclick="tumunuGoster()">Tümü</button>';
   _sabitGruplar.forEach(g => {
-    html1 += '<button style="' + ts(_aktifGrupFiltre === g) + '" onclick="masaGrupFiltrele(\'' + g + '\')">' + (grupEmoji[g] || '\u{1f3f7}\ufe0f') + ' ' + g + '</button>';
+    html1 += '<button style="' + ts(_aktifGrupFiltre === g) + '" onclick="masaGrupFiltrele(\'' + g + '\')">' + (grupEmoji[g] || '🏷️') + ' ' + g + '</button>';
   });
   if (!garsonModu) {
-    html1 += '<button onclick="grupDuzenleModalAc()" style="background:none;border:1.5px dashed var(--border);border-radius:20px;padding:4px 10px;font-family:Nunito,sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;color:var(--muted);white-space:nowrap;flex-shrink:0;">\u270f\ufe0f D\u00fczenle</button>';
+    html1 += '<button onclick="grupDuzenleModalAc()" style="background:none;border:1.5px dashed var(--border);border-radius:20px;padding:4px 10px;font-family:Nunito,sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;color:var(--muted);white-space:nowrap;flex-shrink:0;">✏️ Düzenle</button>';
   }
   tabsEl.innerHTML = html1;
 
-  // SATIR 2: Tümü / Dolu / Boş — hem garson hem admin
+  // SATIR 2: Dolu / Boş (Tümü YOK — üst satırdaki Tümü her ikisini sıfırlar)
   if (doluEl) {
     doluEl.innerHTML =
-      '<button style="' + ts(!_aktifDoluFiltreStr) + '" onclick="masaDoluFiltreUygula(\'\')">T\u00fcm\u00fc</button>' +
-      '<button style="' + ts(_aktifDoluFiltreStr === 'dolu') + '" onclick="masaDoluFiltreUygula(\'dolu\')">\u{1f535} Dolu</button>' +
-      '<button style="' + ts(_aktifDoluFiltreStr === 'bos') + '" onclick="masaDoluFiltreUygula(\'bos\')">\u2b1c Bo\u015f</button>';
+      '<button style="' + ts(_aktifDoluFiltreStr === 'dolu') + '" onclick="masaDoluFiltreUygula(\'dolu\')">🔵 Dolu</button>' +
+      '<button style="' + ts(_aktifDoluFiltreStr === 'bos') + '" onclick="masaDoluFiltreUygula(\'bos\')">⬜ Boş</button>';
   }
+}
+
+function tumunuGoster() {
+  _aktifGrupFiltre = '';
+  _aktifDoluFiltreStr = '';
+  masaGrupTabsRender();
+  masalarRender();
 }
 
 function masaDoluFiltreUygula(tip) {
@@ -3364,18 +3371,36 @@ function masaDoluFiltreUygula(tip) {
 
 function masaGrupFiltrele(grup) {
   _aktifGrupFiltre = grup;
-  // Dolu/boş filtresini SIFIRLAMIYORUZ — kullanıcı grup değiştirince mevcut dolu/boş seçimi korunur
   masaGrupTabsRender();
   masalarRender();
 }
 
+// Masaları ID'ye göre sıfırdan yeniden numaralandır (boşluksuz)
+function masalariYenidenSirala() {
+  masalar.sort((a, b) => a.id - b.id);
+  masalar.forEach((m, i) => {
+    m.id = i + 1;
+    if (m.ad === 'Masa ' + (i + 2) || m.ad.match(/^Masa \d+$/)) {
+      // Sadece varsayılan isimse güncelle
+      if (m.ad.match(/^Masa \d+$/)) m.ad = 'Masa ' + (i + 1);
+    }
+  });
+}
+
 function grupDuzenleModalAc() {
-  const grupEmoji = {'Salon':'\u{1fa91}','Bah\u00e7e':'\u{1f33f}','Teras':'\u2600\ufe0f','VIP':'\u2b50','Havuz':'\u{1f3ca}','Bar':'\u{1f379}','Kafe':'\u2615','D\u0131\u015f Alan':'\u{1f333}'};
+  const grupEmoji = {'Salon':'\u{1fa91}','Bahçe':'\u{1f33f}','Teras':'\u2600\ufe0f','VIP':'\u2b50','Havuz':'\u{1f3ca}','Bar':'\u{1f379}','Kafe':'\u2615','Dış Alan':'\u{1f333}'};
   function renderIcerik() {
-    let html = '<div style="font-size:0.8rem;font-weight:800;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Gruplar</div>';
-    _sabitGruplar.forEach(g => {
+    let html = '<div style="font-size:0.8rem;font-weight:800;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Grup Sıralaması</div>';
+    html += '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px;font-weight:600;">↑↓ ile sırayı değiştir — sol menüde bu sırayla görünür</div>';
+    _sabitGruplar.forEach((g, idx) => {
       const masaSayisi = masalar.filter(m => m.grup === g).length;
-      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;background:var(--surface3);border-radius:10px;padding:8px 10px;">
+      const ilkMi = idx === 0;
+      const sonMu = idx === _sabitGruplar.length - 1;
+      html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:var(--surface3);border-radius:10px;padding:8px 10px;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <button onclick="grupYukar(${idx})" ${ilkMi?'disabled':''} style="padding:1px 6px;border-radius:4px;border:1px solid var(--border);background:${ilkMi?'transparent':'var(--surface2)'};color:${ilkMi?'var(--muted)':'var(--text)'};cursor:${ilkMi?'default':'pointer'};font-size:0.65rem;line-height:1.4;">▲</button>
+          <button onclick="grupAsagi(${idx})" ${sonMu?'disabled':''} style="padding:1px 6px;border-radius:4px;border:1px solid var(--border);background:${sonMu?'transparent':'var(--surface2)'};color:${sonMu?'var(--muted)':'var(--text)'};cursor:${sonMu?'default':'pointer'};font-size:0.65rem;line-height:1.4;">▼</button>
+        </div>
         <span style="font-size:1rem;">${grupEmoji[g] || '\u{1f3f7}\ufe0f'}</span>
         <span style="font-size:0.85rem;font-weight:800;flex:1;">${g}</span>
         <span style="font-size:0.7rem;color:var(--muted);font-weight:700;">${masaSayisi} masa</span>
@@ -3425,6 +3450,28 @@ function grupEkle() {
   masaGrupTabsRender();
   masalarRender();
 }
+
+function grupYukar(idx) {
+  if (idx === 0) return;
+  [_sabitGruplar[idx-1], _sabitGruplar[idx]] = [_sabitGruplar[idx], _sabitGruplar[idx-1]];
+  masalariKaydet();
+  masaGrupTabsRender();
+  masalarRender();
+  const ic = document.getElementById('grup-duzenle-icerik');
+  if (ic && window._grupDuzenleRender) ic.innerHTML = window._grupDuzenleRender();
+}
+
+function grupAsagi(idx) {
+  if (idx >= _sabitGruplar.length - 1) return;
+  [_sabitGruplar[idx], _sabitGruplar[idx+1]] = [_sabitGruplar[idx+1], _sabitGruplar[idx]];
+  masalariKaydet();
+  masaGrupTabsRender();
+  masalarRender();
+  const ic = document.getElementById('grup-duzenle-icerik');
+  if (ic && window._grupDuzenleRender) ic.innerHTML = window._grupDuzenleRender();
+}
+window.grupYukar = grupYukar;
+window.grupAsagi = grupAsagi;
 
 function grupSil(grup) {
   const masaSayisi = masalar.filter(m => m.grup === grup).length;
@@ -7401,15 +7448,17 @@ function ayarMasaSil(id) {
   if (m.siparisler && m.siparisler.length > 0) { toast('⚠️ Açık adisyonu olan masa silinemez!'); return; }
   if (!confirm('"' + m.ad + '" silinecek. Emin misiniz?')) return;
   masalar = masalar.filter(x=>x.id!==id);
-  masalariKaydet('✓ ' + m.ad + ' silindi');
+  masalariYenidenSirala(); // ID'leri boşluksuz sırala
+  masalariKaydet('✓ Masa silindi, numaralar güncellendi');
   masalarRender();
   masaGrupListeRender();
 }
 
 function ayarYeniMasaEkle() {
   if (garsonModu) { toast('⚠️ Garson modunda masa eklenemez'); return; }
-  const yeniId = masalar.length > 0 ? Math.max(...masalar.map(m=>m.id)) + 1 : 1;
-  masalar.push({id:yeniId, ad:'Masa '+yeniId, siparisler:[], not:'', garson:'', indirim:0, grup:_sabitGruplar[0]||''});
+  const yeniId = masalar.length + 1; // Her zaman sıradaki numara
+  const aktifGrup = _aktifGrupFiltre || _sabitGruplar[0] || '';
+  masalar.push({id:yeniId, ad:'Masa '+yeniId, siparisler:[], not:'', garson:'', indirim:0, grup:aktifGrup});
   masalariKaydet('✓ Masa '+yeniId+' eklendi');
   masalarRender();
   masaGrupListeRender();
