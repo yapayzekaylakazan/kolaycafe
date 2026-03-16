@@ -388,7 +388,7 @@
 
   /* ÜRÜN LİSTESİ - yatay liste (menu-online tarzı) */
   #mm-urun-liste {
-    padding: 8px 0 100px;
+    padding: 8px 0 140px;
     background: #fff;
     min-height: calc(100vh - 240px);
   }
@@ -525,7 +525,7 @@
     padding: 10px 16px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
     background: #fff; border-top: 1px solid #eee;
-    z-index: 500; display: none;
+    z-index: 501; display: none;
   }
   #mm-sepet-ac-btn {
     width: 100%; padding: 13px 20px;
@@ -536,12 +536,13 @@
     display: flex; align-items: center; justify-content: space-between;
   }
 
-  /* Garson bar */
+  /* Garson bar — sepet barın üstünde görünür, sepet bar açıkken yukarı kayar */
   #mm-garson-bar {
     position: fixed; bottom: 0; left: 0; right: 0;
     padding: 10px 16px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
-    background: #fff; border-top: 1px solid #eee; z-index: 499;
+    background: #fff; border-top: 1px solid #eee; z-index: 500;
+    transition: bottom 0.2s;
   }
 
   /* Sepet modal */
@@ -650,7 +651,7 @@
     </div>
     <div id="mm-detay-icerik" style="padding:16px 18px 8px;">
       <div id="mm-detay-varyantlar"></div>
-      <div id="mm-detay-adet-row" style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      <div id="mm-detay-adet-row" style="display:none;align-items:center;gap:16px;margin-bottom:16px;">
         <button class="mm-adet-btn" onclick="mmDetayAdet(-1)">−</button>
         <span id="mm-detay-adet-sayi" style="font-size:1.1rem;font-weight:900;min-width:28px;text-align:center;">1</span>
         <button class="mm-adet-btn ekle" onclick="mmDetayAdet(1)">+</button>
@@ -2502,6 +2503,7 @@ let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
 let _transferYapiliyor = false; // transfer/split işlemleri
 let _skipSubscriptionCount = 0; // transfer/split sonrası kaç event yoksayılacak
+window._sadeceMenuModu = false; // başlangıçta false — QR ile açılınca set edilir
 let aktifDonem = 'gun';
 let btYazici = null;
 let _kayitTimeout = null;
@@ -2715,7 +2717,23 @@ async function garsonGiris(isim, kafeData) {
   kafeId = kafeData.id;
   kafeAdi = kafeData.kafe_adi;
   garsonlar = kafeData.garsonlar || [];
-  if (kafeData.urunler) URUNLER = kafeData.urunler;
+  if (kafeData.urunler) {
+    URUNLER = kafeData.urunler;
+    // Migration: Dondurma varyantı radio → checkbox (v4.1)
+    let migrasyonGerekli = false;
+    Object.values(URUNLER).forEach(urunler => {
+      urunler.forEach(u => {
+        if (!u.varyantlar) return;
+        u.varyantlar.forEach(v => {
+          if (v.tip === 'radio') {
+            v.tip = 'checkbox';
+            migrasyonGerekli = true;
+          }
+        });
+      });
+    });
+    if (migrasyonGerekli) bulutKaydet();
+  }
   if (kafeData.stok) STOK = kafeData.stok;
   if (kafeData.receteler) { RECETELER = kafeData.receteler; }
   if (kafeData.grup_listesi && Array.isArray(kafeData.grup_listesi) && kafeData.grup_listesi.length > 0) {
@@ -3047,7 +3065,7 @@ async function kafeVerisiYukle() {
       ],
       "🍦 Dondurma": [
         {isim:"Dondurma", fiyat:45, ikon:"🍦", stok:null, varyantlar:[
-          {ad:"Çeşit", tip:"radio", zorunlu:true, secenekler:[
+          {ad:"Çeşit", tip:"checkbox", zorunlu:true, secenekler:[
             {isim:"Vanilyalı", fiyatFark:0},
             {isim:"Kakaolu", fiyatFark:0},
             {isim:"Limonlu", fiyatFark:0},
@@ -3983,15 +4001,9 @@ function varyantModalAc(u) {
       btn.dataset.fiyatFark = s.fiyatFark || 0;
       btn.addEventListener('click', () => {
         btn.classList.remove('hata');
-        if (grup.tip === 'radio') {
-          secDiv.querySelectorAll('.vgrup-btn').forEach(b => b.classList.remove('secili'));
-          btn.classList.add('secili');
-          _varyantSecimler[grup.ad] = [s.isim];
-        } else {
-          btn.classList.toggle('secili');
-          const secili = [...secDiv.querySelectorAll('.vgrup-btn.secili')].map(b => b.dataset.secenek);
-          _varyantSecimler[grup.ad] = secili;
-        }
+        btn.classList.toggle('secili');
+        const secili = [...secDiv.querySelectorAll('.vgrup-btn.secili')].map(b => b.dataset.secenek);
+        _varyantSecimler[grup.ad] = secili;
         _varyantFiyatGuncelle();
       });
       secDiv.appendChild(btn);
@@ -5148,10 +5160,6 @@ function varyantEditorRender(container, kat, idx) {
     gDiv.innerHTML = `
       <div class="vgrup-editor-ust">
         <input type="text" class="vge-ad" value="${grup.ad}" placeholder="Grup adı (ör: Çeşit)">
-        <select class="vge-tip">
-          <option value="radio" ${grup.tip==='radio'?'selected':''}>Tek seçim</option>
-          <option value="checkbox" ${grup.tip==='checkbox'?'selected':''}>Çoklu seçim</option>
-        </select>
         <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;font-weight:700;cursor:pointer;">
           <input type="checkbox" class="vge-zorunlu" ${grup.zorunlu?'checked':''}> Zorunlu
         </label>
@@ -5194,10 +5202,6 @@ function varyantEditorRender(container, kat, idx) {
       URUNLER[kat][idx].varyantlar[gi].ad = e.target.value.trim();
       bulutKaydet();
     });
-    gDiv.querySelector('.vge-tip').addEventListener('change', e => {
-      URUNLER[kat][idx].varyantlar[gi].tip = e.target.value;
-      bulutKaydet();
-    });
     gDiv.querySelector('.vge-zorunlu').addEventListener('change', e => {
       URUNLER[kat][idx].varyantlar[gi].zorunlu = e.target.checked;
       bulutKaydet();
@@ -5215,7 +5219,7 @@ function varyantEditorRender(container, kat, idx) {
   yeniBtn.style.cssText = 'width:100%;padding:9px;border-radius:10px;border:2px dashed var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;margin-top:6px;';
   yeniBtn.addEventListener('click', () => {
     if (!URUNLER[kat][idx].varyantlar) URUNLER[kat][idx].varyantlar = [];
-    URUNLER[kat][idx].varyantlar.push({ad:'Yeni Grup', tip:'radio', zorunlu:false, secenekler:[]});
+    URUNLER[kat][idx].varyantlar.push({ad:'Yeni Grup', tip:'checkbox', zorunlu:false, secenekler:[]});
     bulutKaydet(); varyantEditorRender(container, kat, idx);
     // grid de güncelle (varyant rozeti için)
     if (mevcutKat===kat) urunGridRender();
@@ -7853,7 +7857,7 @@ function dondurmaKategoriEkle() {
   if (URUNLER[katAd]) { toast('🍦 Dondurma kategorisi zaten mevcut!'); return; }
   URUNLER[katAd] = [{
     isim: 'Dondurma', fiyat: 45, ikon: '🍦', stok: null, varyantlar: [{
-      ad: 'Çeşit', tip: 'radio', zorunlu: true, secenekler: [
+      ad: 'Çeşit', tip: 'checkbox', zorunlu: true, secenekler: [
         {isim:'Vanilyalı',      fiyatFark:0},
         {isim:'Kakaolu',        fiyatFark:0},
         {isim:'Limonlu',        fiyatFark:0},
@@ -7891,17 +7895,17 @@ function kahveKategoriEkle() {
   const katAd = '☕ Kahveler';
   if (URUNLER[katAd]) { toast('☕ Kahve kategorisi zaten mevcut!'); return; }
   const _kahveVaryantlar = [
-    {ad:'Şeker', tip:'radio', zorunlu:true, secenekler:[
+    {ad:'Şeker', tip:'checkbox', zorunlu:true, secenekler:[
       {isim:'Sade', fiyatFark:0}, {isim:'Az Şekerli', fiyatFark:0},
       {isim:'Orta', fiyatFark:0}, {isim:'Çok Şekerli', fiyatFark:0}
     ]},
-    {ad:'Boyut', tip:'radio', zorunlu:false, secenekler:[
+    {ad:'Boyut', tip:'checkbox', zorunlu:false, secenekler:[
       {isim:'Küçük', fiyatFark:0}, {isim:'Orta', fiyatFark:10}, {isim:'Büyük', fiyatFark:20}
     ]},
-    {ad:'Süt Tipi', tip:'radio', zorunlu:false, secenekler:[
+    {ad:'Süt Tipi', tip:'checkbox', zorunlu:false, secenekler:[
       {isim:'Normal', fiyatFark:0}, {isim:'Badem Sütü', fiyatFark:15}, {isim:'Yulaf Sütü', fiyatFark:15}
     ]},
-    {ad:'Sıcaklık', tip:'radio', zorunlu:false, secenekler:[
+    {ad:'Sıcaklık', tip:'checkbox', zorunlu:false, secenekler:[
       {isim:'Sıcak', fiyatFark:0}, {isim:'Soğuk (Iced)', fiyatFark:5}
     ]},
     {ad:'Ekstralar', tip:'checkbox', zorunlu:false, secenekler:[
@@ -7954,7 +7958,7 @@ function pideKategoriEkle() {
   const katAd = '🫓 Pideler';
   if (URUNLER[katAd]) { toast('🫓 Pide kategorisi zaten mevcut!'); return; }
   const _pideVaryant = [{
-    ad:'Porsiyon', tip:'radio', zorunlu:true, secenekler:[
+    ad:'Porsiyon', tip:'checkbox', zorunlu:true, secenekler:[
       {isim:'Tek',           fiyatFark:0},
       {isim:'Buçuk (1.5)',   fiyatFark:30},
       {isim:'Duble',         fiyatFark:60}
@@ -9225,6 +9229,7 @@ async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false) {
     window._sadeceMenuModu = true;
   } else {
     document.getElementById('mm-hero-masa').textContent = '📍 ' + mmMasaAdi;
+    document.getElementById('mm-sepet-bar').style.display = 'none'; // sepete ürün eklenince açılacak
     document.getElementById('mm-garson-bar').style.display = 'block';
     window._sadeceMenuModu = false;
   }
@@ -9351,14 +9356,8 @@ function mmDetayAc(urun) {
         btn.dataset.secenek = s.isim;
         btn.dataset.fiyatFark = s.fiyatFark || 0;
         btn.addEventListener('click', () => {
-          if (grup.tip === 'radio') {
-            liste.querySelectorAll('.mm-varyant-btn').forEach(b => b.classList.remove('secili'));
-            btn.classList.add('secili');
-            window._mmDetaySecimler[grup.ad] = [s.isim];
-          } else {
-            btn.classList.toggle('secili');
-            window._mmDetaySecimler[grup.ad] = [...liste.querySelectorAll('.mm-varyant-btn.secili')].map(b => b.dataset.secenek);
-          }
+          btn.classList.toggle('secili');
+          window._mmDetaySecimler[grup.ad] = [...liste.querySelectorAll('.mm-varyant-btn.secili')].map(b => b.dataset.secenek);
           let toplamF = urun.fiyat;
           varyantlar.forEach(g => {
             (window._mmDetaySecimler[g.ad] || []).forEach(isim => {
@@ -9517,8 +9516,17 @@ function mmSepetGuncelle() {
   const toplam = mmSepet.reduce((s, i) => s + i.fiyat * i.adet, 0);
   const sayi = mmSepet.reduce((s, i) => s + i.adet, 0);
   const sepetBar = document.getElementById('mm-sepet-bar');
+  const garsonBar = document.getElementById('mm-garson-bar');
   if (!window._sadeceMenuModu) {
-    sepetBar.style.display = sayi > 0 ? 'block' : 'none';
+    const sepetAcik = sayi > 0;
+    sepetBar.style.display = sepetAcik ? 'block' : 'none';
+    // Garson bar: sepet bar açıkken yukarı kay (1 frame sonra yükseklik hesapla)
+    if (garsonBar) {
+      requestAnimationFrame(() => {
+        const sepetH = sepetAcik ? (sepetBar.offsetHeight || 68) : 0;
+        garsonBar.style.bottom = sepetH > 0 ? sepetH + 'px' : '0';
+      });
+    }
   }
   const sayiBadge = document.getElementById('mm-sepet-sayi-badge');
   if (sayiBadge) sayiBadge.textContent = sayi + ' ürün';
@@ -9582,9 +9590,18 @@ async function mmSiparisGonder() {
       .single();
 
     let aktifMasalar = kafeData?.aktif_masalar || [];
-    let masa = aktifMasalar.find(m => Number(m.id) === mmMasaNo);
+
+    // Dijital menü QR: mmMasaNo null olabilir → sanal ID oluştur
+    let masaId = mmMasaNo;
+    let masaAdi = mmMasaAdi;
+    if (masaId === null || masaId === undefined) {
+      masaId = 'dm_' + Date.now();
+      masaAdi = '🍽️ Dijital Menü';
+    }
+
+    let masa = aktifMasalar.find(m => String(m.id) === String(masaId));
     if (!masa) {
-      masa = {id: mmMasaNo, ad: mmMasaAdi, siparisler: [], not: '', garson: '', indirim: 0};
+      masa = {id: masaId, ad: masaAdi, siparisler: [], not: '', garson: '', indirim: 0};
       aktifMasalar.push(masa);
     }
     if (!masa.siparisler) masa.siparisler = [];
