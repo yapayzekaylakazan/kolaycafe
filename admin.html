@@ -398,6 +398,11 @@ const TEST_PAKETLER = [
     yok: []
   },
   {
+    id:'garson_deneme', isim:'👤 Garson Deneme', fiyat:'0₺', sure:'/garson modu', masa:6, renk:'#06b6d4',
+    ozellikler: ['Garson girişi ile açılır','Sipariş alma','Masa görüntüleme','Hesap isteme','Kendi masalarını yönetir'],
+    yok: ['Admin özellikleri','Raporlar','Ayarlar','AI Asistan']
+  },
+  {
     id:'start', isim:'🚀 Start', fiyat:'299₺', sure:'/ay', masa:4, renk:'#64748b',
     ozellikler: ['4 masa','Garson takibi','Raporlar','Nakit/Kart/Cari/İkram','Online sipariş (QR)','WhatsApp fiş'],
     yok: ['Gelir/Gider takibi','Stok & Reçete','Kupon','Bluetooth yazıcı','Platform siparişi','Mutfak ekranı']
@@ -510,9 +515,13 @@ async function testPaketTikla(paketId) {
   const kafe = tumKafeler.find(x => x.id === kafeId);
   sonuc.innerHTML = `✓ <strong>${kafe?.kafe_adi||'Kafe'}</strong> → <strong style="color:${p.renk}">${p.isim}</strong> (${p.masa>=999?'Sınırsız':p.masa} masa, 30 gün). Uygulama açılıyor...`;
   await yukle();
-  // E-postayı URL'e ekle → uygulama açılınca giriş alanı otomatik dolar
   const emailParam = kafe?.email ? '&email=' + encodeURIComponent(kafe.email) : '';
-  setTimeout(() => window.open('app/index.html?t=' + Date.now() + emailParam, '_blank'), 600);
+  if (paketId === 'garson_deneme') {
+    // Garson modunu test et — garson girişi ekranına yönlendir
+    setTimeout(() => window.open('app/index.html?mod=garson&t=' + Date.now() + emailParam, '_blank'), 600);
+  } else {
+    setTimeout(() => window.open('app/index.html?t=' + Date.now() + emailParam, '_blank'), 600);
+  }
 }
 
 function testKafeListesiDoldur() {
@@ -919,6 +928,15 @@ function detayAc(id) {
   html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${Math.round(k.toplam_ciro).toLocaleString('tr-TR')} ₺</span>` : '—', false);
   html += satirHtml('Ürün Sayısı', (() => { let s=0; Object.values(k.urunler||{}).forEach(a=>s+=a.length); return s + ' ürün'; })(), false);
 
+  // CİRO RAPORU
+  html += bolumBaslik('📈', 'Ciro Raporu');
+  html += `<div id="ciro-rapor-alani">
+    <button onclick="ciroRaporYukle('${k.id}')" 
+      style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #30d08040;background:#30d08010;color:#30d080;font-family:'Syne',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;margin-bottom:4px;">
+      📊 Ciro Raporunu Yükle
+    </button>
+  </div>`;
+
   // SATIŞ DÖNÜŞÜM AKSİYONLARI
   html += bolumBaslik('🎯', 'Satışa Dönüştür');
   const tel = (k.telefon||'').replace(/\D/g,'');
@@ -1070,6 +1088,111 @@ async function planGuncelle() {
   alert(`✓ Plan güncellendi: ${plan.toUpperCase()} — ${gun} gün`);
 }
 
+async function ciroRaporYukle(kafeId, gun=30) {
+  const alan = document.getElementById('ciro-rapor-alani');
+  if (!alan) return;
+  alan.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text2);font-family:Space Mono,monospace;font-size:0.8rem;">⏳ Yükleniyor...</div>';
+
+  // Son N günün adisyonlarını çek
+  const baslangic = new Date();
+  baslangic.setDate(baslangic.getDate() - gun);
+
+  const { data, error } = await sb.from('kolaycafenlar')
+    .select('created_at, toplam, siparisler, odeme_tipi')
+    .eq('kafe_id', kafeId)
+    .gte('created_at', baslangic.toISOString())
+    .order('created_at', { ascending: true });
+
+  if (error) { alan.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">❌ ' + error.message + '</div>'; return; }
+  if (!data || data.length === 0) { alan.innerHTML = '<div style="color:var(--text2);font-size:0.8rem;padding:12px 0;">Bu dönemde adisyon kaydı yok.</div>'; return; }
+
+  // Gün gün ciro hesapla
+  const gunCiro = {};
+  const urunSayilari = {};
+  let toplamCiro = 0;
+  let toplamAdisyon = 0;
+
+  data.forEach(a => {
+    const gun = a.created_at.slice(0, 10);
+    const tutar = parseFloat(a.toplam) || 0;
+    gunCiro[gun] = (gunCiro[gun] || 0) + tutar;
+    toplamCiro += tutar;
+    toplamAdisyon++;
+    // Ürün sayıları
+    if (Array.isArray(a.siparisler)) {
+      a.siparisler.forEach(s => {
+        if (s.isim) {
+          urunSayilari[s.isim] = (urunSayilari[s.isim] || 0) + (s.adet || 1);
+        }
+      });
+    }
+  });
+
+  // En çok satan 10 ürün
+  const topUrunler = Object.entries(urunSayilari)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  const maxCiro = Math.max(...Object.values(gunCiro), 1);
+  const gunler = Object.keys(gunCiro).sort();
+
+  let html = `
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      ${[7,30,90].map(g => `<button onclick="ciroRaporYukle('${kafeId}',${g})" 
+        style="padding:5px 12px;border-radius:8px;border:1.5px solid ${g===gun?'#30d080':'var(--border)'};background:${g===gun?'#30d08020':'transparent'};color:${g===gun?'#30d080':'var(--text2)'};font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;">Son ${g} gün</button>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);">
+        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">TOPLAM CİRO</div>
+        <div style="font-size:1.2rem;font-weight:900;color:#30d080;">${Math.round(toplamCiro).toLocaleString('tr-TR')}₺</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);">
+        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">ADİSYON SAYISI</div>
+        <div style="font-size:1.2rem;font-weight:900;color:var(--accent);">${toplamAdisyon}</div>
+      </div>
+    </div>`;
+
+  // Gün gün bar chart
+  if (gunler.length > 0) {
+    html += `<div style="font-size:0.68rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">GÜN GÜN CİRO</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;">`;
+    gunler.slice(-14).forEach(g => {  // Son 14 günü göster
+      const ciro = gunCiro[g];
+      const yuzde = Math.round((ciro / maxCiro) * 100);
+      const tarih = new Date(g).toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit'});
+      html += `<div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:38px;">${tarih}</div>
+        <div style="flex:1;background:var(--surface2);border-radius:4px;height:18px;overflow:hidden;">
+          <div style="width:${yuzde}%;height:100%;background:linear-gradient(90deg,#30d080,#30d08088);border-radius:4px;"></div>
+        </div>
+        <div style="font-size:0.68rem;font-weight:800;color:#30d080;min-width:64px;text-align:right;">${Math.round(ciro).toLocaleString('tr-TR')}₺</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // En çok satan ürünler
+  if (topUrunler.length > 0) {
+    html += `<div style="font-size:0.68rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">EN ÇOK SATANLAR</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">`;
+    const maxAdet = topUrunler[0][1];
+    topUrunler.forEach(([isim, adet], i) => {
+      const yuzde = Math.round((adet / maxAdet) * 100);
+      html += `<div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:0.62rem;font-weight:900;color:var(--accent);min-width:16px;">${i+1}</div>
+        <div style="flex:1;font-size:0.72rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">${isim}</div>
+        <div style="width:80px;background:var(--surface2);border-radius:3px;height:6px;overflow:hidden;">
+          <div style="width:${yuzde}%;height:100%;background:var(--accent);border-radius:3px;"></div>
+        </div>
+        <div style="font-size:0.68rem;font-weight:800;color:var(--text2);min-width:32px;text-align:right;">${adet}x</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  alan.innerHTML = html;
+}
+
 function csvIndir() {
   const liste = filtreliKafeler();
   const baslik = ['Kafe Adı','Telefon','Adres','İl','İlçe','Plan','Plan Bitiş','Kayıt Tarihi','Kafe Kodu'];
@@ -1084,6 +1207,8 @@ function csvIndir() {
   a.href = url; a.download = `kolaycafe-uyeler-${new Date().toISOString().slice(0,10)}.csv`;
   a.click(); URL.revokeObjectURL(url);
 }
+
+window.ciroRaporYukle = ciroRaporYukle;
 
 // Sayfa açılınca oturum kontrolü
 (async () => {
