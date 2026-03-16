@@ -481,10 +481,25 @@ async function testPaketTikla(paketId) {
   const bitis = new Date();
   bitis.setDate(bitis.getDate() + 30);
 
-  const { error } = await sb.from('kafeler').update({
-    plan: paketId,
-    plan_bitis: bitis.toISOString()
-  }).eq('id', kafeId);
+  // Pakete göre masaları sıfırla — Pro hariç masa sayısını pakete indir
+  const masaSayisi = p.masa >= 999 ? null : p.masa; // Pro'da dokunma
+  let updateData = { plan: paketId, plan_bitis: bitis.toISOString() };
+  if (masaSayisi !== null) {
+    // Mevcut masaları çek, sadece ilk N masayı tut
+    const { data: kafeData } = await sb.from('kafeler').select('masalar').eq('id', kafeId).single();
+    const eskiMasalar = kafeData?.masalar || [];
+    const yeniMasalar = Array.from({length: masaSayisi}, (_,i) => {
+      const eski = eskiMasalar.find(m => m.id === i+1);
+      return eski ? {id:i+1, ad:eski.ad, not:eski.not||'', grup:eski.grup||''} : {id:i+1, ad:'Masa '+(i+1), not:'', grup:''};
+    });
+    updateData.masalar = yeniMasalar;
+    // Aktif masaları da temizle (paket dışı masalardaki siparişleri düşür)
+    const { data: aktifData } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+    if (aktifData?.aktif_masalar) {
+      updateData.aktif_masalar = aktifData.aktif_masalar.filter(m => m.id <= masaSayisi);
+    }
+  }
+  const { error } = await sb.from('kafeler').update(updateData).eq('id', kafeId);
 
   if (error) {
     sonuc.textContent = '❌ Hata: ' + error.message;
