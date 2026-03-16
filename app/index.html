@@ -3166,8 +3166,18 @@ function bulutKaydet() {
   }, 1200);
 }
 
+const _kayitEdildi = new Set(); // Aynı dbId ile çift kayıt önle
+
 async function kolaycafenKaydet(kolaycafen) {
   if (!kafeId) return;
+  // Çift kayıt koruması
+  const kayitKey = kolaycafen.dbId || (kolaycafen.masa + '_' + kolaycafen.tarih);
+  if (_kayitEdildi.has(kayitKey)) {
+    console.warn('Çift kayıt engellendi:', kayitKey);
+    return;
+  }
+  _kayitEdildi.add(kayitKey);
+  setTimeout(() => _kayitEdildi.delete(kayitKey), 10000); // 10sn sonra temizle
   try {
     await sb.from('kolaycafenlar').insert({
       kafe_id: kafeId,
@@ -3847,10 +3857,14 @@ async function cariKaydet() {
   await masaSyncYaz(cariMasaId); // Masayı kapat
 }
 
+let _tahsilEdiliyor = false;
 async function tahsilEt(odemeTipi) {
+  if(_tahsilEdiliyor){toast('⚠️ İşlem devam ediyor...');return;}
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
+  _tahsilEdiliyor = true;
+  setTimeout(()=>{ _tahsilEdiliyor = false; }, 3000); // 3sn sonra kilidi aç
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
@@ -3885,6 +3899,7 @@ async function tahsilEt(odemeTipi) {
   toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket));
   await kolaycafenKaydet(kolaycafen);
   masaSyncYaz(seciliMasa); // Kapanan masayı sil
+  _tahsilEdiliyor = false; // Kilidi aç
 }
 
 // ════════════════════════════════════════
