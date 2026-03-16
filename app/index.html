@@ -1010,6 +1010,7 @@
     <!-- KATEGORİ YÖNETİMİ -->
     <div style="margin-top:20px;margin-bottom:6px;font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📂 Kategoriler</div>
     <div id="kat-yonetim-liste"></div>
+    <button id="dondurma-ekle-btn" onclick="dondurmaKategoriEkle()" style="width:100%;padding:10px;border-radius:11px;border:2px dashed #d4960e;background:rgba(212,150,14,0.07);color:#d4960e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;margin-top:6px;display:none;">🍦 Dondurma Kategorisini Hazır Ekle</button>
 
     <div class="urun-listesi-baslik">Mevcut Ürünler</div>
     <div id="urun-listesi"></div>
@@ -3781,6 +3782,12 @@ function katYonetimRender() {
   const el = document.getElementById('kat-yonetim-liste');
   if (!el) return;
   const katlar = Object.keys(URUNLER);
+  // Dondurma butonu: kategori yoksa göster
+  const dBtn = document.getElementById('dondurma-ekle-btn');
+  if (dBtn) {
+    const varMi = katlar.some(k => k.toLowerCase().includes('dondurma'));
+    dBtn.style.display = varMi ? 'none' : 'block';
+  }
   if (!katlar.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
     return;
@@ -7765,6 +7772,45 @@ function katSiralaasagi(kat) {
 }
 window.katSiralayukari = katSiralayukari;
 window.katSiralaasagi = katSiralaasagi;
+
+// ════════════════════════════════════════
+// DONDURMA KATEGORİSİ HAZIR EKLE
+// ════════════════════════════════════════
+function dondurmaKategoriEkle() {
+  const katAd = '🍦 Dondurma';
+  if (URUNLER[katAd]) { toast('🍦 Dondurma kategorisi zaten mevcut!'); return; }
+  URUNLER[katAd] = [{
+    isim: 'Dondurma', fiyat: 45, ikon: '🍦', stok: null, varyantlar: [{
+      ad: 'Çeşit', tip: 'radio', zorunlu: true, secenekler: [
+        {isim:'Vanilyalı',      fiyatFark:0},
+        {isim:'Kakaolu',        fiyatFark:0},
+        {isim:'Limonlu',        fiyatFark:0},
+        {isim:'Çilekli',        fiyatFark:0},
+        {isim:'Karadutlu',      fiyatFark:0},
+        {isim:'Vişneli',        fiyatFark:0},
+        {isim:'Kavunlu',        fiyatFark:0},
+        {isim:'Ahududulu',      fiyatFark:0},
+        {isim:'Böğürtlenli',    fiyatFark:0},
+        {isim:'Mango Sorbe',    fiyatFark:0},
+        {isim:'Bitter Çikolatalı', fiyatFark:0},
+        {isim:'Antep Fıstıklı', fiyatFark:5},
+        {isim:'Karamelli',      fiyatFark:0},
+        {isim:'Cevizli',        fiyatFark:5},
+        {isim:'Kavrulmuş Fındıklı', fiyatFark:5},
+        {isim:'Tiramisu',       fiyatFark:5},
+        {isim:'Oreolu',         fiyatFark:5},
+        {isim:'Kurabiye Parçacıklı', fiyatFark:5},
+        {isim:'Nane Çikolatalı',fiyatFark:0},
+        {isim:'Kahveli',        fiyatFark:0},
+        {isim:'Tahinli',        fiyatFark:5}
+      ]
+    }]
+  }];
+  mevcutKat = katAd;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('🍦 Dondurma kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
+}
+window.dondurmaKategoriEkle = dondurmaKategoriEkle;
 window.kafeAdiniGuncelle = kafeAdiniGuncelle;
 window.kafeKoduGuncelle = kafeKoduGuncelle;
 window.garsonEkleAyar = garsonEkleAyar;
