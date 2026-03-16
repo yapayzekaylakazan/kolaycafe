@@ -902,8 +902,6 @@
         <button onclick="garsonCagriKapat(seciliMasa)" style="background:#fff;color:#ef4444;border:none;border-radius:8px;padding:4px 12px;font-weight:900;font-size:0.8rem;cursor:pointer;">✓ Geldim</button>
       </div>
       <div class="kolaycafen-body">
-        <!-- PC/Mobil toggle butonu - sadece bu sayfada görünür -->
-        <button id="pc-mobil-toggle" onclick="pcMobilToggle()" title="PC/Mobil görünümü değiştir">📱 Mobil</button>
         <div class="urun-bolumu">
           <div class="cat-tabs" id="cat-tabs"></div>
           <div class="urun-grid" id="urun-grid"></div>
@@ -1995,6 +1993,27 @@
         <button onclick="kuponEkle()" style="padding:11px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">+ Kupon Oluştur</button>
       </div>
     </div>
+    <!-- GÖRÜNÜM AYARI -->
+    <div class="ayar-kart">
+      <h3>🖥️ Görünüm</h3>
+      <div class="ayar-row" style="align-items:flex-start;flex-direction:column;gap:10px;">
+        <div style="font-size:0.82rem;color:var(--muted);font-weight:600;line-height:1.5;">
+          Sipariş ekranında ürünler ve sipariş listesi yan yana gösterilir (PC modu) veya alt alta gösterilir (Mobil modu).
+        </div>
+        <div style="display:flex;gap:8px;width:100%;">
+          <button id="ayar-view-pc" onclick="ayarViewSec('pc')"
+            style="flex:1;padding:11px;border-radius:11px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;transition:all 0.15s;">
+            🖥️ PC Görünüm
+          </button>
+          <button id="ayar-view-mobil" onclick="ayarViewSec('mobil')"
+            style="flex:1;padding:11px;border-radius:11px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;transition:all 0.15s;">
+            📱 Mobil Görünüm
+          </button>
+        </div>
+        <div id="ayar-view-aciklama" style="font-size:0.75rem;color:var(--accent2);font-weight:700;"></div>
+      </div>
+    </div>
+
     <div style="text-align:center;margin-top:16px;">
       <button onclick="cikisYap()" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;">Çıkış Yap</button>
     </div>
@@ -6846,6 +6865,7 @@ function ayarlarRender(){
   garsonAyarListeRender();
   menuGorunumYukle();
   aiPaketKartRender();
+  if (window._ayarViewRender) window._ayarViewRender();
   // Plan + Yetki kontrolü
   const data = window._kafeData;
   if (data) {
@@ -7748,6 +7768,28 @@ window.varyantModalKapat = varyantModalKapat;
   }
   window.pcMobilToggle = function() { applyView(!pcMod); };
   window._applyPcView = applyView;
+  window.ayarViewSec = function(mod) {
+    applyView(mod === 'pc');
+    _ayarViewRender();
+  };
+  window._ayarViewRender = function() {
+    const pcBtn = document.getElementById('ayar-view-pc');
+    const mbBtn = document.getElementById('ayar-view-mobil');
+    const aciklama = document.getElementById('ayar-view-aciklama');
+    if (!pcBtn || !mbBtn) return;
+    const aktif = document.body.classList.contains('pc-mod');
+    const aksanRenk = 'var(--accent)';
+    const normalStyle = 'var(--surface2)';
+    pcBtn.style.background  = aktif ? aksanRenk : normalStyle;
+    pcBtn.style.color       = aktif ? 'var(--bg)' : 'var(--text)';
+    pcBtn.style.borderColor = aktif ? aksanRenk : 'var(--border)';
+    mbBtn.style.background  = !aktif ? aksanRenk : normalStyle;
+    mbBtn.style.color       = !aktif ? 'var(--bg)' : 'var(--text)';
+    mbBtn.style.borderColor = !aktif ? aksanRenk : 'var(--border)';
+    if (aciklama) aciklama.textContent = aktif
+      ? '✓ PC modu aktif — sipariş listesi sağda sabit'
+      : '✓ Mobil modu aktif — dikey kaydırmalı görünüm';
+  };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => applyView(pcMod));
   } else { applyView(pcMod); }
