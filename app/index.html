@@ -1010,10 +1010,10 @@
     <div style="margin-top:20px;margin-bottom:6px;font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📂 Kategoriler</div>
     <div id="kat-yonetim-liste"></div>
     <div id="hazir-kategori-butonlar" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
-      <button id="dondurma-ekle-btn"  onclick="dondurmaKategoriEkle()"  style="display:block;width:100%;padding:10px;border-radius:11px;border:2px dashed #d4960e;background:rgba(212,150,14,0.07);color:#d4960e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🍦 Dondurma Kategorisini Hazır Ekle</button>
-      <button id="kahve-ekle-btn"     onclick="kahveKategoriEkle()"     style="display:block;width:100%;padding:10px;border-radius:11px;border:2px dashed #6f4e37;background:rgba(111,78,55,0.07);color:#8B5E3C;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">☕ Kahve Kategorisini Hazır Ekle</button>
-      <button id="tatli-ekle-btn"     onclick="tatliKategoriEkle()"     style="display:block;width:100%;padding:10px;border-radius:11px;border:2px dashed #e879a0;background:rgba(232,121,160,0.07);color:#e879a0;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🍰 Tatlı Kategorisini Hazır Ekle</button>
-      <button id="pide-ekle-btn"      onclick="pideKategoriEkle()"      style="display:block;width:100%;padding:10px;border-radius:11px;border:2px dashed #c0822a;background:rgba(192,130,42,0.07);color:#c0822a;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🫓 Pide Kategorisini Hazır Ekle</button>
+      <button id="dondurma-ekle-btn"  onclick="dondurmaKategoriEkle()"  style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #d4960e;background:rgba(212,150,14,0.07);color:#d4960e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🍦 Dondurma Kategorisini Hazır Ekle</button>
+      <button id="kahve-ekle-btn"     onclick="kahveKategoriEkle()"     style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #6f4e37;background:rgba(111,78,55,0.07);color:#8B5E3C;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">☕ Kahve Kategorisini Hazır Ekle</button>
+      <button id="tatli-ekle-btn"     onclick="tatliKategoriEkle()"     style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #e879a0;background:rgba(232,121,160,0.07);color:#e879a0;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🍰 Tatlı Kategorisini Hazır Ekle</button>
+      <button id="pide-ekle-btn"      onclick="pideKategoriEkle()"      style="display:none;width:100%;padding:10px;border-radius:11px;border:2px dashed #c0822a;background:rgba(192,130,42,0.07);color:#c0822a;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🫓 Pide Kategorisini Hazır Ekle</button>
     </div>
 
     <div class="urun-listesi-baslik">Mevcut Ürünler</div>
@@ -1785,6 +1785,156 @@
       <div id="ayar-ai-paket-icerik">
         <!-- JS ile doldurulacak -->
       </div>
+    </div>
+
+    <!-- Uygulama Teması -->
+    <div class="ayar-kart" id="ayar-app-tema-kart">
+      <h3>🖥️ Uygulama Teması</h3>
+      <p style="font-size:0.76rem;color:var(--muted);font-weight:600;margin-bottom:16px;">Garson ve admin ekranının zemin + vurgu rengini değiştir</p>
+
+      <!-- Hazır Temalar -->
+      <div style="font-size:0.8rem;color:var(--text2);font-weight:700;margin-bottom:10px;">🎨 Hazır Temalar</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;" id="app-tema-grid">
+
+        <!-- KOYU TEMALAR -->
+        <button onclick="appTemaUygula('kahve')" id="apttema-kahve"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#1a1205;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">☕</div>
+          <div style="padding:6px 8px;background:#2e2210;">
+            <div style="font-size:0.72rem;font-weight:800;color:#d4960e;">Kahve</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#1a1205;border:1px solid #555;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#2e2210;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#d4960e;"></div>
+            </div>
+          </div>
+        </button>
+
+        <button onclick="appTemaUygula('gece')" id="apttema-gece"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#0a0f1a;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🌙</div>
+          <div style="padding:6px 8px;background:#111827;">
+            <div style="font-size:0.72rem;font-weight:800;color:#6366f1;">Gece</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#0a0f1a;border:1px solid #555;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#111827;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#6366f1;"></div>
+            </div>
+          </div>
+        </button>
+
+        <button onclick="appTemaUygula('okyanus')" id="apttema-okyanus"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#0a1628;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🌊</div>
+          <div style="padding:6px 8px;background:#0f2240;">
+            <div style="font-size:0.72rem;font-weight:800;color:#0ea5e9;">Okyanus</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#0a1628;border:1px solid #555;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#0f2240;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#0ea5e9;"></div>
+            </div>
+          </div>
+        </button>
+
+        <button onclick="appTemaUygula('orman')" id="apttema-orman"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#0a1a0f;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🌿</div>
+          <div style="padding:6px 8px;background:#132a18;">
+            <div style="font-size:0.72rem;font-weight:800;color:#22c55e;">Orman</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#0a1a0f;border:1px solid #555;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#132a18;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;"></div>
+            </div>
+          </div>
+        </button>
+
+        <!-- AÇIK TEMALAR -->
+        <button onclick="appTemaUygula('krem')" id="apttema-krem"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#fdf6ec;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🌸</div>
+          <div style="padding:6px 8px;background:#f5e6d0;border:1px solid #e0c9a0;">
+            <div style="font-size:0.72rem;font-weight:800;color:#b45309;">Krem</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#fdf6ec;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#f5e6d0;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#b45309;"></div>
+            </div>
+          </div>
+        </button>
+
+        <button onclick="appTemaUygula('buz')" id="apttema-buz"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#f0f7ff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">❄️</div>
+          <div style="padding:6px 8px;background:#e0eeff;border:1px solid #b0d0f0;">
+            <div style="font-size:0.72rem;font-weight:800;color:#1d6fa6;">Buz</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#f0f7ff;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#e0eeff;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#1d6fa6;"></div>
+            </div>
+          </div>
+        </button>
+
+        <button onclick="appTemaUygula('mint')" id="apttema-mint"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🍃</div>
+          <div style="padding:6px 8px;background:#dcfce7;border:1px solid #a0e0b0;">
+            <div style="font-size:0.72rem;font-weight:800;color:#166534;">Mint</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#f0fdf4;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#dcfce7;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#166534;"></div>
+            </div>
+          </div>
+        </button>
+
+        <button onclick="appTemaUygula('gul')" id="apttema-gul"
+          style="border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:none;text-align:left;">
+          <div style="height:44px;background:#fff5f7;display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🌹</div>
+          <div style="padding:6px 8px;background:#ffe0e6;border:1px solid #f0a0b0;">
+            <div style="font-size:0.72rem;font-weight:800;color:#9f1239;">Gül</div>
+            <div style="display:flex;gap:3px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#fff5f7;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#ffe0e6;border:1px solid #ccc;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#9f1239;"></div>
+            </div>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- İnce Ayar: Vurgu Rengi -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:0.8rem;color:var(--text2);font-weight:700;margin-bottom:8px;">🎯 Vurgu Rengi (İnce Ayar)</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="color" id="app-vurgu-renk" value="#d4960e"
+            style="width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;padding:2px;background:var(--surface3);">
+          <div>
+            <div style="font-size:0.78rem;color:var(--muted);font-weight:600;">Buton ve vurgu rengi</div>
+            <div id="app-vurgu-onizleme" style="display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:800;background:#d4960e;color:#fff;">
+              Örnek Renk
+            </div>
+          </div>
+        </div>
+        <!-- Hazır Renk Daireleri -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <button onclick="appVurguRenkSec('#d4960e')" style="width:32px;height:32px;border-radius:50%;background:#d4960e;border:2px solid transparent;cursor:pointer;" title="Kahve Altın"></button>
+          <button onclick="appVurguRenkSec('#f0b830')" style="width:32px;height:32px;border-radius:50%;background:#f0b830;border:2px solid transparent;cursor:pointer;" title="Sarı Altın"></button>
+          <button onclick="appVurguRenkSec('#e53935')" style="width:32px;height:32px;border-radius:50%;background:#e53935;border:2px solid transparent;cursor:pointer;" title="Kırmızı"></button>
+          <button onclick="appVurguRenkSec('#e91e8c')" style="width:32px;height:32px;border-radius:50%;background:#e91e8c;border:2px solid transparent;cursor:pointer;" title="Pembe"></button>
+          <button onclick="appVurguRenkSec('#8e24aa')" style="width:32px;height:32px;border-radius:50%;background:#8e24aa;border:2px solid transparent;cursor:pointer;" title="Mor"></button>
+          <button onclick="appVurguRenkSec('#6366f1')" style="width:32px;height:32px;border-radius:50%;background:#6366f1;border:2px solid transparent;cursor:pointer;" title="İndigo"></button>
+          <button onclick="appVurguRenkSec('#1e88e5')" style="width:32px;height:32px;border-radius:50%;background:#1e88e5;border:2px solid transparent;cursor:pointer;" title="Mavi"></button>
+          <button onclick="appVurguRenkSec('#0ea5e9')" style="width:32px;height:32px;border-radius:50%;background:#0ea5e9;border:2px solid transparent;cursor:pointer;" title="Açık Mavi"></button>
+          <button onclick="appVurguRenkSec('#00897b')" style="width:32px;height:32px;border-radius:50%;background:#00897b;border:2px solid transparent;cursor:pointer;" title="Teal"></button>
+          <button onclick="appVurguRenkSec('#22c55e')" style="width:32px;height:32px;border-radius:50%;background:#22c55e;border:2px solid transparent;cursor:pointer;" title="Yeşil"></button>
+          <button onclick="appVurguRenkSec('#f57c00')" style="width:32px;height:32px;border-radius:50%;background:#f57c00;border:2px solid transparent;cursor:pointer;" title="Turuncu"></button>
+          <button onclick="appVurguRenkSec('#ffffff')" style="width:32px;height:32px;border-radius:50%;background:#ffffff;border:2px solid #aaa;cursor:pointer;" title="Beyaz"></button>
+        </div>
+      </div>
+
+      <button class="ayar-btn" style="width:100%;" onclick="appTemaKaydet()">💾 Temayı Kaydet</button>
     </div>
 
     <!-- Dijital Menü Görünümü -->
@@ -3004,6 +3154,104 @@ async function uygulamaBaslat(user) {
   }, 3000);
 }
 
+
+// ════════════════════════════════════════
+// UYGULAMA TEMASI
+// ════════════════════════════════════════
+const APP_TEMALAR = {
+  kahve:  { bg:'#1a1205', surface:'#241a08', surface2:'#2e2210', surface3:'#3a2c18', text:'#fff8ee', text2:'#c8a870', muted:'#7a6040', accent:'#d4960e', accent2:'#f0b830', border:'rgba(212,150,14,0.2)', koyu:true },
+  gece:   { bg:'#0a0f1a', surface:'#111827', surface2:'#1e2a40', surface3:'#263352', text:'#f0f4ff', text2:'#94a3c8', muted:'#4a5580', accent:'#6366f1', accent2:'#818cf8', border:'rgba(99,102,241,0.2)', koyu:true },
+  okyanus:{ bg:'#0a1628', surface:'#0f2240', surface2:'#163260', surface3:'#1a3d70', text:'#e8f4ff', text2:'#7ab8e8', muted:'#3a6090', accent:'#0ea5e9', accent2:'#38bdf8', border:'rgba(14,165,233,0.2)', koyu:true },
+  orman:  { bg:'#0a1a0f', surface:'#132a18', surface2:'#1a3820', surface3:'#1f4028', text:'#eeffec', text2:'#86c88a', muted:'#3a6040', accent:'#22c55e', accent2:'#4ade80', border:'rgba(34,197,94,0.2)', koyu:true },
+  krem:   { bg:'#fdf6ec', surface:'#f9edd8', surface2:'#f5e6d0', surface3:'#eedcc0', text:'#2c1a05', text2:'#6b4020', muted:'#a07848', accent:'#b45309', accent2:'#d97706', border:'rgba(180,83,9,0.2)', koyu:false },
+  buz:    { bg:'#f0f7ff', surface:'#e8f3ff', surface2:'#daeeff', surface3:'#cce5ff', text:'#0a1e35', text2:'#2a5080', muted:'#6090b8', accent:'#1d6fa6', accent2:'#2590d8', border:'rgba(29,111,166,0.2)', koyu:false },
+  mint:   { bg:'#f0fdf4', surface:'#dcfce7', surface2:'#d0f5df', surface3:'#c0eacf', text:'#052e10', text2:'#1a5530', muted:'#4a8860', accent:'#166534', accent2:'#15803d', border:'rgba(22,101,52,0.2)', koyu:false },
+  gul:    { bg:'#fff5f7', surface:'#ffe8ed', surface2:'#ffd8e0', surface3:'#ffc8d5', text:'#2e0510', text2:'#6b1530', muted:'#a04060', accent:'#9f1239', accent2:'#be1a47', border:'rgba(159,18,57,0.2)', koyu:false },
+};
+
+let _aktifAppTema = 'kahve';
+
+function appTemaUygula(temaAdi) {
+  const t = APP_TEMALAR[temaAdi];
+  if (!t) return;
+  _aktifAppTema = temaAdi;
+  const root = document.documentElement;
+  root.style.setProperty('--bg', t.bg);
+  root.style.setProperty('--surface', t.surface);
+  root.style.setProperty('--surface2', t.surface2);
+  root.style.setProperty('--surface3', t.surface3);
+  root.style.setProperty('--text', t.text);
+  root.style.setProperty('--text2', t.text2);
+  root.style.setProperty('--muted', t.muted);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent2', t.accent2);
+  root.style.setProperty('--border', t.border);
+  // Vurgu ince ayar inputunu güncelle
+  const vurguInp = document.getElementById('app-vurgu-renk');
+  if (vurguInp) vurguInp.value = t.accent;
+  const vurguOniz = document.getElementById('app-vurgu-onizleme');
+  if (vurguOniz) { vurguOniz.style.background = t.accent; }
+  // Seçili tema kartını vurgula
+  document.querySelectorAll('[id^="apttema-"]').forEach(b => b.style.borderColor = 'transparent');
+  const aktifBtn = document.getElementById('apttema-' + temaAdi);
+  if (aktifBtn) aktifBtn.style.borderColor = t.accent;
+  // body bg rengi güncelle (nav bar için)
+  document.body.style.background = t.bg;
+}
+
+function appVurguRenkDegisti(renk) {
+  document.documentElement.style.setProperty('--accent', renk);
+  document.documentElement.style.setProperty('--accent2', _renkAciklaştir ? _renkAciklaştir(renk, 20) : renk);
+  const oniz = document.getElementById('app-vurgu-onizleme');
+  if (oniz) { oniz.style.background = renk; }
+}
+
+function appVurguRenkSec(renk) {
+  const inp = document.getElementById('app-vurgu-renk');
+  if (inp) inp.value = renk;
+  appVurguRenkDegisti(renk);
+}
+window.appVurguRenkSec = appVurguRenkSec;
+
+async function appTemaKaydet() {
+  if (!kafeId) { toast('⚠️ Oturum bulunamadı'); return; }
+  const vurguRenk = document.getElementById('app-vurgu-renk')?.value || APP_TEMALAR[_aktifAppTema]?.accent;
+  const { error } = await sb.from('kafeler').update({
+    app_tema: _aktifAppTema,
+    app_vurgu: vurguRenk
+  }).eq('id', kafeId);
+  if (error) { toast('⚠️ Kayıt hatası: ' + error.message); return; }
+  if (window._kafeData) { window._kafeData.app_tema = _aktifAppTema; window._kafeData.app_vurgu = vurguRenk; }
+  // Vurgu ince ayarını da uygula
+  document.documentElement.style.setProperty('--accent', vurguRenk);
+  document.documentElement.style.setProperty('--accent2', _renkAciklaştir ? _renkAciklaştir(vurguRenk, 20) : vurguRenk);
+  toast('✅ Tema kaydedildi!');
+}
+
+function appTemaYukle(data) {
+  if (!data) return;
+  const temaAdi = data.app_tema || 'kahve';
+  appTemaUygula(temaAdi);
+  // Vurgu ince ayarı varsa üstüne uygula
+  if (data.app_vurgu) {
+    document.documentElement.style.setProperty('--accent', data.app_vurgu);
+    document.documentElement.style.setProperty('--accent2', _renkAciklaştir ? _renkAciklaştir(data.app_vurgu, 20) : data.app_vurgu);
+    const vurguInp = document.getElementById('app-vurgu-renk');
+    if (vurguInp) vurguInp.value = data.app_vurgu;
+    const vurguOniz = document.getElementById('app-vurgu-onizleme');
+    if (vurguOniz) vurguOniz.style.background = data.app_vurgu;
+  }
+}
+
+// Vurgu renk input event
+document.addEventListener('input', function(e) {
+  if (e.target && e.target.id === 'app-vurgu-renk') {
+    appVurguRenkDegisti(e.target.value);
+  }
+});
+window.appTemaUygula = appTemaUygula;
+window.appTemaKaydet = appTemaKaydet;
+
 async function kafeVerisiYukle() {
   const {data} = await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
   window._kafeData = data; // Global olarak sakla
@@ -3018,6 +3266,8 @@ async function kafeVerisiYukle() {
     kafeAdi = data.kafe_adi || 'Kafem';
     garsonlar = data.garsonlar || ['Ali','Ayşe'];
     if (data.urunler) URUNLER = data.urunler;
+    // Uygulama teması yükle
+    appTemaYukle(data);
     if (data.receteler) { RECETELER = data.receteler; console.log("Admin: Reçeteler yüklendi:", Object.keys(RECETELER)); }
     if (data.grup_listesi && Array.isArray(data.grup_listesi) && data.grup_listesi.length > 0) {
       _sabitGruplar = data.grup_listesi;
@@ -3825,10 +4075,17 @@ function katYonetimRender() {
   if (!el) return;
   const katlar = Object.keys(URUNLER);
   // Hazır kategori butonları: kategori yoksa göster
-  // Hazır kategori butonları her zaman görünür
-  ['dondurma-ekle-btn','kahve-ekle-btn','tatli-ekle-btn','pide-ekle-btn'].forEach(btnId => {
+  const _hazirlar = [
+    {btnId:'dondurma-ekle-btn', anahtar:'dondurma'},
+    {btnId:'kahve-ekle-btn',    anahtar:'kahve'},
+    {btnId:'tatli-ekle-btn',    anahtar:'tatlı'},
+    {btnId:'pide-ekle-btn',     anahtar:'pide'},
+  ];
+  _hazirlar.forEach(({btnId, anahtar}) => {
     const b = document.getElementById(btnId);
-    if (b) b.style.display = 'block';
+    if (!b) return;
+    const varMi = katlar.some(k => k.toLowerCase().includes(anahtar));
+    b.style.display = varMi ? 'none' : 'block';
   });
   if (!katlar.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
@@ -6902,6 +7159,8 @@ function ayarlarRender(){
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
   menuGorunumYukle();
+  // Aktif temayı işaretle
+  if (window._kafeData) appTemaYukle(window._kafeData);
   aiPaketKartRender();
   if (window._ayarViewRender) window._ayarViewRender();
   // Plan + Yetki kontrolü
@@ -7888,7 +8147,7 @@ window.katSiralaasagi = katSiralaasagi;
 // ════════════════════════════════════════
 function dondurmaKategoriEkle() {
   const katAd = '🍦 Dondurma';
-  if (URUNLER[katAd]) { toast('🍦 Dondurma kategorisi zaten ekli! Ürünler sekmesinden düzenleyebilirsiniz.'); return; }
+  if (URUNLER[katAd]) { toast('🍦 Dondurma kategorisi zaten mevcut!'); return; }
   URUNLER[katAd] = [{
     isim: 'Dondurma', fiyat: 45, ikon: '🍦', stok: null, varyantlar: [{
       ad: 'Çeşit', tip: 'checkbox', zorunlu: true, secenekler: [
@@ -7927,7 +8186,7 @@ window.dondurmaKategoriEkle = dondurmaKategoriEkle;
 // ════════════════════════════════════════
 function kahveKategoriEkle() {
   const katAd = '☕ Kahveler';
-  if (URUNLER[katAd]) { toast('☕ Kahve kategorisi zaten ekli! Ürünler sekmesinden düzenleyebilirsiniz.'); return; }
+  if (URUNLER[katAd]) { toast('☕ Kahve kategorisi zaten mevcut!'); return; }
   const _kahveVaryantlar = [
     {ad:'Şeker', tip:'checkbox', zorunlu:true, secenekler:[
       {isim:'Sade', fiyatFark:0}, {isim:'Az Şekerli', fiyatFark:0},
@@ -7965,7 +8224,7 @@ window.kahveKategoriEkle = kahveKategoriEkle;
 // ════════════════════════════════════════
 function tatliKategoriEkle() {
   const katAd = '🍰 Tatlılar';
-  if (URUNLER[katAd]) { toast('🍰 Tatlı kategorisi zaten ekli! Ürünler sekmesinden düzenleyebilirsiniz.'); return; }
+  if (URUNLER[katAd]) { toast('🍰 Tatlı kategorisi zaten mevcut!'); return; }
   const tatlilar = [
     {isim:'Cheesecake',      fiyat:90,  ikon:'🍰'},
     {isim:'Tiramisu',        fiyat:95,  ikon:'🍮'},
@@ -7990,7 +8249,7 @@ window.tatliKategoriEkle = tatliKategoriEkle;
 // ════════════════════════════════════════
 function pideKategoriEkle() {
   const katAd = '🫓 Pideler';
-  if (URUNLER[katAd]) { toast('🫓 Pide kategorisi zaten ekli! Ürünler sekmesinden düzenleyebilirsiniz.'); return; }
+  if (URUNLER[katAd]) { toast('🫓 Pide kategorisi zaten mevcut!'); return; }
   const _pideVaryant = [{
     ad:'Porsiyon', tip:'checkbox', zorunlu:true, secenekler:[
       {isim:'Tek',           fiyatFark:0},
