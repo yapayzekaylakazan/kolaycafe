@@ -4750,12 +4750,53 @@ document.getElementById('urun-resim-url').addEventListener('input', function() {
 // ═══════════════════════════════════════════
 // SUPABASE STORAGE YÜKLEME - ORTAK FONKSİYON
 // ═══════════════════════════════════════════
-const STORAGE_BUCKET = 'kafe-gorseller';
+const STORAGE_BUCKET = 'urun-resimleri';
 
-async function storageYukle(dosya, klasor, maxMB = 5) {
+// Resmi Canvas ile sıkıştır — büyük fotoğrafları küçültür
+function resimSikistir(dosya, maxKB = 400, maxPx = 1200) {
+  return new Promise((resolve) => {
+    // Zaten küçükse direkt döndür
+    if (dosya.size <= maxKB * 1024) { resolve(dosya); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(dosya);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      if (w > maxPx || h > maxPx) {
+        if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else       { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      let quality = 0.82;
+      const tryCompress = () => {
+        canvas.toBlob(blob => {
+          if (!blob) { resolve(dosya); return; }
+          if (blob.size <= maxKB * 1024 || quality <= 0.4) {
+            resolve(new File([blob], dosya.name, {type: 'image/jpeg'}));
+          } else {
+            quality -= 0.1;
+            tryCompress();
+          }
+        }, 'image/jpeg', quality);
+      };
+      tryCompress();
+    };
+    img.onerror = () => resolve(dosya);
+    img.src = url;
+  });
+}
+
+async function storageYukle(dosya, klasor, maxMB = 20) {
   if (dosya.size > maxMB * 1024 * 1024) {
     toast('Resim ' + maxMB + 'MB\'dan küçük olmalı!');
     return null;
+  }
+  // 400KB'dan büyükse otomatik sıkıştır
+  if (dosya.size > 400 * 1024) {
+    toast('🗜 Resim optimize ediliyor...');
+    dosya = await resimSikistir(dosya, 400, 1200);
   }
   const uzanti = dosya.name.split('.').pop().toLowerCase();
   const dosyaAdi = klasor + '/' + kafeId + '_' + Date.now() + '.' + uzanti;
