@@ -151,6 +151,7 @@
   .amh-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
   .amh-btn { padding: 6px 9px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .amh-btn:active { transform: scale(0.95); }
+  /* ── LAYOUT: Mobil (varsayılan) ── */
   .kolaycafen-body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
   .urun-bolumu { display: flex; flex-direction: column; border-bottom: 2px solid var(--border); flex-shrink: 0; }
   .cat-tabs { display: flex; gap: 6px; padding: 8px 10px 6px; overflow-x: auto; flex-shrink: 0; }
@@ -163,11 +164,23 @@
   .urun-kart .ui { font-size: 1.4rem; margin-bottom: 2px; }
   .urun-kart .un { font-size: 0.65rem; font-weight: 700; line-height: 1.2; margin-bottom: 1px; }
   .urun-kart .up { font-size: 0.72rem; font-weight: 900; color: var(--accent2); }
+  .urun-kart .uadet { display: none; position: absolute; top: 2px; left: 2px; background: var(--accent); color: var(--bg); border-radius: 5px; font-size: 0.6rem; font-weight: 900; padding: 1px 4px; min-width: 16px; text-align: center; }
   .urun-kart .udel { position: absolute; top: 3px; right: 3px; background: none; border: none; color: var(--muted); font-size: 0.7rem; cursor: pointer; padding: 2px; opacity: 0.5; }
   .siparis-bolumu { background: var(--surface); flex-shrink: 0; display: flex; flex-direction: column; }
   .siparis-baslik { padding: 6px 12px 3px; font-size: 0.72rem; font-weight: 800; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
   .siparis-liste { padding: 0 8px; }
   .siparis-item { display: flex; align-items: center; gap: 6px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  /* ── LAYOUT: PC modu (geniş ekran veya .pc-mod class'ı) ── */
+  .pc-mod .kolaycafen-body, @media (min-width: 900px) { .kolaycafen-body } { flex-direction: row; overflow: hidden; }
+  body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
+  body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
+  body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
+  body.pc-mod .urun-kart .uadet { display: block; }
+  body.pc-mod .siparis-bolumu { width: 300px; flex-shrink: 0; overflow-y: auto; min-height: 0; border-left: 1px solid var(--border); }
+  body.pc-mod .kolaycafen-footer { position: sticky; bottom: 0; z-index: 10; }
+  /* PC toggle butonu */
+  #pc-mobil-toggle { position: fixed; bottom: 70px; right: 12px; z-index: 500; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 50px; padding: 6px 12px; font-family: 'Nunito', sans-serif; font-size: 0.72rem; font-weight: 800; cursor: pointer; color: var(--text2); box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
+  #pc-mobil-toggle.goster { display: flex; align-items: center; gap: 5px; }
   .si-isim { flex: 1; font-size: 0.88rem; font-weight: 700; }
   .si-meta { font-size: 0.6rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
   .si-miktar { display: flex; align-items: center; gap: 4px; }
@@ -538,6 +551,44 @@
     align-items: flex-end;
   }
 </style>
+<style>
+/* ── VARYANT MODAL (Garson/Admin tarafı) ── */
+#varyant-modal .modal { max-width: 400px; max-height: 85vh; overflow-y: auto; }
+.vgrup { margin-bottom: 18px; }
+.vgrup-baslik {
+  font-size: 0.72rem; font-weight: 800; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.vgrup-zorunlu-badge {
+  font-size: 0.62rem; font-weight: 900; color: #e04040;
+  background: rgba(224,64,64,0.1); padding: 2px 6px; border-radius: 50px;
+}
+.vgrup-secenekler { display: flex; flex-wrap: wrap; gap: 7px; }
+.vgrup-btn {
+  padding: 8px 14px; border-radius: 50px;
+  border: 2px solid var(--border); background: var(--surface2);
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.82rem;
+  cursor: pointer; color: var(--text); transition: all 0.15s;
+}
+.vgrup-btn.secili {
+  background: var(--accent); border-color: var(--accent); color: var(--bg);
+}
+.vgrup-btn.hata { border-color: #e04040 !important; animation: sallan 0.3s; }
+@keyframes sallan { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+/* ── VARYANT DÜZENLEME (Ürün listesi) ── */
+.varyant-editor { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; }
+.varyant-editor-baslik { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.vgrup-editor { background: var(--surface2); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border: 1.5px solid var(--border); }
+.vgrup-editor-ust { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.vgrup-editor-ust input { flex: 1; min-width: 80px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.8rem; outline: none; }
+.vgrup-editor-ust select { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 8px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.78rem; outline: none; }
+.vgrup-editor-ust button { padding: 6px 8px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Nunito', sans-serif; font-size: 0.75rem; font-weight: 800; }
+.vsecenek-satir { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+.vsecenek-satir input { flex: 1; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 5px 8px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.78rem; outline: none; }
+.vsecenek-satir .fiyat-input { width: 70px; flex: none; }
+.vsecenek-satir button { padding: 5px 8px; border-radius: 8px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; cursor: pointer; }
+</style>
 
 <div id="musteri-menu" style="display:none;flex-direction:column;min-height:100vh;background:#f5f5f5;font-family:'Nunito',sans-serif;">
 
@@ -851,6 +902,8 @@
         <button onclick="garsonCagriKapat(seciliMasa)" style="background:#fff;color:#ef4444;border:none;border-radius:8px;padding:4px 12px;font-weight:900;font-size:0.8rem;cursor:pointer;">✓ Geldim</button>
       </div>
       <div class="kolaycafen-body">
+        <!-- PC/Mobil toggle butonu - sadece bu sayfada görünür -->
+        <button id="pc-mobil-toggle" onclick="pcMobilToggle()" title="PC/Mobil görünümü değiştir">📱 Mobil</button>
         <div class="urun-bolumu">
           <div class="cat-tabs" id="cat-tabs"></div>
           <div class="urun-grid" id="urun-grid"></div>
@@ -2088,6 +2141,16 @@
 </div><!-- /app -->
 
 <!-- MODALLER -->
+<!-- ── VARYANT SEÇİM MODALI (Garson/Admin) ── -->
+<div class="modal-overlay" id="varyant-modal" onclick="if(event.target===this)varyantModalKapat()">
+  <div class="modal" style="max-width:400px;max-height:85vh;overflow-y:auto;">
+    <div class="modal-baslik" id="varyant-modal-baslik">Seçenekler</div>
+    <div id="varyant-modal-icerik" style="margin-bottom:14px;"></div>
+    <button id="varyant-modal-ekle-btn" onclick="varyantSecimiOnayla()" style="width:100%;padding:13px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Sepete Ekle</button>
+    <button onclick="varyantModalKapat()" class="modal-kapat">İptal</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="not-modal">
   <div class="modal" style="max-width:340px;">
     <div class="modal-baslik" id="not-modal-baslik">Masa Ayarları</div>
@@ -2956,6 +3019,33 @@ async function kafeVerisiYukle() {
         {isim:"Menemen", fiyat:95, emoji:"🍳", stok:null},
         {isim:"Kahvaltı Tabağı", fiyat:150, emoji:"🍽️", stok:null},
         {isim:"Omlet", fiyat:85, emoji:"🥚", stok:null}
+      ],
+      "🍦 Dondurma": [
+        {isim:"Dondurma", fiyat:45, ikon:"🍦", stok:null, varyantlar:[
+          {ad:"Çeşit", tip:"radio", zorunlu:true, secenekler:[
+            {isim:"Vanilyalı", fiyatFark:0},
+            {isim:"Kakaolu", fiyatFark:0},
+            {isim:"Limonlu", fiyatFark:0},
+            {isim:"Çilekli", fiyatFark:0},
+            {isim:"Karadutlu", fiyatFark:0},
+            {isim:"Vişneli", fiyatFark:0},
+            {isim:"Kavunlu", fiyatFark:0},
+            {isim:"Ahududulu", fiyatFark:0},
+            {isim:"Böğürtlenli", fiyatFark:0},
+            {isim:"Mango Sorbe", fiyatFark:0},
+            {isim:"Bitter Çikolatalı", fiyatFark:0},
+            {isim:"Antep Fıstıklı", fiyatFark:5},
+            {isim:"Karamelli", fiyatFark:0},
+            {isim:"Cevizli", fiyatFark:5},
+            {isim:"Kavrulmuş Fındıklı", fiyatFark:5},
+            {isim:"Tiramisu", fiyatFark:5},
+            {isim:"Oreolu", fiyatFark:5},
+            {isim:"Kurabiye Parçacıklı", fiyatFark:5},
+            {isim:"Nane Çikolatalı", fiyatFark:0},
+            {isim:"Kahveli", fiyatFark:0},
+            {isim:"Tahinli", fiyatFark:5}
+          ]}
+        ]}
       ]
     };
     const {data:yeni} = await sb.from('kafeler').insert({
@@ -3228,6 +3318,9 @@ function sayfaGit(sayfa) {
   if (sayfa==='ayarlar') { ayarlarRender(); masaGrupListeRender(); }
   if (sayfa==='ai') aiSayfaAc();
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
+  // PC/Mobil toggle butonu - sadece kolaycafen sayfasında görünür
+  const pcBtn = document.getElementById('pc-mobil-toggle');
+  if (pcBtn) pcBtn.className = sayfa === 'kolaycafen' ? 'goster' : '';
 }
 
 // ════════════════════════════════════════
@@ -3692,17 +3785,25 @@ function katYonetimRender() {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
     return;
   }
-  el.innerHTML = katlar.map(kat => {
+  el.innerHTML = katlar.map((kat, ki) => {
     const sayi = (URUNLER[kat]||[]).length;
+    const ilk = ki === 0, son = ki === katlar.length - 1;
+    const katEsc = kat.replace(/'/g,"\\'");
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface);border-radius:10px;margin-bottom:6px;">
-      <div>
-        <span style="font-weight:800;font-size:0.88rem;">${kat}</span>
-        <span style="font-size:0.72rem;color:var(--muted);margin-left:7px;">${sayi} ürün</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <button onclick="katSiralayukari('${katEsc}')" ${ilk?'disabled':''} style="width:22px;height:18px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:${ilk?'var(--border)':'var(--text)'};font-size:0.65rem;cursor:${ilk?'default':'pointer'};padding:0;line-height:1;">▲</button>
+          <button onclick="katSiralaasagi('${katEsc}')" ${son?'disabled':''} style="width:22px;height:18px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:${son?'var(--border)':'var(--text)'};font-size:0.65rem;cursor:${son?'default':'pointer'};padding:0;line-height:1;">▼</button>
+        </div>
+        <div>
+          <span style="font-weight:800;font-size:0.88rem;">${kat}</span>
+          <span style="font-size:0.72rem;color:var(--muted);margin-left:7px;">${sayi} ürün</span>
+        </div>
       </div>
       <div style="display:flex;gap:6px;">
-        <button onclick="katAdDegistir('${kat.replace(/'/g,"\\'")}')"
+        <button onclick="katAdDegistir('${katEsc}')"
           style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">✏️ Düzenle</button>
-        <button onclick="katSil('${kat.replace(/'/g,"\\'")}')"
+        <button onclick="katSil('${katEsc}')"
           style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">🗑 Sil</button>
       </div>
     </div>`;
@@ -3749,7 +3850,14 @@ function urunGridRender() {
     const stokBadge = tukendi ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.65);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:900;color:#ef4444;">⛔ TÜKENDİ</div>' 
                     : kritikStok ? `<div style="position:absolute;bottom:2px;left:2px;right:2px;background:rgba(245,158,11,0.9);border-radius:4px;font-size:0.55rem;font-weight:900;color:#1a0f00;text-align:center;">⚠️ Son ${u.stok}</div>` : '';
     if (tukendi) kart.style.opacity = '0.6';
-    kart.innerHTML=`${resimHTML}<div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>${stokBadge}`;
+    const varyantRozet = (u.varyantlar && u.varyantlar.length > 0)
+      ? `<div style="position:absolute;top:2px;left:2px;background:var(--accent);color:var(--bg);border-radius:4px;font-size:0.52rem;font-weight:900;padding:1px 4px;">⚙ ${u.varyantlar.length}</div>`
+      : '';
+    // Siparişteki toplam adet (aynı isimli tüm satırlar dahil)
+    const mevcutM = seciliMasa ? getMasa() : null;
+    const sepetAdet = mevcutM ? mevcutM.siparisler.filter(s=>s.isim===u.isim).reduce((t,s)=>t+s.adet,0) : 0;
+    const adetRozet = `<div class="uadet">${sepetAdet||''}</div>`;
+    kart.innerHTML=`${resimHTML}<div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>${stokBadge}${varyantRozet}${adetRozet}`;
     kart.querySelector('.udel').addEventListener('click',e=>{
       e.stopPropagation();
       if(!confirm('"'+u.isim+'" silinsin mi?')) return;
@@ -3771,17 +3879,141 @@ function urunEkle(u) {
   // Stok kontrolü
   const takipli = u.stok !== null && u.stok !== undefined;
   if (takipli && u.stok <= 0) { toast('⛔ ' + u.isim + ' stokta yok!'); return; }
+  // Varyant varsa modal aç
+  const varyantlar = u.varyantlar || [];
+  if (varyantlar.length > 0) {
+    varyantModalAc(u);
+    return;
+  }
+  _urunAdisyonaEkle(u, [], 0);
+}
+
+function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
+  if(!seciliMasa) return;
+  const m = getMasa(); if(!m) return;
   const saat=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   const ekleyenGarson=garsonModu?aktifGarsonAdi:(m.garson||'');
-  const v=m.siparisler.find(s=>s.isim===u.isim);
-  if(v){
-    v.adet++;
-    if(!v.eklemeler) v.eklemeler=[];
-    v.eklemeler.push({saat,garson:ekleyenGarson,adet:1});
+  const toplamFiyat = u.fiyat + fiyatFarki;
+  // Seçim özeti (ör: "Antep Fıstıklı, Ekstra Peynir")
+  const secimOzeti = secimler.length > 0 ? secimler.join(', ') : '';
+  // Aynı ürün+seçim kombinasyonu varsa adet arttır
+  const eslesme = m.siparisler.find(s => s.isim === u.isim && (s.secimOzeti||'') === secimOzeti);
+  if(eslesme){
+    eslesme.adet++;
+    if(!eslesme.eklemeler) eslesme.eklemeler=[];
+    eslesme.eklemeler.push({saat,garson:ekleyenGarson,adet:1});
   } else {
-    m.siparisler.push({isim:u.isim,fiyat:u.fiyat,adet:1,ilkSaat:saat,ilkGarson:ekleyenGarson,eklemeler:[{saat,garson:ekleyenGarson,adet:1}]});
+    m.siparisler.push({
+      isim: u.isim,
+      fiyat: toplamFiyat,
+      adet: 1,
+      secimOzeti,
+      ilkSaat: saat,
+      ilkGarson: ekleyenGarson,
+      eklemeler: [{saat, garson: ekleyenGarson, adet:1}]
+    });
   }
   siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
+}
+
+// ── VARYANT MODALİ (Garson/Admin tarafı) ──
+let _varyantModalUrun = null;
+let _varyantSecimler = {}; // {grupAdi: [secilenler]}
+
+function varyantModalAc(u) {
+  _varyantModalUrun = u;
+  _varyantSecimler = {};
+  const varyantlar = u.varyantlar || [];
+  document.getElementById('varyant-modal-baslik').textContent = u.isim + ' — Seçenekler';
+  const icerik = document.getElementById('varyant-modal-icerik');
+  icerik.innerHTML = '';
+  varyantlar.forEach(grup => {
+    const div = document.createElement('div');
+    div.className = 'vgrup';
+    div.dataset.grupAdi = grup.ad;
+    div.dataset.tip = grup.tip || 'radio';
+    div.dataset.zorunlu = grup.zorunlu ? '1' : '0';
+    const zorunluBadge = grup.zorunlu ? '<span class="vgrup-zorunlu-badge">zorunlu</span>' : '';
+    div.innerHTML = `<div class="vgrup-baslik">${grup.ad} ${zorunluBadge}</div><div class="vgrup-secenekler" id="vgrup-${grup.ad.replace(/\s/g,'_')}"></div>`;
+    icerik.appendChild(div);
+    const secDiv = div.querySelector('.vgrup-secenekler');
+    (grup.secenekler || []).forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'vgrup-btn';
+      btn.textContent = s.isim + (s.fiyatFark > 0 ? ' +₺'+s.fiyatFark : (s.fiyatFark < 0 ? ' ₺'+s.fiyatFark : ''));
+      btn.dataset.secenek = s.isim;
+      btn.dataset.fiyatFark = s.fiyatFark || 0;
+      btn.addEventListener('click', () => {
+        btn.classList.remove('hata');
+        if (grup.tip === 'radio') {
+          secDiv.querySelectorAll('.vgrup-btn').forEach(b => b.classList.remove('secili'));
+          btn.classList.add('secili');
+          _varyantSecimler[grup.ad] = [s.isim];
+        } else {
+          btn.classList.toggle('secili');
+          const secili = [...secDiv.querySelectorAll('.vgrup-btn.secili')].map(b => b.dataset.secenek);
+          _varyantSecimler[grup.ad] = secili;
+        }
+        _varyantFiyatGuncelle();
+      });
+      secDiv.appendChild(btn);
+    });
+  });
+  _varyantFiyatGuncelle();
+  modalAc('varyant-modal');
+}
+
+function _varyantFiyatGuncelle() {
+  if (!_varyantModalUrun) return;
+  let toplam = _varyantModalUrun.fiyat;
+  const icerik = document.getElementById('varyant-modal-icerik');
+  icerik.querySelectorAll('.vgrup').forEach(div => {
+    div.querySelectorAll('.vgrup-btn.secili').forEach(btn => {
+      toplam += parseFloat(btn.dataset.fiyatFark || 0);
+    });
+  });
+  const ekleBtn = document.getElementById('varyant-modal-ekle-btn');
+  if (ekleBtn) ekleBtn.textContent = '✓ Sepete Ekle — ₺' + toplam.toFixed(0);
+}
+
+function varyantSecimiOnayla() {
+  if (!_varyantModalUrun) return;
+  const u = _varyantModalUrun;
+  const varyantlar = u.varyantlar || [];
+  // Zorunlu grupları kontrol et
+  let gecersiz = false;
+  const icerik = document.getElementById('varyant-modal-icerik');
+  varyantlar.forEach(grup => {
+    if (!grup.zorunlu) return;
+    const secili = _varyantSecimler[grup.ad] || [];
+    if (secili.length === 0) {
+      // Kırmızı göster
+      const grupDiv = [...icerik.querySelectorAll('.vgrup')].find(d => d.dataset.grupAdi === grup.ad);
+      if (grupDiv) grupDiv.querySelectorAll('.vgrup-btn').forEach(b => b.classList.add('hata'));
+      gecersiz = true;
+    }
+  });
+  if (gecersiz) { toast('⚠️ Zorunlu seçimleri tamamlayın!'); return; }
+  // Seçimleri ve fiyat farkını hesapla
+  let fiyatFarki = 0;
+  const secimListesi = [];
+  varyantlar.forEach(grup => {
+    const secili = _varyantSecimler[grup.ad] || [];
+    secili.forEach(isim => {
+      secimListesi.push(isim);
+      const s = (grup.secenekler||[]).find(x => x.isim === isim);
+      if (s) fiyatFarki += (s.fiyatFark || 0);
+    });
+  });
+  modalKapat('varyant-modal');
+  _urunAdisyonaEkle(u, secimListesi, fiyatFarki);
+  toast('✓ ' + u.isim + (secimListesi.length ? ' (' + secimListesi.join(', ') + ')' : '') + ' eklendi');
+}
+
+function varyantModalKapat() {
+  modalKapat('varyant-modal');
+  _varyantModalUrun = null;
+  _varyantSecimler = {};
 }
 
 function siparisListeRender() {
@@ -3800,6 +4032,7 @@ function siparisListeRender() {
       item.innerHTML=`
         <div style="flex:1;min-width:0;">
           <div class="si-isim">${s.isim}</div>
+          ${s.secimOzeti ? `<div class="si-meta" style="color:var(--accent2);font-weight:700;">🔖 ${s.secimOzeti}</div>` : ''}
           ${metaBilgi?`<div class="si-meta">🕐 ${metaBilgi}</div>`:''}
           ${s.not?`<div style="font-size:0.68rem;color:var(--accent2);font-weight:700;margin-top:2px;cursor:pointer;" onclick="siparisNotDuzenle(${i})">📝 ${s.not}</div>`:''}
         </div>
@@ -3818,6 +4051,19 @@ function siparisListeRender() {
   const oncEl=document.getElementById('toplam-onceki');
   if(ind>0){oncEl.style.display='block';oncEl.textContent=fmt(ham);document.getElementById('toplam-tutar').textContent=fmt(son)+' (-%'+ind+')';}
   else{oncEl.style.display='none';document.getElementById('toplam-tutar').textContent=fmt(ham);}
+  // PC modda ürün kartlarındaki adet rozetlerini güncelle
+  if (document.body.classList.contains('pc-mod')) {
+    const m2 = getMasa();
+    document.querySelectorAll('.urun-kart').forEach(kart => {
+      const isimEl = kart.querySelector('.un');
+      const adetEl = kart.querySelector('.uadet');
+      if (!isimEl || !adetEl) return;
+      const isim = isimEl.textContent;
+      const adet = m2 ? m2.siparisler.filter(s=>s.isim===isim).reduce((t,s)=>t+s.adet,0) : 0;
+      adetEl.textContent = adet || '';
+      adetEl.style.display = adet > 0 ? 'block' : 'none';
+    });
+  }
 }
 
 function siparisNotDuzenle(idx) {
@@ -4582,7 +4828,7 @@ function urunKaydet(){
   const aciklama=(aciklamaEl?aciklamaEl.value.trim():'')||null;
   if(!isim){toast('Ürün adı girin!');return;}
   if(isNaN(fiyat)||fiyat<0){toast('Geçerli fiyat girin!');return;}
-  URUNLER[kat].push({isim,fiyat,ikon,resim,aciklama});
+  URUNLER[kat].push({isim,fiyat,ikon,resim,aciklama,varyantlar:[]});
   document.getElementById('urun-adi').value='';
   document.getElementById('urun-fiyat').value='';
   document.getElementById('urun-ikon').value='';
@@ -4785,12 +5031,14 @@ function urunListesiRender(){
         </div>
         <textarea class="uli-aciklama" placeholder="Aciklama (QR menude gorunur)..." rows="2"
           style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.78rem;resize:none;outline:none;box-sizing:border-box;margin-bottom:6px;">${u.aciklama||''}</textarea>
-        <div style="display:flex;gap:6px;align-items:center;">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
           <input type="text" class="uli-resim-url" value="${u.resim||''}" placeholder="Resim URL..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.78rem;outline:none;">
           <button class="uli-resim-yukle-btn" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;white-space:nowrap;">&#x1F4C1;</button>
           <input type="file" class="uli-resim-dosya" accept="image/*" style="display:none">
           ${u.resim ? '<button class="uli-resim-sil-btn" style="padding:6px 8px;border-radius:8px;border:1.5px solid #e04040;background:transparent;color:#e04040;font-size:0.75rem;cursor:pointer;">&#x2715;</button>' : ''}
-        </div>`;
+        </div>
+        <button class="uli-varyant-btn" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;text-align:left;">⚙ Varyant Ekle</button>
+        <div class="varyant-editor-wrap" style="display:none;"></div>`;
       item.querySelector('.uli-fiyat-input').addEventListener('change', e=>{
         const f=parseFloat(e.target.value);
         if(isNaN(f)||f<0){e.target.value=u.fiyat;toast('Gecersiz fiyat!');return;}
@@ -4825,9 +5073,117 @@ function urunListesiRender(){
         URUNLER[kat][idx].resim=null;
         urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Resim silindi');
       });
+      // Varyant editörü
+      const varyantSec = item.querySelector('.uli-varyant-btn');
+      if (varyantSec) {
+        const varyantlarMevcut = (u.varyantlar||[]).length;
+        varyantSec.textContent = varyantlarMevcut > 0 ? `⚙ Varyantlar (${varyantlarMevcut} grup)` : '⚙ Varyant Ekle';
+        const editorDiv = item.querySelector('.varyant-editor-wrap');
+        varyantSec.addEventListener('click', () => {
+          const acik = editorDiv.style.display !== 'none';
+          editorDiv.style.display = acik ? 'none' : 'block';
+          if (!acik) varyantEditorRender(editorDiv, kat, idx);
+        });
+      }
       liste.appendChild(item);
     });
   });
+}
+
+function varyantEditorRender(container, kat, idx) {
+  const u = URUNLER[kat][idx];
+  const varyantlar = u.varyantlar || [];
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'varyant-editor';
+
+  // Başlık
+  const baslik = document.createElement('div');
+  baslik.className = 'varyant-editor-baslik';
+  baslik.textContent = '⚙ Varyant Grupları';
+  wrap.appendChild(baslik);
+
+  // Gruplar
+  varyantlar.forEach((grup, gi) => {
+    const gDiv = document.createElement('div');
+    gDiv.className = 'vgrup-editor';
+    gDiv.innerHTML = `
+      <div class="vgrup-editor-ust">
+        <input type="text" class="vge-ad" value="${grup.ad}" placeholder="Grup adı (ör: Çeşit)">
+        <select class="vge-tip">
+          <option value="radio" ${grup.tip==='radio'?'selected':''}>Tek seçim</option>
+          <option value="checkbox" ${grup.tip==='checkbox'?'selected':''}>Çoklu seçim</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+          <input type="checkbox" class="vge-zorunlu" ${grup.zorunlu?'checked':''}> Zorunlu
+        </label>
+        <button class="vge-sil-btn" style="background:#fde8e8;color:#e04040;border:none;">🗑</button>
+      </div>
+      <div class="vge-secenekler"></div>
+      <button class="vge-secenek-ekle" style="background:transparent;color:var(--accent);border:1.5px dashed var(--accent);width:100%;border-radius:8px;padding:5px;font-size:0.78rem;font-weight:800;margin-top:4px;cursor:pointer;">+ Seçenek Ekle</button>`;
+    wrap.appendChild(gDiv);
+    const secDiv = gDiv.querySelector('.vge-secenekler');
+    const seceneklerRender = () => {
+      secDiv.innerHTML = '';
+      (grup.secenekler||[]).forEach((s, si) => {
+        const row = document.createElement('div');
+        row.className = 'vsecenek-satir';
+        row.innerHTML = `<input type="text" class="vs-isim" value="${s.isim}" placeholder="Seçenek adı">
+          <input type="number" class="fiyat-input vs-fiyat" value="${s.fiyatFark||0}" placeholder="+₺0" step="0.5">
+          <button class="vs-sil">✕</button>`;
+        row.querySelector('.vs-isim').addEventListener('change', e => {
+          URUNLER[kat][idx].varyantlar[gi].secenekler[si].isim = e.target.value.trim();
+          bulutKaydet();
+        });
+        row.querySelector('.vs-fiyat').addEventListener('change', e => {
+          URUNLER[kat][idx].varyantlar[gi].secenekler[si].fiyatFark = parseFloat(e.target.value)||0;
+          bulutKaydet();
+        });
+        row.querySelector('.vs-sil').addEventListener('click', () => {
+          URUNLER[kat][idx].varyantlar[gi].secenekler.splice(si, 1);
+          bulutKaydet(); varyantEditorRender(container, kat, idx);
+        });
+        secDiv.appendChild(row);
+      });
+    };
+    seceneklerRender();
+    gDiv.querySelector('.vge-secenek-ekle').addEventListener('click', () => {
+      if (!URUNLER[kat][idx].varyantlar[gi].secenekler) URUNLER[kat][idx].varyantlar[gi].secenekler = [];
+      URUNLER[kat][idx].varyantlar[gi].secenekler.push({isim:'', fiyatFark:0});
+      bulutKaydet(); varyantEditorRender(container, kat, idx);
+    });
+    gDiv.querySelector('.vge-ad').addEventListener('change', e => {
+      URUNLER[kat][idx].varyantlar[gi].ad = e.target.value.trim();
+      bulutKaydet();
+    });
+    gDiv.querySelector('.vge-tip').addEventListener('change', e => {
+      URUNLER[kat][idx].varyantlar[gi].tip = e.target.value;
+      bulutKaydet();
+    });
+    gDiv.querySelector('.vge-zorunlu').addEventListener('change', e => {
+      URUNLER[kat][idx].varyantlar[gi].zorunlu = e.target.checked;
+      bulutKaydet();
+    });
+    gDiv.querySelector('.vge-sil-btn').addEventListener('click', () => {
+      if (!confirm('"'+grup.ad+'" varyant grubu silinsin mi?')) return;
+      URUNLER[kat][idx].varyantlar.splice(gi, 1);
+      bulutKaydet(); varyantEditorRender(container, kat, idx);
+    });
+  });
+
+  // Yeni grup ekle butonu
+  const yeniBtn = document.createElement('button');
+  yeniBtn.textContent = '+ Yeni Varyant Grubu Ekle';
+  yeniBtn.style.cssText = 'width:100%;padding:9px;border-radius:10px;border:2px dashed var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:900;font-size:0.82rem;cursor:pointer;margin-top:6px;';
+  yeniBtn.addEventListener('click', () => {
+    if (!URUNLER[kat][idx].varyantlar) URUNLER[kat][idx].varyantlar = [];
+    URUNLER[kat][idx].varyantlar.push({ad:'Yeni Grup', tip:'radio', zorunlu:false, secenekler:[]});
+    bulutKaydet(); varyantEditorRender(container, kat, idx);
+    // grid de güncelle (varyant rozeti için)
+    if (mevcutKat===kat) urunGridRender();
+  });
+  wrap.appendChild(yeniBtn);
+  container.appendChild(wrap);
 }
 
 // ════════════════════════════════════════
@@ -7350,6 +7706,65 @@ window.masaTemizle = masaTemizle;
 window.tahsilEt = tahsilEt;
 window.yeniKategoriEkle = yeniKategoriEkle;
 window.urunKaydet = urunKaydet;
+window.varyantSecimiOnayla = varyantSecimiOnayla;
+window.varyantModalKapat = varyantModalKapat;
+
+// ════════════════════════════════════════
+// PC / MOBİL GÖRÜNÜM TOGGLE
+// ════════════════════════════════════════
+(function() {
+  const params = new URLSearchParams(location.search);
+  const viewParam = params.get('view');
+  let pcMod = viewParam === 'pc' ? true : viewParam === 'mobil' ? false
+    : localStorage.getItem('kc_view') === 'pc';
+  function applyView(pc) {
+    pcMod = pc;
+    document.body.classList.toggle('pc-mod', pc);
+    localStorage.setItem('kc_view', pc ? 'pc' : 'mobil');
+    const btn = document.getElementById('pc-mobil-toggle');
+    if (btn) btn.textContent = pc ? '📱 Mobil Görünüm' : '🖥 PC Görünüm';
+    document.querySelectorAll('.uadet').forEach(el => {
+      el.style.display = (pc && el.textContent && el.textContent !== '0') ? 'block' : 'none';
+    });
+  }
+  window.pcMobilToggle = function() { applyView(!pcMod); };
+  window._applyPcView = applyView;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => applyView(pcMod));
+  } else { applyView(pcMod); }
+})();
+
+// ════════════════════════════════════════
+// KATEGORİ SIRALAMA (▲▼)
+// ════════════════════════════════════════
+function katSiralayukari(kat) {
+  const katlar = Object.keys(URUNLER);
+  const idx = katlar.indexOf(kat);
+  if (idx <= 0) return;
+  const yeni = {};
+  katlar.forEach((k, i) => {
+    if (i === idx - 1) { yeni[katlar[idx]] = URUNLER[katlar[idx]]; yeni[k] = URUNLER[k]; }
+    else if (i !== idx) yeni[k] = URUNLER[k];
+  });
+  URUNLER = yeni; mevcutKat = kat;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('↑ Kategori taşındı');
+}
+function katSiralaasagi(kat) {
+  const katlar = Object.keys(URUNLER);
+  const idx = katlar.indexOf(kat);
+  if (idx >= katlar.length - 1) return;
+  const yeni = {};
+  katlar.forEach((k, i) => {
+    if (i === idx) { yeni[katlar[idx+1]] = URUNLER[katlar[idx+1]]; yeni[k] = URUNLER[k]; }
+    else if (i !== idx + 1) yeni[k] = URUNLER[k];
+  });
+  URUNLER = yeni; mevcutKat = kat;
+  katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
+  toast('↓ Kategori taşındı');
+}
+window.katSiralayukari = katSiralayukari;
+window.katSiralaasagi = katSiralaasagi;
 window.kafeAdiniGuncelle = kafeAdiniGuncelle;
 window.kafeKoduGuncelle = kafeKoduGuncelle;
 window.garsonEkleAyar = garsonEkleAyar;
@@ -8675,6 +9090,7 @@ function mmDetayAc(urun) {
   mmDetayUrun = urun;
   mmDetayAdetSayi = 1;
   mmDetayVaryant = null;
+  window._mmDetaySecimler = {};
 
   // Görsel
   const img = document.getElementById('mm-detay-hero-img');
@@ -8706,10 +9122,49 @@ function mmDetayAc(urun) {
   document.getElementById('mm-detay-fiyat').textContent = urun.fiyat + '₺';
   document.getElementById('mm-detay-adet-sayi').textContent = '1';
 
-  // Varyantlar (seçenekler)
+  // Varyantlar — yeni yapı (u.varyantlar) öncelikli, eski (u.secenekler) geriye dönük uyumlu
   const varyantDiv = document.getElementById('mm-detay-varyantlar');
   varyantDiv.innerHTML = '';
-  if (urun.secenekler && urun.secenekler.length > 0) {
+  const varyantlar = urun.varyantlar || [];
+  if (varyantlar.length > 0) {
+    varyantlar.forEach(grup => {
+      const grupDiv = document.createElement('div');
+      grupDiv.style.marginBottom = '14px';
+      const zorunluBadge = grup.zorunlu
+        ? '<span style="font-size:0.6rem;font-weight:900;color:#e04040;background:rgba(224,64,64,0.1);padding:2px 6px;border-radius:50px;margin-left:6px;">zorunlu</span>'
+        : '';
+      grupDiv.innerHTML = `<div class="mm-varyant-baslik">${grup.ad}${zorunluBadge}</div><div class="mm-varyant-liste" id="mmvg-${grup.ad.replace(/\s/g,'_')}"></div>`;
+      varyantDiv.appendChild(grupDiv);
+      const liste = grupDiv.querySelector('.mm-varyant-liste');
+      (grup.secenekler || []).forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'mm-varyant-btn';
+        btn.textContent = s.isim + (s.fiyatFark > 0 ? ' +'+s.fiyatFark+'₺' : (s.fiyatFark < 0 ? ' '+s.fiyatFark+'₺' : ''));
+        btn.dataset.secenek = s.isim;
+        btn.dataset.fiyatFark = s.fiyatFark || 0;
+        btn.addEventListener('click', () => {
+          if (grup.tip === 'radio') {
+            liste.querySelectorAll('.mm-varyant-btn').forEach(b => b.classList.remove('secili'));
+            btn.classList.add('secili');
+            window._mmDetaySecimler[grup.ad] = [s.isim];
+          } else {
+            btn.classList.toggle('secili');
+            window._mmDetaySecimler[grup.ad] = [...liste.querySelectorAll('.mm-varyant-btn.secili')].map(b => b.dataset.secenek);
+          }
+          let toplamF = urun.fiyat;
+          varyantlar.forEach(g => {
+            (window._mmDetaySecimler[g.ad] || []).forEach(isim => {
+              const sec = (g.secenekler||[]).find(x => x.isim === isim);
+              if (sec) toplamF += (sec.fiyatFark || 0);
+            });
+          });
+          document.getElementById('mm-detay-fiyat').textContent = toplamF + '₺';
+        });
+        liste.appendChild(btn);
+      });
+    });
+  } else if (urun.secenekler && urun.secenekler.length > 0) {
+    // Eski yapı — geriye dönük uyumluluk
     const valid = urun.secenekler.filter(s => s.isim && s.isim !== 'Ürünün Kendisi');
     if (valid.length > 0) {
       varyantDiv.innerHTML = `<div class="mm-varyant-baslik">${urun.isim} Çeşitleri</div><div class="mm-varyant-liste" id="mm-varyant-liste"></div>`;
@@ -8731,10 +9186,8 @@ function mmDetayAc(urun) {
     }
   }
 
-  // Sepete ekle butonu text
+  // Sepete ekle butonu
   if (!window._sadeceMenuModu) {
-    const sepetItem = mmSepet.find(s => s.isim === urun.isim);
-    const mevcutAdet = sepetItem ? sepetItem.adet : 0;
     document.getElementById('mm-detay-ekle-btn').style.display = 'block';
     document.getElementById('mm-detay-adet-row').style.display = 'flex';
   } else {
@@ -8763,24 +9216,69 @@ function mmDetayAdet(delta) {
 function mmDetaySepeteEkle() {
   if (!mmDetayUrun) return;
   const u = mmDetayUrun;
-  const ekFiyat = mmDetayVaryant ? (mmDetayVaryant.ekFiyat || 0) : 0;
-  const toplamFiyat = u.fiyat + ekFiyat;
-  const isimKey = u.isim + (mmDetayVaryant ? ' - ' + mmDetayVaryant.isim : '');
+  const varyantlar = u.varyantlar || [];
 
-  for (let i = 0; i < mmDetayAdetSayi; i++) {
-    const item = mmSepet.find(s => s.isim === isimKey);
-    if (item) item.adet++;
-    else mmSepet.push({isim: isimKey, fiyat: toplamFiyat, ikon: u.ikon || '🍽', resim: u.resim || null, adet: 1});
+  if (varyantlar.length > 0) {
+    // Zorunlu grup kontrolü
+    let gecersiz = false;
+    varyantlar.forEach(grup => {
+      if (!grup.zorunlu) return;
+      const secili = (window._mmDetaySecimler || {})[grup.ad] || [];
+      if (secili.length === 0) {
+        const listeId = 'mmvg-' + grup.ad.replace(/\s/g,'_');
+        const liste = document.getElementById(listeId);
+        if (liste) {
+          liste.style.outline = '2px solid #e04040';
+          liste.style.borderRadius = '8px';
+          setTimeout(() => { liste.style.outline = ''; liste.style.borderRadius = ''; }, 1500);
+        }
+        gecersiz = true;
+      }
+    });
+    if (gecersiz) {
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#e04040;color:#fff;padding:10px 22px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.9rem;white-space:nowrap;';
+      t.textContent = '⚠️ Zorunlu seçimleri tamamlayın!';
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2000);
+      return;
+    }
+    // Seçimleri topla + fiyat farkı hesapla
+    let fiyatFarki = 0;
+    const secimListesi = [];
+    varyantlar.forEach(grup => {
+      const secili = (window._mmDetaySecimler || {})[grup.ad] || [];
+      secili.forEach(isim => {
+        secimListesi.push(isim);
+        const s = (grup.secenekler||[]).find(x => x.isim === isim);
+        if (s) fiyatFarki += (s.fiyatFark || 0);
+      });
+    });
+    const toplamFiyat = u.fiyat + fiyatFarki;
+    const secimOzeti = secimListesi.join(', ');
+    const isimKey = u.isim + (secimOzeti ? ' — ' + secimOzeti : '');
+    for (let i = 0; i < mmDetayAdetSayi; i++) {
+      const item = mmSepet.find(s => s.isim === isimKey);
+      if (item) item.adet++;
+      else mmSepet.push({isim: isimKey, fiyat: toplamFiyat, ikon: u.ikon || '🍽', resim: u.resim || null, adet: 1});
+    }
+  } else {
+    // Eski yapı / varyantsız ürün
+    const ekFiyat = mmDetayVaryant ? (mmDetayVaryant.ekFiyat || 0) : 0;
+    const toplamFiyat = u.fiyat + ekFiyat;
+    const isimKey = u.isim + (mmDetayVaryant ? ' - ' + mmDetayVaryant.isim : '');
+    for (let i = 0; i < mmDetayAdetSayi; i++) {
+      const item = mmSepet.find(s => s.isim === isimKey);
+      if (item) item.adet++;
+      else mmSepet.push({isim: isimKey, fiyat: toplamFiyat, ikon: u.ikon || '🍽', resim: u.resim || null, adet: 1});
+    }
   }
 
   mmSepetGuncelle();
   mmDetayKapat();
 
-  // Aktif tab'ı yeniden render et
   const aktifTab = document.querySelector('.mm-tab-btn.aktif');
   if (aktifTab) mmUrunRender(aktifTab.dataset.kat);
 
-  // Toast
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:' + mmAnaRenk + ';color:#fff;padding:10px 22px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.9rem;white-space:nowrap;';
   t.textContent = '✅ Sepete eklendi!';
