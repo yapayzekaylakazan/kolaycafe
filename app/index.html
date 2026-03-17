@@ -2824,6 +2824,8 @@ async function sifreSifirla() {
 }
 
 async function cikisYap() {
+  // Garson modunda ise garson çıkışı yap
+  if (garsonModu) { garsonCikis(); return; }
   await sb.auth.signOut();
   location.reload();
 }
