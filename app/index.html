@@ -290,14 +290,16 @@
     #fis-yazdir-icerik { position: fixed !important; top: 0; left: 0; width: 100%; background: #fff; padding: 20px; border-radius: 0; }
     .fis-disbutonlar { display: none !important; }
   }
-  .fis-yazdir-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; align-items: center; justify-content: center; padding: 14px; }
+  .fis-yazdir-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
   .fis-yazdir-modal.ac { display: flex; }
-  #fis-yazdir-icerik { background: #fff; color: #000; border-radius: 11px; padding: 18px; width: 100%; max-width: 310px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.7; }
+  #fis-yazdir-icerik { background: #fff; color: #000; border-radius: 11px; padding: 18px 20px; width: 100%; max-width: 340px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.8; box-sizing: border-box; }
   .fis-center { text-align: center; }
-  .fis-line { border-top: 1px dashed #000; margin: 5px 0; }
-  .fis-row { display: flex; justify-content: space-between; }
+  .fis-line { border-top: 1px dashed #000; margin: 6px 0; }
+  .fis-row { display: flex; justify-content: space-between; gap: 8px; }
+  .fis-row span:first-child { flex: 1; word-break: break-word; }
+  .fis-row span:last-child { white-space: nowrap; }
   .fis-btn-row { display: flex; gap: 7px; margin-top: 12px; }
-  .fis-btn { flex: 1; padding: 11px; border-radius: 9px; border: none; font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
+  .fis-btn { flex: 1; padding: 11px 6px; border-radius: 9px; border: none; font-family: 'Nunito', sans-serif; font-size: 0.82rem; font-weight: 800; cursor: pointer; text-align: center; }
   .fis-btn.baglan { background: #1a6fb5; color: #fff; }
   .fis-btn.yazdir { background: #222; color: #fff; }
   .fis-btn.kapat { background: #e04040; color: #fff; }
@@ -2418,15 +2420,19 @@
 
 <!-- FİŞ MODAL -->
 <div class="fis-yazdir-modal" id="fis-modal">
-  <div id="fis-yazdir-icerik"></div>
-  <div style="width:100%;max-width:310px;margin-top:8px;display:flex;gap:7px;flex-wrap:wrap;">
-    <button class="fis-btn baglan" onclick="btBaglan()">📡 Bağla</button>
-    <button class="fis-btn yazdir" onclick="yazdir()">🖨 Gönder</button>
-    <button class="fis-btn kapat" onclick="document.getElementById('fis-modal').classList.remove('ac')">✕</button>
-  </div>
-  <div style="width:100%;max-width:310px;margin-top:6px;display:flex;gap:7px;">
-    <button class="fis-btn" style="background:#25D366;flex:1;" onclick="whatsappGonder()">💬 WhatsApp</button>
-    <button class="fis-btn" style="background:#555;flex:1;" onclick="fisKopyala()">📋 Kopyala</button>
+  <div style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:10px;max-height:92vh;">
+    <!-- Fiş içeriği — kaydırılabilir -->
+    <div id="fis-yazdir-icerik" style="width:100%;overflow-y:auto;max-height:55vh;"></div>
+    <!-- Butonlar — hep altta -->
+    <div style="width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;">
+      <button class="fis-btn baglan" onclick="btBaglan()">📡 Bağla</button>
+      <button class="fis-btn yazdir" onclick="yazdir()">🖨 Gönder</button>
+      <button class="fis-btn kapat" onclick="document.getElementById('fis-modal').classList.remove('ac')">✕ Kapat</button>
+    </div>
+    <div style="width:100%;display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+      <button class="fis-btn" style="background:#25D366;color:#fff;" onclick="whatsappGonder()">💬 WhatsApp</button>
+      <button class="fis-btn" style="background:#555;color:#fff;" onclick="fisKopyala()">📋 Kopyala</button>
+    </div>
   </div>
 </div>
 
