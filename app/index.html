@@ -2927,6 +2927,8 @@ async function garsonGiris(isim, kafeData) {
     _sabitGruplar = kafeData.grup_listesi;
   }
   // Paketi ayarla
+  // Tema yükle (garson modunda da geçerli)
+  appTemaYukle(kafeData);
   aktifPaket = kafeData.plan || 'pro';
   const _paket = PAKETLER[aktifPaket] || PAKETLER.pro;
   // Masaları pakete göre ayarla (pro=20, diğerleri paket sayısı)
@@ -9538,7 +9540,7 @@ window.masaSilOnay = masaSilOnay;
       const _kafeData = JSON.parse(_ssGarsonData);
       // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
       const {data: tazeData} = await sb.from('kafeler')
-        .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, stok, kat_sirasi')
+        .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, stok, kat_sirasi, app_tema, app_vurgu')
         .eq('id', _kafeData.id)
         .maybeSingle();
       await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
