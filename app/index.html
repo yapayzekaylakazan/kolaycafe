@@ -3386,6 +3386,13 @@ async function kafeVerisiYukle() {
     kafeAdi = data.kafe_adi || 'Kafem';
     garsonlar = data.garsonlar || ['Ali','Ayşe'];
     if (data.urunler) URUNLER = data.urunler;
+    // Kategori sırasını uygula (JSONB sıra kaybını önler)
+    if (data.kat_sirasi && Array.isArray(data.kat_sirasi) && data.kat_sirasi.length > 0) {
+      _katSirasi = data.kat_sirasi;
+      URUNLER = _urunleriSirala(URUNLER, _katSirasi);
+    } else {
+      _katSirasi = Object.keys(URUNLER);
+    }
     // Uygulama teması yükle
     appTemaYukle(data);
     if (data.receteler) { RECETELER = data.receteler; console.log("Admin: Reçeteler yüklendi:", Object.keys(RECETELER)); }
@@ -3837,6 +3844,7 @@ function masaErisimVar(masaId) {
 let _aktifGrupFiltre = '';
 let _aktifDoluFiltreStr = '';
 let _sabitGruplar = ['Salon', 'Bahçe', 'Teras', 'VIP']; // Sabit grup listesi — kullanıcı ekleyip çıkarabilir
+let _katSirasi = []; // Kategori sıralama dizisi — JSONB sıra kaybını önlemek için ayrı tutulur
 
 // Grup tabları - Satır 1: Tümü + Gruplar + Düzenle
 function masaGrupTabsRender() {
@@ -8403,14 +8411,26 @@ function katSiralaasagi(kat) {
 }
 // Sıralama için debounced kayıt — hızlı tıklamalarda son hali yazar
 let _siralaTimeout = null;
+function _urunleriSirala(urunler, siraDizi) {
+  const yeni = {};
+  siraDizi.forEach(k => { if (urunler[k]) yeni[k] = urunler[k]; });
+  // Sıra dizisinde olmayan kategorileri sona ekle
+  Object.keys(urunler).forEach(k => { if (!yeni[k]) yeni[k] = urunler[k]; });
+  return yeni;
+}
 function _katSiralaKaydet() {
+  _katSirasi = Object.keys(URUNLER);
   clearTimeout(_siralaTimeout);
   const ind = document.getElementById('kayit-durum');
   if (ind) { ind.style.display='inline'; ind.textContent='⏳ kaydediliyor...'; ind.style.color='var(--muted)'; }
   _siralaTimeout = setTimeout(async () => {
     if (!kafeId) { toast('⚠️ Oturum bulunamadı, yeniden giriş yapın'); return; }
     try {
-      const {error} = await sb.from('kafeler').update({ urunler: URUNLER }).eq('id', kafeId);
+      // kat_sirasi ayrı kolona yaz (JSONB key sırası güvenilir değil)
+      const {error} = await sb.from('kafeler').update({
+        urunler: URUNLER,
+        kat_sirasi: _katSirasi
+      }).eq('id', kafeId);
       if (error) throw error;
       if (ind) { ind.textContent='✓ sıralama kaydedildi'; ind.style.color='#22c55e'; setTimeout(()=>{ind.style.display='none';},2500); }
     } catch(e) {
