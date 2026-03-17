@@ -4591,11 +4591,15 @@ async function tahsilEt(odemeTipi) {
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   _tahsilEdiliyor = true;
+  // Realtime'ın eski veriyi geri yazmasını önle
+  _transferYapiliyor = true;
+  _skipSubscriptionCount = 4;
   setTimeout(()=>{ _tahsilEdiliyor = false; }, 3000); // 3sn sonra kilidi aç
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
   const tip = odemeTipi || 'nakit';
+  const tahsilMasaId = seciliMasa;
   const kolaycafen={
     masa:seciliMasa, masaAd:m.ad,
     tarih:new Date().toLocaleString('tr-TR'), tarihObj:new Date(),
@@ -4610,7 +4614,7 @@ async function tahsilEt(odemeTipi) {
   // Stok düş
   kolaycafen.siparisler.forEach(s => stokDus(s.isim, s.adet));
   if(tip!=='ikram') gunlukCiro+=son; gunlukAdi++;
-  m.siparisler.forEach(s=>{
+  m.siparisler.forEach(s=>{ 
     if(!gunlukSatis[s.isim]) gunlukSatis[s.isim]={adet:0,toplam:0};
     gunlukSatis[s.isim].adet+=s.adet;
     gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;
@@ -4624,9 +4628,14 @@ async function tahsilEt(odemeTipi) {
     nakit:'💵 Nakit',kart:'💳 Kart'
   }[tip]||tip;
   toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket));
-  await kolaycafenKaydet(kolaycafen);
-  masaSyncYaz(seciliMasa); // Kapanan masayı sil
-  _tahsilEdiliyor = false; // Kilidi aç
+  // Önce boş masayı Supabase'e yaz, sonra adisyonu kaydet
+  try {
+    await _masaSyncYazHemen(tahsilMasaId);
+    await kolaycafenKaydet(kolaycafen);
+  } finally {
+    _tahsilEdiliyor = false;
+    setTimeout(()=>{ _transferYapiliyor=false; _skipSubscriptionCount=0; }, 6000);
+  }
 }
 
 // ════════════════════════════════════════
