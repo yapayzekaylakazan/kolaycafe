@@ -174,7 +174,8 @@
   .siparis-liste { padding: 0 8px; }
   .siparis-item { display: flex; align-items: center; gap: 6px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
   /* ── LAYOUT: PC modu (geniş ekran veya .pc-mod class'ı) ── */
-  .pc-mod .kolaycafen-body, @media (min-width: 900px) { .kolaycafen-body } { flex-direction: row; overflow: hidden; }
+  body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
+  @media (min-width: 900px) { .kolaycafen-body { flex-direction: row; overflow: hidden; } }
   body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
   body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
   body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
@@ -904,7 +905,7 @@
         </div>
       </div>
       <!-- Garson çağrı banner -->
-      <div id="garson-cagri-banner" style="display:none;background:#ef4444;color:#fff;padding:8px 12px;display:none;align-items:center;justify-content:space-between;gap:8px;animation:pulse 1s infinite;">
+      <div id="garson-cagri-banner" style="display:none;background:#ef4444;color:#fff;padding:8px 12px;align-items:center;justify-content:space-between;gap:8px;">
         <span style="font-weight:900;font-size:0.9rem;">🔔 Müşteri garson çağırıyor!</span>
         <button onclick="garsonCagriKapat(seciliMasa)" style="background:#fff;color:#ef4444;border:none;border-radius:8px;padding:4px 12px;font-weight:900;font-size:0.8rem;cursor:pointer;">✓ Geldim</button>
       </div>
@@ -2317,7 +2318,7 @@
 <div class="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" ><div class="nav-icon">🪑</div>Masalar</button>
   <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')"><div class="nav-icon">🛍️</div>Gel-Al</button>
-  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;" id="online-badge">0</span></button>
+  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;align-items:center;justify-content:center;">0</span></button>
   <button class="bnav-btn" id="nav-kolaycafen" ><div class="nav-icon">🧾</div>KolayCafen</button>
   <button class="bnav-btn" id="nav-urun" ><div class="nav-icon">➕</div>Ürün</button>
   <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
@@ -3059,8 +3060,6 @@ async function garsonGiris(isim, kafeData) {
         }
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
-          // Yazım kuyruğunda olan masayı realtime ezmesin
-          if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
           if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0)) {
@@ -3075,7 +3074,6 @@ async function garsonGiris(isim, kafeData) {
         }
       });
       masalar.forEach(m => {
-        if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !aktif.find(x=>x.id===m.id)) {
           m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
           degisti = true;
@@ -3128,7 +3126,7 @@ async function uygulamaBaslat(user) {
   setSyncOnline(true);
   kuponYonetimGoster();
   // Son giriş zamanını kaydet
-  if (kafeId) sb.from('kafeler').update({ son_giris: new Date().toISOString() }).eq('id', kafeId).then(()=>{});
+  if (kafeId) sb.from('kafeler').update({ son_giris: new Date().toISOString() }).eq('id', kafeId).then(()=>{}).catch(()=>{});
   // Admin banner mesajı varsa göster, sonra temizle
   setTimeout(async () => {
     if (!kafeId) return;
@@ -3191,7 +3189,7 @@ async function uygulamaBaslat(user) {
       const aktif = payload.new.aktif_masalar || [];
       let degisti = false;
       masalar.forEach(m => {
-        // Bu masa şu an yazım kuyruğunda veya aktif yazımda ise realtime'ın ezlemesine izin verme
+        // Yazım kuyruğunda veya aktif yazımda olan masayı realtime ezmesin
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         const am = aktif.find(x=>x.id===m.id);
         if (am) {
@@ -3219,21 +3217,20 @@ async function uygulamaBaslat(user) {
     .subscribe();
 
   // Yedek sync - realtime ıskaladığında tüm masaları günceller
+  let _isPolling = false;
   setInterval(async () => {
-    // Aktif yazım varsa veya transfer/split sırasındaysa polling'i atla
     if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
-    if (_syncYaziliyor || _yazimAktif.size > 0) return; // ← YENİ: yazım bitmeden ezme
+    if (_isPolling) return; // önceki istek bitmeden yeni istek başlatma
+    _isPolling = true;
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       if (!data?.aktif_masalar) return;
-      // Yazım başladıysa bu veriyi işleme — artık stale olabilir
-      if (_syncYaziliyor || _yazimAktif.size > 0) return;
       let degisti = false;
 
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
-          // Bu masa şu an yazım kuyruğunda/aktifse atla
+          // Yazım kuyruğunda olan masayı polling ezmesin
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           // Her zaman karşılaştır — sadece boş masa değil
           const eskiJson = JSON.stringify(m.siparisler);
@@ -3272,7 +3269,7 @@ async function uygulamaBaslat(user) {
       });
 
       // Supabase'de kapanmış masaları yerel'den temizle
-      // (sadece yazım kuyruğunda olmayan masalar için)
+      // (yazım kuyruğunda olan masalara dokunma)
       masalar.forEach(m => {
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !data.aktif_masalar.find(x=>x.id===m.id)) {
@@ -3284,6 +3281,7 @@ async function uygulamaBaslat(user) {
 
       if (degisti) { masalarRender(); if(seciliMasa) siparisListeRender(); }
     } catch(e) {}
+    finally { _isPolling = false; }
   }, 3000);
 }
 
@@ -3664,14 +3662,13 @@ function masaSyncYaz(masaId) {
   _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 400);
 }
 
-// Hangi masalar şu an yazılıyor — bu kümede olan masaları realtime/polling ezmesin
+// Hangi masalar şu an yazım işleminde — bu kümede olan masaları polling/realtime ezmesin
 const _yazimAktif = new Set();
 
 async function _masaSyncYazHemen(masaId) {
   if (!kafeId) return;
   // Aynı masa için eş zamanlı iki yazım olmasın
   if (_yazimAktif.has(masaId)) {
-    // Tekrar kuyruğa al — 600ms sonra dene
     _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 600);
     return;
   }
@@ -3681,7 +3678,7 @@ async function _masaSyncYazHemen(masaId) {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
 
-    // Anlık snapshot al — async await arasında m.siparisler değişebilir
+    // READ ile WRITE arasında m.siparisler değişebilir — anlık snapshot al
     const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
     // Mevcut aktif_masaları oku
@@ -3694,7 +3691,7 @@ async function _masaSyncYazHemen(masaId) {
       const idx = aktif.findIndex(x=>x.id===masaId);
       const masaData = {
         id:m.id, ad:m.ad, not:m.not||'',
-        siparisler: siparislerSnapshot,   // snapshot kullan, m.siparisler değil
+        siparisler: siparislerSnapshot,
         garson:m.garson||'', indirim:m.indirim||0,
         kisi_sayisi:m.kisi_sayisi||0,
         hesap_istendi:m.hesap_istendi||false
@@ -3710,7 +3707,6 @@ async function _masaSyncYazHemen(masaId) {
   } catch(e) { console.log('Sync hatası:', e); }
   finally {
     _yazimAktif.delete(masaId);
-    // _syncYaziliyor bayrağını kısa süre daha tut ki polling bunu görüp beklesin
     setTimeout(()=>{ if(_yazimAktif.size === 0) _syncYaziliyor = false; }, 1500);
   }
 }
@@ -4251,8 +4247,10 @@ function kolaycafenGuncelle() {
   const banner = document.getElementById('garson-cagri-banner');
   if(m.garson_cagri) {
     banner.style.display='flex';
+    banner.style.animation='pulse 1s infinite';
   } else {
     banner.style.display='none';
+    banner.style.animation='none';
   }
   const gc = document.getElementById('garson-chip');
   gc.textContent = m.garson ? '👤 ' + m.garson : '👤 Garson';
@@ -4675,7 +4673,6 @@ async function tahsilEt(odemeTipi) {
   // Realtime'ın eski veriyi geri yazmasını önle
   _transferYapiliyor = true;
   _skipSubscriptionCount = 4;
-  setTimeout(()=>{ _tahsilEdiliyor = false; }, 3000); // 3sn sonra kilidi aç
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
@@ -5253,9 +5250,9 @@ function splitRender(){
     m.siparisler=[]; m.indirim=0; m.garson='';
     siparisListeRender(); masalarRender(); kolaycafenGuncelle();
     modalKapat('split-modal');
-    kolaycafenKaydet(kolaycafen);
     (async()=>{
       try {
+        await kolaycafenKaydet(kolaycafen);
         const {data:sd} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
         let saktif = sd?.aktif_masalar || [];
         saktif = saktif.filter(x=>x.id!==splitMasaId);
@@ -8262,7 +8259,7 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});
 });
 
-function fmt(n){return n.toFixed(2).replace('.',',')+' ₺';}
+function fmt(n){ const v = parseFloat(n); return isNaN(v) ? '0,00 ₺' : v.toFixed(2).replace('.',',')+' ₺'; }
 
 function garsonCagriSesCal() {
   try {
@@ -9251,13 +9248,17 @@ async function gelAlOdeTipi(tip) {
 }
 
 function gelAlSil(id) {
-  // aktif_masalar'dan da sil
-  sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single().then(({data}) => {
-    let aktif = (data?.aktif_masalar || []).filter(x => x.id !== id);
-    sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-  });
+  // Önce lokali güncelle — UI hemen tepki versin
   gelAlSiparisler = gelAlSiparisler.filter(x => x.id !== id);
   gelAlRender();
+  // Supabase'i arka planda güncelle
+  (async () => {
+    try {
+      const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+      const aktif = (data?.aktif_masalar || []).filter(x => x.id !== id);
+      await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+    } catch(e) { console.log('Gel-Al sil hatası:', e); }
+  })();
 }
 
 
