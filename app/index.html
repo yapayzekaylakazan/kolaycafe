@@ -3059,6 +3059,8 @@ async function garsonGiris(isim, kafeData) {
         }
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
+          // Yazım kuyruğunda olan masayı realtime ezmesin
+          if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
           if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0)) {
@@ -3073,6 +3075,7 @@ async function garsonGiris(isim, kafeData) {
         }
       });
       masalar.forEach(m => {
+        if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !aktif.find(x=>x.id===m.id)) {
           m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
           degisti = true;
@@ -3188,6 +3191,8 @@ async function uygulamaBaslat(user) {
       const aktif = payload.new.aktif_masalar || [];
       let degisti = false;
       masalar.forEach(m => {
+        // Bu masa şu an yazım kuyruğunda veya aktif yazımda ise realtime'ın ezlemesine izin verme
+        if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         const am = aktif.find(x=>x.id===m.id);
         if (am) {
           // Supabase'den gelen veriyi her zaman uygula (mobil<->PC çift yönlü sync)
@@ -3215,15 +3220,21 @@ async function uygulamaBaslat(user) {
 
   // Yedek sync - realtime ıskaladığında tüm masaları günceller
   setInterval(async () => {
+    // Aktif yazım varsa veya transfer/split sırasındaysa polling'i atla
     if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
+    if (_syncYaziliyor || _yazimAktif.size > 0) return; // ← YENİ: yazım bitmeden ezme
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       if (!data?.aktif_masalar) return;
+      // Yazım başladıysa bu veriyi işleme — artık stale olabilir
+      if (_syncYaziliyor || _yazimAktif.size > 0) return;
       let degisti = false;
 
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
+          // Bu masa şu an yazım kuyruğunda/aktifse atla
+          if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           // Her zaman karşılaştır — sadece boş masa değil
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler || []);
@@ -3261,7 +3272,9 @@ async function uygulamaBaslat(user) {
       });
 
       // Supabase'de kapanmış masaları yerel'den temizle
+      // (sadece yazım kuyruğunda olmayan masalar için)
       masalar.forEach(m => {
+        if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !data.aktif_masalar.find(x=>x.id===m.id)) {
           m.siparisler = []; m.garson = ''; m.indirim = 0;
           m.kisi_sayisi = 0; m.hesap_istendi = false;
@@ -3651,24 +3664,37 @@ function masaSyncYaz(masaId) {
   _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 400);
 }
 
+// Hangi masalar şu an yazılıyor — bu kümede olan masaları realtime/polling ezmesin
+const _yazimAktif = new Set();
+
 async function _masaSyncYazHemen(masaId) {
   if (!kafeId) return;
+  // Aynı masa için eş zamanlı iki yazım olmasın
+  if (_yazimAktif.has(masaId)) {
+    // Tekrar kuyruğa al — 600ms sonra dene
+    _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 600);
+    return;
+  }
+  _yazimAktif.add(masaId);
   _syncYaziliyor = true;
   try {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
+
+    // Anlık snapshot al — async await arasında m.siparisler değişebilir
+    const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
     // Mevcut aktif_masaları oku
     const {data} = await sb.from('kafeler')
       .select('aktif_masalar').eq('id', kafeId).single();
     let aktif = data?.aktif_masalar || [];
 
-    if (m.siparisler.length > 0) {
+    if (siparislerSnapshot.length > 0) {
       // Masada sipariş var - güncelle veya ekle
       const idx = aktif.findIndex(x=>x.id===masaId);
       const masaData = {
         id:m.id, ad:m.ad, not:m.not||'',
-        siparisler:m.siparisler,
+        siparisler: siparislerSnapshot,   // snapshot kullan, m.siparisler değil
         garson:m.garson||'', indirim:m.indirim||0,
         kisi_sayisi:m.kisi_sayisi||0,
         hesap_istendi:m.hesap_istendi||false
@@ -3682,7 +3708,11 @@ async function _masaSyncYazHemen(masaId) {
 
     await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
   } catch(e) { console.log('Sync hatası:', e); }
-  finally { setTimeout(()=>{ _syncYaziliyor = false; }, 2000); }
+  finally {
+    _yazimAktif.delete(masaId);
+    // _syncYaziliyor bayrağını kısa süre daha tut ki polling bunu görüp beklesin
+    setTimeout(()=>{ if(_yazimAktif.size === 0) _syncYaziliyor = false; }, 1500);
+  }
 }
 
 
