@@ -2927,8 +2927,6 @@ async function garsonGiris(isim, kafeData) {
     _sabitGruplar = kafeData.grup_listesi;
   }
   // Paketi ayarla
-  // Tema yükle (garson modunda da geçerli)
-  appTemaYukle(kafeData);
   aktifPaket = kafeData.plan || 'pro';
   const _paket = PAKETLER[aktifPaket] || PAKETLER.pro;
   // Masaları pakete göre ayarla (pro=20, diğerleri paket sayısı)
@@ -2963,6 +2961,8 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('header-garson-adi').style.display = 'block';
   document.getElementById('header-garson-adi').textContent = '👤 ' + aktifGarsonAdi;
   document.getElementById('ayar-email').textContent = isim;
+  // Tema yükle (garson modunda da kafe teması geçerli olsun)
+  if (kafeData.app_tema) appTemaYukle(kafeData);
   // Adisyon yükle (garson kendi masalarını görsün)
   await adisyonVerisiYukle();
   masalarRender(); urunListesiRender();
