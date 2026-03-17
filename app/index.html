@@ -1114,6 +1114,17 @@
       <button class="donem-tab" data-donem="ay" style="white-space:nowrap;">🗓 Bu Ay</button>
       <button class="donem-tab" data-donem="yil" style="white-space:nowrap;">📋 Bu Yıl</button>
       <button class="donem-tab" data-donem="tum" style="white-space:nowrap;">🌐 Tümü</button>
+      <button class="donem-tab" data-donem="ozel" onclick="ozelDonemAc(this)" style="white-space:nowrap;">📆 Özel</button>
+    </div>
+    <div id="ozel-tarih-wrap" style="display:none;margin-top:6px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;font-weight:800;color:var(--muted);white-space:nowrap;">Başlangıç:</span>
+        <input type="date" id="ozel-baslangic" style="flex:1;min-width:120px;background:var(--surface3);border:1.5px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;outline:none;">
+        <span style="font-size:0.72rem;font-weight:800;color:var(--muted);white-space:nowrap;">Bitiş:</span>
+        <input type="date" id="ozel-bitis" style="flex:1;min-width:120px;background:var(--surface3);border:1.5px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;outline:none;">
+        <button onclick="ozelDonemUygula()" style="background:var(--accent);border:none;border-radius:9px;padding:7px 14px;color:#1a0f00;font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">Uygula</button>
+      </div>
+      <div id="ozel-tarih-bilgi" style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-top:5px;display:none;"></div>
     </div>
     <!-- Sekme navigasyon -->
     <div style="display:flex;gap:0;background:var(--surface2);border-radius:10px;padding:3px;">
@@ -2830,7 +2841,7 @@ async function garsonKafeBul() {
   if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   const {data, error} = await sb.from('kafeler')
-    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, kat_sirasi')
+    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, kat_sirasi, app_tema, app_vurgu')
     .eq('kafe_kodu', kod.toLowerCase())
     .maybeSingle();
   document.getElementById('auth-loading').style.display = 'none';
@@ -2961,7 +2972,6 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('header-garson-adi').style.display = 'block';
   document.getElementById('header-garson-adi').textContent = '👤 ' + aktifGarsonAdi;
   document.getElementById('ayar-email').textContent = isim;
-  // Tema yükle (garson modunda da kafe teması geçerli olsun)
   if (kafeData.app_tema) appTemaYukle(kafeData);
   // Adisyon yükle (garson kendi masalarını görsün)
   await adisyonVerisiYukle();
@@ -5826,7 +5836,46 @@ function varyantEditorRender(container, kat, idx) {
 // ════════════════════════════════════════
 // RAPOR
 // ════════════════════════════════════════
-function donemSec(donem,btn){aktifDonem=donem;document.querySelectorAll('.donem-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');raporRender();}
+let _ozelBaslangic = null;
+let _ozelBitis = null;
+
+function donemSec(donem,btn){
+  aktifDonem=donem;
+  document.querySelectorAll('.donem-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(donem!=='ozel'){ const w=document.getElementById('ozel-tarih-wrap'); if(w) w.style.display='none'; }
+  raporRender();
+}
+
+function ozelDonemAc(btn){
+  aktifDonem='ozel';
+  document.querySelectorAll('.donem-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const w=document.getElementById('ozel-tarih-wrap');
+  if(w) w.style.display='block';
+  const bugun=new Date().toISOString().slice(0,10);
+  const bi=document.getElementById('ozel-baslangic');
+  const bf=document.getElementById('ozel-bitis');
+  if(bi&&!bi.value) bi.value=bugun;
+  if(bf&&!bf.value) bf.value=bugun;
+  ozelDonemUygula();
+}
+
+function ozelDonemUygula(){
+  const bi=document.getElementById('ozel-baslangic');
+  const bf=document.getElementById('ozel-bitis');
+  if(!bi||!bf) return;
+  _ozelBaslangic=bi.value||null;
+  _ozelBitis=bf.value||null;
+  const bilgi=document.getElementById('ozel-tarih-bilgi');
+  if(bilgi&&_ozelBaslangic&&_ozelBitis){
+    const fmt=d=>new Date(d+'T00:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+    bilgi.textContent=_ozelBaslangic===_ozelBitis ? '📅 '+fmt(_ozelBaslangic) : '📅 '+fmt(_ozelBaslangic)+' – '+fmt(_ozelBitis);
+    bilgi.style.display='block';
+  }
+  aktifDonem='ozel';
+  raporRender();
+}
 
 function donemBaslangic() {
   const simdi = new Date();
@@ -5834,7 +5883,8 @@ function donemBaslangic() {
   if (aktifDonem === 'hafta') { const d = new Date(simdi); d.setDate(simdi.getDate()-((simdi.getDay()+6)%7)); d.setHours(0,0,0,0); return d.toISOString(); }
   if (aktifDonem === 'ay') { return new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString(); }
   if (aktifDonem === 'yil') { return new Date(simdi.getFullYear(), 0, 1).toISOString(); }
-  return null; // tümü
+  if (aktifDonem === 'ozel' && _ozelBaslangic) { return new Date(_ozelBaslangic+'T00:00:00').toISOString(); }
+  return null;
 }
 
 function donemFiltrele(kolaycafenlar){
@@ -5849,6 +5899,12 @@ function donemFiltrele(kolaycafenlar){
     }
     if(aktifDonem==='ay') return t.getMonth()===simdi.getMonth()&&t.getFullYear()===simdi.getFullYear();
     if(aktifDonem==='yil') return t.getFullYear()===simdi.getFullYear();
+    if(aktifDonem==='ozel'){
+      if(!_ozelBaslangic) return false;
+      const bas=new Date(_ozelBaslangic+'T00:00:00');
+      const bit=_ozelBitis ? new Date(_ozelBitis+'T23:59:59') : new Date(_ozelBaslangic+'T23:59:59');
+      return t>=bas && t<=bit;
+    }
     return true;
   });
 }
