@@ -2824,7 +2824,7 @@ async function garsonKafeBul() {
   if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   const {data, error} = await sb.from('kafeler')
-    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi')
+    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, kat_sirasi')
     .eq('kafe_kodu', kod.toLowerCase())
     .maybeSingle();
   document.getElementById('auth-loading').style.display = 'none';
@@ -2893,6 +2893,13 @@ async function garsonGiris(isim, kafeData) {
   garsonlar = kafeData.garsonlar || [];
   if (kafeData.urunler) {
     URUNLER = kafeData.urunler;
+    // Kategori sırasını uygula
+    if (kafeData.kat_sirasi && Array.isArray(kafeData.kat_sirasi) && kafeData.kat_sirasi.length > 0) {
+      _katSirasi = kafeData.kat_sirasi;
+      URUNLER = _urunleriSirala(URUNLER, _katSirasi);
+    } else {
+      _katSirasi = Object.keys(URUNLER);
+    }
     // Migration: Dondurma varyantı radio → checkbox (v4.1)
     let migrasyonGerekli = false;
     Object.values(URUNLER).forEach(urunler => {
@@ -3672,6 +3679,7 @@ function bulutKaydet() {
           masalar: masaKayit,
           garsonlar: garsonlar,
           grup_listesi: _sabitGruplar,
+          kat_sirasi: Object.keys(URUNLER),
         }).eq('id', kafeId);
         if (error) throw error;
         _kayitBekliyor = false;
@@ -9516,7 +9524,7 @@ window.masaSilOnay = masaSilOnay;
       const _kafeData = JSON.parse(_ssGarsonData);
       // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
       const {data: tazeData} = await sb.from('kafeler')
-        .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, stok')
+        .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, stok, kat_sirasi')
         .eq('id', _kafeData.id)
         .maybeSingle();
       await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
