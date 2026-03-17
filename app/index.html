@@ -895,6 +895,7 @@
         <div class="amh-actions">
           <button class="amh-btn" onclick="indirimGoster()">% İndirim</button>
           <button class="amh-btn" onclick="transferGoster()">↔ Aktar</button>
+          <button class="amh-btn" id="btn-birlestir" onclick="birlestirGoster()">🔗 Birleştir</button>
           <button class="amh-btn" onclick="bolmeGoster()">✂ Böl</button>
           <button class="amh-btn" onclick="fisYazdir()">🖨 Fiş</button>
           <button class="amh-btn" onclick="masaTemizle()">🗑</button>
@@ -2392,6 +2393,17 @@
   </div>
 </div>
 
+<!-- ADİSYON BİRLEŞTİRME MODAL -->
+<div class="modal-overlay" id="birlestir-modal" onclick="if(event.target===this)modalKapat('birlestir-modal')">
+  <div class="modal">
+    <div class="modal-baslik">🔗 Adisyon Birleştir</div>
+    <p style="font-size:0.82rem;color:var(--muted);font-weight:600;margin-bottom:4px;">Hangi masayla birleştirilsin?</p>
+    <p id="birlestir-kaynak-bilgi" style="font-size:0.78rem;color:var(--accent2);font-weight:700;margin-bottom:12px;"></p>
+    <div class="transfer-grid" id="birlestir-grid"></div>
+    <button class="modal-kapat" onclick="modalKapat('birlestir-modal')">İptal</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="split-modal">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-baslik">✂ Hesap Bölme</div>
@@ -2652,6 +2664,7 @@ let gunlukAdi = 0;
 let gunlukSatis = {};
 let splitOdendi = [];
 let _syncYaziliyor = false;  // normal sipariş yazmaları
+const _syncQueue = {};       // masaId → timeout handle (debounce per masa)
 let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
 let _transferYapiliyor = false; // transfer/split işlemleri
@@ -2800,6 +2813,9 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
+  sessionStorage.removeItem('kc_garson_isim');
+  sessionStorage.removeItem('kc_garson_kafe_id');
+  sessionStorage.removeItem('kc_garson_kafe_data');
   location.reload();
 }
 
@@ -2865,6 +2881,11 @@ async function garsonGiris(isim, kafeData) {
   aktifGarsonAdi = isim;
   garsonModu = true;
   garsonKafeId = kafeData.id;
+
+  // Sayfa yenilemede oturumu koru
+  sessionStorage.setItem('kc_garson_isim', isim);
+  sessionStorage.setItem('kc_garson_kafe_id', kafeData.id);
+  sessionStorage.setItem('kc_garson_kafe_data', JSON.stringify(kafeData));
   // Sahte kullanıcı nesnesi oluştur
   kullanici = {id: kafeData.id+'_garson', email: isim+'@garson'};
   kafeId = kafeData.id;
@@ -3524,18 +3545,25 @@ async function kolaycafenVerisiYukle() {
 // BULUT KAYIT
 // ════════════════════════════════════════
 // Tek bir masanın durumunu güncelle
-async function masaSyncYaz(masaId) {
+// masaSyncYaz: debounce ile arka arkaya ekleme race condition'ını önler.
+// Aynı masa için 400ms içinde birden fazla çağrı gelirse sadece son hali yazılır.
+function masaSyncYaz(masaId) {
+  if (_syncQueue[masaId]) clearTimeout(_syncQueue[masaId]);
+  _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 400);
+}
+
+async function _masaSyncYazHemen(masaId) {
   if (!kafeId) return;
   _syncYaziliyor = true;
   try {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
-    
+
     // Mevcut aktif_masaları oku
     const {data} = await sb.from('kafeler')
       .select('aktif_masalar').eq('id', kafeId).single();
     let aktif = data?.aktif_masalar || [];
-    
+
     if (m.siparisler.length > 0) {
       // Masada sipariş var - güncelle veya ekle
       const idx = aktif.findIndex(x=>x.id===masaId);
@@ -3552,11 +3580,12 @@ async function masaSyncYaz(masaId) {
       // Masa boş - listeden çıkar
       aktif = aktif.filter(x=>x.id!==masaId);
     }
-    
+
     await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
   } catch(e) { console.log('Sync hatası:', e); }
-  finally { setTimeout(()=>{ _syncYaziliyor = false; }, 6000); }
+  finally { setTimeout(()=>{ _syncYaziliyor = false; }, 2000); }
 }
+
 
 function bulutKaydet() {
   if (garsonModu) return; // Garson modu: sadece masaSyncYaz kullanılır
@@ -4955,8 +4984,92 @@ async function transferYap(hedefId){
 }
 
 // ════════════════════════════════════════
-// HESAP BÖLME
+// ADİSYON BİRLEŞTİRME
 // ════════════════════════════════════════
+function birlestirGoster(){
+  if(!seciliMasa) return;
+  const paket = PAKETLER[aktifPaket]||PAKETLER.deneme;
+  if(!paket.masatransfer){ toast('Bu özellik için paketinizi yükseltin 📦'); sayfaGit('ayarlar'); return; }
+  const k = masalar.find(m=>m.id===seciliMasa);
+  if(!k) return;
+  if(k.siparisler.length===0){ toast('Bu masada sipariş yok!'); return; }
+
+  const bilgiEl = document.getElementById('birlestir-kaynak-bilgi');
+  bilgiEl.textContent = `${k.ad||'Masa '+k.id} (${fmt(masaToplam(k))}) → hedef masaya eklenecek`;
+
+  const grid = document.getElementById('birlestir-grid');
+  grid.innerHTML = '';
+  masalar.forEach(m => {
+    if(m.id === seciliMasa) return; // Kendisi hariç
+    const btn = document.createElement('button');
+    const dolu = m.siparisler.length > 0;
+    btn.className = 'tr-btn' + (dolu ? ' dolu-t' : '');
+    btn.innerHTML = `<strong>${m.id}</strong>${m.ad&&m.ad!=='Masa '+m.id?`<br><span style="font-size:0.6rem;color:var(--muted);">${m.ad}</span>`:''}${dolu?`<br><span style="font-size:0.58rem;color:var(--accent2);font-weight:700;">${fmt(masaToplam(m))}</span>`:'<br><span style="font-size:0.58rem;color:var(--muted);">Boş</span>'}`;
+    btn.onclick = () => birlestirYap(m.id);
+    grid.appendChild(btn);
+  });
+  modalAc('birlestir-modal');
+}
+
+async function birlestirYap(hedefId){
+  const k = masalar.find(m=>m.id===seciliMasa);
+  const h = masalar.find(m=>m.id===hedefId);
+  if(!k||!h){ toast('Masa bulunamadı!'); return; }
+
+  const kaynakAd = k.ad||'Masa '+k.id;
+  const hedefAd  = h.ad||'Masa '+h.id;
+
+  if(!confirm(`"${kaynakAd}" siparişleri "${hedefAd}" masasına eklenecek.\n${kaynakAd} boşalacak.\n\nDevam edilsin mi?`)) return;
+
+  _transferYapiliyor = true;
+  _skipSubscriptionCount = 3;
+  const kaynakId = seciliMasa;
+
+  // Siparişleri hedef masaya ekle (aynı ürün varsa adeti artır)
+  k.siparisler.forEach(s => {
+    const mevcut = h.siparisler.find(x => x.isim===s.isim && JSON.stringify(x.varyantlar||[])===JSON.stringify(s.varyantlar||[]));
+    if(mevcut) mevcut.adet += s.adet;
+    else h.siparisler.push({...s});
+  });
+
+  // Garson/kişi bilgilerini taşı
+  if(!h.garson && k.garson) h.garson = k.garson;
+  if(!h.kisi_sayisi && k.kisi_sayisi) h.kisi_sayisi = k.kisi_sayisi;
+  if(!h.not && k.not) h.not = k.not;
+
+  // İndirim: büyük olanı al
+  if((k.indirim||0) > (h.indirim||0)) h.indirim = k.indirim;
+
+  // Kaynak masayı temizle
+  k.siparisler = []; k.garson = ''; k.not = ''; k.indirim = 0; k.kisi_sayisi = 0; k.hesap_istendi = false;
+
+  modalKapat('birlestir-modal');
+  seciliMasa = hedefId;
+  masalarRender();
+  kolaycafenGuncelle();
+
+  try {
+    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+    let aktif = data?.aktif_masalar || [];
+
+    // Kaynak masayı aktif listeden kaldır
+    aktif = aktif.filter(x => x.id !== kaynakId);
+
+    // Hedef masayı güncelle
+    const hidx = aktif.findIndex(x => x.id === hedefId);
+    const hData = {id:h.id, ad:h.ad, not:h.not||'', siparisler:[...h.siparisler], garson:h.garson||'', indirim:h.indirim||0, kisi_sayisi:h.kisi_sayisi||0, hesap_istendi:h.hesap_istendi||false};
+    if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
+
+    await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+    toast(`🔗 ${kaynakAd} → ${hedefAd} birleştirildi ✓`);
+  } catch(e){
+    toast('Kayıt hatası: ' + e.message);
+  } finally {
+    setTimeout(() => { _transferYapiliyor=false; _skipSubscriptionCount=0; }, 8000);
+  }
+}
+
+
 function bolmeGoster(){
   if(!seciliMasa) return;
   const m=masalar.find(x=>x.id===seciliMasa);
@@ -7894,7 +8007,7 @@ function modalKapat(id){
   el.style.display = 'none';
 }
 document.querySelectorAll('.modal-overlay').forEach(el=>{
-  if(el.id==='split-modal'||el.id==='transfer-modal') return; // Bu modallarda overlay kapatma
+  if(el.id==='split-modal'||el.id==='transfer-modal'||el.id==='birlestir-modal') return; // Bu modallarda overlay kapatma
   el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});
 });
 
@@ -8079,6 +8192,8 @@ window.garsonSec = garsonSec;
 window.indirimGoster = indirimGoster;
 window.transferGoster = transferGoster;
 window.bolmeGoster = bolmeGoster;
+window.birlestirGoster = birlestirGoster;
+window.birlestirYap = birlestirYap;
 window.fisYazdir = fisYazdir;
 window.masaTemizle = masaTemizle;
 window.tahsilEt = tahsilEt;
@@ -9238,10 +9353,30 @@ window.masaSilOnay = masaSilOnay;
     if (emailInp) {
       emailInp.value = decodeURIComponent(_testEmail);
       if (sifreInp) sifreInp.focus();
-      // Hafif uyarı toast
       setTimeout(() => toast('🧪 Test modu: ' + decodeURIComponent(_testEmail) + ' ile giriş yapın'), 500);
     }
   }
+
+  // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
+  const _ssGarsonIsim   = sessionStorage.getItem('kc_garson_isim');
+  const _ssGarsonData   = sessionStorage.getItem('kc_garson_kafe_data');
+  if (_ssGarsonIsim && _ssGarsonData) {
+    try {
+      const _kafeData = JSON.parse(_ssGarsonData);
+      // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
+      const {data: tazeData} = await sb.from('kafeler')
+        .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, stok')
+        .eq('id', _kafeData.id)
+        .maybeSingle();
+      await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
+      return;
+    } catch(e) {
+      sessionStorage.removeItem('kc_garson_isim');
+      sessionStorage.removeItem('kc_garson_kafe_id');
+      sessionStorage.removeItem('kc_garson_kafe_data');
+    }
+  }
+
   try {
     const {data:{session}} = await sb.auth.getSession();
     if(session) {
