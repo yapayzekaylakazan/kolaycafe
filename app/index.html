@@ -3140,22 +3140,32 @@ async function uygulamaBaslat(user) {
     })
     .subscribe();
 
-  // Yedek sync - sadece boş lokal masaları günceller
+  // Yedek sync - realtime ıskaladığında tüm masaları günceller
   setInterval(async () => {
     if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       if (!data?.aktif_masalar) return;
       let degisti = false;
+
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
-          if (m.siparisler.length === 0 && am.siparisler?.length > 0) {
-            m.siparisler = am.siparisler;
-            m.garson = am.garson || '';
-            m.indirim = am.indirim || 0;
-            m.kisi_sayisi = am.kisi_sayisi || 0;
+          // Her zaman karşılaştır — sadece boş masa değil
+          const eskiJson = JSON.stringify(m.siparisler);
+          const yeniJson = JSON.stringify(am.siparisler || []);
+          if (eskiJson !== yeniJson
+            || m.garson !== (am.garson||'')
+            || m.indirim !== (am.indirim||0)
+            || (m.kisi_sayisi||0) !== (am.kisi_sayisi||0)
+            || (m.not||'') !== (am.not||'')
+            || (m.hesap_istendi||false) !== (am.hesap_istendi||false)) {
+            m.siparisler    = am.siparisler || [];
+            m.garson        = am.garson || '';
+            m.indirim       = am.indirim || 0;
+            m.kisi_sayisi   = am.kisi_sayisi || 0;
             m.hesap_istendi = am.hesap_istendi || false;
+            if (am.not !== undefined) m.not = am.not || '';
             degisti = true;
           }
           // Garson çağrısı kontrolü - yeni çağrı geldi mi?
@@ -3167,7 +3177,6 @@ async function uygulamaBaslat(user) {
               m.garson_cagri = true;
               m.garson_cagri_saat = simdi;
               degisti = true;
-              // Ses çal + toast
               garsonCagriSesCal();
               toast('🔔 ' + (m.ad || 'Masa '+m.id) + ' garson çağırıyor!');
             }
@@ -3177,7 +3186,17 @@ async function uygulamaBaslat(user) {
           }
         }
       });
-      if (degisti) { masalarRender(); siparisListeRender(); }
+
+      // Supabase'de kapanmış masaları yerel'den temizle
+      masalar.forEach(m => {
+        if (m.siparisler.length > 0 && !data.aktif_masalar.find(x=>x.id===m.id)) {
+          m.siparisler = []; m.garson = ''; m.indirim = 0;
+          m.kisi_sayisi = 0; m.hesap_istendi = false;
+          degisti = true;
+        }
+      });
+
+      if (degisti) { masalarRender(); if(seciliMasa) siparisListeRender(); }
     } catch(e) {}
   }, 3000);
 }
