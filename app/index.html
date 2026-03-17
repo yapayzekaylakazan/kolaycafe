@@ -2830,10 +2830,18 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
+  // sessionStorage'ı temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  location.reload();
+  // Supabase oturumu da kapat, sonra garson giriş ekranına yönlendir
+  try {
+    sb.auth.signOut().finally(() => {
+      window.location.href = window.location.href.split('?')[0] + '?garson=1';
+    });
+  } catch(e) {
+    window.location.href = window.location.href.split('?')[0] + '?garson=1';
+  }
 }
 
 async function garsonKafeBul() {
@@ -5884,7 +5892,7 @@ function donemBaslangic() {
   if (aktifDonem === 'ay') { return new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString(); }
   if (aktifDonem === 'yil') { return new Date(simdi.getFullYear(), 0, 1).toISOString(); }
   if (aktifDonem === 'ozel' && _ozelBaslangic) { return new Date(_ozelBaslangic+'T00:00:00').toISOString(); }
-  return null;
+  return null; // tümü
 }
 
 function donemFiltrele(kolaycafenlar){
@@ -9577,6 +9585,13 @@ window.masaSilOnay = masaSilOnay;
   }
 
   // Admin test panelinden gelen e-posta → giriş alanını doldur
+  // Garson çıkışından gelindiyse garson tabını aç
+  if (_params.get('garson') === '1') {
+    document.getElementById('auth-screen').style.display = 'flex';
+    setTimeout(() => { if(typeof authTab === 'function') authTab('garson'); }, 100);
+    return;
+  }
+
   const _testEmail = _params.get('email');
   if (_testEmail) {
     const emailInp = document.getElementById('giris-email');
