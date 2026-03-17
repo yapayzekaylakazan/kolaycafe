@@ -2953,8 +2953,9 @@ async function garsonGiris(isim, kafeData) {
   masalarRender(); urunListesiRender();
   setSyncOnline(true);
   toast('Hoş geldin, ' + isim + '! ☕');
-  // Garson için de realtime sync başlat
-  setInterval(async () => {
+  // Garson için realtime sync - interval ref ile çift açılmayı önle
+  if (window._garsonSyncInterval) clearInterval(window._garsonSyncInterval);
+  window._garsonSyncInterval = setInterval(async () => {
     if (!kafeId) return;
     try {
       const {data} = await sb.from('kafeler')
@@ -3008,6 +3009,48 @@ async function garsonGiris(isim, kafeData) {
       if (Date.now() % 3000 < 2100) await kolaycafenVerisiYukle();
     } catch(e) { console.log('Garson sync hatası:', e); }
   }, 2000);
+
+  // Garson için realtime subscription — polling'e ek olarak anlık güncelleme
+  if (window._garsonRealtimeChannel) {
+    try { sb.removeChannel(window._garsonRealtimeChannel); } catch(e) {}
+  }
+  window._garsonRealtimeChannel = sb.channel('garson-kafeler-'+kafeId)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'kafeler',
+      filter: 'id=eq.'+kafeId
+    }, (payload) => {
+      const aktif = payload.new.aktif_masalar || [];
+      let degisti = false;
+      aktif.forEach(am => {
+        if (!masalar.find(x=>x.id===am.id)) {
+          masalar.push({id:am.id, ad:am.ad||'Masa '+am.id, siparisler:[], not:am.not||'', garson:'', indirim:0, grup:am.grup||''});
+        }
+        const m = masalar.find(x=>x.id===am.id);
+        if (m) {
+          const eskiJson = JSON.stringify(m.siparisler);
+          const yeniJson = JSON.stringify(am.siparisler||[]);
+          if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0)) {
+            m.siparisler    = am.siparisler || [];
+            m.garson        = am.garson || '';
+            m.indirim       = am.indirim || 0;
+            m.kisi_sayisi   = am.kisi_sayisi || 0;
+            m.hesap_istendi = am.hesap_istendi || false;
+            if (am.not !== undefined) m.not = am.not || '';
+            degisti = true;
+          }
+        }
+      });
+      masalar.forEach(m => {
+        if (m.siparisler.length > 0 && !aktif.find(x=>x.id===m.id)) {
+          m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
+          degisti = true;
+        }
+      });
+      if (degisti) { masalarRender(); if(seciliMasa) siparisListeRender(); }
+    })
+    .subscribe();
 }
 
 // ════════════════════════════════════════
