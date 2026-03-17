@@ -2824,8 +2824,6 @@ async function sifreSifirla() {
 }
 
 async function cikisYap() {
-  // Garson modunda ise garson çıkışı yap
-  if (garsonModu) { garsonCikis(); return; }
   await sb.auth.signOut();
   location.reload();
 }
@@ -5908,9 +5906,9 @@ function donemFiltrele(kolaycafenlar){
     if(aktifDonem==='yil') return t.getFullYear()===simdi.getFullYear();
     if(aktifDonem==='ozel'){
       if(!_ozelBaslangic) return false;
-      const bas=new Date(_ozelBaslangic+'T00:00:00');
-      const bit=_ozelBitis ? new Date(_ozelBitis+'T23:59:59') : new Date(_ozelBaslangic+'T23:59:59');
-      return t>=bas && t<=bit;
+      // Yerel tarih karşılaştırması: tarihObj'i YYYY-MM-DD formatına çevir
+      const tYMD = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+      return tYMD >= _ozelBaslangic && tYMD <= (_ozelBitis || _ozelBaslangic);
     }
     return true;
   });
@@ -6788,6 +6786,10 @@ async function raporRenderTam() {
     const baslangic = donemBaslangic();
     let q = sb.from('online_siparisler').select('*').eq('kafe_id', kafeId).in('durum', ['teslim','yolda']);
     if (baslangic) q = q.gte('created_at', baslangic);
+    if (aktifDonem === 'ozel' && _ozelBitis) {
+      const bitisISO = new Date(_ozelBitis + 'T23:59:59').toISOString();
+      q = q.lte('created_at', bitisISO);
+    }
     const { data: onlineData } = await q;
     onlineFiltreli = onlineData || [];
   } catch(e) {}
