@@ -4467,6 +4467,8 @@ function varyantSecimiOnayla() {
   modalKapat('varyant-modal');
   _urunAdisyonaEkle(u, secimListesi, fiyatFarki);
   toast('✓ ' + u.isim + (secimListesi.length ? ' (' + secimListesi.join(', ') + ')' : '') + ' eklendi');
+  // Mobilde kolaycafen sayfasına geç ki sipariş listesi görünsün
+  if (!document.body.classList.contains('pc-mod')) sayfaGit('kolaycafen');
 }
 
 function varyantModalKapat() {
@@ -7997,7 +7999,10 @@ function masaSilOnay() {
 // FİŞ
 // ════════════════════════════════════════
 function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=''){
-  const satirlar=siparisler.map(s=>`<div class="fis-row"><span>${s.isim} x${s.adet}</span><span>${fmt(s.fiyat*s.adet)}</span></div>`).join('');
+  const satirlar=siparisler.map(s=>{
+    const secim = s.secimOzeti ? `<div style="font-size:10px;color:#666;padding-left:8px;">↳ ${s.secimOzeti}</div>` : '';
+    return `<div class="fis-row"><span>${s.isim} x${s.adet}</span><span>${fmt(s.fiyat*s.adet)}</span></div>${secim}`;
+  }).join('');
   const el=document.getElementById('fis-yazdir-icerik');
   el.dataset.masa=masaNo; el.dataset.tarih=tarih;
   el.dataset.siparisler=JSON.stringify(siparisler); el.dataset.toplam=toplam;
@@ -8120,7 +8125,10 @@ async function yazdir(){
     bytes.push(0x1b,0x40);
     bytes.push(0x1b,0x61,0x01);bytes.push(0x1b,0x21,0x10);ekle(kafeAdi.toUpperCase()+'\n');bytes.push(0x1b,0x21,0x00);
     ekle(tarih+'\n');bytes.push(0x1b,0x61,0x00);ekle(cizgi);
-    siparisler.forEach(s=>ekle(satir((s.isim+' x'+s.adet).substring(0,22),(s.fiyat*s.adet).toFixed(2)+' TL')));
+    siparisler.forEach(s=>{
+      ekle(satir((s.isim+' x'+s.adet).substring(0,22),(s.fiyat*s.adet).toFixed(2)+' TL'));
+      if(s.secimOzeti) ekle('  > '+s.secimOzeti.substring(0,28)+'\n');
+    });
     ekle(cizgi);bytes.push(0x1b,0x21,0x10);ekle(satir('TOPLAM',toplam.toFixed(2)+' TL'));bytes.push(0x1b,0x21,0x00);
     ekle(cizgi);bytes.push(0x1b,0x61,0x01);ekle('Tesekkur ederiz!\n\n\n');
     bytes.push(0x1d,0x56,0x42,0x03);
