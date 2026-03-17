@@ -2830,17 +2830,14 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
-  // sessionStorage'ı temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  // Supabase oturumu da kapat, sonra garson giriş ekranına yönlendir
+  const _url = window.location.href.split('?')[0] + '?garson=1';
   try {
-    sb.auth.signOut().finally(() => {
-      window.location.href = window.location.href.split('?')[0] + '?garson=1';
-    });
+    sb.auth.signOut().finally(() => { window.location.href = _url; });
   } catch(e) {
-    window.location.href = window.location.href.split('?')[0] + '?garson=1';
+    window.location.href = _url;
   }
 }
 
@@ -7091,7 +7088,8 @@ function raporGrafikleriCiz() {
 function raporPDFExport() {
   const filtre = donemFiltrele(kapaliKolayCafenlar);
   const ciro = filtre.reduce((s,a) => s+a.toplam, 0);
-  const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü'}[aktifDonem];
+  const _ozelAd = (_ozelBaslangic&&_ozelBitis&&_ozelBaslangic!==_ozelBitis) ? (_ozelBaslangic+' / '+_ozelBitis) : (_ozelBaslangic||'Özel');
+  const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü',ozel:_ozelAd}[aktifDonem]||aktifDonem;
   const tarih = new Date().toLocaleDateString('tr-TR');
 
   const ds = {};
@@ -7124,7 +7122,7 @@ function raporPDFExport() {
 // ── EXCEL EXPORT ──
 function raporExcelExport() {
   const filtre = donemFiltrele(kapaliKolayCafenlar);
-  const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü'}[aktifDonem];
+  const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü',ozel:((_ozelBaslangic&&_ozelBitis&&_ozelBaslangic!==_ozelBitis)?(_ozelBaslangic+' / '+_ozelBitis):(_ozelBaslangic||'Özel'))}[aktifDonem]||aktifDonem;
   
   let csv = 'Tarih,Masa,Garson,Toplam,Ödeme Tipi,Ürünler\n';
   filtre.forEach(a => {
