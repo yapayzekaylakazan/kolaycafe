@@ -3138,7 +3138,11 @@ async function uygulamaBaslat(user) {
   }, 2000);
 
   // Realtime: başka cihazdan yapılan değişiklikleri al
-  sb.channel('kafe-'+kafeId)
+  // Önceki channel'ları temizle (çift subscribe önle)
+  if (window._kanalKafe) { try { sb.removeChannel(window._kanalKafe); } catch(e){} }
+  if (window._kanalKafeler) { try { sb.removeChannel(window._kanalKafeler); } catch(e){} }
+  if (window._anaPollingInterval) { clearInterval(window._anaPollingInterval); }
+  window._kanalKafe = sb.channel('kafe-'+kafeId)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -3173,7 +3177,7 @@ async function uygulamaBaslat(user) {
     .subscribe();
 
   // Kafeler tablosunu da dinle (aktif masalar için)
-  sb.channel('kafeler-'+kafeId)
+  window._kanalKafeler = sb.channel('kafeler-'+kafeId)
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
@@ -3218,7 +3222,7 @@ async function uygulamaBaslat(user) {
 
   // Yedek sync - realtime ıskaladığında tüm masaları günceller
   let _isPolling = false;
-  setInterval(async () => {
+  window._anaPollingInterval = setInterval(async () => {
     if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
     if (_isPolling) return; // önceki istek bitmeden yeni istek başlatma
     _isPolling = true;
@@ -3268,8 +3272,7 @@ async function uygulamaBaslat(user) {
         }
       });
 
-      // Supabase'de kapanmış masaları yerel'den temizle
-      // (yazım kuyruğunda olan masalara dokunma)
+      // Supabase'de kapanmış masaları yerel'den temizle (yazım kuyruğundakilere dokunma)
       masalar.forEach(m => {
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !data.aktif_masalar.find(x=>x.id===m.id)) {
@@ -3662,7 +3665,7 @@ function masaSyncYaz(masaId) {
   _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 400);
 }
 
-// Hangi masalar şu an yazım işleminde — bu kümede olan masaları polling/realtime ezmesin
+// Hangi masalar şu an yazım işleminde — polling/realtime bu masaları ezmesin
 const _yazimAktif = new Set();
 
 async function _masaSyncYazHemen(masaId) {
@@ -3769,7 +3772,7 @@ async function kolaycafenKaydet(kolaycafen) {
     });
     // Toplam ciroyu artır
     if (kolaycafen.toplam > 0) {
-      sb.rpc('increment_ciro', { kafe_id_param: kafeId, miktar: kolaycafen.toplam }).then(()=>{});
+      sb.rpc('increment_ciro', { kafe_id_param: kafeId, miktar: kolaycafen.toplam }).then(()=>{}).catch(()=>{});
     }
     setSyncOnline(true);
   } catch(e) {
