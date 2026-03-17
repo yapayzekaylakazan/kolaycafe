@@ -4218,7 +4218,17 @@ function katYonetimRender() {
     const b = document.getElementById(btnId);
     if (!b) return;
     const varMi = katlar.some(k => k.toLowerCase().includes(anahtar));
-    b.style.display = varMi ? 'none' : 'block';
+    b.style.display = 'block';
+    b.disabled = false;
+    b.style.cursor = 'pointer';
+    if (!b.dataset.orijinalMetin) b.dataset.orijinalMetin = b.textContent;
+    if (varMi) {
+      b.style.opacity = '0.6';
+      b.textContent = b.dataset.orijinalMetin.replace('Hazır Ekle', '✓ Mevcut — Tekrar Ekle');
+    } else {
+      b.style.opacity = '1';
+      b.textContent = b.dataset.orijinalMetin;
+    }
   });
   if (!katlar.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:700;padding:8px 0;">Henüz kategori yok</div>';
@@ -5592,7 +5602,13 @@ function urunListesiRender(){
       item.innerHTML=`
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           ${resimOnizleme}
-          <div class="uli-info" style="flex:1;"><div class="uli-isim">${u.isim}</div><div class="uli-cat">${kat}</div></div>
+          <div class="uli-info" style="flex:1;">
+            <div class="uli-isim-wrap" style="display:flex;align-items:center;gap:5px;">
+              <div class="uli-isim" style="cursor:pointer;border-bottom:1.5px dashed var(--border);padding-bottom:1px;" title="Adı düzenlemek için tıklayın">${u.isim}</div>
+              <button class="uli-ad-duzenle" title="Adı düzenle" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--muted);padding:0 2px;line-height:1;">✏️</button>
+            </div>
+            <div class="uli-cat">${kat}</div>
+          </div>
           <div class="uli-fiyat-wrap"><input class="uli-fiyat-input" type="number" value="${u.fiyat}" min="0" inputmode="numeric"><span class="uli-tl">&#8378;</span></div>
           <button class="uli-sil">&#x1F5D1;</button>
         </div>
@@ -5606,6 +5622,42 @@ function urunListesiRender(){
         </div>
         <button class="uli-varyant-btn" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:Nunito,sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;text-align:left;">⚙ Varyant Ekle</button>
         <div class="varyant-editor-wrap" style="display:none;"></div>`;
+      // Ürün adı inline düzenleme
+      const adDuzenleBtn = item.querySelector('.uli-ad-duzenle');
+      const adIsimEl = item.querySelector('.uli-isim');
+      const adDuzenleBaslat = () => {
+        const mevcutAd = URUNLER[kat][idx].isim;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = mevcutAd;
+        input.style.cssText = 'flex:1;background:var(--surface3);border:1.5px solid var(--accent);border-radius:7px;padding:3px 8px;color:var(--text);font-family:Nunito,sans-serif;font-size:0.88rem;font-weight:800;outline:none;min-width:0;';
+        const wrap = adIsimEl.parentElement;
+        wrap.replaceChild(input, adIsimEl);
+        adDuzenleBtn.style.display = 'none';
+        input.focus(); input.select();
+        const kaydet = () => {
+          const yeniAd = input.value.trim();
+          if (!yeniAd) { toast('⚠️ Ad boş olamaz!'); input.focus(); return; }
+          if (yeniAd !== mevcutAd) {
+            // Aynı kategoride aynı isim var mı?
+            const cakisma = URUNLER[kat].find((x, i) => i !== idx && x.isim === yeniAd);
+            if (cakisma) { toast('⚠️ Bu isimde ürün zaten var!'); input.focus(); return; }
+            URUNLER[kat][idx].isim = yeniAd;
+            if (mevcutKat === kat) urunGridRender();
+            bulutKaydet();
+            toast('✓ Ürün adı güncellendi');
+          }
+          urunListesiRender();
+        };
+        input.addEventListener('blur', kaydet);
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); kaydet(); }
+          if (e.key === 'Escape') { urunListesiRender(); }
+        });
+      };
+      adIsimEl.addEventListener('click', adDuzenleBaslat);
+      adDuzenleBtn.addEventListener('click', adDuzenleBaslat);
+
       item.querySelector('.uli-fiyat-input').addEventListener('change', e=>{
         const f=parseFloat(e.target.value);
         if(isNaN(f)||f<0){e.target.value=u.fiyat;toast('Gecersiz fiyat!');return;}
@@ -8375,8 +8427,7 @@ window.katSiralaasagi = katSiralaasagi;
 // ════════════════════════════════════════
 function dondurmaKategoriEkle() {
   const katAd = '🍦 Dondurma';
-  if (URUNLER[katAd]) { toast('🍦 Dondurma kategorisi zaten mevcut!'); return; }
-  URUNLER[katAd] = [{
+  const yeniUrunler = [{
     isim: 'Dondurma', fiyat: 45, ikon: '🍦', stok: null, varyantlar: [{
       ad: 'Çeşit', tip: 'checkbox', zorunlu: true, secenekler: [
         {isim:'Vanilyalı',      fiyatFark:0},
@@ -8403,6 +8454,10 @@ function dondurmaKategoriEkle() {
       ]
     }]
   }];
+  if (!URUNLER[katAd]) URUNLER[katAd] = [];
+  yeniUrunler.forEach(u => {
+    if (!URUNLER[katAd].find(m => m.isim === u.isim)) URUNLER[katAd].push(u);
+  });
   mevcutKat = katAd;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
   toast('🍦 Dondurma kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
@@ -8414,7 +8469,6 @@ window.dondurmaKategoriEkle = dondurmaKategoriEkle;
 // ════════════════════════════════════════
 function kahveKategoriEkle() {
   const katAd = '☕ Kahveler';
-  if (URUNLER[katAd]) { toast('☕ Kahve kategorisi zaten mevcut!'); return; }
   const _kahveVaryantlar = [
     {ad:'Şeker', tip:'checkbox', zorunlu:true, secenekler:[
       {isim:'Sade', fiyatFark:0}, {isim:'Az Şekerli', fiyatFark:0},
@@ -8438,9 +8492,11 @@ function kahveKategoriEkle() {
     'Macchiato','Mocha','Cortado','Türk Kahvesi','Filtre Kahve',
     'Cold Brew','Affogato'
   ];
-  URUNLER[katAd] = kahveler.map(isim => ({
-    isim, fiyat: 55, ikon: '☕', stok: null, varyantlar: _kahveVaryantlar
-  }));
+  if (!URUNLER[katAd]) URUNLER[katAd] = [];
+  kahveler.forEach(isim => {
+    if (!URUNLER[katAd].find(m => m.isim === isim))
+      URUNLER[katAd].push({ isim, fiyat: 55, ikon: '☕', stok: null, varyantlar: _kahveVaryantlar });
+  });
   mevcutKat = katAd;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
   toast('☕ Kahve kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
@@ -8452,7 +8508,6 @@ window.kahveKategoriEkle = kahveKategoriEkle;
 // ════════════════════════════════════════
 function tatliKategoriEkle() {
   const katAd = '🍰 Tatlılar';
-  if (URUNLER[katAd]) { toast('🍰 Tatlı kategorisi zaten mevcut!'); return; }
   const tatlilar = [
     {isim:'Cheesecake',      fiyat:90,  ikon:'🍰'},
     {isim:'Tiramisu',        fiyat:95,  ikon:'🍮'},
@@ -8465,7 +8520,11 @@ function tatliKategoriEkle() {
     {isim:'Magnolia',        fiyat:80,  ikon:'🍰'},
     {isim:'Fıstıklı Baklava',fiyat:70,  ikon:'🍯'},
   ];
-  URUNLER[katAd] = tatlilar.map(t => ({...t, stok:null, varyantlar:[]}));
+  if (!URUNLER[katAd]) URUNLER[katAd] = [];
+  tatlilar.forEach(t => {
+    if (!URUNLER[katAd].find(m => m.isim === t.isim))
+      URUNLER[katAd].push({...t, stok:null, varyantlar:[]});
+  });
   mevcutKat = katAd;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
   toast('🍰 Tatlı kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
@@ -8477,7 +8536,6 @@ window.tatliKategoriEkle = tatliKategoriEkle;
 // ════════════════════════════════════════
 function pideKategoriEkle() {
   const katAd = '🫓 Pideler';
-  if (URUNLER[katAd]) { toast('🫓 Pide kategorisi zaten mevcut!'); return; }
   const _pideVaryant = [{
     ad:'Porsiyon', tip:'checkbox', zorunlu:true, secenekler:[
       {isim:'Tek',           fiyatFark:0},
@@ -8490,9 +8548,11 @@ function pideKategoriEkle() {
     'Sucuklu Pide','Yumurtalı Pide','Ispanaklı Pide','Peynirli Pide',
     'Pastırmalı Pide','Sebzeli Pide'
   ];
-  URUNLER[katAd] = pideler.map(isim => ({
-    isim, fiyat: 120, ikon: '🫓', stok: null, varyantlar: _pideVaryant
-  }));
+  if (!URUNLER[katAd]) URUNLER[katAd] = [];
+  pideler.forEach(isim => {
+    if (!URUNLER[katAd].find(m => m.isim === isim))
+      URUNLER[katAd].push({ isim, fiyat: 120, ikon: '🫓', stok: null, varyantlar: _pideVaryant });
+  });
   mevcutKat = katAd;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
   toast('🫓 Pide kategorisi eklendi! Fiyatları düzenleyebilirsiniz.');
