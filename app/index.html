@@ -316,8 +316,6 @@
   /* sync göstergesi */
   .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; margin-left: 6px; }
   .sync-dot.offline { background: var(--danger); }
-  /* masa giriş shake animasyonu */
-  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 60%{transform:translateX(5px)} }
 </style>
 </head>
 <body>
@@ -599,26 +597,6 @@
 </style>
 
 <div id="musteri-menu" style="display:none;flex-direction:column;min-height:100vh;background:#f5f5f5;font-family:'Nunito',sans-serif;">
-
-  <!-- MASA GİRİŞ OVERLAY (dijital menü QR'ından gelenler için) -->
-  <div id="mm-masa-giris-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9500;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:24px;padding:28px 24px;width:90%;max-width:360px;text-align:center;">
-      <div style="font-size:2.5rem;margin-bottom:10px;">🍽️</div>
-      <div id="mm-masa-giris-kafe-adi" style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:900;color:#1a1a1a;margin-bottom:6px;"></div>
-      <div style="font-size:0.85rem;color:#999;margin-bottom:20px;font-family:'Nunito',sans-serif;">Masa numaranızı girerek sipariş verebilirsiniz</div>
-      <input id="mm-masa-giris-input" type="number" inputmode="numeric" min="1" max="200"
-        placeholder="Masa numaranız (örn: 5)"
-        style="width:100%;box-sizing:border-box;border:2px solid #eee;border-radius:14px;padding:14px 16px;font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;text-align:center;outline:none;margin-bottom:12px;color:#1a1a1a;appearance:textfield;">
-      <button onclick="mmMasaGirisOnayla()"
-        style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--mm-renk,#d4960e);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;margin-bottom:10px;">
-        ✅ Sipariş Vermek İstiyorum
-      </button>
-      <button onclick="mmMasaGirisSadeceMenu()"
-        style="width:100%;padding:11px;border-radius:14px;border:2px solid var(--mm-renk,#d4960e);background:transparent;color:var(--mm-renk,#d4960e);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.9rem;cursor:pointer;">
-        👀 Sadece Menüye Bak
-      </button>
-    </div>
-  </div>
 
   <!-- Hero Banner -->
   <div id="mm-hero">
@@ -2146,8 +2124,8 @@
 
     <!-- SADECE MENÜ QR -->
     <div class="ayar-kart">
-      <h3>🍽️ Dijital Menü QR (Sipariş + Menü)</h3>
-      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Müşteri bu QR'ı okutunca masa numarasını girerek sipariş verebilir veya sadece menüye bakabilir. Vitrine, masaya veya kartvizite ekleyebilirsiniz.</p>
+      <h3>🍽️ Sadece Menü QR</h3>
+      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:14px;">Müşteri bu QR'ı okutunca sadece menüyü görür — sipariş veremez. Vitrine, masaya veya kartvizite ekleyebilirsiniz.</p>
       <div style="display:flex;align-items:center;gap:12px;background:var(--surface3);border-radius:12px;padding:12px 14px;">
         <span style="font-size:0.92rem;font-weight:700;flex:1;">📋 Dijital Menü</span>
         <button onclick="menuQrGoster()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📷 QR Göster</button>
@@ -3179,6 +3157,7 @@ async function uygulamaBaslat(user) {
           toplam: a.toplam,
           indirim: a.indirim||0,
           garson: a.garson||'',
+          not: a.not||'',
           siparisler: a.siparisler||[],
           odeme_tipi: a.odeme_tipi||'nakit',
           musteri_adi: a.musteri_adi||'',
@@ -3758,6 +3737,7 @@ async function kolaycafenKaydet(kolaycafen) {
       toplam: kolaycafen.toplam,
       indirim: kolaycafen.indirim||0,
       garson: kolaycafen.garson||'',
+      not: kolaycafen.not||null,
       siparisler: kolaycafen.siparisler,
       odeme_tipi: kolaycafen.odeme_tipi||'nakit',
       musteri_adi: kolaycafen.musteri_adi||null,
@@ -4678,6 +4658,7 @@ async function tahsilEt(odemeTipi) {
     tarih:new Date().toLocaleString('tr-TR'), tarihObj:new Date(),
     toplam: tip==='ikram' ? 0 : son,
     indirim:m.indirim||0, garson:m.garson||'',
+    not: m.not||'',
     odeme_tipi: tip,
     siparisler:m.siparisler.map(s=>({...s}))
   };
@@ -6417,7 +6398,7 @@ function raporRender_legacy(){
         <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
         ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteriAdi&&!gelal?' — '+a.musteriAdi:''}</div>`:''}
         <button class="fis-al-btn">🖨 Fiş Al</button>`;
-      div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
+      div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||'',a.not||''));
       kl.appendChild(div);
     });
   });
@@ -6964,7 +6945,7 @@ async function raporRenderTam() {
             </div>`;
           div.querySelector('.adisyon-geri-al-btn').addEventListener('click',()=>adisyonGeriAl(a));
           div.querySelector('.adisyon-sil-btn').addEventListener('click',()=>adisyonSil(a));
-          div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
+          div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||'',a.not||''));
           kl.appendChild(div);
         });
       });
@@ -8094,7 +8075,7 @@ function masaSilOnay() {
 // ════════════════════════════════════════
 // FİŞ
 // ════════════════════════════════════════
-function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=''){
+function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd='',masaNotu=''){
   const satirlar=siparisler.map(s=>{
     const secim = s.secimOzeti ? `<div style="font-size:10px;color:#666;padding-left:8px;">↳ ${s.secimOzeti}</div>` : '';
     return `<div class="fis-row"><span>${s.isim} x${s.adet}</span><span>${fmt(s.fiyat*s.adet)}</span></div>${secim}`;
@@ -8114,6 +8095,7 @@ function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=
     ${indirim?`<div class="fis-row" style="font-size:10px;color:#888;"><span>İndirim</span><span>-%${indirim}</span></div>`:''}
     <div class="fis-row" style="font-size:13px;"><strong>TOPLAM</strong><strong>${fmt(toplam)}</strong></div>
     <div class="fis-line"></div>
+    ${masaNotu?`<div class="fis-center" style="font-size:10px;color:#555;margin-bottom:4px;">📝 Not: ${masaNotu}</div>`:''}
     <div class="fis-center" style="font-size:10px;color:#777;margin-top:4px;">Tesekkur ederiz!</div>`;
   document.getElementById('fis-modal').classList.add('ac');
 }
@@ -8134,7 +8116,7 @@ function whatsappGonder() {
   metin += `─────────────────
 `;
   siparisler.forEach(s => {
-    metin += `${s.isim} x${s.adet}  →  ${fmt(s.fiyat * s.adet)}
+    metin += `${s.isim}${s.secimOzeti ? ' ('+s.secimOzeti+')' : ''} x${s.adet}  →  ${fmt(s.fiyat * s.adet)}
 `;
   });
   metin += `─────────────────
@@ -8164,7 +8146,7 @@ function fisKopyala() {
   metin += `─────────────────
 `;
   siparisler.forEach(s => {
-    metin += `${s.isim} x${s.adet}  ${fmt(s.fiyat * s.adet)}
+    metin += `${s.isim}${s.secimOzeti ? ' ('+s.secimOzeti+')' : ''} x${s.adet}  ${fmt(s.fiyat * s.adet)}
 `;
   });
   metin += `─────────────────
@@ -8185,7 +8167,7 @@ function fisYazdir(){
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   const ham=masaToplam(m),son=ham*(1-(m.indirim||0)/100);
-  fisGoster(seciliMasa,new Date().toLocaleString('tr-TR'),m.siparisler,son,m.garson||'',m.indirim||0,m.ad);
+  fisGoster(seciliMasa,new Date().toLocaleString('tr-TR'),m.siparisler,son,m.garson||'',m.indirim||0,m.ad,m.not||'');
 }
 
 // ════════════════════════════════════════
@@ -8683,7 +8665,8 @@ function pideKategoriEkle() {
   if (!URUNLER[katAd]) URUNLER[katAd] = [];
   pideler.forEach(isim => {
     if (!URUNLER[katAd].find(m => m.isim === isim))
-      URUNLER[katAd].push({ isim, fiyat: 120, ikon: '🫓', stok: null, varyantlar: _pideVaryant });
+      URUNLER[katAd].push({ isim, fiyat: 120, ikon: '🫓', stok: null,
+        varyantlar: JSON.parse(JSON.stringify(_pideVaryant)) });
   });
   mevcutKat = katAd;
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
@@ -9570,8 +9553,6 @@ window.stokGuncelle = stokGuncelle;
 window.stokHareketGecmisiAc = stokHareketGecmisiAc;
 window.raporSekme = raporSekme;
 window.raporPDFExport = raporPDFExport;
-window.mmMasaGirisOnayla = mmMasaGirisOnayla;
-window.mmMasaGirisSadeceMenu = mmMasaGirisSadeceMenu;
 window.raporExcelExport = raporExcelExport;
 window.receteYeniAc = receteYeniAc;
 window.receteSekme = receteSekme;
@@ -9603,10 +9584,10 @@ window.masaSilOnay = masaSilOnay;
     await musteriMenuAc(_qrKafe, _qrMasa);
     return;
   }
-  // Dijital menü QR'ı — masa numarası sor, sonra sipariş modunda aç
+  // Sadece menü modu — masa yok, sipariş yok
   if (_qrKafe && _sadeceMenu === '1') {
     document.getElementById('auth-screen').style.display = 'none';
-    await musteriMenuAc(_qrKafe, null, false, true); // 4. parametre: masaSor=true
+    await musteriMenuAc(_qrKafe, null, true);
     return;
   }
 
@@ -9926,11 +9907,11 @@ let mmDetayUrun = null;
 let mmDetayVaryant = null;
 let mmAnaRenk = '#d4960e';
 
-async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false, masaSor = false) {
+async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false) {
   mmKafeId = kafeId;
   const masaNoInt = parseInt(masaNo);
   mmMasaNo = isNaN(masaNoInt) ? masaNo : masaNoInt;
-  mmMasaAdi = sadeceMenu ? '' : (masaNo ? 'Masa ' + mmMasaNo : '');
+  mmMasaAdi = sadeceMenu ? '' : ('Masa ' + mmMasaNo);
 
   document.getElementById('auth-screen').style.display = 'none';
   const mm = document.getElementById('musteri-menu');
@@ -9979,35 +9960,15 @@ async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false, masaSor = false
   }
 
   if (sadeceMenu) {
-    // Tamamen sadece görüntüleme — garson/sipariş yok
     document.getElementById('mm-hero-masa').textContent = '🍽️ Dijital Menü';
     document.getElementById('mm-sepet-bar').style.display = 'none';
     document.getElementById('mm-garson-bar').style.display = 'none';
     window._sadeceMenuModu = true;
-  } else if (masaSor) {
-    // Dijital menü QR'ından gelindi — masa numarası sor
-    window._sadeceMenuModu = false;
-    window._mmMasaSorModu = true;
-    document.getElementById('mm-hero-masa').textContent = '🍽️ Dijital Menü';
-    document.getElementById('mm-sepet-bar').style.display = 'none';
-    document.getElementById('mm-garson-bar').style.display = 'none';
-    // Kafe adını overlay'e de yaz
-    const overlay = document.getElementById('mm-masa-giris-overlay');
-    const kafeAdiEl = document.getElementById('mm-masa-giris-kafe-adi');
-    if (kafeAdiEl) kafeAdiEl.textContent = mmKafeAdi;
-    if (overlay) overlay.style.display = 'flex';
-    // Input'a odaklan
-    setTimeout(() => {
-      const inp = document.getElementById('mm-masa-giris-input');
-      if (inp) inp.focus();
-    }, 400);
   } else {
-    // Normal masa QR'ı — direkt sipariş modu
     document.getElementById('mm-hero-masa').textContent = '📍 ' + mmMasaAdi;
     document.getElementById('mm-sepet-bar').style.display = 'none'; // sepete ürün eklenince açılacak
     document.getElementById('mm-garson-bar').style.display = 'block';
     window._sadeceMenuModu = false;
-    window._mmMasaSorModu = false;
   }
 
   mmKategoriRender();
@@ -10352,12 +10313,6 @@ function mmSepetKapat() {
 
 async function mmSiparisGonder() {
   if (mmSepet.length === 0) return;
-  // Masa numarası yoksa önce girişi al
-  if (!mmMasaNo && !window._sadeceMenuModu) {
-    const overlay = document.getElementById('mm-masa-giris-overlay');
-    if (overlay) overlay.style.display = 'flex';
-    return;
-  }
   const btn = document.getElementById('mm-siparis-btn');
   btn.textContent = '⏳ Gönderiliyor...';
   btn.disabled = true;
@@ -10433,74 +10388,7 @@ async function mmSiparisGonder() {
   }
 }
 
-// ── DİJİTAL MENÜ QR: MASA GİRİŞ ONAYLAMA ──
-function mmMasaGirisOnayla() {
-  const inp = document.getElementById('mm-masa-giris-input');
-  const val = inp ? inp.value.trim() : '';
-  if (!val || isNaN(parseInt(val)) || parseInt(val) < 1) {
-    inp.style.borderColor = '#e04040';
-    inp.style.animation = 'shake 0.3s';
-    setTimeout(() => { inp.style.borderColor = '#eee'; inp.style.animation = ''; }, 1000);
-    // Toast benzeri uyarı
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#e04040;color:#fff;padding:10px 22px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.9rem;white-space:nowrap;';
-    t.textContent = '⚠️ Lütfen geçerli bir masa numarası girin!';
-    document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
-    return;
-  }
-  const masaNo = parseInt(val);
-  // Overlay'i kapat
-  const overlay = document.getElementById('mm-masa-giris-overlay');
-  if (overlay) overlay.style.display = 'none';
-  // Masa bilgilerini güncelle
-  mmMasaNo = masaNo;
-  mmMasaAdi = 'Masa ' + masaNo;
-  window._sadeceMenuModu = false;
-  window._mmMasaSorModu = false;
-  // Hero'yu güncelle
-  const heroMasa = document.getElementById('mm-hero-masa');
-  if (heroMasa) heroMasa.textContent = '📍 ' + mmMasaAdi;
-  // Garson barını ve sipariş modunu aktif et
-  const garsonBar = document.getElementById('mm-garson-bar');
-  if (garsonBar) garsonBar.style.display = 'block';
-  // Sepet varsa güncelle
-  mmSepetGuncelle();
-  // Ürün listesini yenile (adet badge'leri doğru görünsün)
-  const aktifTab = document.querySelector('.mm-tab-btn.aktif');
-  if (aktifTab) mmUrunRender(aktifTab.dataset.kat);
-}
-
-function mmMasaGirisSadeceMenu() {
-  // "Sadece Menüye Bak" seçildi
-  const overlay = document.getElementById('mm-masa-giris-overlay');
-  if (overlay) overlay.style.display = 'none';
-  window._sadeceMenuModu = true;
-  window._mmMasaSorModu = false;
-  document.getElementById('mm-hero-masa').textContent = '🍽️ Dijital Menü';
-  document.getElementById('mm-sepet-bar').style.display = 'none';
-  document.getElementById('mm-garson-bar').style.display = 'none';
-}
-
-// Enter ile onayla
-document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('mm-masa-giris-input');
-  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') mmMasaGirisOnayla(); });
-});
-
 async function mmGarsonCagir() {
-  // Masa numarası girilmemiş ve masaSor modundaysa önce masa al
-  if (window._mmMasaSorModu || (!mmMasaNo && !window._sadeceMenuModu)) {
-    const overlay = document.getElementById('mm-masa-giris-overlay');
-    if (overlay) overlay.style.display = 'flex';
-    return;
-  }
-  if (!mmMasaNo) { 
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#e04040;color:#fff;padding:10px 22px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;';
-    t.textContent = '⚠️ Lütfen önce masa numaranızı girin!';
-    document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
-    return;
-  }
   const saat = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   const {data: kafeData} = await sb.from('kafeler').select('aktif_masalar').eq('id', mmKafeId).single();
   let aktifMasalar = kafeData?.aktif_masalar || [];
