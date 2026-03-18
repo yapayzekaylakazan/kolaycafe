@@ -176,7 +176,6 @@
   /* ── LAYOUT: PC modu (geniş ekran veya .pc-mod class'ı) ── */
   body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
   @media (min-width: 900px) { .kolaycafen-body { flex-direction: row; overflow: hidden; } }
-  body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
   body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
   body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
   body.pc-mod .urun-kart .uadet { display: block; }
@@ -394,7 +393,7 @@
 
   /* ÜRÜN LİSTESİ - yatay liste (menu-online tarzı) */
   #mm-urun-liste {
-    padding: 8px 0 140px;
+    padding: 8px 0 200px;
     background: #fff;
     min-height: calc(100vh - 240px);
   }
@@ -597,7 +596,7 @@
 .vsecenek-satir button { padding: 5px 8px; border-radius: 8px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; cursor: pointer; }
 </style>
 
-<div id="musteri-menu" style="display:none;flex-direction:column;min-height:100vh;background:#f5f5f5;font-family:'Nunito',sans-serif;">
+<div id="musteri-menu" style="display:none;flex-direction:column;min-height:100vh;background:#f5f5f5;font-family:'Nunito',sans-serif;overflow-y:auto;-webkit-overflow-scrolling:touch;">
 
   <!-- Hero Banner -->
   <div id="mm-hero">
@@ -2318,7 +2317,7 @@
 <div class="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" ><div class="nav-icon">🪑</div>Masalar</button>
   <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')"><div class="nav-icon">🛍️</div>Gel-Al</button>
-  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;align-items:center;justify-content:center;">0</span></button>
+  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;">0</span></button>
   <button class="bnav-btn" id="nav-kolaycafen" ><div class="nav-icon">🧾</div>KolayCafen</button>
   <button class="bnav-btn" id="nav-urun" ><div class="nav-icon">➕</div>Ürün</button>
   <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
@@ -3138,7 +3137,6 @@ async function uygulamaBaslat(user) {
   }, 2000);
 
   // Realtime: başka cihazdan yapılan değişiklikleri al
-  // Önceki channel'ları temizle (çift subscribe önle)
   if (window._kanalKafe) { try { sb.removeChannel(window._kanalKafe); } catch(e){} }
   if (window._kanalKafeler) { try { sb.removeChannel(window._kanalKafeler); } catch(e){} }
   if (window._anaPollingInterval) { clearInterval(window._anaPollingInterval); }
@@ -3193,11 +3191,9 @@ async function uygulamaBaslat(user) {
       const aktif = payload.new.aktif_masalar || [];
       let degisti = false;
       masalar.forEach(m => {
-        // Yazım kuyruğunda veya aktif yazımda olan masayı realtime ezmesin
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         const am = aktif.find(x=>x.id===m.id);
         if (am) {
-          // Supabase'den gelen veriyi her zaman uygula (mobil<->PC çift yönlü sync)
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
           if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0) || (am.kisi_sayisi||0) !== (m.kisi_sayisi||0) || (am.not||'') !== (m.not||'')) {
@@ -3210,7 +3206,6 @@ async function uygulamaBaslat(user) {
             degisti = true;
           }
         } else if (m.siparisler.length > 0) {
-          // Supabase'de yok ama lokalde dolu = baska cihaz kapatti
           m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
           degisti = true;
         }
@@ -3224,7 +3219,7 @@ async function uygulamaBaslat(user) {
   let _isPolling = false;
   window._anaPollingInterval = setInterval(async () => {
     if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
-    if (_isPolling) return; // önceki istek bitmeden yeni istek başlatma
+    if (_isPolling) return;
     _isPolling = true;
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
@@ -3234,7 +3229,6 @@ async function uygulamaBaslat(user) {
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
-          // Yazım kuyruğunda olan masayı polling ezmesin
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           // Her zaman karşılaştır — sadece boş masa değil
           const eskiJson = JSON.stringify(m.siparisler);
@@ -3272,7 +3266,7 @@ async function uygulamaBaslat(user) {
         }
       });
 
-      // Supabase'de kapanmış masaları yerel'den temizle (yazım kuyruğundakilere dokunma)
+      // Supabase'de kapanmış masaları yerel'den temizle
       masalar.forEach(m => {
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !data.aktif_masalar.find(x=>x.id===m.id)) {
@@ -3670,7 +3664,6 @@ const _yazimAktif = new Set();
 
 async function _masaSyncYazHemen(masaId) {
   if (!kafeId) return;
-  // Aynı masa için eş zamanlı iki yazım olmasın
   if (_yazimAktif.has(masaId)) {
     _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 600);
     return;
@@ -3681,7 +3674,7 @@ async function _masaSyncYazHemen(masaId) {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
 
-    // READ ile WRITE arasında m.siparisler değişebilir — anlık snapshot al
+    // READ ile WRITE arasında değişebilir — snapshot al
     const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
     // Mevcut aktif_masaları oku
@@ -3690,7 +3683,6 @@ async function _masaSyncYazHemen(masaId) {
     let aktif = data?.aktif_masalar || [];
 
     if (siparislerSnapshot.length > 0) {
-      // Masada sipariş var - güncelle veya ekle
       const idx = aktif.findIndex(x=>x.id===masaId);
       const masaData = {
         id:m.id, ad:m.ad, not:m.not||'',
@@ -3702,7 +3694,6 @@ async function _masaSyncYazHemen(masaId) {
       if (idx >= 0) aktif[idx] = masaData;
       else aktif.push(masaData);
     } else {
-      // Masa boş - listeden çıkar
       aktif = aktif.filter(x=>x.id!==masaId);
     }
 
@@ -4672,10 +4663,6 @@ async function tahsilEt(odemeTipi) {
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
-  _tahsilEdiliyor = true;
-  // Realtime'ın eski veriyi geri yazmasını önle
-  _transferYapiliyor = true;
-  _skipSubscriptionCount = 4;
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
@@ -9251,10 +9238,8 @@ async function gelAlOdeTipi(tip) {
 }
 
 function gelAlSil(id) {
-  // Önce lokali güncelle — UI hemen tepki versin
   gelAlSiparisler = gelAlSiparisler.filter(x => x.id !== id);
   gelAlRender();
-  // Supabase'i arka planda güncelle
   (async () => {
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
@@ -9945,6 +9930,9 @@ async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false) {
   document.getElementById('auth-screen').style.display = 'none';
   const mm = document.getElementById('musteri-menu');
   mm.style.display = 'flex';
+  // QR menü açıkken body scroll kilidi kaldır
+  document.body.style.overflow = 'auto';
+  document.documentElement.style.overflow = 'auto';
 
   const {data} = await sb.from('kafeler')
     .select('kafe_adi, urunler, masalar, ana_renk, logo_url, banner_url')
@@ -10174,9 +10162,12 @@ function mmDetayAc(urun) {
 }
 
 function mmDetayKapat(e) {
-  if (e && e.target !== document.getElementById('mm-detay-overlay') && e.type !== 'click') return;
-  if (e && e.currentTarget === document.getElementById('mm-detay-kapat')) { /* kapat btn */ }
-  else if (e && e.target !== document.getElementById('mm-detay-overlay')) return;
+  // Overlay'e tıklama veya doğrudan çağrı (kapat butonu) — her ikisinde de kapat
+  if (e && e.type === 'click') {
+    const overlay = document.getElementById('mm-detay-overlay');
+    // Sadece overlay'in kendisine tıklandıysa kapat (panel içine değil)
+    if (e.target !== overlay) return;
+  }
   document.getElementById('mm-detay-panel').classList.remove('acik');
   setTimeout(() => { document.getElementById('mm-detay-overlay').style.display = 'none'; }, 350);
 }
