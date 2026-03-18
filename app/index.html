@@ -99,6 +99,11 @@
 
   /* ── MASALAR ── */
   .masalar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+  /* Küçük ekran: 360px altı → 2 sütun, 280px altı → 2 sütun daha büyük kart */
+  @media (max-width: 359px) { .masalar-grid { grid-template-columns: repeat(2, 1fr); gap: 7px; } }
+  @media (min-width: 360px) and (max-width: 479px) { .masalar-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } }
+  @media (min-width: 600px) and (max-width: 899px) { .masalar-grid { grid-template-columns: repeat(5, 1fr); gap: 9px; } }
+  @media (min-width: 900px) { .masalar-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; } }
   .masa-kart {
     border-radius: var(--radius); border: 2px solid var(--border);
     background: var(--surface2); cursor: pointer;
@@ -175,7 +180,6 @@
   .siparis-item { display: flex; align-items: center; gap: 6px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
   /* ── LAYOUT: PC modu (geniş ekran veya .pc-mod class'ı) ── */
   body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
-  @media (min-width: 900px) { .kolaycafen-body { flex-direction: row; overflow: hidden; } }
   body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
   body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
   body.pc-mod .urun-kart .uadet { display: block; }
@@ -3674,7 +3678,7 @@ async function _masaSyncYazHemen(masaId) {
     const m = masalar.find(x=>x.id===masaId);
     if (!m) return;
 
-    // READ ile WRITE arasında değişebilir — snapshot al
+    // READ ile WRITE arasında m.siparisler değişebilir — anlık snapshot al
     const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
     // Mevcut aktif_masaları oku
@@ -5255,7 +5259,16 @@ function splitRender(){
 }
 
 function splitOde(idx,sayi,kb,toplam,m){
-  splitOdendi.push(idx); gunlukCiro+=kb; masalarRender(); splitRender();
+  splitOdendi.push(idx);
+  gunlukCiro += kb;
+  // Kısmi ödeme ilerlemesini kaydet — sayfa kapanırsa bilgi korunur
+  try {
+    const key = 'split_progress_' + (seciliMasa||'');
+    const progress = { masaId: seciliMasa, odendi: splitOdendi, sayi, toplam, zaman: Date.now() };
+    sessionStorage.setItem(key, JSON.stringify(progress));
+  } catch(e) {}
+  masalarRender();
+  splitRender();
 }
 
 // ════════════════════════════════════════
@@ -9930,7 +9943,6 @@ async function musteriMenuAc(kafeId, masaNo, sadeceMenu = false) {
   document.getElementById('auth-screen').style.display = 'none';
   const mm = document.getElementById('musteri-menu');
   mm.style.display = 'flex';
-  // QR menü açıkken body scroll kilidi kaldır
   document.body.style.overflow = 'auto';
   document.documentElement.style.overflow = 'auto';
 
@@ -10162,10 +10174,8 @@ function mmDetayAc(urun) {
 }
 
 function mmDetayKapat(e) {
-  // Overlay'e tıklama veya doğrudan çağrı (kapat butonu) — her ikisinde de kapat
   if (e && e.type === 'click') {
     const overlay = document.getElementById('mm-detay-overlay');
-    // Sadece overlay'in kendisine tıklandıysa kapat (panel içine değil)
     if (e.target !== overlay) return;
   }
   document.getElementById('mm-detay-panel').classList.remove('acik');
