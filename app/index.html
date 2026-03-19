@@ -3191,6 +3191,7 @@ async function uygulamaBaslat(user) {
           toplam: a.toplam,
           indirim: a.indirim||0,
           garson: a.garson||'',
+          masa_notu: a.masa_notu||'',
           siparisler: a.siparisler||[],
           odeme_tipi: a.odeme_tipi||'nakit',
           musteri_adi: a.musteri_adi||'',
@@ -3806,6 +3807,7 @@ async function kolaycafenKaydet(kolaycafen) {
       toplam: kolaycafen.toplam,
       indirim: kolaycafen.indirim||0,
       garson: kolaycafen.garson||'',
+      masa_notu: kolaycafen.not||null,
       siparisler: kolaycafen.siparisler,
       odeme_tipi: kolaycafen.odeme_tipi||'nakit',
       musteri_adi: kolaycafen.musteri_adi||null,
@@ -6468,7 +6470,7 @@ function raporRender_legacy(){
         <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
         ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteriAdi&&!gelal?' — '+a.musteriAdi:''}</div>`:''}
         <button class="fis-al-btn">🖨 Fiş Al</button>`;
-      div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
+      div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||'',a.masa_notu||''));
       kl.appendChild(div);
     });
   });
@@ -7015,7 +7017,7 @@ async function raporRenderTam() {
             </div>`;
           div.querySelector('.adisyon-geri-al-btn').addEventListener('click',()=>adisyonGeriAl(a));
           div.querySelector('.adisyon-sil-btn').addEventListener('click',()=>adisyonSil(a));
-          div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||''));
+          div.querySelector('.fis-al-btn').addEventListener('click',()=>fisGoster(a.masa,a.tarih,a.siparisler,a.toplam,a.garson||'',a.indirim||0,a.masaAd||'',a.masa_notu||''));
           kl.appendChild(div);
         });
       });
@@ -8145,7 +8147,7 @@ function masaSilOnay() {
 // ════════════════════════════════════════
 // FİŞ
 // ════════════════════════════════════════
-function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=''){
+function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd='',masaNotu=''){
   const satirlar=siparisler.map(s=>{
     const secim = s.secimOzeti ? `<div style="font-size:10px;color:#666;padding-left:8px;">↳ ${s.secimOzeti}</div>` : '';
     return `<div class="fis-row"><span>${s.isim} x${s.adet}</span><span>${fmt(s.fiyat*s.adet)}</span></div>${secim}`;
@@ -8165,6 +8167,7 @@ function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=
     ${indirim?`<div class="fis-row" style="font-size:10px;color:#888;"><span>İndirim</span><span>-%${indirim}</span></div>`:''}
     <div class="fis-row" style="font-size:13px;"><strong>TOPLAM</strong><strong>${fmt(toplam)}</strong></div>
     <div class="fis-line"></div>
+    ${masaNotu?`<div class="fis-center" style="font-size:10px;color:#555;margin-bottom:4px;">📝 Not: ${masaNotu}</div>`:''}
     <div class="fis-center" style="font-size:10px;color:#777;margin-top:4px;">Tesekkur ederiz!</div>`;
   document.getElementById('fis-modal').classList.add('ac');
 }
@@ -8236,7 +8239,7 @@ function fisYazdir(){
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
   const ham=masaToplam(m),son=ham*(1-(m.indirim||0)/100);
-  fisGoster(seciliMasa,new Date().toLocaleString('tr-TR'),m.siparisler,son,m.garson||'',m.indirim||0,m.ad);
+  fisGoster(seciliMasa,new Date().toLocaleString('tr-TR'),m.siparisler,son,m.garson||'',m.indirim||0,m.ad,m.not||'');
 }
 
 // ════════════════════════════════════════
@@ -11131,6 +11134,36 @@ Cafe satış verileri (${v.donemAdi}):
 document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('ai-soru-inp');
   if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') aiSoruGonder(); });
+});
+
+// ── HATA LOGLAMA — Admin panelden hangi kafenin hata aldığını görmek için ──
+window.onerror = function(mesaj, kaynak, satir, sutun) {
+  if (!window.kafeId) return false;
+  try {
+    sb.from('hata_loglari').insert({
+      kafe_id: window.kafeId,
+      mesaj: String(mesaj).slice(0, 500),
+      kaynak: String(kaynak||'').slice(0, 200),
+      satir: satir||0,
+      sutun: sutun||0,
+      browser: navigator.userAgent.slice(0, 200),
+      url: location.href.slice(0, 200)
+    }).then(()=>{}).catch(()=>{});
+  } catch(e) {}
+  return false;
+};
+
+window.addEventListener('unhandledrejection', e => {
+  if (!window.kafeId) return;
+  try {
+    sb.from('hata_loglari').insert({
+      kafe_id: window.kafeId,
+      mesaj: String(e.reason?.message || e.reason || 'Promise rejection').slice(0, 500),
+      kaynak: 'unhandledrejection',
+      browser: navigator.userAgent.slice(0, 200),
+      url: location.href.slice(0, 200)
+    }).then(()=>{}).catch(()=>{});
+  } catch(e) {}
 });
 </script>
 </body>
