@@ -2852,7 +2852,7 @@ async function garsonKafeBul() {
   if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   const {data, error} = await sb.from('kafeler')
-    .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, kat_sirasi, app_tema, app_vurgu')
+    .select('*')
     .eq('kafe_kodu', kod.toLowerCase())
     .maybeSingle();
   document.getElementById('auth-loading').style.display = 'none';
@@ -9688,7 +9688,7 @@ window.masaSilOnay = masaSilOnay;
       const _kafeData = JSON.parse(_ssGarsonData);
       // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
       const {data: tazeData} = await sb.from('kafeler')
-        .select('id, kafe_adi, garsonlar, kafe_kodu, garson_kodu, urunler, masalar, plan, receteler, grup_listesi, stok, kat_sirasi, app_tema, app_vurgu')
+        .select('*')
         .eq('id', _kafeData.id)
         .maybeSingle();
       await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
