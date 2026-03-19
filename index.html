@@ -181,9 +181,22 @@
   <div style="text-align:center;margin-bottom:16px;">
     <h2 style="font-family:'Playfair Display',serif;font-size:clamp(2rem,4vw,3rem);font-weight:900;line-height:1.1;">Cafenizin büyüklüğüne göre<br><span style="color:var(--accent2);">size özel paket</span></h2>
   </div>
-  <div style="text-align:center;margin-bottom:20px;">
-    <p style="color:var(--text2);font-size:1rem;font-weight:600;max-width:580px;margin:0 auto;line-height:1.7;">10 gün boyunca tüm Pro özelliklerini ücretsiz kullanın. Kredi kartı gerekmez.</p>
+
+  <!-- YILLIK/AYLIK TOGGLE -->
+  <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:36px;">
+    <span id="lbl-aylik" style="font-weight:900;font-size:0.95rem;color:var(--accent2);">Aylık</span>
+    <div onclick="toggleDonem()" style="width:56px;height:28px;background:rgba(200,150,42,0.2);border:2px solid var(--accent);border-radius:20px;cursor:pointer;position:relative;transition:background 0.2s;" id="donem-toggle">
+      <div id="donem-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--accent);transition:transform 0.25s;"></div>
+    </div>
+    <span id="lbl-yillik" style="font-weight:900;font-size:0.95rem;color:var(--muted);">Yıllık <span style="background:#22c55e;color:#fff;font-size:0.65rem;padding:2px 8px;border-radius:20px;margin-left:4px;">%20 İNDİRİM</span></span>
   </div>
+
+  <div style="text-align:center;margin-bottom:52px;">
+    <div id="yillik-tasarruf-banner" style="display:none;background:rgba(34,197,94,0.12);border:1.5px solid rgba(34,197,94,0.4);border-radius:14px;padding:12px 24px;display:inline-block;">
+      <span style="color:#22c55e;font-weight:800;font-size:0.9rem;">🎉 Yıllık ödeyerek 2 ay ücretsiz kazanıyorsunuz!</span>
+    </div>
+  </div>
+
   <div style="display:flex;justify-content:center;gap:24px;margin-bottom:52px;flex-wrap:wrap;">
     <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:700;color:var(--text2);"><span style="color:var(--green);">✓</span> Gizli ücret yok</div>
     <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:700;color:var(--text2);"><span style="color:var(--green);">✓</span> İstediğiniz zaman iptal</div>
@@ -191,8 +204,208 @@
     <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:700;color:var(--text2);"><span style="color:var(--green);">✓</span> 30 saniyede kurulum</div>
   </div>
 
-  <!-- SIRA 1: DENEME + START + GROW + GOLD -->
+  <!-- SIRA 1 -->
   <div class="paket-grid">
+    <div class="paket">
+      <div class="paket-isim" style="color:#8a6a40;">🆓 DENEME</div>
+      <div class="paket-fiyat">0₺</div>
+      <div class="paket-sure">/ 10 gün</div>
+      <div class="paket-desc" style="color:#c8aa80;">Tüm Pro özellikleriyle başla</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">6 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Tüm Pro özellikleri aktif</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Mutfak ekranı & online sipariş</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Platform siparişi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Raporlar & garson takibi</span></div>
+      </div>
+      <a href="app/index.html" class="paket-btn" style="border:2px solid #8a6a40;color:#c8aa80;">Ücretsiz Başla</a>
+    </div>
+
+    <div class="paket">
+      <div class="paket-isim" style="color:#64748b;">🚀 START</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="299" data-yillik="239">299₺</span></div>
+      <div class="paket-sure donem-label">/ ay</div>
+      <div class="paket-desc" style="color:#94a3b8;">Yeni açılan cafeler için</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#cbd5e1;">4 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#cbd5e1;">Garson takibi & raporlar</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#cbd5e1;">Online sipariş (QR)</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#cbd5e1;">WhatsApp fiş gönderme</span></div>
+        <div class="yok"><span>✗</span> <span>Gelir/Gider takibi</span></div>
+        <div class="yok"><span>✗</span> <span>Stok & Reçete</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('start');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+
+    <div class="paket">
+      <div class="paket-isim" style="color:#22c55e;">🌱 GROW</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="399" data-yillik="319">399₺</span></div>
+      <div class="paket-sure donem-label">/ ay</div>
+      <div class="paket-desc" style="color:#86efac;">Büyüyen cafeler için</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#86efac;">6 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#86efac;">Gelir/Gider takibi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#86efac;">Cari hesap takibi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#86efac;">Platform siparişi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#86efac;">Mutfak ekranı</span></div>
+        <div class="yok"><span>✗</span> <span>Stok & Reçete</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('grow');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+
+    <div class="paket">
+      <div class="paket-isim" style="color:#b8860b;">🥇 GOLD</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="499" data-yillik="399">499₺</span></div>
+      <div class="paket-sure donem-label">/ ay</div>
+      <div class="paket-desc" style="color:#c8aa80;">Küçük-orta cafeler için</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">8 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Gelir/Gider & Stok takibi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Reçete yönetimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">İndirim kuponu</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c8aa80;">Mutfak ekranı</span></div>
+        <div class="yok"><span>✗</span> <span>Bluetooth yazıcı</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('gold');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+  </div>
+
+  <!-- SIRA 2 -->
+  <div class="paket-grid" style="margin-top:14px;">
+    <div class="paket" style="border-color:#1a6fb5;background:#0d1520;">
+      <div class="paket-isim" style="color:#4a9fd4;">💎 PLATİN</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="599" data-yillik="479">599₺</span></div>
+      <div class="paket-sure donem-label" style="color:#4a7a9b;">/ ay</div>
+      <div class="paket-desc" style="color:#8ab8d4;">Orta boy cafeler için</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">10 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Gold'un tüm özellikleri</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Hesap bölme & masa transfer</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Bluetooth yazıcı</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Müşteri menüsü QR</span></div>
+        <div class="yok"><span>✗</span> <span>Platform entegrasyonu</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('platin');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+
+    <div class="paket" style="border-color:#2d7a3a;background:#0f1a10;">
+      <div class="paket-isim" style="color:#3db85a;">🚀 ULTRA</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="699" data-yillik="559">699₺</span></div>
+      <div class="paket-sure donem-label" style="color:#2d5a35;">/ ay</div>
+      <div class="paket-desc" style="color:#6ab87a;">Büyük cafeler için</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">12 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">Platin'in tüm özellikleri</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🟡 Yemeksepeti entegrasyonu</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🔴 Getir entegrasyonu</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🟠 Trendyol entegrasyonu</span></div>
+        <div class="yok"><span>✗</span> <span>Çoklu şube desteği</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('ultra');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+
+    <div class="paket" style="border-color:#ea580c;background:#180e00;">
+      <div class="paket-isim" style="color:#fb923c;">👑 ELİTE</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="799" data-yillik="639">799₺</span></div>
+      <div class="paket-sure donem-label" style="color:#7c3516;">/ ay</div>
+      <div class="paket-desc" style="color:#fdba74;">Zincir & çok şubeli cafeler</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">15 masa erişimi</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Ultra'nın tüm özellikleri</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Çoklu şube desteği</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Şube bazlı raporlama</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Öncelikli destek hattı</span></div>
+        <div class="yok"><span>✗</span> <span>İndirimli termal yazıcı</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('elite');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+
+    <div class="paket featured">
+      <div class="paket-badge-top" style="background:#7c3aed;">🔥 Çok Satan</div>
+      <div class="paket-isim" style="color:#a78bfa;">⭐ PRO</div>
+      <div class="paket-fiyat"><span class="fiyat-goster" data-aylik="899" data-yillik="719">899₺</span></div>
+      <div class="paket-sure donem-label" style="color:#6d4fa0;">/ ay</div>
+      <div class="paket-desc" style="color:#c4b5fd;">Sınır tanımayan cafeler</div>
+      <div class="ozellik-list">
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">20+ masa (sınırsız)</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">Elite'in tüm özellikleri</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">Sınırsız garson & kullanıcı</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">🖨️ İndirimli termal yazıcı</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">7/24 öncelikli destek</span></div>
+        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">API erişimi</span></div>
+      </div>
+      <a href="#" onclick="sepeteEkle('pro');return false;" class="paket-btn" style="border:2px solid currentColor;">Sepete Ekle →</a>
+    </div>
+  </div>
+
+  <!-- AI EKLENTİ KARTI -->
+  <div style="max-width:900px;margin:32px auto 0;background:linear-gradient(135deg,#0f0a1a,#1a0a2e);border:2px solid #7c3aed;border-radius:22px;padding:28px 28px 24px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(124,58,237,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+    <div style="display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:260px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.5);color:#a78bfa;padding:4px 14px;border-radius:20px;font-size:0.72rem;font-weight:800;margin-bottom:12px;">✨ EKSTRA MODÜL</div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:8px;">🤖 AI Asistan <span style="color:#a78bfa;">+149₺/ay</span></h3>
+        <p style="color:#a78bfa;font-size:0.85rem;font-weight:600;line-height:1.7;margin-bottom:16px;">Herhangi bir pakete ekleyebilirsiniz. Satışlarınızı analiz eder, stok önerir, kampanya oluşturur.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;">
+          <div style="display:flex;align-items:center;gap:7px;background:rgba(124,58,237,0.1);border-radius:10px;padding:9px 12px;">
+            <span style="font-size:1.1rem;">📈</span>
+            <div>
+              <div style="font-weight:800;font-size:0.78rem;color:#e9d5ff;">Satış Tahminleme</div>
+              <div style="font-size:0.68rem;color:#a78bfa;">"Yarın 100 bardak hazırla"</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;background:rgba(124,58,237,0.1);border-radius:10px;padding:9px 12px;">
+            <span style="font-size:1.1rem;">💡</span>
+            <div>
+              <div style="font-weight:800;font-size:0.78rem;color:#e9d5ff;">Happy Hour AI</div>
+              <div style="font-size:0.68rem;color:#a78bfa;">Boş saatlerde dinamik fiyat</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;background:rgba(124,58,237,0.1);border-radius:10px;padding:9px 12px;">
+            <span style="font-size:1.1rem;">🎯</span>
+            <div>
+              <div style="font-weight:800;font-size:0.78rem;color:#e9d5ff;">Akıllı Kampanya</div>
+              <div style="font-size:0.68rem;color:#a78bfa;">Stok eritme önerileri</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;background:rgba(124,58,237,0.1);border-radius:10px;padding:9px 12px;">
+            <span style="font-size:1.1rem;">👨‍🍳</span>
+            <div>
+              <div style="font-weight:800;font-size:0.78rem;color:#e9d5ff;">Garson Performansı</div>
+              <div style="font-size:0.68rem;color:#a78bfa;">Yan ürün satış analizi</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;min-width:160px;">
+        <div id="ai-fiyat-goster" style="text-align:center;">
+          <div style="font-size:2rem;font-weight:900;color:#a78bfa;font-family:'Playfair Display',serif;">+149₺</div>
+          <div style="font-size:0.75rem;color:#7c5baa;">/ ay ek ücret</div>
+        </div>
+        <button id="ai-ekle-btn" onclick="aiToggle()" style="width:100%;padding:12px 20px;border-radius:14px;border:2px solid #7c3aed;background:rgba(124,58,237,0.15);color:#c4b5fd;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;transition:all 0.2s;">
+          + Paketime Ekle
+        </button>
+        <div style="font-size:0.68rem;color:#7c5baa;text-align:center;">Sepette görünür, istersen çıkar</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- SEPET -->
+<div id="sepet-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:#1a1205;border-top:2px solid var(--accent);padding:14px 5%;display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 -8px 32px rgba(0,0,0,0.6);">
+  <div style="flex:1;min-width:200px;">
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:700;margin-bottom:2px;">SEÇİLEN PAKET</div>
+    <div id="sepet-ozet" style="font-weight:900;font-size:1rem;color:var(--text);">—</div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">TOPLAM</div>
+    <div id="sepet-toplam" style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--accent2);">0₺</div>
+    <div id="sepet-tasarruf" style="font-size:0.7rem;color:#22c55e;font-weight:700;display:none;"></div>
+  </div>
+  <a id="sepet-whatsapp" href="#" target="_blank" style="padding:13px 28px;border-radius:30px;background:#25d366;color:#fff;font-weight:900;font-size:0.95rem;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(37,211,102,0.4);">💬 WhatsApp ile Satın Al</a>
+  <button onclick="sepetTemizle()" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">✕</button>
+</div>
 
     <div class="paket">
       <div class="paket-isim" style="color:#8a6a40;">🆓 DENEME</div>
@@ -265,85 +478,6 @@
 
   </div>
 
-  <!-- SIRA 2: PLATİN + ULTRA + ELİTE + PRO -->
-  <div class="paket-grid">
-
-    <div class="paket" style="border-color:#1a6fb5;background:#0d1520;">
-      <div class="paket-isim" style="color:#4a9fd4;">💎 PLATİN</div>
-      <div class="paket-fiyat">599₺</div>
-      <div class="paket-sure" style="color:#4a7a9b;">/ ay</div>
-      <div class="paket-desc" style="color:#8ab8d4;">Orta boy cafeler için</div>
-      <div class="ozellik-list">
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">10 masa erişimi</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Gold'un tüm özellikleri</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Hesap bölme & masa transfer</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Garson QR girişi</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Bluetooth yazıcı</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Müşteri menüsü QR</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#8ab8d4;">Ödeme tipi detay raporu</span></div>
-        <div class="yok"><span>✗</span> <span>Platform entegrasyonu</span></div>
-      </div>
-      <a href="https://wa.me/905326873195?text=Merhaba%2C%20KolayCafe%20Platin%20-%20599%E2%82%BA/ay%20-%2010%20masa%20paketi%20almak%20istiyorum." target="_blank" class="paket-btn" style="border:2px solid currentColor;">Platin'e Geç →</a>
-    </div>
-
-    <div class="paket" style="border-color:#2d7a3a;background:#0f1a10;">
-      <div class="paket-isim" style="color:#3db85a;">🚀 ULTRA</div>
-      <div class="paket-fiyat">699₺</div>
-      <div class="paket-sure" style="color:#2d5a35;">/ ay</div>
-      <div class="paket-desc" style="color:#6ab87a;">Büyük cafeler için</div>
-      <div class="ozellik-list">
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">12 masa erişimi</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">Platin'in tüm özellikleri</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🟡 Yemeksepeti entegrasyonu</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🔴 Getir entegrasyonu</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🟠 Trendyol entegrasyonu</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">🟢 Migros Yemek entegrasyonu</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#6ab87a;">Gelişmiş ürün & garson raporu</span></div>
-        <div class="yok"><span>✗</span> <span>Çoklu şube desteği</span></div>
-      </div>
-      <a href="https://wa.me/905326873195?text=Merhaba%2C%20KolayCafe%20Ultra%20-%20699%E2%82%BA/ay%20-%2012%20masa%20paketi%20almak%20istiyorum." target="_blank" class="paket-btn" style="border:2px solid currentColor;">Ultra'ya Geç →</a>
-    </div>
-
-    <div class="paket" style="border-color:#ea580c;background:#180e00;">
-      <div class="paket-isim" style="color:#fb923c;">👑 ELİTE</div>
-      <div class="paket-fiyat">799₺</div>
-      <div class="paket-sure" style="color:#7c3516;">/ ay</div>
-      <div class="paket-desc" style="color:#fdba74;">Zincir & çok şubeli cafeler</div>
-      <div class="ozellik-list">
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">15 masa erişimi</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Ultra'nın tüm özellikleri</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Çoklu şube desteği</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Şube bazlı raporlama</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Tüm platform entegrasyonları</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Özelleştirilmiş raporlar</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#fdba74;">Öncelikli destek hattı</span></div>
-        <div class="yok"><span>✗</span> <span>İndirimli termal yazıcı</span></div>
-      </div>
-      <a href="https://wa.me/905326873195?text=Merhaba%2C%20KolayCafe%20Elite%20-%20799%E2%82%BA/ay%20-%2015%20masa%20paketi%20almak%20istiyorum." target="_blank" class="paket-btn" style="border:2px solid currentColor;">Elite'e Geç →</a>
-    </div>
-
-    <div class="paket featured">
-      <div class="paket-badge-top" style="background:#7c3aed;">🔥 Çok Satan</div>
-      <div class="paket-isim" style="color:#a78bfa;">⭐ PRO</div>
-      <div class="paket-fiyat">899₺</div>
-      <div class="paket-sure" style="color:#6d4fa0;">/ ay</div>
-      <div class="paket-desc" style="color:#c4b5fd;">Sınır tanımayan cafeler</div>
-      <div class="ozellik-list">
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">20+ masa (sınırsız)</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">Elite'in tüm özellikleri</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">Sınırsız garson & kullanıcı</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">🖨️ İndirimli termal yazıcı</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">7/24 öncelikli destek</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">API erişimi</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">Özel entegrasyon desteği</span></div>
-        <div><span style="color:var(--green);">✓</span> <span style="color:#c4b5fd;">Tüm yeni özellikler</span></div>
-      </div>
-      <a href="https://wa.me/905326873195?text=Merhaba%2C%20KolayCafe%20Pro%20-%20899%E2%82%BA/ay%20-%2020%2B%20masa%20paketi%20almak%20istiyorum." target="_blank" class="paket-btn" style="border:2px solid currentColor;">Pro'ya Geç →</a>
-    </div>
-
-  </div>
-</section>
-
 <!-- TESTIMONIALS -->
 <section class="section how-bg">
   <div class="section-title">Cafe Sahiplerinin Yorumları</div>
@@ -380,7 +514,7 @@
     <details><summary>Hangi termal yazıcılarla çalışır? <span style="color:var(--accent2);font-size:1.2rem;">＋</span></summary><p>Bluetooth destekli 58mm ve 80mm termal yazıcılarla çalışır. Epson, Xprinter, Rongta ve çoğu marka uyumludur. Pro pakette indirimli yazıcı temin edebilirsiniz.</p></details>
     <details><summary>Kaç garson aynı anda kullanabilir? <span style="color:var(--accent2);font-size:1.2rem;">＋</span></summary><p>Sınır yok. Tüm garsonlar aynı anda farklı telefonlardan sisteme girebilir. Siparişler gerçek zamanlı senkronize olur.</p></details>
     <details><summary>Uygulama indirmem gerekiyor mu? <span style="color:var(--accent2);font-size:1.2rem;">＋</span></summary><p>Hayır. Chrome ile kolaycafe.com/app adresini açın, "Ana Ekrana Ekle" deyin — uygulama gibi kullanın.</p></details>
-    <details><summary>Paket değişikliği nasıl yapılır? <span style="color:var(--accent2);font-size:1.2rem;">＋</span></summary><p>bilgi@kolaycafe.com adresine e-posta gönderin ya da WhatsApp'tan ulaşın. Aynı gün aktif edilir.</p></details>
+    <details><summary>Paket değişikliği nasıl yapılır? <span style="color:var(--accent2);font-size:1.2rem;">＋</span></summary><p><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d7b5bebbb0be97bcb8bbb6aeb4b6b1b2f9b4b8ba">[email&#160;protected]</a> adresine e-posta gönderin ya da WhatsApp'tan ulaşın. Aynı gün aktif edilir.</p></details>
   </div>
 </section>
 
@@ -392,7 +526,134 @@
   <a href="app/index.html" class="btn-primary" style="font-size:1.05rem;padding:16px 48px;display:inline-block;">☕ 10 Gün Ücretsiz Başla</a>
 </section>
 
-<footer style="background:var(--bg2);border-top:1px solid var(--border);padding:56px 5% 28px;">
+<script>
+const PLAN_ISIMLER = { start:'🚀 Start', grow:'🌱 Grow', gold:'🥇 Gold', platin:'💎 Platin', ultra:'🚀 Ultra', elite:'👑 Elite', pro:'⭐ Pro' };
+const PLAN_FIYAT_AYLIK = { start:299, grow:399, gold:499, platin:599, ultra:699, elite:799, pro:899 };
+const AI_FIYAT_AYLIK = 149;
+
+let donemYillik = false;
+let seciliPlan = null;
+let aiEklendi = false;
+
+function toggleDonem() {
+  donemYillik = !donemYillik;
+  const knob = document.getElementById('donem-knob');
+  const lblA = document.getElementById('lbl-aylik');
+  const lblY = document.getElementById('lbl-yillik');
+  const banner = document.getElementById('yillik-tasarruf-banner');
+
+  knob.style.transform = donemYillik ? 'translateX(28px)' : 'translateX(0)';
+  lblA.style.color = donemYillik ? 'var(--muted)' : 'var(--accent2)';
+  lblY.style.color = donemYillik ? 'var(--accent2)' : 'var(--muted)';
+  banner.style.display = donemYillik ? 'inline-block' : 'none';
+
+  // Fiyatları güncelle
+  document.querySelectorAll('.fiyat-goster').forEach(el => {
+    const aylik = parseInt(el.dataset.aylik);
+    const yillik = parseInt(el.dataset.yillik);
+    el.textContent = (donemYillik ? yillik : aylik) + '₺';
+  });
+  document.querySelectorAll('.donem-label').forEach(el => {
+    el.innerHTML = donemYillik ? '/ ay <span style="font-size:0.65rem;color:#22c55e;font-weight:800;">(yıllık fatura)</span>' : '/ ay';
+  });
+
+  // AI fiyatını güncelle
+  const aiFiyat = donemYillik ? Math.round(AI_FIYAT_AYLIK * 0.8) : AI_FIYAT_AYLIK;
+  document.getElementById('ai-fiyat-goster').innerHTML = `
+    <div style="font-size:2rem;font-weight:900;color:#a78bfa;font-family:'Playfair Display',serif;">+${aiFiyat}₺</div>
+    <div style="font-size:0.75rem;color:#7c5baa;">/ ay ek ücret</div>
+    ${donemYillik ? '<div style="font-size:0.68rem;color:#22c55e;font-weight:700;">(%20 yıllık indirim)</div>' : ''}
+  `;
+
+  sepetGuncelle();
+}
+
+function sepeteEkle(plan) {
+  seciliPlan = plan;
+  // Seçili planı vurgula
+  document.querySelectorAll('.paket').forEach(p => p.style.boxShadow = '');
+  document.querySelectorAll('.paket-btn').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${plan}'`)) {
+      b.closest('.paket').style.boxShadow = '0 0 0 2px var(--accent2)';
+      b.textContent = '✓ Seçildi';
+      b.style.background = 'rgba(200,150,42,0.15)';
+    } else {
+      b.textContent = 'Sepete Ekle →';
+      b.style.background = '';
+    }
+  });
+  sepetGuncelle();
+}
+
+function aiToggle() {
+  aiEklendi = !aiEklendi;
+  const btn = document.getElementById('ai-ekle-btn');
+  if (aiEklendi) {
+    btn.textContent = '✓ Paketimde var';
+    btn.style.background = 'rgba(124,58,237,0.4)';
+    btn.style.borderColor = '#a78bfa';
+    btn.style.color = '#e9d5ff';
+  } else {
+    btn.textContent = '+ Paketime Ekle';
+    btn.style.background = 'rgba(124,58,237,0.15)';
+    btn.style.borderColor = '#7c3aed';
+    btn.style.color = '#c4b5fd';
+  }
+  sepetGuncelle();
+}
+
+function sepetGuncelle() {
+  const bar = document.getElementById('sepet-bar');
+  if (!seciliPlan) { bar.style.display = 'none'; return; }
+
+  bar.style.display = 'flex';
+  const aylikFiyat = PLAN_FIYAT_AYLIK[seciliPlan];
+  const yillikFiyat = Math.round(aylikFiyat * 0.8);
+  const aiFiyatAylik = donemYillik ? Math.round(AI_FIYAT_AYLIK * 0.8) : AI_FIYAT_AYLIK;
+
+  const paketFiyat = donemYillik ? yillikFiyat : aylikFiyat;
+  const toplam = paketFiyat + (aiEklendi ? aiFiyatAylik : 0);
+  const toplamYillik = donemYillik ? toplam * 12 : toplam;
+  const tasarruf = donemYillik ? Math.round((aylikFiyat + (aiEklendi ? AI_FIYAT_AYLIK : 0)) * 12 * 0.2) : 0;
+
+  const donemStr = donemYillik ? 'Yıllık' : 'Aylık';
+  const aiStr = aiEklendi ? ' + 🤖 AI' : '';
+  document.getElementById('sepet-ozet').textContent = `${PLAN_ISIMLER[seciliPlan]}${aiStr} — ${donemStr}`;
+  document.getElementById('sepet-toplam').textContent = toplam + '₺/ay';
+
+  const tasarrufEl = document.getElementById('sepet-tasarruf');
+  if (donemYillik && tasarruf > 0) {
+    tasarrufEl.textContent = `Yılda ${tasarruf}₺ tasarruf`;
+    tasarrufEl.style.display = 'block';
+  } else {
+    tasarrufEl.style.display = 'none';
+  }
+
+  // WhatsApp mesajı
+  const aiMsg = aiEklendi ? `%0A🤖 AI Asistan (+${aiFiyatAylik}₺/ay)` : '';
+  const donemMsg = donemYillik ? `Yıllık fatura (${toplamYillik}₺/yıl)` : `Aylık fatura (${toplam}₺/ay)`;
+  const msg = `Merhaba, KolayCafe paket almak istiyorum:%0A%0A📦 ${PLAN_ISIMLER[seciliPlan].replace(/[^\w\s]/g,'')} - ${paketFiyat}₺/ay${aiMsg}%0A💳 ${donemMsg}%0A%0AToplam: ${toplam}₺/ay`;
+  document.getElementById('sepet-whatsapp').href = `https://wa.me/905326873195?text=${msg}`;
+}
+
+function sepetTemizle() {
+  seciliPlan = null;
+  aiEklendi = false;
+  document.getElementById('sepet-bar').style.display = 'none';
+  document.querySelectorAll('.paket').forEach(p => p.style.boxShadow = '');
+  document.querySelectorAll('.paket-btn').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('sepeteEkle')) {
+      b.textContent = 'Sepete Ekle →';
+      b.style.background = '';
+    }
+  });
+  const btn = document.getElementById('ai-ekle-btn');
+  btn.textContent = '+ Paketime Ekle';
+  btn.style.background = 'rgba(124,58,237,0.15)';
+}
+</script>
+
+<footer style="background:var(--bg2);border-top:1px solid var(--border);padding:56px 5% 28px;padding-bottom:90px;">
   <div style="max-width:1100px;margin:0 auto;">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:40px;margin-bottom:48px;">
       <div>
@@ -416,7 +677,7 @@
       <div>
         <div style="font-weight:900;font-size:0.88rem;color:var(--text);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.05em;">Destek</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <a href="mailto:bilgi@kolaycafe.com" style="color:var(--muted);font-size:0.84rem;font-weight:600;text-decoration:none;">📧 bilgi@kolaycafe.com</a>
+          <a href="/cdn-cgi/l/email-protection#8ceee5e0ebe5cce7e3e0edf5efedeae9a2efe3e1" style="color:var(--muted);font-size:0.84rem;font-weight:600;text-decoration:none;">📧 <span class="__cf_email__" data-cfemail="f99b90959e90b992969598809a989f9cd79a9694">[email&#160;protected]</span></a>
           <a href="https://wa.me/905326873195" target="_blank" style="color:var(--muted);font-size:0.84rem;font-weight:600;text-decoration:none;">💬 WhatsApp Destek</a>
           <span style="color:var(--muted);font-size:0.84rem;font-weight:600;">⏰ Hft içi 09:00–18:00</span>
         </div>
@@ -431,11 +692,4 @@
       </div>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-      <p style="font-size:0.78rem;color:var(--muted);font-weight:600;">© 2025 KolayCafe. Tüm hakları saklıdır.</p>
-      <p style="font-size:0.76rem;color:var(--muted);font-weight:600;">☕ Türkiye'de üretildi</p>
-    </div>
-  </div>
-</footer>
-
-</body>
-</html>
+      <p st
