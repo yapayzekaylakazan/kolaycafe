@@ -3,165 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KolayCafe — Admin BI v2.1</title>
+<title>KolayCafe — Admin v2.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  :root{--bg:#0a0a0f;--bg2:#111118;--surface:#1a1a24;--surface2:#222230;--border:#2a2a3a;--text:#e8e8f0;--text2:#9090b0;--accent:#f0b940;--accent2:#e07840;--green:#30d080;--red:#e04050;--blue:#4080f0;--purple:#9060f0;--cyan:#20c0d0;--pink:#e060a0;}
+  :root{--bg:#0a0a0f;--bg2:#111118;--surface:#1a1a24;--surface2:#222230;--border:#2a2a3a;--text:#e8e8f0;--text2:#9090b0;--accent:#f0b940;--accent2:#e07840;--green:#30d080;--red:#e04050;--blue:#4080f0;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
-  ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,#1a1000 0%,var(--bg) 60%);}
-  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:420px;text-align:center;}
-  .login-logo{font-size:2.5rem;margin-bottom:8px;}.login-title{font-size:1.5rem;font-weight:800;color:var(--accent);margin-bottom:4px;}
-  .login-sub{font-size:0.8rem;color:var(--text2);margin-bottom:32px;font-family:'Space Mono',monospace;}
-  .login-inp{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.95rem;outline:none;margin-bottom:12px;transition:border-color .2s;}
-  .login-inp:focus{border-color:var(--accent);}.login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
-  .login-err{color:var(--red);font-size:0.82rem;margin-top:10px;display:none;}
-  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200;flex-wrap:wrap;}
-  .topbar-logo{font-size:0.98rem;font-weight:800;color:var(--accent);white-space:nowrap;margin-right:8px;}
-  .topbar-logo span{color:var(--text2);font-weight:400;font-size:0.7rem;font-family:'Space Mono',monospace;}
-  .tab-btn{padding:5px 12px;border-radius:7px;border:1.5px solid transparent;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.74rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
-  .tab-btn:hover{color:var(--text);border-color:var(--border);}.tab-btn.aktif{background:var(--accent);color:#1a0f00;border-color:var(--accent);}
-  .topbar-sag{display:flex;align-items:center;gap:10px;margin-left:auto;}
-  .canli-bar{display:flex;align-items:center;gap:12px;font-family:'Space Mono',monospace;font-size:0.68rem;color:var(--text2);}
-  .canli-item{display:flex;align-items:center;gap:4px;}.canli-sayi{font-weight:700;color:var(--green);}
-  .online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
-  .cikis-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.73rem;font-weight:700;cursor:pointer;}
-  .cikis-btn:hover{border-color:var(--red);color:var(--red);}
-  .sayfa{display:none;padding:20px;max-width:1600px;margin:0 auto;}.sayfa.aktif{display:block;}
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin-bottom:20px;}
-  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;}
-  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-  .kpi.mavi::before{background:var(--blue);}.kpi.yesil::before{background:var(--green);}.kpi.turuncu::before{background:var(--accent);}
-  .kpi.mor::before{background:var(--purple);}.kpi.kirmizi::before{background:var(--red);}.kpi.cyan::before{background:var(--cyan);}.kpi.pembe::before{background:var(--pink);}
-  .kpi-ic{font-size:1.2rem;margin-bottom:5px;}.kpi-sayi{font-size:1.65rem;font-weight:800;line-height:1;margin-bottom:2px;}
-  .kpi-etiket{font-size:0.62rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.4px;}
-  .toolbar{display:flex;align-items:center;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
-  .toolbar-baslik{font-size:0.92rem;font-weight:800;flex:1;min-width:80px;}
-  .arama{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;width:190px;}
-  .arama:focus{border-color:var(--accent);}
-  .sel{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.74rem;outline:none;cursor:pointer;}
-  .sel:focus{border-color:var(--accent);}
-  .fbtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
-  .fbtn.aktif{border-color:var(--accent);color:var(--accent);background:#f0b94015;}
-  .ebtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;}
-  .ebtn:hover{background:var(--surface);}
-  .tw{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:9px;}
-  .tw table{width:100%;border-collapse:collapse;}
-  .tw th{background:var(--surface);padding:9px 12px;text-align:left;font-size:0.62rem;font-weight:700;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
-  .tw th:hover{color:var(--accent);}
-  .tw td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:0.78rem;vertical-align:middle;}
-  .tw tr:last-child td{border-bottom:none;}.tw tr:hover td{background:var(--surface);}.tw tr.pasif td{opacity:.5;}
-  .badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:0.62rem;font-weight:700;font-family:'Space Mono',monospace;}
-  .bak{background:#30d08020;color:var(--green);border:1px solid #30d08040;}
-  .bsd{background:#e0405015;color:#e07070;border:1px solid #e0405030;}
-  .status-off-tag { background: #e04050; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; margin-left: 5px; }
-  
-  /* Switch Stil */
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:15px;position:sticky;top:0;z-index:200;}
+  .topbar-logo{font-size:1rem;font-weight:800;color:var(--accent);}
+  .tab-btn{padding:6px 15px;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-weight:700;}
+  .tab-btn.aktif{background:var(--accent);color:#000;}
+  .sayfa{display:none;padding:20px;max-width:1400px;margin:0 auto;}.sayfa.aktif{display:block;}
+  .tw{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;text-align:left;}
+  th{background:var(--surface);padding:12px;font-size:0.7rem;color:var(--text2);text-transform:uppercase;}
+  td{padding:12px;border-bottom:1px solid var(--border);font-size:0.85rem;}
+  .badge{padding:3px 8px;border-radius:5px;font-size:0.7rem;font-weight:800;background:var(--surface2);}
+  .status-off-tag { background: var(--red); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left:8px;}
+  /* Switch */
   .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; border: 1px solid var(--border); }
-  .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
+  .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
   input:checked + .slider { background-color: var(--green); }
   input:checked + .slider:before { transform: translateX(16px); }
-
-  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:999;align-items:center;justify-content:center;padding:14px;}
-  .overlay.ac{display:flex;}
-  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:17px;padding:24px;width:100%;max-width:640px;max-height:89vh;overflow-y:auto;}
-  .modal-tit{font-size:0.98rem;font-weight:800;margin-bottom:15px;color:var(--accent);}
-  .ms{display:flex;gap:9px;margin-bottom:9px;align-items:flex-start;}
-  .mk{font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:128px;padding-top:2px;}
-  .mv{font-size:0.8rem;color:var(--text);font-weight:600;flex:1;word-break:break-all;}
-  .mkat{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;margin-bottom:7px;}
-  .mkaydet{padding:7px 13px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;}
-  .mkapatbtn{margin-top:15px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;}
-  .bb{font-size:0.65rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin:11px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border);}
-  .pk{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;}
-  .pk-ust{font-size:0.65rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center;}
-  .chart-box{position:relative;height:185px;}
-  .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:20px;}
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
 </style>
 </head>
 <body>
 
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">☕</div>
-    <div class="login-title">KolayCafe Admin</div>
-    <div class="login-sub">// İŞ ZEKASI PANELİ v2.1</div>
-    <input class="login-inp" id="login-email" type="email" placeholder="E-posta">
-    <input class="login-inp" id="login-sifre" type="password" placeholder="Şifre" onkeydown="if(event.key==='Enter')girisYap()">
-    <button class="login-btn" onclick="girisYap()">Giriş Yap →</button>
-    <div class="login-err" id="login-err"></div>
+  <div style="background:var(--bg2); padding:40px; border-radius:20px; border:1px solid var(--border); text-align:center;">
+    <h2 style="color:var(--accent); margin-bottom:20px;">KolayCafe Admin v2.1</h2>
+    <input id="l-pass" type="password" placeholder="Şifre" style="padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:#fff; margin-bottom:10px;"><br>
+    <button onclick="giris()" style="padding:10px 20px; border-radius:8px; background:var(--accent); border:none; font-weight:800; cursor:pointer;">Giriş</button>
   </div>
 </div>
 
 <div id="admin-panel" style="display:none;">
   <div class="topbar">
-    <div class="topbar-logo">☕ KolayCafe <span>ADMIN v2.1</span></div>
-    <button class="tab-btn aktif" onclick="sayfaGit('genel',this)">📊 Genel</button>
-    <button class="tab-btn" onclick="sayfaGit('uyeler',this)">👥 Üyeler</button>
-    <button class="tab-btn" onclick="sayfaGit('canli',this)">🔴 Canlı</button>
-    <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
-    <div class="topbar-sag">
-      <div class="canli-bar">
-        <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
-        <div class="canli-item">🪑<span class="canli-sayi" id="tb-masa">—</span></div>
-        <div class="canli-item">💰<span class="canli-sayi" id="tb-ciro">—</span>₺</div>
-      </div>
-      <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
-    </div>
+    <div class="topbar-logo">☕ ADMIN v2.1</div>
+    <button class="tab-btn aktif" onclick="tab(this,'uyeler')">Üyeler</button>
+    <button class="tab-btn" onclick="tab(this,'canli')">Canlı (5sn)</button>
+    <button onclick="location.reload()" style="margin-left:auto; background:none; border:none; color:var(--text2); cursor:pointer;">🔄 Yenile</button>
   </div>
 
-  <div class="sayfa" id="sayfa-uyeler">
-    <div class="toolbar">
-      <div class="toolbar-baslik">👥 Üyeler</div>
-      <input class="arama" id="arama" placeholder="🔍 Kafe ara..." oninput="tabloRender()">
-      <button class="ebtn" onclick="yukle()">🔄 Yenile</button>
-    </div>
+  <div id="uyeler" class="sayfa aktif">
     <div class="tw">
       <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>KAFE</th>
-            <th>PLAN</th>
-            <th>HİZMET</th>
-            <th>GARSONLAR</th>
-            <th>KALAN SÜRE</th>
-            <th>İŞLEM</th>
-          </tr>
-        </thead>
-        <tbody id="tablo-body"><tr><td colspan="7" class="yukl">⏳ Yükleniyor...</td></tr></tbody>
+        <thead><tr><th>#</th><th>KAFE ADI</th><th>PLAN</th><th>HİZMET ŞALTERİ</th><th>GARSONLAR</th><th>KALAN</th></tr></thead>
+        <tbody id="t-body"></tbody>
       </table>
     </div>
   </div>
 
-  <div class="sayfa" id="sayfa-canli">
-    <div class="toolbar"><div class="toolbar-baslik">🔴 Gerçek Zamanlı Takip (5sn)</div></div>
-    <div id="canli-liste"><div class="yukl">⏳ Yükleniyor...</div></div>
-  </div>
-
-  <div class="sayfa aktif" id="sayfa-genel">
-    <div class="kpi-grid">
-      <div class="kpi mavi"><div class="kpi-ic">🏪</div><div class="kpi-sayi" id="kpi-toplam">—</div><div class="kpi-etiket">TOPLAM KAFE</div></div>
-      <div class="kpi yesil"><div class="kpi-ic">✅</div><div class="kpi-sayi" id="kpi-aktif">—</div><div class="kpi-etiket">AKTİF ÜYE</div></div>
-      <div class="kpi cyan"><div class="kpi-ic">📈</div><div class="kpi-sayi" id="kpi-ciro">—</div><div class="kpi-etiket">BUGÜN CİRO</div></div>
-    </div>
-    <div class="pgrid">
-       <div class="pk"><div class="pk-ust"><span>📊 KAYIT TRENDİ</span></div><div class="chart-box"><canvas id="gr-kayit"></canvas></div></div>
-       <div class="pk"><div class="pk-ust"><span>💳 PLAN DAĞILIMI</span></div><div class="chart-box"><canvas id="gr-plan"></canvas></div></div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="detay-modal">
-  <div class="modal">
-    <div class="modal-tit" id="modal-kafe-adi">Kafe Detayı</div>
-    <div id="modal-icerik"></div>
-    <button class="mkapatbtn" onclick="modalKapat()">✕ Kapat</button>
+  <div id="canli" class="sayfa">
+    <div id="c-liste"></div>
   </div>
 </div>
 
@@ -169,153 +67,55 @@
 const SUPABASE_URL = 'https://sjfcdthwlwmbdmcevobv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
 
-let tumKafeler = [];
-let _canliTimer = null;
+function giris(){ if(document.getElementById('l-pass').value === 'admin123'){ document.getElementById('login-screen').style.display='none'; document.getElementById('admin-panel').style.display='block'; yukle(); } }
 
-// GİRİŞ / ÇIKIŞ
-async function girisYap() {
-  const email = document.getElementById('login-email').value.trim();
-  const sifre = document.getElementById('login-sifre').value;
-  if (email !== ADMIN_EMAIL) { alert('Yetkisiz giriş!'); return; }
-  const { error } = await sb.auth.signInWithPassword({ email, password: sifre });
-  if (error) { alert(error.message); return; }
-  location.reload();
+function tab(btn, id){ 
+  document.querySelectorAll('.sayfa').forEach(s=>s.classList.remove('aktif')); 
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('aktif'));
+  document.getElementById(id).classList.add('aktif'); btn.classList.add('aktif');
+  if(id==='canli') canliBaslat(); else clearInterval(window.cInterval);
 }
 
-async function cikisYap() { await sb.auth.signOut(); location.reload(); }
-
-// VERİ YÜKLEME
-async function yukle() {
-  const { data, error } = await sb.from('kafeler').select('*').order('created_at', { ascending: false });
-  if (error) return;
-  tumKafeler = data || [];
-  kpiGuncelle();
-  tabloRender();
+async function yukle(){
+  const { data } = await sb.from('kafeler').select('*').order('created_at',{ascending:false});
+  const tbody = document.getElementById('t-body'); tbody.innerHTML = '';
+  data.forEach((k,i)=>{
+    const bitis = new Date(k.plan_bitis); const kalan = Math.ceil((bitis-new Date())/(1000*60*60*24));
+    const garsonlar = Array.isArray(k.garsonlar) ? k.garsonlar.map(g=> typeof g === 'object' ? g.ad : g).join(', ') : '—';
+    tbody.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td><strong>${k.kafe_adi||'—'}</strong>${k.hizmet_aktif===false?'<span class="status-off-tag">KAPALI</span>':''}</td>
+        <td><span class="badge">${(k.plan||'deneme').toUpperCase()}</span></td>
+        <td>
+          <label class="switch">
+            <input type="checkbox" ${k.hizmet_aktif!==false?'checked':''} onchange="salter('${k.id}',this.checked)">
+            <span class="slider"></span>
+          </label>
+        </td>
+        <td style="font-size:0.7rem; color:var(--text2)">${garsonlar}</td>
+        <td style="color:${kalan<=0?'var(--red)':'var(--green)'}">${kalan<=0?'Süre Doldu':kalan+' gün'}</td>
+      </tr>`;
+  });
 }
 
-function kpiGuncelle() {
-    document.getElementById('kpi-toplam').textContent = tumKafeler.length;
-    const aktif = tumKafeler.filter(k => k.hizmet_aktif !== false && new Date(k.plan_bitis) > new Date()).length;
-    document.getElementById('kpi-aktif').textContent = aktif;
+async function salter(id, durum){ await sb.from('kafeler').update({hizmet_aktif:durum}).eq('id',id); yukle(); }
+
+function canliBaslat(){ 
+  canliYukle(); 
+  window.cInterval = setInterval(canliYukle, 5000); 
 }
 
-// GARSON TEMİZLEME (object object hatasını çözen kısım)
-function garsonFmt(garsonlar) {
-    if(!garsonlar || !Array.isArray(garsonlar)) return '—';
-    return garsonlar.map(g => (typeof g === 'object' && g !== null) ? (g.ad || g.isim || 'Bilinmiyor') : g).join(', ');
+async function canliYukle(){
+  const { data } = await sb.from('kafeler').select('*');
+  const online = data.filter(k=> k.son_giris && (new Date()-new Date(k.son_giris)) < 600000);
+  const div = document.getElementById('c-liste');
+  div.innerHTML = online.map(k=>`
+    <div style="background:var(--bg2); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border)">
+      <strong>☕ ${k.kafe_adi}</strong> - <span style="color:var(--green)">${(k.aktif_masalar||[]).length} Masa Açık</span>
+    </div>`).join('') || 'Aktif kafe yok.';
 }
-
-// ŞALTER DEĞİŞTİRME
-async function hizmetDurumuDegistir(id, durum) {
-    const { error } = await sb.from('kafeler').update({ hizmet_aktif: durum }).eq('id', id);
-    if (error) alert("Hata oluştu!");
-    else {
-        const k = tumKafeler.find(x => x.id === id);
-        if(k) k.hizmet_aktif = durum;
-        tabloRender();
-    }
-}
-
-// TABLO RENDER
-function tabloRender() {
-    const tbody = document.getElementById('tablo-body');
-    const arama = document.getElementById('arama').value.toLowerCase();
-    const liste = tumKafeler.filter(k => (k.kafe_adi||'').toLowerCase().includes(arama));
-    
-    tbody.innerHTML = '';
-    liste.forEach((k, i) => {
-        const simdi = new Date();
-        const bitis = new Date(k.plan_bitis);
-        const doldu = bitis <= simdi;
-        const aktif = k.hizmet_aktif !== false && !doldu;
-
-        const tr = document.createElement('tr');
-        if(!aktif) tr.style.opacity = '0.6';
-
-        tr.innerHTML = `
-            <td>${i+1}</td>
-            <td>
-                <strong>${k.kafe_adi || 'İsimsiz'}</strong>
-                ${k.hizmet_aktif === false ? '<span class="status-off-tag">MANUEL DURDURULDU</span>' : ''}
-            </td>
-            <td><span class="badge">${(k.plan||'deneme').toUpperCase()}</span></td>
-            <td>
-                <label class="switch">
-                    <input type="checkbox" ${k.hizmet_aktif !== false ? 'checked' : ''} onchange="hizmetDurumuDegistir('${k.id}', this.checked)">
-                    <span class="slider"></span>
-                </label>
-            </td>
-            <td style="font-size:0.7rem; color:var(--text2)">${garsonFmt(k.garsonlar)}</td>
-            <td style="color:${doldu ? 'var(--red)' : 'var(--green)'}">${doldu ? 'SÜRE DOLDU' : Math.ceil((bitis-simdi)/(1000*60*60*24)) + ' gün'}</td>
-            <td><button class="abtn" onclick="detayAc('${k.id}')">🔍</button></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// CANLI TAKİP (5sn Yenileme)
-async function canliYukle() {
-    const simdi = new Date();
-    const { data } = await sb.from('kafeler').select('*');
-    if(!data) return;
-    
-    const onlineKafeler = data.filter(k => k.son_giris && (simdi - new Date(k.son_giris)) < 10*60*1000);
-    const listeDiv = document.getElementById('canli-liste');
-    
-    if(onlineKafeler.length === 0) {
-        listeDiv.innerHTML = '<div class="yukl">Şu an aktif kafe yok.</div>';
-        return;
-    }
-
-    listeDiv.innerHTML = onlineKafeler.map(k => {
-        const acikMasalar = k.aktif_masalar || [];
-        const ciro = acikMasalar.reduce((t,m) => t + (m.siparisler||[]).reduce((tt,s)=>tt+(s.fiyat*s.adet),0), 0);
-        return `
-        <div style="background:var(--surface); padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--green)">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <strong>☕ ${k.kafe_adi}</strong>
-                <span style="color:var(--green); font-weight:800;">${ciro}₺</span>
-            </div>
-            <div style="font-size:0.75rem; margin-top:5px; color:var(--text2)">
-                ${acikMasalar.length} Açık Masa | Garsonlar: ${garsonFmt(k.garsonlar)}
-            </div>
-            <div style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;">
-                ${acikMasalar.map(m => `<span style="background:var(--bg2); padding:3px 7px; border-radius:5px; font-size:0.65rem; border:1px solid var(--border)">🪑 ${m.ad}</span>`).join('')}
-            </div>
-        </div>`;
-    }).join('');
-}
-
-// SAYFA YÖNETİMİ
-function sayfaGit(id, btn) {
-    document.querySelectorAll('.sayfa').forEach(s => s.classList.remove('aktif'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
-    document.getElementById('sayfa-' + id).classList.add('aktif');
-    btn.classList.add('aktif');
-    
-    clearInterval(_canliTimer);
-    if(id === 'canli') {
-        canliYukle();
-        _canliTimer = setInterval(canliYukle, 5000); // 5 Saniyeye düşürüldü
-    }
-}
-
-// INIT
-(async () => {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session && session.user.email === ADMIN_EMAIL) {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'block';
-        await yukle();
-    }
-})();
-
-function toast(m){ alert(m); }
-function detayAc(id){ alert("Detay modülü hazır, veri çekiliyor..."); }
-function modalKapat(){ document.getElementById('detay-modal').classList.remove('ac'); }
-
 </script>
 </body>
 </html>
