@@ -3644,13 +3644,26 @@ async function adisyonVerisiYukle() {
 }
 
 async function kolaycafenVerisiYukle() {
-  // Bugünün kolaycafenlarını yükle (son 30 gün)
-  const otuzGunOnce = new Date(); otuzGunOnce.setDate(otuzGunOnce.getDate()-30);
-  const {data} = await sb.from('kolaycafenlar').select('*')
-    .eq('kafe_id', kafeId)
-    .neq('odeme_tipi', 'cari_tahsil')
-    .gte('created_at', otuzGunOnce.toISOString())
-    .order('created_at', {ascending:false});
+  // Sadece bugünkü adisyonları yükle (günlük istatistik için)
+  // Rapor sayfası kendi DB sorgusunu yapıyor — sınırsız tarih aralığı
+  const bugunBas = new Date(); bugunBas.setHours(0,0,0,0);
+  
+  let tumData = [];
+  let sayfa = 0;
+  const SAYFA_BOYUTU = 1000;
+  while (true) {
+    const {data, error} = await sb.from('kolaycafenlar').select('*')
+      .eq('kafe_id', kafeId)
+      .neq('odeme_tipi', 'cari_tahsil')
+      .gte('created_at', bugunBas.toISOString())
+      .order('created_at', {ascending:false})
+      .range(sayfa * SAYFA_BOYUTU, (sayfa + 1) * SAYFA_BOYUTU - 1);
+    if (error || !data || data.length === 0) break;
+    tumData = tumData.concat(data);
+    if (data.length < SAYFA_BOYUTU) break;
+    sayfa++;
+  }
+  const data = tumData;
   if (data) {
     kapaliKolayCafenlar = data.map(a => ({
       id: a.id,
@@ -3837,7 +3850,7 @@ function sayfaGit(sayfa) {
   document.getElementById('page-'+sayfa).classList.add('active');
   if (sayfa === 'gelgid') gelgidRender();
   document.getElementById('nav-'+sayfa).classList.add('active');
-  if (sayfa==='rapor') raporRender();
+  if (sayfa==='rapor') { kolaycafenVerisiYukle().then(()=>raporRender()); }
   if (sayfa==='recete') receteListeRender();
   if (sayfa==='urun') { urunListesiRender(); katYonetimRender(); setTimeout(()=>emojiGridRender('icecek'),50); urunSekmeGec('urunler'); }
   if (sayfa==='cari') { if(cariMusteriler.length===0) cariYukle(); else cariHesaplarRender(); }
@@ -6853,7 +6866,49 @@ async function raporOnlineRender() {
 }
 
 async function raporRenderTam() {
-  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  // Seçili dönemi doğrudan DB'den çek — bellek limitini aşar, tüm tarih desteklenir
+  let filtre = [];
+  try {
+    const baslangic = donemBaslangic();
+    let q = sb.from('kolaycafenlar').select('*')
+      .eq('kafe_id', kafeId)
+      .neq('odeme_tipi', 'cari_tahsil')
+      .order('created_at', {ascending: false});
+    if (baslangic) q = q.gte('created_at', baslangic);
+    // Özel dönem bitiş tarihi
+    if (aktifDonem === 'ozel' && _ozelBitis) {
+      q = q.lte('created_at', new Date(_ozelBitis + 'T23:59:59').toISOString());
+    }
+    // Sayfalama ile tümünü çek (10.000+ adisyon desteği)
+    let sayfa = 0;
+    const BOYUT = 1000;
+    while (true) {
+      const {data: sf, error} = await q.range(sayfa * BOYUT, (sayfa + 1) * BOYUT - 1);
+      if (error || !sf || sf.length === 0) break;
+      const donusum = sf.map(a => ({
+        id: a.id,
+        masa: a.masa_no,
+        masaAd: a.masa_ad || 'Masa ' + a.masa_no,
+        tarih: new Date(a.created_at).toLocaleString('tr-TR'),
+        tarihObj: new Date(a.created_at),
+        toplam: a.toplam,
+        indirim: a.indirim || 0,
+        garson: a.garson || '',
+        siparisler: a.siparisler || [],
+        odeme_tipi: a.odeme_tipi || 'nakit',
+        musteri_adi: a.musteri_adi || '',
+        cari_tutar: a.cari_tutar || 0,
+        masa_notu: a.masa_notu || '',
+      }));
+      filtre = filtre.concat(donusum);
+      if (sf.length < BOYUT) break;
+      sayfa++;
+    }
+  } catch(e) {
+    console.error('Rapor yükleme hatası:', e);
+    // Hata durumunda bellekteki veriyi kullan
+    filtre = donemFiltrele(kapaliKolayCafenlar);
+  }
   
   // Online siparişleri çek (teslim edilenler)
   let onlineFiltreli = [];
@@ -6882,6 +6937,8 @@ async function raporRenderTam() {
   }));
 
   const tumAdisyonlar = [...filtre, ...onlineAdisyonlar];
+  // Diğer fonksiyonlar (grafik, PDF, Excel) için cache
+  window._raporFiltre = filtre;
   const toplamCiro = tumAdisyonlar.reduce((s,a) => s + a.toplam, 0);
   const toplamAdi = tumAdisyonlar.length;
   const ds = {};
@@ -7030,7 +7087,7 @@ async function raporRenderTam() {
 
 // ── GRAFİKLER ──
 function raporGrafikleriCiz() {
-  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  const filtre = window._raporFiltre || donemFiltrele(kapaliKolayCafenlar);
 
   // Günlük ciro grafiği
   const gunCiro = {};
@@ -7165,7 +7222,7 @@ function raporGrafikleriCiz() {
 
 // ── PDF EXPORT ──
 function raporPDFExport() {
-  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  const filtre = window._raporFiltre || donemFiltrele(kapaliKolayCafenlar);
   const ciro = filtre.reduce((s,a) => s+a.toplam, 0);
   const _ozelAd = (_ozelBaslangic&&_ozelBitis&&_ozelBaslangic!==_ozelBitis) ? (_ozelBaslangic+' / '+_ozelBitis) : (_ozelBaslangic||'Özel');
   const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü',ozel:_ozelAd}[aktifDonem]||aktifDonem;
@@ -7200,7 +7257,7 @@ function raporPDFExport() {
 
 // ── EXCEL EXPORT ──
 function raporExcelExport() {
-  const filtre = donemFiltrele(kapaliKolayCafenlar);
+  const filtre = window._raporFiltre || donemFiltrele(kapaliKolayCafenlar);
   const donemAd = {gun:'Bugün',hafta:'Bu Hafta',ay:'Bu Ay',yil:'Bu Yıl',tum:'Tümü',ozel:((_ozelBaslangic&&_ozelBitis&&_ozelBaslangic!==_ozelBitis)?(_ozelBaslangic+' / '+_ozelBitis):(_ozelBaslangic||'Özel'))}[aktifDonem]||aktifDonem;
   
   let csv = 'Tarih,Masa,Garson,Toplam,Ödeme Tipi,Ürünler\n';
