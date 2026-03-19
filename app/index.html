@@ -2694,6 +2694,10 @@ let _transferYapiliyor = false; // transfer/split işlemleri
 let _skipSubscriptionCount = 0; // transfer/split sonrası kaç event yoksayılacak
 window._sadeceMenuModu = false; // başlangıçta false — QR ile açılınca set edilir
 let aktifDonem = 'gun';
+let _raporCache = null;        // son çekilen rapor verisi
+let _raporCacheDonem = null;   // cache hangi dönem için
+let _raporCacheZaman = 0;      // cache zamanı (ms)
+const RAPOR_CACHE_SURE = 60000; // 60 saniye cache
 let btYazici = null;
 let _kayitTimeout = null;
 let _kayitBekliyor = false;
@@ -2738,9 +2742,15 @@ async function girisYap() {
   if (!email||!sifre) { authHata('E-posta ve şifre girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
-  const {data, error} = await sb.auth.signInWithPassword({email, password: sifre});
-  if (error) { authHata(error.message==='Invalid login credentials'?'E-posta veya şifre hatalı!':error.message); return; }
-  await uygulamaBaslat(data.user);
+  try {
+    const {data, error} = await sb.auth.signInWithPassword({email, password: sifre});
+    if (error) { authHata(error.message==='Invalid login credentials'?'E-posta veya şifre hatalı!':error.message); return; }
+    await uygulamaBaslat(data.user);
+  } catch(e) {
+    authHata('Bağlantı hatası. İnternet bağlantınızı kontrol edin.');
+  } finally {
+    document.getElementById('auth-loading').style.display = 'none';
+  }
 }
 
 async function kayitOl() {
@@ -2760,49 +2770,55 @@ async function kayitOl() {
   if (sifre.length<6) { authHata('Şifre en az 6 karakter olmalı!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
-  const {data, error} = await sb.auth.signUp({email, password: sifre});
-  if (error) { authHata(error.message); return; }
-  
-  // Kupon kodu kontrolü
-  const kuponKodu = document.getElementById('kayit-kupon').value.trim().toUpperCase();
-  let kuponIndirim = 0;
-  let kuponId = null;
-  if (kuponKodu) {
-    const bugun = new Date().toISOString();
-    const {data: kupon} = await sb.from('kuponlar')
-      .select('*')
-      .eq('kod', kuponKodu)
-      .eq('aktif', true)
-      .gte('bitis_tarihi', bugun)
-      .single();
-    if (kupon) {
-      kuponIndirim = kupon.indirim_orani;
-      kuponId = kupon.id;
-      // Kullanım sayısını artır
-      await sb.from('kuponlar').update({
-        kullanim_sayisi: (kupon.kullanim_sayisi || 0) + 1
-      }).eq('id', kupon.id);
+  try {
+    const {data, error} = await sb.auth.signUp({email, password: sifre});
+    if (error) { authHata(error.message); return; }
+    
+    // Kupon kodu kontrolü
+    const kuponKodu = document.getElementById('kayit-kupon').value.trim().toUpperCase();
+    let kuponIndirim = 0;
+    let kuponId = null;
+    if (kuponKodu) {
+      const bugun = new Date().toISOString();
+      const {data: kupon} = await sb.from('kuponlar')
+        .select('*')
+        .eq('kod', kuponKodu)
+        .eq('aktif', true)
+        .gte('bitis_tarihi', bugun)
+        .single();
+      if (kupon) {
+        kuponIndirim = kupon.indirim_orani;
+        kuponId = kupon.id;
+        await sb.from('kuponlar').update({
+          kullanim_sayisi: (kupon.kullanim_sayisi || 0) + 1
+        }).eq('id', kupon.id);
+      }
     }
+    
+    const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+10);
+    const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
+    const {error: insertErr} = await sb.from('kafeler').insert({
+      user_id: data.user.id, kafe_adi: kafe,
+      email: email,
+      plan: 'pro', plan_bitis: plnBitis.toISOString(),
+      telefon: tel, adres: adres,
+      garsonlar: [],
+      kafe_kodu: kafeKoduYeni,
+      kupon_kodu: kuponKodu || null,
+      kupon_indirim: kuponIndirim,
+      vergi_no: vergiNo || null,
+      fatura_adres: faturaAdres || null,
+      fatura_il: il || null,
+      fatura_ilce: ilce || null,
+      garson_kodu: garsonKoduGiris || Math.floor(1000+Math.random()*9000).toString()
+    });
+    if (insertErr) { authHata('Kayıt oluşturulamadı: ' + insertErr.message); return; }
+    await uygulamaBaslat(data.user);
+  } catch(e) {
+    authHata('Bağlantı hatası. İnternet bağlantınızı kontrol edin.');
+  } finally {
+    document.getElementById('auth-loading').style.display = 'none';
   }
-  
-  const plnBitis = new Date(); plnBitis.setDate(plnBitis.getDate()+10);
-  const kafeKoduYeni = Math.random().toString(36).substring(2,8).toUpperCase();
-  await sb.from('kafeler').insert({
-    user_id: data.user.id, kafe_adi: kafe,
-    email: email,
-    plan: 'pro', plan_bitis: plnBitis.toISOString(),
-    telefon: tel, adres: adres,
-    garsonlar: [],
-    kafe_kodu: kafeKoduYeni,
-    kupon_kodu: kuponKodu || null,
-    kupon_indirim: kuponIndirim,
-    vergi_no: vergiNo || null,
-    fatura_adres: faturaAdres || null,
-    fatura_il: il || null,
-    fatura_ilce: ilce || null,
-    garson_kodu: garsonKoduGiris || Math.floor(1000+Math.random()*9000).toString()
-  });
-  await uygulamaBaslat(data.user);
 }
 
 function sifreGoster() {
@@ -2851,43 +2867,46 @@ async function garsonKafeBul() {
   const kod = document.getElementById('garson-kafe-kodu').value.trim();
   if (!kod) { authHata('Cafe kodunu girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
-  const {data, error} = await sb.from('kafeler')
-    .select('*')
-    .eq('kafe_kodu', kod.toLowerCase())
-    .maybeSingle();
-  document.getElementById('auth-loading').style.display = 'none';
-  if (error || !data) { authHata('Cafe bulunamadı! Kodu kontrol edin.'); return; }
-  // Garson listesini göster
-  garsonKafeId = data.id;
-  const garsonlar = data.garsonlar || [];
-  const butonlar = document.getElementById('garson-butonlar');
-  butonlar.innerHTML = '';
-  if (garsonlar.length === 0) { authHata('Bu cafede henüz garson eklenmemiş.'); return; }
-  const garsonListesi = (garsonlar || []).map(g => typeof g === 'string' ? {isim:g, pin:'', aktif:true} : g);
-  const aktifGarsonlar = garsonListesi.filter(g => g.aktif !== false);
-  if(aktifGarsonlar.length === 0){ authHata('Bu cafede aktif garson bulunmuyor.'); return; }
-  aktifGarsonlar.forEach(g => {
-    const btn = document.createElement('button');
-    btn.style.cssText = 'width:100%;padding:13px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;';
-    btn.textContent = '👤 ' + g.isim;
-    btn.addEventListener('click', () => {
-      window._seciliGarson = g.isim;
-      window._garsonPin = g.pin || '';
-      window._garsonKafeData = data;
-      // Aktif butonu işaretle
-      butonlar.querySelectorAll('button').forEach(b => b.style.background = 'var(--surface2)');
-      btn.style.background = 'var(--accent)'; btn.style.color = '#1a1205';
-      // PIN varsa kod ekranı göster, yoksa direkt giriş
-      if (g.pin) {
-        document.getElementById('garson-kod-giris').style.display = 'block';
-        document.getElementById('garson-giris-kodu').focus();
-      } else {
-        garsonGiris(g.isim, data);
-      }
+  try {
+    const {data, error} = await sb.from('kafeler')
+      .select('*')
+      .eq('kafe_kodu', kod.toLowerCase())
+      .maybeSingle();
+    if (error || !data) { authHata('Cafe bulunamadı! Kodu kontrol edin.'); return; }
+    // Garson listesini göster
+    garsonKafeId = data.id;
+    const garsonlar = data.garsonlar || [];
+    const butonlar = document.getElementById('garson-butonlar');
+    butonlar.innerHTML = '';
+    if (garsonlar.length === 0) { authHata('Bu cafede henüz garson eklenmemiş.'); return; }
+    const garsonListesi = (garsonlar || []).map(g => typeof g === 'string' ? {isim:g, pin:'', aktif:true} : g);
+    const aktifGarsonlar = garsonListesi.filter(g => g.aktif !== false);
+    if(aktifGarsonlar.length === 0){ authHata('Bu cafede aktif garson bulunmuyor.'); return; }
+    aktifGarsonlar.forEach(g => {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;padding:13px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;';
+      btn.textContent = '👤 ' + g.isim;
+      btn.addEventListener('click', () => {
+        window._seciliGarson = g.isim;
+        window._garsonPin = g.pin || '';
+        window._garsonKafeData = data;
+        butonlar.querySelectorAll('button').forEach(b => b.style.background = 'var(--surface2)');
+        btn.style.background = 'var(--accent)'; btn.style.color = '#1a1205';
+        if (g.pin) {
+          document.getElementById('garson-kod-giris').style.display = 'block';
+          document.getElementById('garson-giris-kodu').focus();
+        } else {
+          garsonGiris(g.isim, data);
+        }
+      });
+      butonlar.appendChild(btn);
     });
-    butonlar.appendChild(btn);
-  });
-  document.getElementById('garson-isim-liste').style.display = 'block';
+    document.getElementById('garson-isim-liste').style.display = 'block';
+  } catch(e) {
+    authHata('Bağlantı hatası. İnternet bağlantınızı kontrol edin.');
+  } finally {
+    document.getElementById('auth-loading').style.display = 'none';
+  }
 }
 
 async function garsonKodDogrula() {
@@ -3060,7 +3079,7 @@ async function garsonGiris(isim, kafeData) {
 
       // Cari güncelleme (seyrek)
       if (Date.now() % 10000 < 3000) await kolaycafenVerisiYukle();
-    } catch(e) { console.log('Garson sync hatası:', e); }
+    } catch(e) { console.error('Garson sync hatası:', e); }
     finally { _garsonPolling = false; }
   }, 3000); // 2000ms → 3000ms: daha seyrek polling = daha az çakışma
 
@@ -3140,7 +3159,7 @@ async function uygulamaBaslat(user) {
         }
       });
     }
-  } catch(e) { console.log('Aktif masa yükleme hatası:', e); }
+  } catch(e) { console.error('Aktif masa yükleme hatası:', e); }
   // Grup ataması boş olan masalar varsa otomatik atandı — kaydet
   const _grupAtanmamisVar = masalar.some(m => !m.grup);
   masalarRender();
@@ -3444,7 +3463,16 @@ window.appTemaUygula = appTemaUygula;
 window.appTemaKaydet = appTemaKaydet;
 
 async function kafeVerisiYukle() {
-  const {data} = await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
+  let data;
+  try {
+    const {data: d, error} = await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
+    if (error) throw error;
+    data = d;
+  } catch(e) {
+    toast('⚠️ Kafe verisi yüklenemedi. Bağlantınızı kontrol edin.');
+    console.error('kafeVerisiYukle hata:', e);
+    return;
+  }
   window._kafeData = data; // Global olarak sakla
   if (data) {
     kafeId = data.id;
@@ -3466,7 +3494,7 @@ async function kafeVerisiYukle() {
     }
     // Uygulama teması yükle
     appTemaYukle(data);
-    if (data.receteler) { RECETELER = data.receteler; console.log("Admin: Reçeteler yüklendi:", Object.keys(RECETELER)); }
+    if (data.receteler) { RECETELER = data.receteler; }
     if (data.grup_listesi && Array.isArray(data.grup_listesi) && data.grup_listesi.length > 0) {
       _sabitGruplar = data.grup_listesi;
     }
@@ -3760,7 +3788,7 @@ async function _masaSyncYazHemen(masaId) {
 
     } catch(e) {
       deneme++;
-      console.log('Sync hata deneme ' + deneme + ':', e?.message||e);
+      console.error('Sync hata deneme ' + deneme + ':', e?.message||e);
       if (deneme < 3) await new Promise(r => setTimeout(r, 400 * deneme));
     }
   }
@@ -3793,7 +3821,7 @@ function bulutKaydet() {
         if (ind) { ind.textContent='✓ kaydedildi'; ind.style.color='#22c55e'; setTimeout(()=>{ind.style.display='none';},2500); }
       }
     } catch(e) {
-      console.log('Kayıt hatası:', e);
+      console.error('Kayıt hatası:', e);
       _kayitBekliyor = false;
       if (ind) { ind.textContent='⚠️ kayıt hatası!'; ind.style.color='var(--danger)'; }
     }
@@ -4112,10 +4140,10 @@ function grupAsagi(idx) {
 window.grupYukar = grupYukar;
 window.grupAsagi = grupAsagi;
 
-function grupSil(grup) {
+async function grupSil(grup) {
   const masaSayisi = masalar.filter(m => m.grup === grup).length;
   const uyari = masaSayisi > 0 ? '\n\n' + masaSayisi + ' masanın grup ataması kaldırılır.' : '';
-  if (!confirm('"' + grup + '" grubunu silmek istiyor musunuz?' + uyari)) return;
+  if (!await kcConfirm('"' + grup + '" grubunu silmek istiyor musunuz?' + uyari)) return;
   masalar.forEach(m => { if (m.grup === grup) m.grup = ''; });
   _sabitGruplar = _sabitGruplar.filter(g => g !== grup);
   if (_aktifGrupFiltre === grup) _aktifGrupFiltre = '';
@@ -4223,10 +4251,10 @@ function masalarRender() {
       const qrBtn=btn.querySelector(".masa-qr-btn"); if(qrBtn) qrBtn.addEventListener("click",e=>{e.stopPropagation();qrGoster(m.id, m.ad!=="Masa "+m.id?m.ad:"Masa "+m.id);});
       // Garson çağrı kapat butonu
       
-      btn.addEventListener('click',()=>{
+      btn.addEventListener('click', async ()=>{
         // Garson çakışma koruması
         if (garsonModu && aktifGarsonAdi && m.garson && m.garson !== aktifGarsonAdi && m.siparisler.length > 0) {
-          if (!confirm("Bu masada su an \"" + m.garson + "\" calisiyor. Yine de acmak istiyor musunuz?")) return;
+          if (!await kcConfirm('Bu masada şu an "' + m.garson + '" çalışıyor. Yine de açmak istiyor musunuz?')) return;
         }
         // Boş masada kişi sayısı sor
         if (!var_) {
@@ -4396,12 +4424,12 @@ function katAdDegistir(kat) {
   toast('✓ Kategori adı güncellendi');
 }
 
-function katSil(kat) {
+async function katSil(kat) {
   const urunSayisi = (URUNLER[kat]||[]).length;
   const mesaj = urunSayisi > 0
     ? `"${kat}" kategorisinde ${urunSayisi} ürün var.\nKategori ve tüm ürünleri silinecek. Emin misiniz?`
     : `"${kat}" kategorisi silinsin mi?`;
-  if (!confirm(mesaj)) return;
+  if (!await kcConfirm(mesaj)) return;
   delete URUNLER[kat];
   mevcutKat = Object.keys(URUNLER)[0] || '';
   katSelectDoldur(); katTabsRender(); urunGridRender(); katYonetimRender(); bulutKaydet();
@@ -4431,9 +4459,9 @@ function urunGridRender() {
     const sepetAdet = mevcutM ? mevcutM.siparisler.filter(s=>s.isim===u.isim).reduce((t,s)=>t+s.adet,0) : 0;
     const adetRozet = `<div class="uadet">${sepetAdet||''}</div>`;
     kart.innerHTML=`${resimHTML}<div class="un">${u.isim}</div><div class="up">${u.fiyat} ₺</div><button class="udel">✕</button>${stokBadge}${varyantRozet}${adetRozet}`;
-    kart.querySelector('.udel').addEventListener('click',e=>{
+    kart.querySelector('.udel').addEventListener('click', async e=>{
       e.stopPropagation();
-      if(!confirm('"'+u.isim+'" silinsin mi?')) return;
+      if(!await kcConfirm('"'+u.isim+'" silinsin mi?')) return;
       URUNLER[mevcutKat].splice(idx,1);
       urunGridRender(); urunListesiRender(); bulutKaydet(); toast('Ürün silindi');
     });
@@ -4661,9 +4689,9 @@ function siparisKaldir(idx) {
   siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
 }
 
-function masaTemizle() {
+async function masaTemizle() {
   if(!seciliMasa) return;
-  if(!confirm('Masa temizlensin mi?')) return;
+  if(!await kcConfirm('Masa temizlensin mi?')) return;
   const m = getMasa(); if(!m) return;
   const temizlenenMasaId = seciliMasa;
   m.siparisler = [];
@@ -4712,16 +4740,19 @@ async function cariKaydet() {
     cari_tutar:son
   };
   kolaycafen.dbId = Date.now();
-  const cariMasaId = seciliMasa; // masaSyncYaz için kaydet
-  // Cari müşteri bakiyesini güncelle
-  cariKaydetMusteri(musteriAdi, seciliMasa, m, son);
-  kapaliKolayCafenlar.unshift(kolaycafen);
-  // Cari ciroya eklenmez
-  m.siparisler=[]; m.indirim=0; m.garson='';
-  kolaycafenGuncelle(); siparisListeRender(); masalarRender();
-  toast('📋 '+musteriAdi+' — '+fmt(son)+' cariye yazıldı');
-  await kolaycafenKaydet(kolaycafen);
-  await masaSyncYaz(cariMasaId); // Masayı kapat
+  const cariMasaId = seciliMasa;
+  try {
+    cariKaydetMusteri(musteriAdi, seciliMasa, m, son);
+    kapaliKolayCafenlar.unshift(kolaycafen);
+    m.siparisler=[]; m.indirim=0; m.garson='';
+    kolaycafenGuncelle(); siparisListeRender(); masalarRender();
+    toast('📋 '+musteriAdi+' — '+fmt(son)+' cariye yazıldı');
+    await kolaycafenKaydet(kolaycafen);
+    await masaSyncYaz(cariMasaId);
+  } catch(e) {
+    toast('❌ Cari kayıt hatası: ' + (e.message || 'Bilinmeyen hata'));
+    console.error('cariKaydet hata:', e);
+  }
 }
 
 let _tahsilEdiliyor = false;
@@ -4781,7 +4812,7 @@ async function tahsilEt(odemeTipi) {
 // ADİSYON GERİ AL / SİL
 // ════════════════════════════════════════
 async function adisyonGeriAl(a) {
-  if (!confirm(`"${a.masaAd}" adisyonu geri alınacak.\nSiparişler masaya yüklenecek, stoklar iade edilecek.\nEmin misiniz?`)) return;
+  if (!await kcConfirm(`"${a.masaAd}" adisyonu geri alınacak.\nSiparişler masaya yüklenecek, stoklar iade edilecek.\nEmin misiniz?`)) return;
 
   // 1. Masayı bul
   const m = masalar.find(x => x.id == a.masa);
@@ -4829,7 +4860,7 @@ async function adisyonGeriAl(a) {
 }
 
 async function adisyonSil(a) {
-  if (!confirm(`"${a.masaAd}" adisyonu silinecek.\nMasa açılmayacak, sadece listeden kaldırılacak.\nEmin misiniz?`)) return;
+  if (!await kcConfirm(`"${a.masaAd}" adisyonu silinecek.\nMasa açılmayacak, sadece listeden kaldırılacak.\nEmin misiniz?`)) return;
 
   // Supabase'den sil
   if (a.id) {
@@ -5229,7 +5260,7 @@ async function birlestirYap(hedefId){
   const kaynakAd = k.ad||'Masa '+k.id;
   const hedefAd  = h.ad||'Masa '+h.id;
 
-  if(!confirm(`"${kaynakAd}" siparişleri "${hedefAd}" masasına eklenecek.\n${kaynakAd} boşalacak.\n\nDevam edilsin mi?`)) return;
+  if(!await kcConfirm(`"${kaynakAd}" siparişleri "${hedefAd}" masasına eklenecek.\n${kaynakAd} boşalacak.\n\nDevam edilsin mi?`)) return;
 
   _transferYapiliyor = true;
   _skipSubscriptionCount = 3;
@@ -5792,8 +5823,8 @@ function urunListesiRender(){
         if(isNaN(f)||f<0){e.target.value=u.fiyat;toast('Gecersiz fiyat!');return;}
         URUNLER[kat][idx].fiyat=f; if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Fiyat guncellendi');
       });
-      item.querySelector('.uli-sil').addEventListener('click',()=>{
-        if(!confirm('"'+u.isim+'" silinsin mi?')) return;
+      item.querySelector('.uli-sil').addEventListener('click', async ()=>{
+        if(!await kcConfirm('"'+u.isim+'" silinsin mi?')) return;
         URUNLER[kat].splice(idx,1); urunListesiRender(); if(mevcutKat===kat) urunGridRender(); bulutKaydet(); toast('Urun silindi');
       });
       item.querySelector('.uli-aciklama').addEventListener('change', e=>{
@@ -5904,8 +5935,8 @@ function varyantEditorRender(container, kat, idx) {
       URUNLER[kat][idx].varyantlar[gi].zorunlu = e.target.checked;
       bulutKaydet();
     });
-    gDiv.querySelector('.vge-sil-btn').addEventListener('click', () => {
-      if (!confirm('"'+grup.ad+'" varyant grubu silinsin mi?')) return;
+    gDiv.querySelector('.vge-sil-btn').addEventListener('click', async () => {
+      if (!await kcConfirm('"'+grup.ad+'" varyant grubu silinsin mi?')) return;
       URUNLER[kat][idx].varyantlar.splice(gi, 1);
       bulutKaydet(); varyantEditorRender(container, kat, idx);
     });
@@ -5934,6 +5965,7 @@ let _ozelBitis = null;
 
 function donemSec(donem,btn){
   aktifDonem=donem;
+  _raporCache = null; // dönem değişince cache sıfırla
   document.querySelectorAll('.donem-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   if(donem!=='ozel'){ const w=document.getElementById('ozel-tarih-wrap'); if(w) w.style.display='none'; }
@@ -6187,12 +6219,9 @@ function cariDetayDuzenle() {
   if (!aktifCariMusteri) return;
   cariYeniMusteriAc(aktifCariMusteri);
 }
-
 async function cariDetaySil() {
   if (!aktifCariMusteri) return;
-  const onay = confirm(`"${aktifCariMusteri.ad}" müşterisini silmek istediğinizden emin misiniz?
-
-Tüm işlem geçmişi de silinecek!`);
+  const onay = await kcConfirm(`"${aktifCariMusteri.ad}" müşterisini silmek istediğinizden emin misiniz?\n\nTüm işlem geçmişi de silinecek!`);
   if (!onay) return;
   const { error } = await sb.from('cari_musteriler').delete().eq('id', aktifCariMusteri.id);
   if (error) { toast('Hata: ' + error.message); return; }
@@ -6866,6 +6895,15 @@ async function raporOnlineRender() {
 }
 
 async function raporRenderTam() {
+  // ── CACHE KONTROLÜ — aynı dönem 60sn içinde tekrar sorgulanmasın ──
+  const cacheAnahtar = aktifDonem + '|' + (_ozelBaslangic||'') + '|' + (_ozelBitis||'');
+  const simdi = Date.now();
+  if (_raporCache && _raporCacheDonem === cacheAnahtar && (simdi - _raporCacheZaman) < RAPOR_CACHE_SURE) {
+    // Cache geçerli — DB'ye gitme, direkt render et
+    _raporVerisiIsle(_raporCache.filtre, _raporCache.onlineFiltreli);
+    return;
+  }
+
   // Seçili dönemi doğrudan DB'den çek — bellek limitini aşar, tüm tarih desteklenir
   let filtre = [];
   try {
@@ -6924,6 +6962,15 @@ async function raporRenderTam() {
     onlineFiltreli = onlineData || [];
   } catch(e) {}
 
+  // ── Cache'e kaydet ──
+  _raporCache = { filtre, onlineFiltreli };
+  _raporCacheDonem = cacheAnahtar;
+  _raporCacheZaman = Date.now();
+
+  _raporVerisiIsle(filtre, onlineFiltreli);
+}
+
+async function _raporVerisiIsle(filtre, onlineFiltreli) {
   // Online siparişleri rapor formatına çevir
   const onlineAdisyonlar = onlineFiltreli.map(o => ({
     toplam: o.toplam || 0,
@@ -7420,7 +7467,7 @@ function receteKatSec(kat, btn) {
 }
 
 async function receteSilOnay(urunAdi) {
-  if(!confirm(`"${urunAdi}" reçetesini silmek istiyor musunuz?`)) return;
+  if(!await kcConfirm(`"${urunAdi}" reçetesini silmek istiyor musunuz?`)) return;
   delete RECETELER[urunAdi];
   if(kafeId) await sb.from('kafeler').update({receteler: RECETELER}).eq('id', kafeId);
   toast('🗑 Reçete silindi');
@@ -7632,14 +7679,12 @@ async function receteKaydet() {
   
   // Supabase'e kaydet
   if(kafeId) {
-    console.log('Kaydediliyor... kafeId:', kafeId, 'RECETELER:', JSON.stringify(RECETELER));
     const { data, error } = await sb.from('kafeler').update({ receteler: RECETELER }).eq('id', kafeId).select('receteler').single();
     if(error) {
       toast('❌ Kayıt hatası: ' + error.message);
       console.error('Reçete kayıt hatası:', error);
       return;
     }
-    console.log('Kaydedilen veri:', data);
     // Dönen veriyle RECETELER'i senkronize et
     if(data?.receteler) RECETELER = data.receteler;
     toast('✅ Reçete kaydedildi');
@@ -7777,7 +7822,7 @@ async function gelgidKaydet() {
 }
 
 async function gelgidSil(id) {
-  if (!confirm('Silinsin mi?')) return;
+  if (!await kcConfirm('Bu kayıt silinsin mi?')) return;
   await sb.from('gelir_gider').delete().eq('id', id);
   toast('Silindi');
   await gelgidRender();
@@ -7972,7 +8017,7 @@ async function kuponEkle() {
 }
 
 async function kuponSil(id) {
-  if (!confirm('Kupon silinsin mi?')) return;
+  if (!await kcConfirm('Kupon silinsin mi?')) return;
   await sb.from('kuponlar').delete().eq('id', id);
   toast('Kupon silindi');
   await kuponListeRender();
@@ -8176,7 +8221,7 @@ function ekstraMasaEkle() {
 // ════════════════════════════════════════
 // MASA SİL
 // ════════════════════════════════════════
-function masaSilOnay() {
+async function masaSilOnay() {
   // Hangi masanın ayarları açık?
   const modal = document.getElementById('not-modal');
   const baslik = document.getElementById('not-modal-baslik');
@@ -8191,7 +8236,7 @@ function masaSilOnay() {
     return;
   }
 
-  if (!confirm('"' + m.ad + '" silinecek. Bu işlem geri alınamaz!\n\nEmin misiniz?')) return;
+  if (!await kcConfirm('"' + m.ad + '" silinecek. Bu işlem geri alınamaz!\n\nEmin misiniz?')) return;
 
   // Masayı sil
   masalar = masalar.filter(x => x.id !== masaId);
@@ -8406,6 +8451,30 @@ async function garsonCagriKapat(masaId) {
 }
 let _tt;
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('goster');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('goster'),2800);}
+
+// ── ONAY MODALI — confirm() yerine iOS uyumlu alternatif ──
+function kcConfirm(mesaj) {
+  return new Promise(resolve => {
+    // Varsa önce temizle
+    const eski = document.getElementById('kc-confirm-overlay');
+    if (eski) eski.remove();
+    const ov = document.createElement('div');
+    ov.id = 'kc-confirm-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;width:100%;max-width:340px;font-family:'Nunito',sans-serif;">
+        <div style="font-size:0.92rem;font-weight:700;color:var(--text);line-height:1.6;margin-bottom:20px;white-space:pre-line;">${mesaj}</div>
+        <div style="display:flex;gap:10px;">
+          <button id="kc-confirm-hayir" style="flex:1;padding:12px;border-radius:11px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:800;cursor:pointer;">İptal</button>
+          <button id="kc-confirm-evet" style="flex:1;padding:12px;border-radius:11px;border:none;background:var(--danger);color:#fff;font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">Evet, Sil</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('kc-confirm-evet').onclick = () => { ov.remove(); resolve(true); };
+    document.getElementById('kc-confirm-hayir').onclick = () => { ov.remove(); resolve(false); };
+    ov.onclick = e => { if (e.target === ov) { ov.remove(); resolve(false); } };
+  });
+}
 
 function bannerGoster(mesaj) {
   let el = document.getElementById('admin-banner');
@@ -8863,8 +8932,8 @@ function masaGrupListeRender() {
 }
 
 // Masaları doğrudan Supabase'e kaydet (garson modunda da çalışır çünkü kafeId admin'e ait)
-function masalariTemizleYenidenDuzelt() {
-  if (!confirm("Tüm masalar gruplarına göre 1'den başlayarak yeniden numaralandırılacak.\n\nAçık adisyon yoksa devam edin. Emin misiniz?")) return;
+async function masalariTemizleYenidenDuzelt() {
+  if (!await kcConfirm("Tüm masalar gruplarına göre 1'den başlayarak yeniden numaralandırılacak.\n\nAçık adisyon yoksa devam edin. Emin misiniz?")) return;
   const acikAdisyon = masalar.some(m => m.siparisler && m.siparisler.length > 0);
   if (acikAdisyon) { toast('⚠️ Açık adisyon var! Önce tüm masaları kapat.'); return; }
 
@@ -8931,12 +9000,12 @@ function ayarMasaGrupKaydet(id, grup) {
   setTimeout(() => masaGrupListeRender(), 300);
 }
 
-function ayarMasaSil(id) {
+async function ayarMasaSil(id) {
   if (garsonModu) { toast('⚠️ Garson modunda masa silinemez'); return; }
   const m = masalar.find(x=>x.id===id);
   if (!m) return;
   if (m.siparisler && m.siparisler.length > 0) { toast('⚠️ Açık adisyonu olan masa silinemez!'); return; }
-  if (!confirm('"' + m.ad + '" silinecek. Emin misiniz?')) return;
+  if (!await kcConfirm('"' + m.ad + '" silinecek. Emin misiniz?')) return;
   masalar = masalar.filter(x=>x.id!==id);
   masalariYenidenSirala(); // ID'leri boşluksuz sırala
   masalariKaydet('✓ Masa silindi, numaralar güncellendi');
@@ -9265,7 +9334,7 @@ async function gelAlSiparisVer() {
     };
     aktif.push(gelAlKayit);
     await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-  } catch(e) { console.log('Gel-al mutfak sync hatası:', e); }
+  } catch(e) { console.error('Gel-al mutfak sync hatası:', e); }
 
   gelAlModalKapat();
   gelAlRender();
@@ -9361,7 +9430,7 @@ function gelAlSil(id) {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       const aktif = (data?.aktif_masalar || []).filter(x => x.id !== id);
       await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-    } catch(e) { console.log('gelAl sil hata:', e); }
+    } catch(e) { console.error('gelAl sil hata:', e); }
   })();
 }
 
@@ -9768,7 +9837,7 @@ window.masaSilOnay = masaSilOnay;
       document.getElementById('auth-screen').style.display = 'flex';
     }
   } catch(e) {
-    console.log('Session hatası:', e);
+    console.error('Session hatası:', e);
     document.getElementById('auth-screen').style.display = 'flex';
   }
 })();
