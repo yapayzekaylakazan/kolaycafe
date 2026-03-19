@@ -180,7 +180,6 @@
   /* ── LAYOUT: PC modu (geniş ekran veya .pc-mod class'ı) ── */
   body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
   @media (min-width: 900px) { .kolaycafen-body { flex-direction: row; overflow: hidden; } }
-  body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
   body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
   body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
   body.pc-mod .urun-kart .uadet { display: block; }
@@ -2990,16 +2989,20 @@ async function garsonGiris(isim, kafeData) {
   masalarRender(); urunListesiRender();
   setSyncOnline(true);
   toast('Hoş geldin, ' + isim + '! ☕');
-  // Garson için realtime sync - interval ref ile çift açılmayı önle
+  // Garson polling — _yazimAktif ile korumalı, çakışma önlendi
   if (window._garsonSyncInterval) clearInterval(window._garsonSyncInterval);
+  let _garsonPolling = false; // Garson polling çakışma kilidi
   window._garsonSyncInterval = setInterval(async () => {
     if (!kafeId) return;
+    if (_garsonPolling) return; // Önceki polling bitmeden yeni başlatma
+    _garsonPolling = true;
     try {
       const {data} = await sb.from('kafeler')
         .select('aktif_masalar, masalar')
         .eq('id', kafeId)
         .single();
-      // Yeni masalar eklenmiş olabilir - masalar kolonunu güncelle
+
+      // Yeni masalar eklenmiş olabilir
       if (data?.masalar) {
         data.masalar.forEach(k => {
           if (!masalar.find(x=>x.id===k.id)) {
@@ -3010,18 +3013,27 @@ async function garsonGiris(isim, kafeData) {
           }
         });
       }
+
       if (data?.aktif_masalar) {
         let degisti = false;
         data.aktif_masalar.forEach(am => {
-          // Masalar dizisinde yoksa ekle (paket limiti dışı masa koruması)
           if (!masalar.find(x=>x.id===am.id)) {
             masalar.push({id:am.id, ad:am.ad||'Masa '+am.id, siparisler:[], not:am.not||'', garson:'', indirim:0, grup:am.grup||''});
           }
           const m = masalar.find(x=>x.id===am.id);
           if (m) {
+            // ── KRITIK FIX: Yazım bekleyen masayı garson polling ile EZME ──
+            // Garson ürün ekledi (700ms debounce) → polling tam bu sırada geldi
+            // → DB'deki ESKİ veriyle lokali ezerse ürün siliniyor gibi görünüyor
+            if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
+
             const eskiJson = JSON.stringify(m.siparisler);
             const yeniJson = JSON.stringify(am.siparisler);
-            if (eskiJson !== yeniJson || (am.not||'') !== (m.not||'')) {
+            if (eskiJson !== yeniJson
+              || m.garson !== (am.garson||'')
+              || m.indirim !== (am.indirim||0)
+              || (am.not||'') !== (m.not||'')
+              || (am.kisi_sayisi||0) !== (m.kisi_sayisi||0)) {
               m.siparisler = am.siparisler || [];
               m.garson = am.garson || '';
               m.indirim = am.indirim || 0;
@@ -3032,20 +3044,25 @@ async function garsonGiris(isim, kafeData) {
             }
           }
         });
-        // Kapanmış masaları temizle
+
+        // Kapanmış masaları temizle — ama yazım bekleyenlere dokunma
         masalar.forEach(m => {
+          if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           const halaAktif = data.aktif_masalar.find(am=>am.id===m.id);
           if (!halaAktif && m.siparisler.length > 0) {
             m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
             degisti = true;
           }
         });
-        if (degisti) { masalarRender(); siparisListeRender(); }
+
+        if (degisti) { masalarRender(); if(seciliMasa) siparisListeRender(); }
       }
-      // Cari işlemleri de güncelle (her 10 saniyede)
-      if (Date.now() % 3000 < 2100) await kolaycafenVerisiYukle();
+
+      // Cari güncelleme (seyrek)
+      if (Date.now() % 10000 < 3000) await kolaycafenVerisiYukle();
     } catch(e) { console.log('Garson sync hatası:', e); }
-  }, 2000);
+    finally { _garsonPolling = false; }
+  }, 3000); // 2000ms → 3000ms: daha seyrek polling = daha az çakışma
 
   // Garson için realtime subscription — polling'e ek olarak anlık güncelleme
   if (window._garsonRealtimeChannel) {
@@ -4632,11 +4649,15 @@ function siparisKaldir(idx) {
 function masaTemizle() {
   if(!seciliMasa) return;
   if(!confirm('Masa temizlensin mi?')) return;
-  getMasa().siparisler=[];
-  getMasa().indirim=0;
-  getMasa().garson='';
+  const m = getMasa(); if(!m) return;
+  const temizlenenMasaId = seciliMasa;
+  m.siparisler = [];
+  m.indirim = 0;
+  m.garson = '';
+  m.hesap_istendi = false;
   siparisListeRender(); masalarRender(); kolaycafenGuncelle();
-  if(seciliMasa) masaSyncYaz(seciliMasa);
+  // debounce değil anında yaz — garson polling eski veri getirmeden önce DB güncellenmeli
+  _masaSyncYazHemen(temizlenenMasaId);
 }
 
 // ════════════════════════════════════════
@@ -4698,7 +4719,6 @@ async function tahsilEt(odemeTipi) {
   // Realtime'ın eski veriyi geri yazmasını önle
   _transferYapiliyor = true;
   _skipSubscriptionCount = 4;
-  setTimeout(()=>{ _tahsilEdiliyor = false; }, 3000); // 3sn sonra kilidi aç
   // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
