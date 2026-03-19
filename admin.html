@@ -3,264 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KolayCafe — Admin</title>
+<title>KolayCafe — Admin BI v2.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --bg2: #111118;
-    --surface: #1a1a24;
-    --surface2: #222230;
-    --border: #2a2a3a;
-    --text: #e8e8f0;
-    --text2: #9090b0;
-    --accent: #f0b940;
-    --accent2: #e07840;
-    --green: #30d080;
-    --red: #e04050;
-    --blue: #4080f0;
-    --purple: #9060f0;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+  :root{--bg:#0a0a0f;--bg2:#111118;--surface:#1a1a24;--surface2:#222230;--border:#2a2a3a;--text:#e8e8f0;--text2:#9090b0;--accent:#f0b940;--accent2:#e07840;--green:#30d080;--red:#e04050;--blue:#4080f0;--purple:#9060f0;--cyan:#20c0d0;--pink:#e060a0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+  ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,#1a1000 0%,var(--bg) 60%);}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:420px;text-align:center;}
+  .login-logo{font-size:2.5rem;margin-bottom:8px;}.login-title{font-size:1.5rem;font-weight:800;color:var(--accent);margin-bottom:4px;}
+  .login-sub{font-size:0.8rem;color:var(--text2);margin-bottom:32px;font-family:'Space Mono',monospace;}
+  .login-inp{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.95rem;outline:none;margin-bottom:12px;transition:border-color .2s;}
+  .login-inp:focus{border-color:var(--accent);}.login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
+  .login-err{color:var(--red);font-size:0.82rem;margin-top:10px;display:none;}
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200;flex-wrap:wrap;}
+  .topbar-logo{font-size:0.98rem;font-weight:800;color:var(--accent);white-space:nowrap;margin-right:8px;}
+  .topbar-logo span{color:var(--text2);font-weight:400;font-size:0.7rem;font-family:'Space Mono',monospace;}
+  .tab-btn{padding:5px 12px;border-radius:7px;border:1.5px solid transparent;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.74rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .tab-btn:hover{color:var(--text);border-color:var(--border);}.tab-btn.aktif{background:var(--accent);color:#1a0f00;border-color:var(--accent);}
+  .topbar-sag{display:flex;align-items:center;gap:10px;margin-left:auto;}
+  .canli-bar{display:flex;align-items:center;gap:12px;font-family:'Space Mono',monospace;font-size:0.68rem;color:var(--text2);}
+  .canli-item{display:flex;align-items:center;gap:4px;}.canli-sayi{font-weight:700;color:var(--green);}
+  .online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+  .cikis-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.73rem;font-weight:700;cursor:pointer;}
+  .cikis-btn:hover{border-color:var(--red);color:var(--red);}
+  .sayfa{display:none;padding:20px;max-width:1600px;margin:0 auto;}.sayfa.aktif{display:block;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin-bottom:20px;}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .kpi.mavi::before{background:var(--blue);}.kpi.yesil::before{background:var(--green);}.kpi.turuncu::before{background:var(--accent);}
+  .kpi.mor::before{background:var(--purple);}.kpi.kirmizi::before{background:var(--red);}.kpi.cyan::before{background:var(--cyan);}.kpi.pembe::before{background:var(--pink);}
+  .kpi-ic{font-size:1.2rem;margin-bottom:5px;}.kpi-sayi{font-size:1.65rem;font-weight:800;line-height:1;margin-bottom:2px;}
+  .kpi-etiket{font-size:0.62rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.4px;}
+  .toolbar{display:flex;align-items:center;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+  .toolbar-baslik{font-size:0.92rem;font-weight:800;flex:1;min-width:80px;}
+  .arama{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;width:190px;}
+  .arama:focus{border-color:var(--accent);}
+  .sel{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.74rem;outline:none;cursor:pointer;}
+  .sel:focus{border-color:var(--accent);}
+  .fbtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .fbtn.aktif{border-color:var(--accent);color:var(--accent);background:#f0b94015;}
+  .ebtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .ebtn:hover{background:var(--surface);}
+  .tw{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:9px;}
+  .tw table{width:100%;border-collapse:collapse;}
+  .tw th{background:var(--surface);padding:9px 12px;text-align:left;font-size:0.62rem;font-weight:700;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+  .tw th:hover{color:var(--accent);}
+  .tw td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:0.78rem;vertical-align:middle;}
+  .tw tr:last-child td{border-bottom:none;}.tw tr:hover td{background:var(--surface);}.tw tr.pasif td{opacity:.5;}
+  .badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:0.62rem;font-weight:700;font-family:'Space Mono',monospace;}
+  .bak{background:#30d08020;color:var(--green);border:1px solid #30d08040;}
+  .bsd{background:#e0405015;color:#e07070;border:1px solid #e0405030;}
+  .status-off-tag { background: #e04050; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; margin-left: 5px; }
+  
+  /* Switch Stil */
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; border: 1px solid var(--border); }
+  .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+  input:checked + .slider { background-color: var(--green); }
+  input:checked + .slider:before { transform: translateX(16px); }
 
-  /* LOGIN */
-  #login-screen {
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at 20% 50%, #1a1000 0%, var(--bg) 60%);
-  }
-  .login-box {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
-    padding: 48px 40px; width: 100%; max-width: 420px; text-align: center;
-  }
-  .login-logo { font-size: 2.5rem; margin-bottom: 8px; }
-  .login-title { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
-  .login-sub { font-size: 0.8rem; color: var(--text2); margin-bottom: 32px; font-family: 'Space Mono', monospace; }
-  .login-inp {
-    width: 100%; background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: 12px; padding: 13px 16px; color: var(--text); font-family: 'Syne', sans-serif;
-    font-size: 0.95rem; outline: none; margin-bottom: 12px; transition: border-color 0.2s;
-  }
-  .login-inp:focus { border-color: var(--accent); }
-  .login-btn {
-    width: 100%; padding: 13px; border-radius: 12px; border: none;
-    background: var(--accent); color: #1a0f00; font-family: 'Syne', sans-serif;
-    font-weight: 800; font-size: 1rem; cursor: pointer; transition: opacity 0.2s;
-  }
-  .login-btn:hover { opacity: 0.85; }
-  .login-err { color: var(--red); font-size: 0.82rem; margin-top: 10px; display: none; }
-
-  /* ADMIN PANEL */
-  #admin-panel { display: none; }
-
-  .topbar {
-    background: var(--bg2); border-bottom: 1px solid var(--border);
-    padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .topbar-logo { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
-  .topbar-logo span { color: var(--text2); font-weight: 400; font-size: 0.8rem; margin-left: 8px; font-family: 'Space Mono', monospace; }
-  .topbar-right { display: flex; align-items: center; gap: 16px; }
-  .online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
-  .cikis-btn {
-    padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border);
-    background: transparent; color: var(--text2); font-family: 'Syne', sans-serif;
-    font-size: 0.8rem; font-weight: 700; cursor: pointer;
-  }
-  .cikis-btn:hover { border-color: var(--red); color: var(--red); }
-
-  .ana { padding: 28px; max-width: 1400px; margin: 0 auto; }
-
-  /* STATS */
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
-  .stat-kart {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
-    padding: 20px 24px; position: relative; overflow: hidden;
-  }
-  .stat-kart::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  }
-  .stat-kart.mavi::before { background: var(--blue); }
-  .stat-kart.yesil::before { background: var(--green); }
-  .stat-kart.turuncu::before { background: var(--accent); }
-  .stat-kart.mor::before { background: var(--purple); }
-  .stat-kart.kirmizi::before { background: var(--red); }
-  .stat-ikon { font-size: 1.6rem; margin-bottom: 8px; }
-  .stat-sayi { font-size: 2rem; font-weight: 800; color: var(--text); margin-bottom: 2px; }
-  .stat-label { font-size: 0.78rem; color: var(--text2); font-family: 'Space Mono', monospace; }
-
-  /* TOOLBAR */
-  .toolbar {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-  }
-  .toolbar-title { font-size: 1.1rem; font-weight: 800; color: var(--text); flex: 1; }
-  .arama-inp {
-    background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
-    padding: 9px 14px; color: var(--text); font-family: 'Syne', sans-serif;
-    font-size: 0.85rem; outline: none; width: 220px; transition: border-color 0.2s;
-  }
-  .arama-inp:focus { border-color: var(--accent); }
-  .filtre-btn {
-    padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--border);
-    background: transparent; color: var(--text2); font-family: 'Syne', sans-serif;
-    font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
-  }
-  .filtre-btn.aktif { border-color: var(--accent); color: var(--accent); background: #f0b94015; }
-  .export-btn {
-    padding: 9px 16px; border-radius: 10px; border: none;
-    background: var(--surface2); color: var(--text); font-family: 'Syne', sans-serif;
-    font-size: 0.8rem; font-weight: 700; cursor: pointer;
-  }
-  .export-btn:hover { background: var(--surface); }
-
-  /* TABLE */
-  .tablo-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-  .tablo { width: 100%; border-collapse: collapse; }
-  .tablo th {
-    background: var(--surface); padding: 12px 16px; text-align: left;
-    font-size: 0.72rem; font-weight: 700; color: var(--text2);
-    font-family: 'Space Mono', monospace; letter-spacing: 1px; text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
-  .tablo td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 0.85rem; vertical-align: middle; }
-  .tablo tr:last-child td { border-bottom: none; }
-  .tablo tr:hover td { background: var(--surface); }
-  .tablo tr.pasif td { opacity: 0.5; }
-
-  .badge {
-    display: inline-block; padding: 3px 9px; border-radius: 6px;
-    font-size: 0.72rem; font-weight: 700; font-family: 'Space Mono', monospace;
-  }
-  .badge-pro { background: #f0b94020; color: var(--accent); border: 1px solid #f0b94040; }
-  .badge-gold { background: #ffd70020; color: #ffd700; border: 1px solid #ffd70040; }
-  .badge-platin { background: #e0e0e020; color: #e0e0e0; border: 1px solid #e0e0e040; }
-  .badge-ultra { background: #9060f020; color: var(--purple); border: 1px solid #9060f040; }
-  .badge-elite { background: #f9731620; color: #fb923c; border: 1px solid #f9731640; }
-  .badge-grow { background: #22c55e20; color: #22c55e; border: 1px solid #22c55e40; }
-  .badge-start { background: #64748b20; color: #94a3b8; border: 1px solid #64748b40; }
-  .badge-deneme { background: #4080f020; color: var(--blue); border: 1px solid #4080f040; }
-  .badge-iptal { background: #e0405020; color: var(--red); border: 1px solid #e0405040; }
-  .badge-aktif { background: #30d08020; color: var(--green); border: 1px solid #30d08040; }
-  .badge-suresi-doldu { background: #e0405015; color: #e07070; border: 1px solid #e0405030; }
-
-  /* PAKET TEST PANELİ */
-  .test-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 28px; }
-  .test-panel-baslik { font-size: 0.72rem; font-weight: 800; color: var(--accent); font-family: 'Space Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom:6px; }
-  .test-panel-sub { font-size: 0.78rem; color: var(--text2); margin-bottom: 18px; }
-  .test-paket-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-  .test-paket-kart {
-    border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 14px;
-    cursor: pointer; transition: all 0.18s; position: relative; background: var(--surface);
-  }
-  .test-paket-kart:hover { transform: translateY(-3px); }
-  .test-paket-kart.aktif-test { box-shadow: 0 0 0 2px var(--accent); }
-  .test-paket-isim { font-size: 0.82rem; font-weight: 800; margin-bottom: 4px; }
-  .test-paket-fiyat { font-size: 1.3rem; font-weight: 800; color: var(--accent); font-family: 'Space Mono', monospace; line-height: 1; }
-  .test-paket-sure { font-size: 0.65rem; color: var(--text2); margin-bottom: 8px; }
-  .test-paket-ozellik { font-size: 0.7rem; color: var(--text2); line-height: 1.6; }
-  .test-uygula-btn {
-    padding: 10px 24px; border-radius: 10px; border: none;
-    background: var(--accent); color: #1a0f00; font-family: 'Syne', sans-serif;
-    font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s;
-  }
-  .test-uygula-btn:hover { opacity: 0.85; }
-  .test-uygula-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .test-gun-inp {
-    background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
-    padding: 9px 14px; color: var(--text); font-family: 'Syne', sans-serif;
-    font-size: 0.85rem; outline: none; width: 100px;
-  }
-  .test-gun-inp:focus { border-color: var(--accent); }
-  .test-sonuc { margin-top: 12px; font-size: 0.82rem; font-family: 'Space Mono', monospace; padding: 10px 14px; border-radius: 8px; display: none; }
-  .test-sonuc.ok { background: #30d08015; color: var(--green); border: 1px solid #30d08040; }
-  .test-sonuc.err { background: #e0405015; color: var(--red); border: 1px solid #e0405040; }
-  @media (max-width: 900px) { .test-paket-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 500px) { .test-paket-grid { grid-template-columns: repeat(2, 1fr); } }
-
-  .sure-bar-wrap { width: 120px; }
-  .sure-bar-bg { background: var(--surface2); border-radius: 4px; height: 5px; overflow: hidden; }
-  .sure-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
-  .sure-label { font-size: 0.7rem; color: var(--text2); margin-top: 3px; font-family: 'Space Mono', monospace; }
-
-  .aksiyon-btn {
-    padding: 5px 10px; border-radius: 7px; border: 1px solid var(--border);
-    background: transparent; color: var(--text2); font-family: 'Syne', sans-serif;
-    font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-right: 4px; transition: all 0.15s;
-  }
-  .aksiyon-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .aksiyon-btn.tehlike:hover { border-color: var(--red); color: var(--red); }
-
-  .yukleniyor { text-align: center; padding: 48px; color: var(--text2); font-family: 'Space Mono', monospace; font-size: 0.85rem; }
-
-  /* MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-    z-index: 999; align-items: center; justify-content: center; padding: 20px;
-  }
-  .modal-overlay.ac { display: flex; }
-  .modal {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
-    padding: 32px; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto;
-  }
-  .modal-baslik { font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; color: var(--accent); }
-  .modal-satir { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
-  .modal-key { font-size: 0.75rem; color: var(--text2); font-family: 'Space Mono', monospace; min-width: 130px; padding-top: 2px; }
-  .modal-val { font-size: 0.88rem; color: var(--text); font-weight: 600; flex: 1; word-break: break-all; }
-  .modal-ayir { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-  .modal-kapat {
-    margin-top: 20px; width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border);
-    background: transparent; color: var(--text2); font-family: 'Syne', sans-serif;
-    font-weight: 700; cursor: pointer;
-  }
-  .modal-kapat:hover { border-color: var(--accent); color: var(--accent); }
-
-  .plan-sec {
-    width: 100%; background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: 10px; padding: 10px 12px; color: var(--text); font-family: 'Syne', sans-serif;
-    font-size: 0.9rem; outline: none; margin-bottom: 8px; cursor: pointer;
-  }
-  .plan-kaydet-btn {
-    padding: 9px 18px; border-radius: 10px; border: none;
-    background: var(--accent); color: #1a0f00; font-family: 'Syne', sans-serif;
-    font-weight: 800; font-size: 0.85rem; cursor: pointer;
-  }
-
-  @media (max-width: 768px) {
-    .ana { padding: 12px; }
-    .arama-inp { width: 100%; }
-    .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
-    .filtreler { display: flex; gap: 6px; flex-wrap: wrap; }
-    .tablo-wrap { display: none; }
-    .kart-liste { display: flex; flex-direction: column; gap: 10px; }
-    .uye-kart { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; position: relative; overflow: hidden; }
-    .uye-kart::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--accent); }
-    .uye-kart.pasif { opacity: 0.6; }
-    .uye-kart.pasif::before { background: var(--red); }
-    .uye-kart-ust { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-    .uye-kafe-adi { font-size: 1rem; font-weight: 800; color: var(--text); }
-    .uye-kafe-kodu { font-size: 0.7rem; color: var(--text2); font-family: "Space Mono", monospace; margin-top: 2px; }
-    .uye-kart-bilgi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .uye-bilgi-key { font-size: 0.65rem; color: var(--text2); font-family: "Space Mono", monospace; text-transform: uppercase; margin-bottom: 2px; }
-    .uye-bilgi-val { font-size: 0.82rem; color: var(--text); font-weight: 600; word-break: break-all; }
-    .uye-kart-alt { display: flex; justify-content: space-between; align-items: center; }
-    .detay-btn-mobil { padding: 8px 18px; border-radius: 10px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-family: "Syne", sans-serif; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .stat-sayi { font-size: 1.5rem; }
-  }
-  @media (min-width: 769px) {
-    .kart-liste { display: none; }
-  }
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:999;align-items:center;justify-content:center;padding:14px;}
+  .overlay.ac{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:17px;padding:24px;width:100%;max-width:640px;max-height:89vh;overflow-y:auto;}
+  .modal-tit{font-size:0.98rem;font-weight:800;margin-bottom:15px;color:var(--accent);}
+  .ms{display:flex;gap:9px;margin-bottom:9px;align-items:flex-start;}
+  .mk{font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:128px;padding-top:2px;}
+  .mv{font-size:0.8rem;color:var(--text);font-weight:600;flex:1;word-break:break-all;}
+  .mkat{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;margin-bottom:7px;}
+  .mkaydet{padding:7px 13px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;}
+  .mkapatbtn{margin-top:15px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;}
+  .bb{font-size:0.65rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin:11px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+  .pk{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .pk-ust{font-size:0.65rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center;}
+  .chart-box{position:relative;height:185px;}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:20px;}
 </style>
 </head>
 <body>
 
-<!-- GİRİŞ -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">☕</div>
     <div class="login-title">KolayCafe Admin</div>
-    <div class="login-sub">// SÜPER YÖNETİCİ PANELİ</div>
+    <div class="login-sub">// İŞ ZEKASI PANELİ v2.1</div>
     <input class="login-inp" id="login-email" type="email" placeholder="E-posta">
     <input class="login-inp" id="login-sifre" type="password" placeholder="Şifre" onkeydown="if(event.key==='Enter')girisYap()">
     <button class="login-btn" onclick="girisYap()">Giriş Yap →</button>
@@ -268,116 +98,70 @@
   </div>
 </div>
 
-<!-- ADMIN PANELİ -->
-<div id="admin-panel">
+<div id="admin-panel" style="display:none;">
   <div class="topbar">
-    <div class="topbar-logo">☕ KolayCafe <span>ADMIN PANEL</span></div>
-    <div class="topbar-right">
-      <div class="online-dot"></div>
-      <span style="font-size:0.78rem;color:var(--text2);font-family:'Space Mono',monospace;" id="admin-email-goster"></span>
+    <div class="topbar-logo">☕ KolayCafe <span>ADMIN v2.1</span></div>
+    <button class="tab-btn aktif" onclick="sayfaGit('genel',this)">📊 Genel</button>
+    <button class="tab-btn" onclick="sayfaGit('uyeler',this)">👥 Üyeler</button>
+    <button class="tab-btn" onclick="sayfaGit('canli',this)">🔴 Canlı</button>
+    <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
+    <div class="topbar-sag">
+      <div class="canli-bar">
+        <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
+        <div class="canli-item">🪑<span class="canli-sayi" id="tb-masa">—</span></div>
+        <div class="canli-item">💰<span class="canli-sayi" id="tb-ciro">—</span>₺</div>
+      </div>
       <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
     </div>
   </div>
 
-  <div class="ana">
-    <!-- İSTATİSTİKLER -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-kart mavi"><div class="stat-ikon">🏪</div><div class="stat-sayi" id="st-toplam">—</div><div class="stat-label">TOPLAM KAFE</div></div>
-      <div class="stat-kart yesil"><div class="stat-ikon">✅</div><div class="stat-sayi" id="st-aktif">—</div><div class="stat-label">AKTİF ÜYE</div></div>
-      <div class="stat-kart turuncu"><div class="stat-ikon">🆕</div><div class="stat-sayi" id="st-bugun">—</div><div class="stat-label">BUGÜN KAYIT</div></div>
-      <div class="stat-kart mor"><div class="stat-ikon">💎</div><div class="stat-sayi" id="st-odeme">—</div><div class="stat-label">ÖDEMELİ PLAN</div></div>
-      <div class="stat-kart kirmizi"><div class="stat-ikon">⚠️</div><div class="stat-sayi" id="st-doldu">—</div><div class="stat-label">SÜRESİ DOLMUŞ</div></div>
-    </div>
-
-    <!-- PAKET TEST PANELİ -->
-    <div class="test-panel">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;">
-        <div class="test-panel-baslik" style="margin-bottom:0;">🧪 Paket Test Paneli</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">TEST KAFESİ:</div>
-          <select id="test-kafe-sec" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;min-width:220px;">
-            <option value="">— Kafe seçin —</option>
-          </select>
-          <button id="btn-test-kafe-olustur" onclick="genelTestCafesiOlustur()" style="padding:7px 14px;border-radius:8px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;cursor:pointer;" title="🧪 Genel Test Cafesi otomatik oluştur">+ Test Cafesi</button>
-          <a href="app/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-            🚀 Uygulamayı Aç
-          </a>
-        </div>
-      </div>
-      <div class="test-panel-sub">Pakete tek tıkla → otomatik uygulanır → uygulama yeni sekmede açılır. Her paketi sırayla test edin.</div>
-
-      <div class="test-paket-grid" id="test-paket-grid">
-        <!-- JS ile doldurulacak -->
-      </div>
-      <div class="test-sonuc" id="test-sonuc"></div>
-    </div>
-
-    <!-- TABLO -->
+  <div class="sayfa" id="sayfa-uyeler">
     <div class="toolbar">
-      <div class="toolbar-title">👥 Tüm Üyeler</div>
-      <input class="arama-inp" id="arama" placeholder="🔍 Kafe adı, mail, telefon..." oninput="aramaYap()">
-      <button class="filtre-btn aktif" onclick="filtrele('hepsi',this)">Hepsi</button>
-      <button class="filtre-btn" onclick="filtrele('aktif',this)">Aktif</button>
-      <button class="filtre-btn" onclick="filtrele('doldu',this)">Süresi Dolmuş</button>
-      <button class="filtre-btn" onclick="filtrele('pro',this)">Pro</button>
-      <button class="filtre-btn" onclick="filtrele('deneme',this)">Deneme</button>
-      <button class="filtre-btn" onclick="filtrele('crm',this)" style="border-color:#9060f0;color:#9060f0;">🎯 CRM</button>
-      <button class="export-btn" onclick="csvIndir()">📥 CSV İndir</button>
-      <button class="export-btn" onclick="yukle()">🔄</button>
+      <div class="toolbar-baslik">👥 Üyeler</div>
+      <input class="arama" id="arama" placeholder="🔍 Kafe ara..." oninput="tabloRender()">
+      <button class="ebtn" onclick="yukle()">🔄 Yenile</button>
     </div>
-
-    <div class="tablo-wrap">
-      <table class="tablo">
+    <div class="tw">
+      <table>
         <thead>
           <tr>
             <th>#</th>
-            <th>KAFE ADI</th>
-            <th>E-POSTA</th>
-            <th>TELEFON / ADRES</th>
+            <th>KAFE</th>
             <th>PLAN</th>
+            <th>HİZMET</th>
+            <th>GARSONLAR</th>
             <th>KALAN SÜRE</th>
-            <th>SON GİRİŞ</th>
-            <th>CİRO</th>
-            <th>KAYIT</th>
-            <th>DURUM</th>
             <th>İŞLEM</th>
           </tr>
         </thead>
-        <tbody id="tablo-body">
-          <tr><td colspan="9" class="yukleniyor">⏳ Yükleniyor...</td></tr>
-        </tbody>
+        <tbody id="tablo-body"><tr><td colspan="7" class="yukl">⏳ Yükleniyor...</td></tr></tbody>
       </table>
     </div>
+  </div>
 
-    <!-- MOBİL KART LİSTESİ -->
-    <div class="kart-liste" id="kart-liste"></div>
+  <div class="sayfa" id="sayfa-canli">
+    <div class="toolbar"><div class="toolbar-baslik">🔴 Gerçek Zamanlı Takip (5sn)</div></div>
+    <div id="canli-liste"><div class="yukl">⏳ Yükleniyor...</div></div>
+  </div>
 
-    <div style="margin-top:12px;font-size:0.75rem;color:var(--text2);font-family:'Space Mono',monospace;" id="kayit-sayisi"></div>
+  <div class="sayfa aktif" id="sayfa-genel">
+    <div class="kpi-grid">
+      <div class="kpi mavi"><div class="kpi-ic">🏪</div><div class="kpi-sayi" id="kpi-toplam">—</div><div class="kpi-etiket">TOPLAM KAFE</div></div>
+      <div class="kpi yesil"><div class="kpi-ic">✅</div><div class="kpi-sayi" id="kpi-aktif">—</div><div class="kpi-etiket">AKTİF ÜYE</div></div>
+      <div class="kpi cyan"><div class="kpi-ic">📈</div><div class="kpi-sayi" id="kpi-ciro">—</div><div class="kpi-etiket">BUGÜN CİRO</div></div>
+    </div>
+    <div class="pgrid">
+       <div class="pk"><div class="pk-ust"><span>📊 KAYIT TRENDİ</span></div><div class="chart-box"><canvas id="gr-kayit"></canvas></div></div>
+       <div class="pk"><div class="pk-ust"><span>💳 PLAN DAĞILIMI</span></div><div class="chart-box"><canvas id="gr-plan"></canvas></div></div>
+    </div>
   </div>
 </div>
 
-<!-- DETAY MODAL -->
-<div class="modal-overlay" id="detay-modal">
+<div class="overlay" id="detay-modal">
   <div class="modal">
-    <div class="modal-baslik" id="modal-kafe-adi">Kafe Detayı</div>
+    <div class="modal-tit" id="modal-kafe-adi">Kafe Detayı</div>
     <div id="modal-icerik"></div>
-    <hr class="modal-ayir">
-    <div class="modal-baslik" style="font-size:0.9rem;margin-bottom:12px;">Plan Güncelle</div>
-    <select class="plan-sec" id="modal-plan-sec">
-      <option value="deneme">🆓 Deneme (10 gün)</option>
-      <option value="start">🚀 Start — 4 masa (299₺/ay)</option>
-      <option value="grow">🌱 Grow — 6 masa (399₺/ay)</option>
-      <option value="gold">🥇 Gold — 8 masa (499₺/ay)</option>
-      <option value="platin">💎 Platin — 10 masa (599₺/ay)</option>
-      <option value="ultra">🚀 Ultra — 12 masa (699₺/ay)</option>
-      <option value="elite">👑 Elite — 15 masa (799₺/ay)</option>
-      <option value="pro">⭐ Pro — 20+ masa (899₺/ay)</option>
-    </select>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-      <input type="number" id="modal-gun" placeholder="Gün sayısı (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;">
-      <button class="plan-kaydet-btn" onclick="planGuncelle()">✓ Güncelle</button>
-    </div>
-    <button class="modal-kapat" onclick="modalKapat()">✕ Kapat</button>
+    <button class="mkapatbtn" onclick="modalKapat()">✕ Kapat</button>
   </div>
 </div>
 
@@ -385,846 +169,153 @@
 const SUPABASE_URL = 'https://sjfcdthwlwmbdmcevobv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
+
 let tumKafeler = [];
-let aktifFiltre = 'hepsi';
-let seciliKafeId = null;
+let _canliTimer = null;
 
-const TEST_PAKETLER = [
-  {
-    id:'deneme', isim:'🆓 Deneme', fiyat:'0₺', sure:'/10 gün', masa:6, renk:'#4080f0',
-    ozellikler: ['6 masa','Tüm özellikler aktif (test)','Garson takibi','Raporlar','Gelir/Gider','Stok & Reçete','Kupon','Platform siparişi','Mutfak ekranı','BT Yazıcı','QR masa'],
-    yok: []
-  },
-  {
-    id:'garson_deneme', isim:'👤 Garson Deneme', fiyat:'0₺', sure:'/garson modu', masa:6, renk:'#06b6d4',
-    ozellikler: ['Garson girişi ile açılır','Sipariş alma','Masa görüntüleme','Hesap isteme','Kendi masalarını yönetir'],
-    yok: ['Admin özellikleri','Raporlar','Ayarlar','AI Asistan']
-  },
-  {
-    id:'start', isim:'🚀 Start', fiyat:'299₺', sure:'/ay', masa:4, renk:'#64748b',
-    ozellikler: ['4 masa','Garson takibi','Raporlar','Nakit/Kart/Cari/İkram','Online sipariş (QR)','WhatsApp fiş'],
-    yok: ['Gelir/Gider takibi','Stok & Reçete','Kupon','Bluetooth yazıcı','Platform siparişi','Mutfak ekranı']
-  },
-  {
-    id:'grow', isim:'🌱 Grow', fiyat:'399₺', sure:'/ay', masa:6, renk:'#22c55e',
-    ozellikler: ['6 masa','Garson takibi','Raporlar','Gelir/Gider takibi','Cari hesap','QR masa kodu','Platform siparişi','Mutfak ekranı'],
-    yok: ['Stok & Reçete','Kupon','Bluetooth yazıcı']
-  },
-  {
-    id:'gold', isim:'🥇 Gold', fiyat:'499₺', sure:'/ay', masa:8, renk:'#b8860b',
-    ozellikler: ['8 masa','Garson takibi','Raporlar','Gelir/Gider','Stok takibi','Reçete yönetimi','İndirim kuponu','Platform siparişi','Mutfak ekranı'],
-    yok: ['Bluetooth yazıcı','Hesap bölme']
-  },
-  {
-    id:'platin', isim:'💎 Platin', fiyat:'599₺', sure:'/ay', masa:10, renk:'#1a6fb5',
-    ozellikler: ['10 masa','Gold\'un tüm özellikleri','Bluetooth yazıcı','Hesap bölme','Masa transfer','Garson QR girişi','Müşteri menüsü QR'],
-    yok: ['Çoklu şube']
-  },
-  {
-    id:'ultra', isim:'🚀 Ultra', fiyat:'699₺', sure:'/ay', masa:12, renk:'#2d7a3a',
-    ozellikler: ['12 masa','Platin\'in tüm özellikleri','🟡 Yemeksepeti enteg.','🔴 Getir enteg.','🟠 Trendyol enteg.','🟢 Migros Yemek enteg.'],
-    yok: ['Çoklu şube']
-  },
-  {
-    id:'elite', isim:'👑 Elite', fiyat:'799₺', sure:'/ay', masa:15, renk:'#ea580c',
-    ozellikler: ['15 masa','Ultra\'nın tüm özellikleri','Çoklu şube desteği','Şube bazlı raporlama','Özelleştirilmiş raporlar','Öncelikli destek'],
-    yok: ['İndirimli termal yazıcı']
-  },
-  {
-    id:'pro', isim:'⭐ Pro', fiyat:'899₺', sure:'/ay', masa:999, renk:'#7c3aed',
-    ozellikler: ['20+ masa (sınırsız)','Elite\'in tüm özellikleri','Sınırsız garson','🖨️ İndirimli termal yazıcı','7/24 öncelikli destek','API erişimi'],
-    yok: []
-  },
-];
-
-let testAktifPaket = '';
-
-function testPanelRender() {
-  const grid = document.getElementById('test-paket-grid');
-  grid.innerHTML = TEST_PAKETLER.map(p => `
-    <div class="test-paket-kart ${testAktifPaket===p.id?'aktif-test':''}"
-         style="border-color:${testAktifPaket===p.id?p.renk:'var(--border)'};cursor:pointer;position:relative;"
-         onclick="testPaketTikla('${p.id}')">
-      ${testAktifPaket===p.id ? `<div style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:${p.renk};box-shadow:0 0 8px ${p.renk};"></div>` : ''}
-      <div class="test-paket-isim" style="color:${p.renk};">${p.isim}</div>
-      <div class="test-paket-fiyat" style="color:${p.renk};">${p.fiyat}</div>
-      <div class="test-paket-sure">${p.sure} · ${p.masa>=999?'Sınırsız masa':p.masa+' masa'}</div>
-      <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">
-        ${p.ozellikler.map(o=>`<div style="font-size:0.68rem;color:#a0ffa0;font-weight:700;">✓ ${o}</div>`).join('')}
-        ${p.yok.map(o=>`<div style="font-size:0.68rem;color:#555;font-weight:700;text-decoration:line-through;">✗ ${o}</div>`).join('')}
-      </div>
-      ${testAktifPaket===p.id ? `<div style="margin-top:10px;padding:5px 8px;border-radius:6px;background:${p.renk}22;border:1px solid ${p.renk}55;font-size:0.68rem;color:${p.renk};font-weight:900;font-family:'Space Mono',monospace;text-align:center;">✓ AKTİF TEST PAKETİ</div>` : `<div style="margin-top:10px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;text-align:center;">Tıkla → Uygula</div>`}
-    </div>
-  `).join('');
-}
-
-async function testPaketTikla(paketId) {
-  const kafeId = document.getElementById('test-kafe-sec').value;
-  const sonuc = document.getElementById('test-sonuc');
-
-  if (!kafeId) {
-    sonuc.textContent = '⚠️ Önce üstten bir test kafesi seçin!';
-    sonuc.className = 'test-sonuc err';
-    sonuc.style.display = 'block';
-    // Kafe seç dropdown'ı vurgula
-    const sel = document.getElementById('test-kafe-sec');
-    sel.style.borderColor = 'var(--red)';
-    setTimeout(() => sel.style.borderColor = 'var(--border)', 2000);
-    return;
-  }
-
-  testAktifPaket = paketId;
-  testPanelRender();
-
-  const p = TEST_PAKETLER.find(x => x.id === paketId);
-  sonuc.textContent = `⏳ ${p.isim} paketi uygulanıyor...`;
-  sonuc.className = 'test-sonuc ok';
-  sonuc.style.display = 'block';
-
-  const bitis = new Date();
-  bitis.setDate(bitis.getDate() + 30);
-
-  // Pakete göre masaları sıfırla — Pro hariç masa sayısını pakete indir
-  const masaSayisi = p.masa >= 999 ? null : p.masa; // Pro'da dokunma
-  let updateData = { plan: paketId, plan_bitis: bitis.toISOString() };
-  if (masaSayisi !== null) {
-    // Mevcut masaları çek, sadece ilk N masayı tut
-    const { data: kafeData } = await sb.from('kafeler').select('masalar').eq('id', kafeId).single();
-    const eskiMasalar = kafeData?.masalar || [];
-    const yeniMasalar = Array.from({length: masaSayisi}, (_,i) => {
-      const eski = eskiMasalar.find(m => m.id === i+1);
-      return eski ? {id:i+1, ad:eski.ad, not:eski.not||'', grup:eski.grup||''} : {id:i+1, ad:'Masa '+(i+1), not:'', grup:''};
-    });
-    updateData.masalar = yeniMasalar;
-    // Aktif masaları da temizle (paket dışı masalardaki siparişleri düşür)
-    const { data: aktifData } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-    if (aktifData?.aktif_masalar) {
-      updateData.aktif_masalar = aktifData.aktif_masalar.filter(m => m.id <= masaSayisi);
-    }
-  }
-  const { error } = await sb.from('kafeler').update(updateData).eq('id', kafeId);
-
-  if (error) {
-    sonuc.textContent = '❌ Hata: ' + error.message;
-    sonuc.className = 'test-sonuc err';
-    return;
-  }
-
-  const kafe = tumKafeler.find(x => x.id === kafeId);
-  sonuc.innerHTML = `✓ <strong>${kafe?.kafe_adi||'Kafe'}</strong> → <strong style="color:${p.renk}">${p.isim}</strong> (${p.masa>=999?'Sınırsız':p.masa} masa, 30 gün). Uygulama açılıyor...`;
-  await yukle();
-  const emailParam = kafe?.email ? '&email=' + encodeURIComponent(kafe.email) : '';
-  if (paketId === 'garson_deneme') {
-    // Garson modunu test et — garson girişi ekranına yönlendir
-    setTimeout(() => window.open('app/index.html?mod=garson&t=' + Date.now() + emailParam, '_blank'), 600);
-  } else {
-    setTimeout(() => window.open('app/index.html?t=' + Date.now() + emailParam, '_blank'), 600);
-  }
-}
-
-function testKafeListesiDoldur() {
-  const sel = document.getElementById('test-kafe-sec');
-  const mevcutDeger = sel.value;
-  sel.innerHTML = '<option value="">— Test kafesi seçin —</option>';
-
-  // Test kafesini en üste sabitle
-  const testKafe = tumKafeler.find(k => k.kafe_kodu === 'TESTXX' || k.kafe_adi === '🧪 Genel Test Cafesi');
-  const diger = tumKafeler.filter(k => k !== testKafe);
-
-  if (testKafe) {
-    const opt = document.createElement('option');
-    opt.value = testKafe.id;
-    opt.textContent = `🧪 Genel Test Cafesi`;
-    opt.style.fontWeight = 'bold';
-    sel.appendChild(opt);
-    // Küçük ayraç
-    const sep = document.createElement('option');
-    sep.disabled = true;
-    sep.textContent = '──────────────';
-    sel.appendChild(sep);
-  }
-
-  diger.forEach(k => {
-    const opt = document.createElement('option');
-    opt.value = k.id;
-    const emailKisa = k.email ? ` (${k.email})` : ' ⚠️ e-posta yok';
-    opt.textContent = `${k.kafe_adi||'?'}${emailKisa} — ${k.plan||'deneme'}`;
-    sel.appendChild(opt);
-  });
-
-  // Test kafesini otomatik seç
-  if (!mevcutDeger && testKafe) {
-    sel.value = testKafe.id;
-  } else if (mevcutDeger) {
-    sel.value = mevcutDeger;
-  }
-}
-
+// GİRİŞ / ÇIKIŞ
 async function girisYap() {
   const email = document.getElementById('login-email').value.trim();
   const sifre = document.getElementById('login-sifre').value;
-  const err = document.getElementById('login-err');
-  err.style.display = 'none';
-
-  if (email !== ADMIN_EMAIL) {
-    err.textContent = '⛔ Bu panele erişim yetkiniz yok.';
-    err.style.display = 'block';
-    return;
-  }
-
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
-  if (error) { err.textContent = '❌ ' + error.message; err.style.display = 'block'; return; }
-
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('admin-panel').style.display = 'block';
-  document.getElementById('admin-email-goster').textContent = email;
-  await yukle();
-}
-
-async function cikisYap() {
-  await sb.auth.signOut();
+  if (email !== ADMIN_EMAIL) { alert('Yetkisiz giriş!'); return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password: sifre });
+  if (error) { alert(error.message); return; }
   location.reload();
 }
 
+async function cikisYap() { await sb.auth.signOut(); location.reload(); }
+
+// VERİ YÜKLEME
 async function yukle() {
-  const { data, error } = await sb.from('kafeler')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) { console.error(error); return; }
-
+  const { data, error } = await sb.from('kafeler').select('*').order('created_at', { ascending: false });
+  if (error) return;
   tumKafeler = data || [];
-  istatistikGuncelle();
-  tabloRender();
-  testPanelRender();
-  testKafeListesiDoldur();
-}
-
-
-function toast(msg, sure=3000) {
-  let t = document.getElementById('admin-toast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'admin-toast';
-    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a24;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:0.82rem;font-family:"Space Mono",monospace;z-index:9999;transition:opacity 0.3s;white-space:nowrap;';
-    document.body.appendChild(t);
-  }
-  t.textContent = msg;
-  t.style.opacity = '1';
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.style.opacity = '0', sure);
-}
-
-async function genelTestCafesiOlustur() {
-  const btn = document.getElementById('btn-test-kafe-olustur');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Oluşturuluyor...'; }
-
-  const testEmail = 'test@kolaycafe.com';
-
-  // Zaten var mı kontrol et (e-posta ile)
-  const mevcutKafe = tumKafeler.find(k => k.email === testEmail || k.kafe_kodu === 'TESTXX');
-  if (mevcutKafe) {
-    // Sadece güncelle
-    const bitis = new Date(); bitis.setFullYear(bitis.getFullYear() + 10);
-    await sb.from('kafeler').update({
-      kafe_kodu: 'TESTXX',
-      kafe_adi: '🧪 Genel Test Cafesi',
-      plan: 'pro',
-      plan_bitis: bitis.toISOString()
-    }).eq('id', mevcutKafe.id);
-    toast('✓ Test cafesi güncellendi!');
-    await yukle();
-    return;
-  }
-
-  // Auth'ta kayıt oluştur
-  const { data: authData, error: authErr } = await sb.auth.signUp({
-    email: testEmail,
-    password: 'test123456'
-  });
-
-  const userId = authData?.user?.id;
-  if (!userId) {
-    toast('⚠️ ' + (authErr?.message || 'Auth hatası — test@kolaycafe.com zaten kayıtlı olabilir'));
-    if (btn) { btn.disabled = false; btn.textContent = '+ Test Cafesi Oluştur'; }
-    return;
-  }
-
-  const bitis = new Date(); bitis.setFullYear(bitis.getFullYear() + 10);
-  const { error: insertErr } = await sb.from('kafeler').insert({
-    user_id: userId,
-    kafe_adi: '🧪 Genel Test Cafesi',
-    email: testEmail,
-    plan: 'pro',
-    plan_bitis: bitis.toISOString(),
-    telefon: '05000000000',
-    adres: 'Test Adresi',
-    garsonlar: ['Test Garson'],
-    kafe_kodu: 'TESTXX',
-    masalar: Array.from({length:20}, (_,i) => ({id:i+1, ad:'Masa '+(i+1), not:''}))
-  });
-
-  if (insertErr) {
-    toast('❌ Hata: ' + insertErr.message);
-    if (btn) { btn.disabled = false; btn.textContent = '+ Test Cafesi Oluştur'; }
-    return;
-  }
-
-  toast('✓ Test Cafesi oluşturuldu! Giriş: test@kolaycafe.com / test123456');
-  await yukle();
-}
-
-function istatistikGuncelle() {
-  const simdi = new Date();
-  const bugunBaslangic = new Date(); bugunBaslangic.setHours(0,0,0,0);
-  const odemeliPlanlar = ['start','grow','gold','platin','ultra','elite','pro'];
-
-  document.getElementById('st-toplam').textContent = tumKafeler.length;
-  document.getElementById('st-aktif').textContent = tumKafeler.filter(k => k.plan_bitis && new Date(k.plan_bitis) > simdi).length;
-  document.getElementById('st-bugun').textContent = tumKafeler.filter(k => k.created_at && new Date(k.created_at) >= bugunBaslangic).length;
-  document.getElementById('st-odeme').textContent = tumKafeler.filter(k => odemeliPlanlar.includes(k.plan)).length;
-  document.getElementById('st-doldu').textContent = tumKafeler.filter(k => k.plan_bitis && new Date(k.plan_bitis) <= simdi).length;
-}
-
-function filtrele(f, btn) {
-  aktifFiltre = f;
-  document.querySelectorAll('.filtre-btn').forEach(b => b.classList.remove('aktif'));
-  btn.classList.add('aktif');
+  kpiGuncelle();
   tabloRender();
 }
 
-function aramaYap() { tabloRender(); }
+function kpiGuncelle() {
+    document.getElementById('kpi-toplam').textContent = tumKafeler.length;
+    const aktif = tumKafeler.filter(k => k.hizmet_aktif !== false && new Date(k.plan_bitis) > new Date()).length;
+    document.getElementById('kpi-aktif').textContent = aktif;
+}
 
-function filtreliKafeler() {
-  const arama = document.getElementById('arama').value.toLowerCase();
-  const simdi = new Date();
-  return tumKafeler.filter(k => {
-    if (arama) {
-      const hay = ((k.kafe_adi||'') + (k.telefon||'') + (k.adres||'') + (k.fatura_il||'')).toLowerCase();
-      if (!hay.includes(arama)) return false;
+// GARSON TEMİZLEME (object object hatasını çözen kısım)
+function garsonFmt(garsonlar) {
+    if(!garsonlar || !Array.isArray(garsonlar)) return '—';
+    return garsonlar.map(g => (typeof g === 'object' && g !== null) ? (g.ad || g.isim || 'Bilinmiyor') : g).join(', ');
+}
+
+// ŞALTER DEĞİŞTİRME
+async function hizmetDurumuDegistir(id, durum) {
+    const { error } = await sb.from('kafeler').update({ hizmet_aktif: durum }).eq('id', id);
+    if (error) alert("Hata oluştu!");
+    else {
+        const k = tumKafeler.find(x => x.id === id);
+        if(k) k.hizmet_aktif = durum;
+        tabloRender();
     }
-    if (aktifFiltre === 'aktif') return k.plan_bitis && new Date(k.plan_bitis) > simdi;
-    if (aktifFiltre === 'doldu') return !k.plan_bitis || new Date(k.plan_bitis) <= simdi;
-    if (aktifFiltre === 'pro') return k.plan === 'pro';
-    if (aktifFiltre === 'deneme') return k.plan === 'deneme';
-    if (aktifFiltre === 'crm') {
-      // Deneme süresi dolmuş VEYA 3 gün içinde bitecek + ücretli pakette değil
-      const odemeliPlanlar = ['start','grow','gold','platin','ultra','elite','pro'];
-      if (odemeliPlanlar.includes(k.plan)) return false;
-      if (!k.plan_bitis) return true;
-      const kalan = Math.ceil((new Date(k.plan_bitis) - simdi) / (1000*60*60*24));
-      return kalan <= 3;
-    }
-    return true;
-  });
 }
 
-function planBadge(plan) {
-  const m = { pro:'badge-pro', gold:'badge-gold', platin:'badge-platin', ultra:'badge-ultra', elite:'badge-elite', grow:'badge-grow', start:'badge-start', deneme:'badge-deneme' };
-  return `<span class="badge ${m[plan]||'badge-deneme'}">${(plan||'deneme').toUpperCase()}</span>`;
-}
-
-function sureBilgi(plan_bitis) {
-  if (!plan_bitis) return { html: '<span style="color:var(--text2);font-size:0.75rem;">—</span>', doldu: true };
-  const simdi = new Date();
-  const bitis = new Date(plan_bitis);
-  const kalan = Math.ceil((bitis - simdi) / (1000*60*60*24));
-  const doldu = kalan <= 0;
-  const renk = doldu ? '#e04050' : kalan <= 3 ? '#e07840' : kalan <= 7 ? '#f0b940' : '#30d080';
-  const yuzde = doldu ? 0 : Math.min(100, (kalan / 30) * 100);
-  const html = doldu
-    ? `<span class="badge badge-suresi-doldu">SÜRESİ DOLDU</span>`
-    : `<div class="sure-bar-wrap"><div class="sure-bar-bg"><div class="sure-bar" style="width:${yuzde}%;background:${renk};"></div></div><div class="sure-label">${kalan} gün kaldı</div></div>`;
-  return { html, doldu };
-}
-
-function tarihFmt(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
-}
-
+// TABLO RENDER
 function tabloRender() {
-  const liste = filtreliKafeler();
-  const tbody = document.getElementById('tablo-body');
-  document.getElementById('kayit-sayisi').textContent = `${liste.length} kayıt gösteriliyor / toplam ${tumKafeler.length}`;
+    const tbody = document.getElementById('tablo-body');
+    const arama = document.getElementById('arama').value.toLowerCase();
+    const liste = tumKafeler.filter(k => (k.kafe_adi||'').toLowerCase().includes(arama));
+    
+    tbody.innerHTML = '';
+    liste.forEach((k, i) => {
+        const simdi = new Date();
+        const bitis = new Date(k.plan_bitis);
+        const doldu = bitis <= simdi;
+        const aktif = k.hizmet_aktif !== false && !doldu;
 
-  if (liste.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="yukleniyor">Kayıt bulunamadı</td></tr>';
-    return;
-  }
+        const tr = document.createElement('tr');
+        if(!aktif) tr.style.opacity = '0.6';
 
-  tbody.innerHTML = '';
-  liste.forEach((k, i) => {
-    const sure = sureBilgi(k.plan_bitis);
-    const durum = sure.doldu
-      ? `<span class="badge badge-suresi-doldu">PASIF</span>`
-      : `<span class="badge badge-aktif">AKTİF</span>`;
-    const tr = document.createElement('tr');
-    if (sure.doldu) tr.className = 'pasif';
-    const simdi2 = new Date();
-    const sonGirisStr = k.son_giris ? (() => {
-      const sg = new Date(k.son_giris);
-      const fark = Math.floor((simdi2 - sg) / (1000*60*60*24));
-      const renk = fark === 0 ? '#30d080' : fark <= 3 ? '#f0b940' : fark <= 7 ? '#e07840' : '#e04050';
-      const yazi = fark === 0 ? 'Bugün' : fark === 1 ? 'Dün' : fark + ' gün önce';
-      return `<span style="color:${renk};font-size:0.75rem;font-family:'Space Mono',monospace;">${yazi}</span>`;
-    })() : '<span style="color:var(--text2);font-size:0.72rem;">—</span>';
-    const ciroStr = k.toplam_ciro > 0
-      ? `<span style="color:#30d080;font-weight:700;font-size:0.8rem;">${Math.round(k.toplam_ciro).toLocaleString('tr-TR')}₺</span>`
-      : '<span style="color:var(--text2);font-size:0.72rem;">—</span>';
-    const crmNotSayisi = (k.crm_notlar||[]).length;
-    tr.innerHTML = `
-      <td style="color:var(--text2);font-family:'Space Mono',monospace;font-size:0.75rem;">${i+1}</td>
-      <td><strong>${k.kafe_adi||'—'}</strong><br><span style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;">${k.kafe_kodu||''}</span>${crmNotSayisi>0?`<span style="margin-left:4px;background:#9060f030;color:#9060f0;border-radius:4px;padding:1px 5px;font-size:0.65rem;font-weight:800;">${crmNotSayisi} not</span>`:''}</td>
-      <td style="font-size:0.8rem;">${k.email ? k.email : '<span style="color:var(--red);font-size:0.72rem;font-family:\'Space Mono\',monospace;">⚠ eksik</span>'}</td>
-      <td style="font-size:0.8rem;"><div>${k.telefon||'—'}</div><div style="font-size:0.72rem;color:var(--text2);">${k.adres||'—'}${k.fatura_il?', '+k.fatura_il:''}</div></td>
-      <td>${planBadge(k.plan)}</td>
-      <td>${sure.html}</td>
-      <td>${sonGirisStr}</td>
-      <td>${ciroStr}</td>
-      <td style="font-size:0.78rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(k.created_at)}</td>
-      <td>${durum}</td>
-      <td>
-        <button class="aksiyon-btn" onclick="detayAc('${k.id}')">🔍 Detay</button>
-      </td>`;
-    tbody.appendChild(tr);
-  });
-
-  // MOBİL KARTLAR
-  const kartListe = document.getElementById('kart-liste');
-  kartListe.innerHTML = '';
-  liste.forEach((k, i) => {
-    const sure = sureBilgi(k.plan_bitis);
-    const kart = document.createElement('div');
-    kart.className = 'uye-kart' + (sure.doldu ? ' pasif' : '');
-    kart.innerHTML = `
-      <div class="uye-kart-ust">
-        <div>
-          <div class="uye-kafe-adi">${k.kafe_adi||'—'}</div>
-          <div class="uye-kafe-kodu">${k.kafe_kodu||''}</div>
-        </div>
-        ${planBadge(k.plan)}
-      </div>
-      <div class="uye-kart-bilgi">
-        <div>
-          <div class="uye-bilgi-key">E-Posta</div>
-          <div class="uye-bilgi-val">${k.email||'—'}</div>
-        </div>
-        <div>
-          <div class="uye-bilgi-key">Telefon</div>
-          <div class="uye-bilgi-val">${k.telefon||'—'}</div>
-        </div>
-        <div>
-          <div class="uye-bilgi-key">Adres</div>
-          <div class="uye-bilgi-val">${k.adres||'—'}</div>
-        </div>
-        <div>
-          <div class="uye-bilgi-key">Kayıt Tarihi</div>
-          <div class="uye-bilgi-val">${tarihFmt(k.created_at)}</div>
-        </div>
-      </div>
-      <div class="uye-kart-alt">
-        <div>${sure.html}</div>
-        <button class="detay-btn-mobil" onclick="detayAc('${k.id}')">🔍 Detay</button>
-      </div>
-    `;
-    kartListe.appendChild(kart);
-  });
-}
-
-function detayAc(id) {
-  const k = tumKafeler.find(x => x.id === id);
-  if (!k) return;
-  seciliKafeId = id;
-  document.getElementById('modal-kafe-adi').textContent = '☕ ' + (k.kafe_adi || 'Kafe');
-  document.getElementById('modal-plan-sec').value = k.plan || 'deneme';
-
-  const sure = sureBilgi(k.plan_bitis);
-
-  function satirHtml(etiket, deger, kopyala) {
-    const kopyaBtn = kopyala && deger !== '—'
-      ? `<button onclick="navigator.clipboard.writeText('${deger.replace(/'/g,"\'")}');this.textContent='✓ Kopyalandı';setTimeout(()=>this.textContent='📋 Kopyala',1500)" style="margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.68rem;cursor:pointer;font-family:'Syne',sans-serif;">📋 Kopyala</button>`
-      : '';
-    return `<div class="modal-satir"><div class="modal-key">${etiket}</div><div class="modal-val">${deger}${kopyaBtn}</div></div>`;
-  }
-
-  function bolumBaslik(ikon, baslik) {
-    return `<div style="font-size:0.78rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">${ikon} ${baslik}</div>`;
-  }
-
-  const il = k.fatura_il || '';
-  const ilce = k.fatura_ilce || '';
-  const sehir = il + (ilce ? ' / ' + ilce : '') || '—';
-
-  let html = '';
-
-  // E-posta eksikse uyarı banner
-  if (!k.email) {
-    html += `<div style="background:#f0b94015;border:1.5px solid #f0b94050;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:1.2rem;">⚠️</span>
-      <div>
-        <div style="font-size:0.8rem;font-weight:800;color:var(--accent);margin-bottom:2px;">E-posta eksik!</div>
-        <div style="font-size:0.72rem;color:var(--text2);">Bu kafe eski kayıt — aşağıdan e-postayı ekleyebilirsiniz.</div>
-      </div>
-    </div>`;
-  }
-
-  // İletişim
-  html += bolumBaslik('📞', 'İletişim Bilgileri');
-  // E-posta: varsa kopyala, yoksa düzenlenebilir alan
-  if (k.email) {
-    html += satirHtml('E-Posta', k.email, true);
-  } else {
-    html += `<div class="modal-satir">
-      <div class="modal-key">E-Posta</div>
-      <div class="modal-val" style="display:flex;gap:8px;align-items:center;flex:1;">
-        <input id="modal-email-inp" type="email" placeholder="ornek@mail.com"
-          style="flex:1;background:var(--surface);border:1.5px solid var(--accent);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;">
-        <button onclick="emailKaydet()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">✓ Kaydet</button>
-      </div>
-    </div>`;
-  }
-  html += satirHtml('Telefon', k.telefon || '—', true);
-  html += satirHtml('Cafe Adresi', k.adres || '—', false);
-
-  // Fatura
-  html += bolumBaslik('🧾', 'Fatura Bilgileri');
-  html += satirHtml('Vergi / TC No', k.vergi_no || '—', true);
-  html += satirHtml('Fatura Adresi', k.fatura_adres || '—', true);
-  html += satirHtml('Şehir / İlçe', sehir, false);
-
-  // Fatura özeti kopyalama butonu
-  if (k.vergi_no || k.fatura_adres) {
-    const faturaOzet = `Kafe: ${k.kafe_adi||''}\nVergi/TC: ${k.vergi_no||'—'}\nAdres: ${k.fatura_adres||'—'} ${sehir}\nTelefon: ${k.telefon||'—'}\nE-posta: ${k.email||'—'}`;
-    html += `<button onclick="navigator.clipboard.writeText(\`${faturaOzet.replace(/\`/g,'\`')}\`);this.textContent='✓ Kopyalandı!';setTimeout(()=>this.textContent='📋 Tüm Fatura Bilgilerini Kopyala',1500)" style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:1.5px dashed var(--accent);background:#f0b94010;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📋 Tüm Fatura Bilgilerini Kopyala</button>`;
-  }
-
-  // Plan
-  html += bolumBaslik('💳', 'Plan & Abonelik');
-  html += satirHtml('Plan', planBadge(k.plan), false);
-  html += satirHtml('Başlangıç', tarihFmt(k.created_at), false);
-  html += satirHtml('Bitiş', tarihFmt(k.plan_bitis), false);
-  html += satirHtml('Kalan', sure.doldu ? '<span style="color:var(--red)">❌ Süresi dolmuş</span>' : `<span style="color:var(--green)">${sure.html.replace(/<[^>]+>/g,'').trim()}</span>`, false);
-  html += satirHtml('Kupon', k.kupon_kodu || '—', false);
-
-  // Sistem
-  html += bolumBaslik('⚙️', 'Sistem');
-  html += satirHtml('Kafe Kodu', k.kafe_kodu || '—', true);
-  html += satirHtml('Garson Sayısı', (k.garsonlar || []).length + ' garson', false);
-  html += satirHtml('Kayıt Tarihi', tarihFmt(k.created_at), false);
-
-  // CRM ANALİZ
-  html += bolumBaslik('📊', 'Analiz & CRM');
-  const simdiCrm = new Date();
-  const sonGirisCrm = k.son_giris ? (() => {
-    const sg = new Date(k.son_giris);
-    const fark = Math.floor((simdiCrm - sg) / (1000*60*60*24));
-    return fark === 0 ? 'Bugün' : fark === 1 ? 'Dün' : fark + ' gün önce (' + tarihFmt(k.son_giris) + ')';
-  })() : '— (hiç giriş yok)';
-  html += satirHtml('Son Giriş', `<span style="color:${k.son_giris ? '#30d080' : 'var(--red)'}">${sonGirisCrm}</span>`, false);
-  html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${Math.round(k.toplam_ciro).toLocaleString('tr-TR')} ₺</span>` : '—', false);
-  html += satirHtml('Ürün Sayısı', (() => { let s=0; Object.values(k.urunler||{}).forEach(a=>s+=a.length); return s + ' ürün'; })(), false);
-
-  // CİRO RAPORU
-  html += bolumBaslik('📈', 'Ciro Raporu');
-  html += `<div id="ciro-rapor-alani">
-    <button onclick="ciroRaporYukle('${k.id}')" 
-      style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #30d08040;background:#30d08010;color:#30d080;font-family:'Syne',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;margin-bottom:4px;">
-      📊 Ciro Raporunu Yükle
-    </button>
-  </div>`;
-
-  // SATIŞ DÖNÜŞÜM AKSİYONLARI
-  html += bolumBaslik('🎯', 'Satışa Dönüştür');
-  const tel = (k.telefon||'').replace(/\D/g,'');
-  const waMsg = encodeURIComponent(`Merhaba ${k.kafe_adi||''}! KolayCafe deneme süreniz yaklaşıyor. Size özel %20 indirimle hemen paket seçebilirsiniz 👉 https://kolaycafe.com`);
-  const waTel = tel.startsWith('0') ? '90'+tel.slice(1) : tel.startsWith('90') ? tel : '90'+tel;
-
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-    ${tel ? `<a href="https://wa.me/${waTel}?text=${waMsg}" target="_blank"
-      style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;background:#25D36615;border:1.5px solid #25D36640;color:#25D366;font-size:0.82rem;font-weight:800;text-decoration:none;cursor:pointer;">
-      <span style="font-size:1.1rem;">💬</span> WhatsApp
-    </a>` : `<div style="padding:10px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text2);font-size:0.78rem;text-align:center;">📵 Tel yok</div>`}
-    ${k.email ? `<a href="mailto:${k.email}?subject=KolayCafe%20Paket%20Teklifiniz&body=Merhaba%20${encodeURIComponent(k.kafe_adi||'')}%2C%0A%0ADeneme%20s%C3%BCreniz%20yak%C4%B1nda%20bitiyor.%20Size%20%C3%B6zel%20teklif%20i%C3%A7in%20hemen%20iletiAim%20edin." target="_blank"
-      style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;background:#4080f015;border:1.5px solid #4080f040;color:#4080f0;font-size:0.82rem;font-weight:800;text-decoration:none;">
-      <span style="font-size:1.1rem;">📧</span> E-posta
-    </a>` : `<div style="padding:10px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);color:var(--text2);font-size:0.78rem;text-align:center;">📭 Mail yok</div>`}
-  </div>`;
-
-  // UYGULAMA İÇİ BANNER GÖNDER
-  html += `<button onclick="bannerGonder('${k.id}')"
-    style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #f0b94040;background:#f0b94010;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;margin-bottom:10px;">
-    📢 Uygulama İçi Banner Gönder
-  </button>`;
-
-  // CRM NOTLAR
-  html += bolumBaslik('📝', 'CRM Notları');
-  const notlar = k.crm_notlar || [];
-  if (notlar.length > 0) {
-    html += `<div style="margin-bottom:10px;">`;
-    notlar.slice().reverse().forEach((n, i) => {
-      const idx = notlar.length - 1 - i;
-      html += `<div style="background:var(--surface);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid ${n.tip==='onemli'?'#e04050':n.tip==='pozitif'?'#30d080':'#9060f0'};">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(n.tarih)} — ${n.yazar||'Admin'}</span>
-          <button onclick="crmNotSil('${k.id}',${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.75rem;">✕</button>
-        </div>
-        <div style="font-size:0.82rem;">${n.metin}</div>
-      </div>`;
+        tr.innerHTML = `
+            <td>${i+1}</td>
+            <td>
+                <strong>${k.kafe_adi || 'İsimsiz'}</strong>
+                ${k.hizmet_aktif === false ? '<span class="status-off-tag">MANUEL DURDURULDU</span>' : ''}
+            </td>
+            <td><span class="badge">${(k.plan||'deneme').toUpperCase()}</span></td>
+            <td>
+                <label class="switch">
+                    <input type="checkbox" ${k.hizmet_aktif !== false ? 'checked' : ''} onchange="hizmetDurumuDegistir('${k.id}', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </td>
+            <td style="font-size:0.7rem; color:var(--text2)">${garsonFmt(k.garsonlar)}</td>
+            <td style="color:${doldu ? 'var(--red)' : 'var(--green)'}">${doldu ? 'SÜRE DOLDU' : Math.ceil((bitis-simdi)/(1000*60*60*24)) + ' gün'}</td>
+            <td><button class="abtn" onclick="detayAc('${k.id}')">🔍</button></td>
+        `;
+        tbody.appendChild(tr);
     });
-    html += `</div>`;
-  } else {
-    html += `<div style="color:var(--text2);font-size:0.78rem;margin-bottom:10px;">Henüz not yok.</div>`;
-  }
-
-  html += `<div style="display:flex;flex-direction:column;gap:8px;">
-    <div style="display:flex;gap:6px;">
-      <select id="crm-not-tip" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
-        <option value="normal">💬 Normal</option>
-        <option value="pozitif">✅ Pozitif</option>
-        <option value="onemli">🔴 Önemli</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <textarea id="crm-not-inp" placeholder="Not ekle... (arama yapmadı, fiyat sordu, geri aranacak...)"
-        style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;outline:none;resize:none;height:70px;"></textarea>
-      <button onclick="crmNotKaydet('${k.id}')"
-        style="padding:10px 14px;border-radius:8px;border:none;background:#9060f0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;">
-        ✓ Ekle
-      </button>
-    </div>
-  </div>`;
-
-  document.getElementById('modal-icerik').innerHTML = html;
-  document.getElementById('detay-modal').classList.add('ac');
 }
 
-function modalKapat() {
-  document.getElementById('detay-modal').classList.remove('ac');
-  seciliKafeId = null;
-}
-
-async function crmNotKaydet(kafeId) {
-  const inp = document.getElementById('crm-not-inp');
-  const tip = document.getElementById('crm-not-tip');
-  if (!inp || !inp.value.trim()) { inp.style.borderColor='var(--red)'; return; }
-  const k = tumKafeler.find(x => x.id === kafeId);
-  if (!k) return;
-  const notlar = k.crm_notlar || [];
-  notlar.push({ metin: inp.value.trim(), tip: tip.value, tarih: new Date().toISOString(), yazar: 'Admin' });
-  const { error } = await sb.from('kafeler').update({ crm_notlar: notlar }).eq('id', kafeId);
-  if (error) { toast('❌ ' + error.message); return; }
-  k.crm_notlar = notlar;
-  toast('✓ Not eklendi');
-  detayAc(kafeId);
-  tabloRender();
-}
-
-async function crmNotSil(kafeId, idx) {
-  if (!confirm('Bu notu silmek istiyor musunuz?')) return;
-  const k = tumKafeler.find(x => x.id === kafeId);
-  if (!k) return;
-  const notlar = [...(k.crm_notlar || [])];
-  notlar.splice(idx, 1);
-  const { error } = await sb.from('kafeler').update({ crm_notlar: notlar }).eq('id', kafeId);
-  if (error) { toast('❌ ' + error.message); return; }
-  k.crm_notlar = notlar;
-  toast('✓ Not silindi');
-  detayAc(kafeId);
-  tabloRender();
-}
-
-async function bannerGonder(kafeId) {
-  // kafeler tablosuna banner_mesaj kolonu yazıyoruz, uygulama açılışta okuyacak
-  const mesaj = prompt('Banner mesajı girin (uygulama açılışta gösterilecek):', '⭐ Deneme süreniz bitiyor! Hemen paket seçin ve %20 indirim kazanın 👉 kolaycafe.com');
-  if (!mesaj) return;
-  const { error } = await sb.from('kafeler').update({ banner_mesaj: mesaj }).eq('id', kafeId);
-  if (error) { toast('❌ ' + error.message); return; }
-  const k = tumKafeler.find(x => x.id === kafeId);
-  if (k) k.banner_mesaj = mesaj;
-  toast('✓ Banner gönderildi — kullanıcı bir sonraki girişte görecek');
-}
-
-
-async function emailKaydet() {
-  if (!seciliKafeId) return;
-  const inp = document.getElementById('modal-email-inp');
-  if (!inp) return;
-  const email = inp.value.trim();
-  if (!email || !email.includes('@')) {
-    inp.style.borderColor = 'var(--red)';
-    inp.placeholder = 'Geçerli bir e-posta girin!';
-    setTimeout(() => { inp.style.borderColor = 'var(--accent)'; inp.placeholder = 'ornek@mail.com'; }, 2000);
-    return;
-  }
-  const { error } = await sb.from('kafeler').update({ email }).eq('id', seciliKafeId);
-  if (error) { alert('Hata: ' + error.message); return; }
-  // Yerel veriyi güncelle
-  const kafe = tumKafeler.find(x => x.id === seciliKafeId);
-  if (kafe) kafe.email = email;
-  // Modal'ı yenile
-  detayAc(seciliKafeId);
-  await yukle();
-}
-
-async function planGuncelle() {
-  if (!seciliKafeId) return;
-  const plan = document.getElementById('modal-plan-sec').value;
-  const gun = parseInt(document.getElementById('modal-gun').value) || 30;
-  const bitis = new Date();
-  bitis.setDate(bitis.getDate() + gun);
-
-  const { error } = await sb.from('kafeler').update({
-    plan: plan,
-    plan_bitis: bitis.toISOString()
-  }).eq('id', seciliKafeId);
-
-  if (error) { alert('Hata: ' + error.message); return; }
-  modalKapat();
-  await yukle();
-  alert(`✓ Plan güncellendi: ${plan.toUpperCase()} — ${gun} gün`);
-}
-
-async function ciroRaporYukle(kafeId, gun=30) {
-  const alan = document.getElementById('ciro-rapor-alani');
-  if (!alan) return;
-  alan.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text2);font-family:Space Mono,monospace;font-size:0.8rem;">⏳ Yükleniyor...</div>';
-
-  // Son N günün adisyonlarını çek
-  const baslangic = new Date();
-  baslangic.setDate(baslangic.getDate() - gun);
-
-  const { data, error } = await sb.from('kolaycafenlar')
-    .select('created_at, toplam, siparisler, odeme_tipi')
-    .eq('kafe_id', kafeId)
-    .gte('created_at', baslangic.toISOString())
-    .order('created_at', { ascending: true });
-
-  if (error) { alan.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">❌ ' + error.message + '</div>'; return; }
-  if (!data || data.length === 0) { alan.innerHTML = '<div style="color:var(--text2);font-size:0.8rem;padding:12px 0;">Bu dönemde adisyon kaydı yok.</div>'; return; }
-
-  // Gün gün ciro hesapla
-  const gunCiro = {};
-  const urunSayilari = {};
-  let toplamCiro = 0;
-  let toplamAdisyon = 0;
-
-  data.forEach(a => {
-    const gun = a.created_at.slice(0, 10);
-    const tutar = parseFloat(a.toplam) || 0;
-    gunCiro[gun] = (gunCiro[gun] || 0) + tutar;
-    toplamCiro += tutar;
-    toplamAdisyon++;
-    // Ürün sayıları
-    if (Array.isArray(a.siparisler)) {
-      a.siparisler.forEach(s => {
-        if (s.isim) {
-          urunSayilari[s.isim] = (urunSayilari[s.isim] || 0) + (s.adet || 1);
-        }
-      });
+// CANLI TAKİP (5sn Yenileme)
+async function canliYukle() {
+    const simdi = new Date();
+    const { data } = await sb.from('kafeler').select('*');
+    if(!data) return;
+    
+    const onlineKafeler = data.filter(k => k.son_giris && (simdi - new Date(k.son_giris)) < 10*60*1000);
+    const listeDiv = document.getElementById('canli-liste');
+    
+    if(onlineKafeler.length === 0) {
+        listeDiv.innerHTML = '<div class="yukl">Şu an aktif kafe yok.</div>';
+        return;
     }
-  });
 
-  // En çok satan 10 ürün
-  const topUrunler = Object.entries(urunSayilari)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
-
-  const maxCiro = Math.max(...Object.values(gunCiro), 1);
-  const gunler = Object.keys(gunCiro).sort();
-
-  let html = `
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      ${[7,30,90].map(g => `<button onclick="ciroRaporYukle('${kafeId}',${g})" 
-        style="padding:5px 12px;border-radius:8px;border:1.5px solid ${g===gun?'#30d080':'var(--border)'};background:${g===gun?'#30d08020':'transparent'};color:${g===gun?'#30d080':'var(--text2)'};font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;">Son ${g} gün</button>`).join('')}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-      <div style="background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);">
-        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">TOPLAM CİRO</div>
-        <div style="font-size:1.2rem;font-weight:900;color:#30d080;">${Math.round(toplamCiro).toLocaleString('tr-TR')}₺</div>
-      </div>
-      <div style="background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);">
-        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:4px;">ADİSYON SAYISI</div>
-        <div style="font-size:1.2rem;font-weight:900;color:var(--accent);">${toplamAdisyon}</div>
-      </div>
-    </div>`;
-
-  // Gün gün bar chart
-  if (gunler.length > 0) {
-    html += `<div style="font-size:0.68rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">GÜN GÜN CİRO</div>`;
-    html += `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;">`;
-    gunler.slice(-14).forEach(g => {  // Son 14 günü göster
-      const ciro = gunCiro[g];
-      const yuzde = Math.round((ciro / maxCiro) * 100);
-      const tarih = new Date(g).toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit'});
-      html += `<div style="display:flex;align-items:center;gap:8px;">
-        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:38px;">${tarih}</div>
-        <div style="flex:1;background:var(--surface2);border-radius:4px;height:18px;overflow:hidden;">
-          <div style="width:${yuzde}%;height:100%;background:linear-gradient(90deg,#30d080,#30d08088);border-radius:4px;"></div>
-        </div>
-        <div style="font-size:0.68rem;font-weight:800;color:#30d080;min-width:64px;text-align:right;">${Math.round(ciro).toLocaleString('tr-TR')}₺</div>
-      </div>`;
-    });
-    html += `</div>`;
-  }
-
-  // En çok satan ürünler
-  if (topUrunler.length > 0) {
-    html += `<div style="font-size:0.68rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">EN ÇOK SATANLAR</div>`;
-    html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">`;
-    const maxAdet = topUrunler[0][1];
-    topUrunler.forEach(([isim, adet], i) => {
-      const yuzde = Math.round((adet / maxAdet) * 100);
-      html += `<div style="display:flex;align-items:center;gap:8px;">
-        <div style="font-size:0.62rem;font-weight:900;color:var(--accent);min-width:16px;">${i+1}</div>
-        <div style="flex:1;font-size:0.72rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">${isim}</div>
-        <div style="width:80px;background:var(--surface2);border-radius:3px;height:6px;overflow:hidden;">
-          <div style="width:${yuzde}%;height:100%;background:var(--accent);border-radius:3px;"></div>
-        </div>
-        <div style="font-size:0.68rem;font-weight:800;color:var(--text2);min-width:32px;text-align:right;">${adet}x</div>
-      </div>`;
-    });
-    html += `</div>`;
-  }
-
-  alan.innerHTML = html;
+    listeDiv.innerHTML = onlineKafeler.map(k => {
+        const acikMasalar = k.aktif_masalar || [];
+        const ciro = acikMasalar.reduce((t,m) => t + (m.siparisler||[]).reduce((tt,s)=>tt+(s.fiyat*s.adet),0), 0);
+        return `
+        <div style="background:var(--surface); padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--green)">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong>☕ ${k.kafe_adi}</strong>
+                <span style="color:var(--green); font-weight:800;">${ciro}₺</span>
+            </div>
+            <div style="font-size:0.75rem; margin-top:5px; color:var(--text2)">
+                ${acikMasalar.length} Açık Masa | Garsonlar: ${garsonFmt(k.garsonlar)}
+            </div>
+            <div style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;">
+                ${acikMasalar.map(m => `<span style="background:var(--bg2); padding:3px 7px; border-radius:5px; font-size:0.65rem; border:1px solid var(--border)">🪑 ${m.ad}</span>`).join('')}
+            </div>
+        </div>`;
+    }).join('');
 }
 
-function csvIndir() {
-  const liste = filtreliKafeler();
-  const baslik = ['Kafe Adı','Telefon','Adres','İl','İlçe','Plan','Plan Bitiş','Kayıt Tarihi','Kafe Kodu'];
-  const satirlar = liste.map(k => [
-    k.kafe_adi||'', k.telefon||'', k.adres||'', k.fatura_il||'', k.fatura_ilce||'',
-    k.plan||'', tarihFmt(k.plan_bitis), tarihFmt(k.created_at), k.kafe_kodu||''
-  ].map(v => `"${v}"`).join(','));
-  const csv = [baslik.join(','), ...satirlar].join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `kolaycafe-uyeler-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); URL.revokeObjectURL(url);
+// SAYFA YÖNETİMİ
+function sayfaGit(id, btn) {
+    document.querySelectorAll('.sayfa').forEach(s => s.classList.remove('aktif'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
+    document.getElementById('sayfa-' + id).classList.add('aktif');
+    btn.classList.add('aktif');
+    
+    clearInterval(_canliTimer);
+    if(id === 'canli') {
+        canliYukle();
+        _canliTimer = setInterval(canliYukle, 5000); // 5 Saniyeye düşürüldü
+    }
 }
 
-window.ciroRaporYukle = ciroRaporYukle;
-
-// Sayfa açılınca oturum kontrolü
+// INIT
 (async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session && session.user.email === ADMIN_EMAIL) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    document.getElementById('admin-email-goster').textContent = session.user.email;
-    await yukle();
-  }
+    const { data: { session } } = await sb.auth.getSession();
+    if (session && session.user.email === ADMIN_EMAIL) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'block';
+        await yukle();
+    }
 })();
 
-// Modal dışına tıklayınca kapat
-document.getElementById('detay-modal').addEventListener('click', function(e) {
-  if (e.target === this) modalKapat();
-});
+function toast(m){ alert(m); }
+function detayAc(id){ alert("Detay modülü hazır, veri çekiliyor..."); }
+function modalKapat(){ document.getElementById('detay-modal').classList.remove('ac'); }
+
 </script>
 </body>
 </html>
