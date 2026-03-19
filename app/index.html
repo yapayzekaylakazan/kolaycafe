@@ -101,8 +101,8 @@
   .masalar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
   @media (max-width: 359px) { .masalar-grid { grid-template-columns: repeat(2, 1fr); gap: 7px; } }
   @media (min-width: 360px) and (max-width: 479px) { .masalar-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; } }
-  @media (min-width: 600px) and (max-width: 899px) { .masalar-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; } }
-  @media (min-width: 900px) { .masalar-grid { grid-template-columns: repeat(6, 1fr); gap: 9px; } }
+  @media (min-width: 600px) and (max-width: 899px) { .masalar-grid { grid-template-columns: repeat(5, 1fr); } }
+  @media (min-width: 900px) { .masalar-grid { grid-template-columns: repeat(6, 1fr); } }
   .masa-kart {
     border-radius: var(--radius); border: 2px solid var(--border);
     background: var(--surface2); cursor: pointer;
@@ -2687,7 +2687,7 @@ let gunlukSatis = {};
 let splitOdendi = [];
 let _syncYaziliyor = false;  // normal sipariş yazmaları
 const _syncQueue = {};       // masaId → timeout handle (debounce per masa)
-const _yazimAktif = new Set(); // Hangi masalar şu an DB'ye yazılıyor — polling/realtime bu masaları ezmesin
+const _yazimAktif = new Set(); // Yazım kilidi — bu masaya polling/realtime dokunamaz
 let _isPolling = false;         // Polling çakışma koruması
 let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
@@ -3066,7 +3066,9 @@ async function garsonGiris(isim, kafeData) {
         }
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
-          // Bu masa şu an yazılıyorsa garson realtime ile ezme
+          // KRITIK: Bu masa şu an yazılıyorsa realtime ile EZME
+          // Garson ürün ekledi → 700ms sonra DB'ye yazılacak → o arada başka cihazdan
+          // realtime gelip "eski" veriyi yazmaması lazım
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
@@ -3082,7 +3084,7 @@ async function garsonGiris(isim, kafeData) {
         }
       });
       masalar.forEach(m => {
-        if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return; // yazım bekleyen masalara dokunma
+        if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !aktif.find(x=>x.id===m.id)) {
           m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
           degisti = true;
@@ -3146,7 +3148,7 @@ async function uygulamaBaslat(user) {
     }
   }, 2000);
 
-  // Eski channel'ları temizle (çift login / token yenilemesinde memory leak önle)
+  // Eski kanalları temizle (çift login = memory leak + çift polling önle)
   if (window._kanalKafe) { try { sb.removeChannel(window._kanalKafe); } catch(e){} }
   if (window._kanalKafeler) { try { sb.removeChannel(window._kanalKafeler); } catch(e){} }
   if (window._anaPollingInterval) { clearInterval(window._anaPollingInterval); }
@@ -3203,7 +3205,7 @@ async function uygulamaBaslat(user) {
       const aktif = payload.new.aktif_masalar || [];
       let degisti = false;
       masalar.forEach(m => {
-        // Bu masa şu an yazılıyorsa realtime ile ezme — kendi yazımımız döneceğinden bekleme
+        // Yazım bekleyen masayı realtime ile ezme
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         const am = aktif.find(x=>x.id===m.id);
         if (am) {
@@ -3231,7 +3233,7 @@ async function uygulamaBaslat(user) {
   // Yedek sync - realtime ıskaladığında tüm masaları günceller
   window._anaPollingInterval = setInterval(async () => {
     if (!kafeId || _transferYapiliyor || _skipSubscriptionCount > 0) return;
-    if (_isPolling) return; // Önceki polling henüz bitmedi
+    if (_isPolling) return;
     _isPolling = true;
     try {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
@@ -3241,7 +3243,7 @@ async function uygulamaBaslat(user) {
       data.aktif_masalar.forEach(am => {
         const m = masalar.find(x=>x.id===am.id);
         if (m) {
-          // Bu masa şu an yazılıyorsa polling ile ezme!
+          // Yazım bekleyen masayı polling ile ezme
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           // Her zaman karşılaştır — sadece boş masa değil
           const eskiJson = JSON.stringify(m.siparisler);
@@ -3279,7 +3281,7 @@ async function uygulamaBaslat(user) {
         }
       });
 
-      // Supabase'de kapanmış masaları yerel'den temizle (yazım yoksa)
+      // Supabase'de kapanmış masaları yerel'den temizle
       masalar.forEach(m => {
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         if (m.siparisler.length > 0 && !data.aktif_masalar.find(x=>x.id===m.id)) {
@@ -3665,39 +3667,40 @@ async function kolaycafenVerisiYukle() {
 // BULUT KAYIT
 // ════════════════════════════════════════
 // Tek bir masanın durumunu güncelle
-// masaSyncYaz: debounce ile arka arkaya ekleme race condition'ını önler.
-// Aynı masa için 600ms içinde birden fazla çağrı gelirse sadece son hali yazılır.
+// masaSyncYaz: debounce — hızlı arka arkaya ekleme için tek WRITE yapılır
+// Garson hızlı eklediğinde her ürün için ayrı DB çağrısı yerine son hali tek seferde yazar
 function masaSyncYaz(masaId) {
+  // Devam eden yazımı iptal et ve 700ms bekle (öncekinden uzun = daha güvenli)
   if (_syncQueue[masaId]) clearTimeout(_syncQueue[masaId]);
-  _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 600);
+  _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 700);
 }
 
 async function _masaSyncYazHemen(masaId) {
   if (!kafeId) return;
 
-  // Bu masa zaten yazılıyorsa kuyruğa al — üst üste yazma
+  // Bu masa zaten yazılıyorsa bekle ve tekrar dene
   if (_yazimAktif.has(masaId)) {
-    _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 800);
+    _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 900);
     return;
   }
+
   _yazimAktif.add(masaId);
   _syncYaziliyor = true;
 
   let deneme = 0;
-  const MAX_DENEME = 3;
-
-  while (deneme < MAX_DENEME) {
+  while (deneme < 3) {
     try {
       const m = masalar.find(x=>x.id===masaId);
       if (!m) break;
 
-      // READ ile WRITE arasında m.siparisler değişebilir → anlık snapshot al
+      // KRITIK: READ başlamadan önce anlık snapshot al
+      // async await sırasında garson başka ürün ekleyebilir — o an lokalde doğru veri var
+      // DB'den eski veri gelip snapshot'ı ezmesini engelle
       const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
-      // Mevcut aktif_masaları oku (tüm masalar dahil)
-      const {data, error: readErr} = await sb.from('kafeler')
+      const {data, error: re} = await sb.from('kafeler')
         .select('aktif_masalar').eq('id', kafeId).single();
-      if (readErr) throw readErr;
+      if (re) throw re;
 
       let aktif = data?.aktif_masalar || [];
 
@@ -3705,13 +3708,12 @@ async function _masaSyncYazHemen(masaId) {
         const idx = aktif.findIndex(x=>x.id===masaId);
         const masaData = {
           id: m.id, ad: m.ad, not: m.not||'',
-          siparisler: siparislerSnapshot,       // snapshot kullan — async arasında değişmesini engelle
+          siparisler: siparislerSnapshot,
           garson: m.garson||'', indirim: m.indirim||0,
           kisi_sayisi: m.kisi_sayisi||0,
           hesap_istendi: m.hesap_istendi||false,
           garson_cagri: m.garson_cagri||false,
           garson_cagri_saat: m.garson_cagri_saat||null,
-          yazim_zaman: Date.now()               // son yazım zamanı — merge için
         };
         if (idx >= 0) aktif[idx] = masaData;
         else aktif.push(masaData);
@@ -3719,23 +3721,21 @@ async function _masaSyncYazHemen(masaId) {
         aktif = aktif.filter(x=>x.id!==masaId);
       }
 
-      const {error: writeErr} = await sb.from('kafeler')
+      const {error: we} = await sb.from('kafeler')
         .update({aktif_masalar: aktif}).eq('id', kafeId);
-      if (writeErr) throw writeErr;
+      if (we) throw we;
 
-      break; // Başarılı — döngüden çık
+      break; // başarılı
 
     } catch(e) {
       deneme++;
-      console.log(`Sync hatası (deneme ${deneme}/${MAX_DENEME}):`, e);
-      if (deneme < MAX_DENEME) {
-        await new Promise(r => setTimeout(r, 500 * deneme)); // exponential backoff
-      }
+      console.log('Sync hata deneme ' + deneme + ':', e?.message||e);
+      if (deneme < 3) await new Promise(r => setTimeout(r, 400 * deneme));
     }
   }
 
   _yazimAktif.delete(masaId);
-  setTimeout(()=>{ if(_yazimAktif.size === 0) _syncYaziliyor = false; }, 1500);
+  setTimeout(() => { if (_yazimAktif.size === 0) _syncYaziliyor = false; }, 1500);
 }
 
 
@@ -4698,7 +4698,8 @@ async function tahsilEt(odemeTipi) {
   // Realtime'ın eski veriyi geri yazmasını önle
   _transferYapiliyor = true;
   _skipSubscriptionCount = 4;
-    // Garson modunda aktif garson otomatik atansın
+  setTimeout(()=>{ _tahsilEdiliyor = false; }, 3000); // 3sn sonra kilidi aç
+  // Garson modunda aktif garson otomatik atansın
   if (garsonModu && aktifGarsonAdi && !m.garson) m.garson = aktifGarsonAdi;
   const ham=masaToplam(m), son=ham*(1-(m.indirim||0)/100);
   const tip = odemeTipi || 'nakit';
@@ -8284,7 +8285,7 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('ac');});
 });
 
-function fmt(n){ const v = parseFloat(n); return isNaN(v) ? '0,00 ₺' : v.toFixed(2).replace('.',',')+' ₺'; }
+function fmt(n){ const v=parseFloat(n); return isNaN(v)?'0,00 ₺':v.toFixed(2).replace('.',',')+' ₺'; }
 
 function garsonCagriSesCal() {
   try {
@@ -9280,7 +9281,7 @@ function gelAlSil(id) {
       const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
       const aktif = (data?.aktif_masalar || []).filter(x => x.id !== id);
       await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-    } catch(e) { console.log('Gel-Al sil hatası:', e); }
+    } catch(e) { console.log('gelAl sil hata:', e); }
   })();
 }
 
