@@ -635,8 +635,8 @@ function filtreliKafeler() {
     }
     if (filIl && (k.fatura_il||'') !== filIl) return false;
     if (filPlan && (k.plan||'') !== filPlan) return false;
-    if (aktifFiltre === 'aktif') return k.plan_bitis && new Date(k.plan_bitis) > simdi;
-    if (aktifFiltre === 'doldu') return !k.plan_bitis || new Date(k.plan_bitis) <= simdi;
+    if (aktifFiltre === 'aktif') return !k.manuel_pasif && k.plan_bitis && new Date(k.plan_bitis) > simdi;
+    if (aktifFiltre === 'doldu') return k.manuel_pasif || !k.plan_bitis || new Date(k.plan_bitis) <= simdi;
     if (aktifFiltre === 'pasif30') {
       if (!k.son_giris) return true;
       return (simdi - new Date(k.son_giris)) > 30*24*60*60*1000;
@@ -684,7 +684,12 @@ function tabloRender() {
   tbody.innerHTML = '';
   gosterilen.forEach((k, i) => {
     const sure = sureBilgi(k.plan_bitis);
-    const durum = sure.doldu ? '<span class="badge bsd">PASİF</span>' : '<span class="badge bak">AKTİF</span>';
+    const manuelPasif = k.manuel_pasif === true;
+    const durum = manuelPasif
+      ? '<span class="badge bsd" title="Manuel kapatıldı">🔒 PASİF</span>'
+      : sure.doldu
+        ? '<span class="badge bsd">SÜRESİ DOLDU</span>'
+        : '<span class="badge bak">AKTİF</span>';
     const sg = k.son_giris ? (() => {
       const fark = Math.floor((simdi - new Date(k.son_giris)) / (1000*60*60*24));
       const r = fark === 0 ? '#30d080' : fark <= 3 ? '#f0b940' : fark <= 7 ? '#e07840' : '#e04050';
@@ -716,6 +721,7 @@ function tabloRender() {
       <td>
         <button class="abtn" onclick="detayAc('${k.id}')">🔍</button>
         <button class="abtn" onclick="hizliUzat('${k.id}',14)">+14g</button>
+        <button class="abtn ${k.manuel_pasif?'':'teh'}" title="${k.manuel_pasif?'Aktif et':'Pasife al'}" onclick="manuelToggle('${k.id}',${!k.manuel_pasif})">${k.manuel_pasif?'✅':'🔒'}</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -731,6 +737,15 @@ function tabloRender() {
 }
 
 function sayfaDegis(yeni) { sayfa = yeni; tabloRender(); window.scrollTo(0,0); }
+
+async function manuelToggle(kafeId, pasifYap) {
+  const k = tumKafeler.find(x => x.id === kafeId); if (!k) return;
+  const { error } = await sb.from('kafeler').update({ manuel_pasif: pasifYap }).eq('id', kafeId);
+  if (error) { toast('❌ ' + error.message); return; }
+  k.manuel_pasif = pasifYap;
+  toast(pasifYap ? `🔒 ${k.kafe_adi} pasife alındı` : `✅ ${k.kafe_adi} aktif edildi`);
+  tabloRender();
+}
 
 async function hizliUzat(kafeId, gun) {
   const k = tumKafeler.find(x => x.id === kafeId); if (!k) return;
@@ -817,6 +832,7 @@ function detayAc(id) {
     <button onclick="hizliUzat('${k.id}',7)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+7 gün</button>
     <button onclick="hizliUzat('${k.id}',14)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+14 gün</button>
     <button onclick="hizliUzat('${k.id}',30)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+30 gün</button>
+    <button onclick="manuelToggle('${k.id}',${!k.manuel_pasif});modalKapat()" style="padding:5px 10px;border-radius:7px;border:1.5px solid ${k.manuel_pasif?'var(--green)':'var(--red)'};background:transparent;color:${k.manuel_pasif?'var(--green)':'var(--red)'};font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">${k.manuel_pasif?'✅ Aktif Et':'🔒 Pasife Al'}</button>
   </div>`;
 
   html += bb('⚙️', 'Sistem & Kullanım');
