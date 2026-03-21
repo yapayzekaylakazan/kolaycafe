@@ -2836,17 +2836,14 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
-  // Çıkış flag'ini önce set et, sonra temizle
-  sessionStorage.setItem('kc_garson_cikis', '1');
+  // localStorage'a çıkış flag'i yaz (sessionStorage sayfa yenilemede korunur, bunu kullan)
+  localStorage.setItem('kc_garson_cikis', '1');
+  // Tüm garson verilerini temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  const _url = window.location.origin + window.location.pathname;
-  try {
-    sb.auth.signOut().finally(() => { window.location.replace(_url); });
-  } catch(e) {
-    window.location.replace(_url);
-  }
+  // Direkt reload — signOut gerekmez, garson Supabase auth kullanmıyor
+  window.location.replace(window.location.origin + window.location.pathname);
 }
 
 async function garsonKafeBul() {
@@ -9852,13 +9849,16 @@ window.masaSilOnay = masaSilOnay;
 
   // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
   // Çıkış yapıldıysa restore etme
-  const _cikisYapildi = sessionStorage.getItem('kc_garson_cikis');
-  if (_cikisYapildi) {
-    sessionStorage.removeItem('kc_garson_cikis');
-    // Auth ekranını göster
+  const _garsonCikisFlag = localStorage.getItem('kc_garson_cikis');
+  if (_garsonCikisFlag) {
+    localStorage.removeItem('kc_garson_cikis');
+    sessionStorage.removeItem('kc_garson_isim');
+    sessionStorage.removeItem('kc_garson_kafe_id');
+    sessionStorage.removeItem('kc_garson_kafe_data');
+    // Auth ekranını göster, restore etme
   } else {
-    const _ssGarsonIsim   = sessionStorage.getItem('kc_garson_isim');
-    const _ssGarsonData   = sessionStorage.getItem('kc_garson_kafe_data');
+    const _ssGarsonIsim = sessionStorage.getItem('kc_garson_isim');
+    const _ssGarsonData = sessionStorage.getItem('kc_garson_kafe_data');
     if (_ssGarsonIsim && _ssGarsonData) {
       try {
         const _kafeData = JSON.parse(_ssGarsonData);
