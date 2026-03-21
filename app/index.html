@@ -2836,18 +2836,14 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
-  // Önce tüm garson session verilerini temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  // sessionStorage gerçekten temizlendi mi kontrol et
-  sessionStorage.clear();
-  // Temiz URL'ye yönlendir — ?garson=1 parametre ekleme, karışıklık yaratıyor
-  const _url = window.location.href.split('?')[0];
+  const _url = window.location.href.split('?')[0] + '?garson=1';
   try {
-    sb.auth.signOut().finally(() => { window.location.replace(_url); });
+    sb.auth.signOut().finally(() => { window.location.href = _url; });
   } catch(e) {
-    window.location.replace(_url);
+    window.location.href = _url;
   }
 }
 
@@ -3759,6 +3755,14 @@ async function _masaSyncYazHemen(masaId) {
 
       if (siparislerSnapshot.length > 0) {
         const idx = aktif.findIndex(x=>x.id===masaId);
+        // Mutfağa gönderilecek siparişler — musteri:true flag'i olan ürünler
+        const mutfakSiparisler = siparislerSnapshot.filter(s => s.musteri === true);
+        // Mevcut mutfak durumunu koru — eğer zaten hazirlaniyor/hazir ise sıfırlama
+        const mevcutKayit = aktif[idx];
+        const mevcutMutfakDurum = mevcutKayit?.mutfak_durum || null;
+        const mevcutMutfakZaman = mevcutKayit?.mutfak_zaman || null;
+        // Yeni mutfak siparişi geldi mi? (önceki snapshot'tan fazla ürün var mı)
+        const yeniMutfakSiparis = mutfakSiparisler.length > 0;
         const masaData = {
           id: m.id, ad: m.ad, not: m.not||'',
           siparisler: siparislerSnapshot,
@@ -3767,6 +3771,9 @@ async function _masaSyncYazHemen(masaId) {
           hesap_istendi: m.hesap_istendi||false,
           garson_cagri: m.garson_cagri||false,
           garson_cagri_saat: m.garson_cagri_saat||null,
+          // Mutfak durumu: sipariş varsa bekliyor, yoksa null
+          mutfak_durum: yeniMutfakSiparis ? (mevcutMutfakDurum || 'bekliyor') : null,
+          mutfak_zaman: yeniMutfakSiparis ? (mevcutMutfakZaman || new Date().toISOString()) : null,
         };
         if (idx >= 0) aktif[idx] = masaData;
         else aktif.push(masaData);
@@ -4571,6 +4578,7 @@ function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
     eslesme.adet++;
     if(!eslesme.eklemeler) eslesme.eklemeler=[];
     eslesme.eklemeler.push({saat,garson:ekleyenGarson,adet:1});
+    eslesme.musteri = true; // mutfak flag'ini koru
   } else {
     m.siparisler.push({
       isim: u.isim,
@@ -4579,7 +4587,9 @@ function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
       secimOzeti,
       ilkSaat: saat,
       ilkGarson: ekleyenGarson,
-      eklemeler: [{saat, garson: ekleyenGarson, adet:1}]
+      eklemeler: [{saat, garson: ekleyenGarson, adet:1}],
+      musteri: true,      // mutfak ekranı bu flag ile görür
+      mutfak_teslim: false
     });
   }
   siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
@@ -9855,7 +9865,6 @@ window.masaSilOnay = masaSilOnay;
   // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
   const _ssGarsonIsim   = sessionStorage.getItem('kc_garson_isim');
   const _ssGarsonData   = sessionStorage.getItem('kc_garson_kafe_data');
-  // URL'de çıkış işareti varsa veya session temiz geliyorsa garson oturumunu restore etme
   if (_ssGarsonIsim && _ssGarsonData) {
     try {
       const _kafeData = JSON.parse(_ssGarsonData);
