@@ -4329,12 +4329,12 @@ function masalarRender() {
     grid.appendChild(btn);
   });
   const _paketMasa = (PAKETLER[aktifPaket]||PAKETLER.deneme).masa;
-  // Gel-Al QR masalarını ve grupsuz QR'ları hariç tut — sadece gerçek masaları say
+  // Gel-Al QR masalarını hariç tut — sadece gerçek masaları say
   const _gercekMasaSayisi = masalar.filter(m => {
     const ad = (m.ad || '').toLowerCase();
     return !ad.startsWith('gel-al') && !ad.startsWith('gel al') && !ad.startsWith('gelal');
   }).length;
-  const _gosterMasa = _paketMasa >= 999 ? _gercekMasaSayisi : _paketMasa;
+  const _gosterMasa = _paketMasa >= 999 ? _gercekMasaSayisi : Math.min(_paketMasa, _gercekMasaSayisi);
   // Açık masaların anlık cirosu
   const acikCiro = masalar.reduce((s, m) => {
     if (m.siparisler.length > 0 && masaErisimVar(m.id)) s += masaToplam(m);
@@ -7774,13 +7774,7 @@ function ayarlarRender(){
     // Garson ekle input gizle
     const garsonEkleDiv = document.getElementById('yeni-garson-ayar')?.parentElement;
     if (garsonEkleDiv) garsonEkleDiv.style.display = 'none';
-    // Uygulama Teması: butonlar disabled
-    document.querySelectorAll('#ayar-app-tema-kart button').forEach(btn => {
-      btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
-    });
-    document.querySelectorAll('#ayar-app-tema-kart input').forEach(inp => {
-      inp.disabled = true; inp.style.opacity = '0.4';
-    });
+    // Uygulama Teması: garson serbestçe kullanabilir — kısıtlama yok
     // Dijital Menü: kaydet gizle
     const menuKart = document.getElementById('ayar-menu-gorunum-kart');
     if (menuKart) {
@@ -8998,8 +8992,15 @@ function masaGrupListeRender() {
   let html = '';
 
   gruplar.forEach(g => {
-    const grubuMasalar = masalar.filter(m => (m.grup||'') === g);
+    let grubuMasalar = masalar.filter(m => (m.grup||'') === g);
+    // Gel-Al masalarını filtrele
+    grubuMasalar = grubuMasalar.filter(m => {
+      const ad = (m.ad || '').toLowerCase();
+      return !ad.startsWith('gel-al') && !ad.startsWith('gel al') && !ad.startsWith('gelal');
+    });
     if (grubuMasalar.length === 0) return;
+    // Garson modunda grupsuz bölümü gizle
+    if (garsonModu && !g) return;
     const baslik = g ? (_GRUP_EMOJI[g]||'🏷️') + ' ' + g : '📦 Grupsuz';
     html += `<div style="font-size:0.7rem;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:1px;padding:10px 4px 4px;">${baslik} <span style="color:var(--muted);font-weight:700;">(${grubuMasalar.length})</span></div>`;
     grubuMasalar.forEach(m => {
