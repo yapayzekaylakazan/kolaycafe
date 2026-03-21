@@ -2966,9 +2966,8 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-rapor').style.display = 'none';
   // Garson modu nav — sadece operasyonel kısımlar
   const _gNavGoster = ['nav-gelal','nav-online','nav-kolaycafen','nav-urun','nav-mutfak','nav-cari','nav-ayarlar','nav-garson-cikis'];
-  // Garson modunda header çıkış butonunu gizle
-  const _headerCikisBtn = document.getElementById('header-cikis-btn');
-  if (_headerCikisBtn) _headerCikisBtn.style.display = 'none';
+  const _hcBtn = document.getElementById('header-cikis-btn');
+  if (_hcBtn) _hcBtn.style.display = 'none';
   const _gNavGizle  = ['nav-rapor','nav-recete','nav-gelgid','nav-stok','nav-ai'];
   _gNavGoster.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='flex'; });
   _gNavGizle.forEach(id  => { const el=document.getElementById(id); if(el) el.style.display='none'; });
@@ -7751,6 +7750,58 @@ function ayarlarRender(){
   document.getElementById('ayar-cafe-adi').textContent=kafeAdi;
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
+
+  // ── GARSON MODU KISITLAMALARI ──
+  if (garsonModu) {
+    // Gizlenecek kartlar (ID'ye gore)
+    ['pwa-yukle-btn','ayar-ai-paket-kart','kupon-yonetim-kart'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    // Gizlenecek kartlar (h3 basligina gore)
+    const gizliBasliklar = ['Hesap', 'Cafe Adını Değiştir', 'Garsonlar', 'Paket Seçenekleri'];
+    document.querySelectorAll('#page-ayarlar .ayar-kart').forEach(kart => {
+      const h3 = kart.querySelector('h3');
+      if (h3 && gizliBasliklar.some(b => h3.textContent.trim().startsWith(b))) {
+        kart.style.display = 'none';
+      }
+    });
+    // Garson ekle input gizle
+    const garsonEkleDiv = document.getElementById('yeni-garson-ayar')?.parentElement;
+    if (garsonEkleDiv) garsonEkleDiv.style.display = 'none';
+    // Uygulama Teması: butonlar disabled
+    document.querySelectorAll('#ayar-app-tema-kart button').forEach(btn => {
+      btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+    });
+    document.querySelectorAll('#ayar-app-tema-kart input').forEach(inp => {
+      inp.disabled = true; inp.style.opacity = '0.4';
+    });
+    // Dijital Menü: kaydet gizle
+    const menuKart = document.getElementById('ayar-menu-gorunum-kart');
+    if (menuKart) {
+      menuKart.querySelectorAll('button.ayar-btn, button[onclick*="Kaydet"], button[onclick*="kaydet"]').forEach(btn => btn.style.display = 'none');
+      menuKart.querySelectorAll('input, textarea, select').forEach(el => { el.disabled = true; el.style.opacity = '0.5'; });
+    }
+    // Masa Yönetimi: butonlar gizle
+    const masaKart = document.getElementById('ayar-masa-grup-kart');
+    if (masaKart) {
+      masaKart.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+      masaKart.querySelectorAll('input, select').forEach(el => { el.disabled = true; el.style.opacity = '0.5'; });
+    }
+    // Sadece Menü QR kartı: görünür kalsin
+    menuGorunumYukle();
+    if (window._ayarViewRender) window._ayarViewRender();
+    return;
+  }
+  // ── NORMAL MOD: gizlenmiş kartları geri ac ──
+  ['pwa-yukle-btn','ayar-ai-paket-kart','kupon-yonetim-kart'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  document.querySelectorAll('#page-ayarlar .ayar-kart').forEach(kart => { kart.style.display = ''; });
+  const garsonEkleDiv = document.getElementById('yeni-garson-ayar')?.parentElement;
+  if (garsonEkleDiv) garsonEkleDiv.style.display = 'flex';
+
   menuGorunumYukle();
   // Aktif temayı işaretle
   if (window._kafeData) appTemaYukle(window._kafeData);
@@ -8106,6 +8157,10 @@ async function kuponKontrol() {
 
 function garsonAyarListeRender(){
   const el=document.getElementById('garson-ayar-liste'); el.innerHTML='';
+  if (garsonModu) {
+    el.innerHTML='<div style="background:#e0404015;border:1.5px solid #e0404040;border-radius:10px;padding:12px 14px;font-size:0.82rem;color:#e04040;font-weight:700;">⛔ Garson modunda PIN ve garson yönetimine erişilemez.</div>';
+    return;
+  }
   // garsonlar artık obje array: {id, isim, pin, aktif}
   // Geriye dönük uyumluluk: string ise objeye çevir
   garsonlar = garsonlar.map(g => typeof g === 'string' ? {id: Date.now()+Math.random(), isim: g, pin: '', aktif: true} : g);
@@ -10126,13 +10181,37 @@ function qrMasaListeRender() {
   const div = document.getElementById('qr-masa-liste');
   if (!div) return;
   div.innerHTML = '';
-  masalar.forEach(m => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface3);border-radius:10px;';
-    row.innerHTML = `<span style="font-weight:700;font-size:0.9rem;">${m.ad || 'Masa ' + m.id}</span>
-      <button style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📷 QR Göster</button>`;
-    row.querySelector('button').addEventListener('click', () => qrGoster(m.id, m.ad));
-    div.appendChild(row);
+  // Gel-Al masalarini filtrele
+  const gercekMasalar = masalar.filter(m => {
+    const ad = (m.ad || '').toLowerCase();
+    return !ad.startsWith('gel-al') && !ad.startsWith('gel al') && !ad.startsWith('gelal');
+  });
+  if (gercekMasalar.length === 0) {
+    div.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">Henüz masa eklenmedi</p>';
+    return;
+  }
+  // Gruplara gore ayir, grupsuz gizle
+  const gruplar = {};
+  gercekMasalar.forEach(m => {
+    const g = m.grup || '';
+    if (!gruplar[g]) gruplar[g] = [];
+    gruplar[g].push(m);
+  });
+  Object.entries(gruplar).forEach(([grup, masaList]) => {
+    if (grup) {
+      const baslik = document.createElement('div');
+      baslik.style.cssText = 'font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;margin:10px 0 4px;';
+      baslik.textContent = grup;
+      div.appendChild(baslik);
+    }
+    masaList.forEach(m => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface3);border-radius:10px;margin-bottom:4px;';
+      row.innerHTML = `<span style="font-weight:700;font-size:0.9rem;">${m.ad || 'Masa ' + m.id}</span>
+        <button style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📷 QR Göster</button>`;
+      row.querySelector('button').addEventListener('click', () => qrGoster(m.id, m.ad));
+      div.appendChild(row);
+    });
   });
 }
 
