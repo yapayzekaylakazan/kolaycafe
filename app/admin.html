@@ -1303,7 +1303,8 @@ async function canliYukle() {
 
   liste.innerHTML = '';
   onlineKafeler.sort((a,b) => (b.aktif_masalar||[]).length - (a.aktif_masalar||[]).length).forEach(k => {
-    const acikMasalar = k.aktif_masalar || [];
+    const tumMasalar = k.aktif_masalar || [];
+    const acikMasalar = tumMasalar.filter(m => { const ad=(m.ad||'').toLowerCase(); return !ad.startsWith('gel-al') && !ad.startsWith('gel al') && !ad.startsWith('gelal') && !m.gelal; });
     const kafeCiro = acikMasalar.reduce((t,m) => t + (m.siparisler||[]).reduce((tt,s) => tt+s.fiyat*s.adet, 0), 0);
     const div = document.createElement('div');
     div.style.cssText = 'background:var(--surface);border-radius:9px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--green);';
