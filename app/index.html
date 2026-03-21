@@ -2836,13 +2836,14 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
-  // localStorage'a çıkış flag'i yaz (sessionStorage sayfa yenilemede korunur, bunu kullan)
+  // localStorage'a çıkış flag'i yaz — sayfa yenilemeden etkilenmez
   localStorage.setItem('kc_garson_cikis', '1');
-  // Tüm garson verilerini temizle
+  // sessionStorage'ı temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  // Direkt reload — signOut gerekmez, garson Supabase auth kullanmıyor
+  // signOut YAPMA — garson Supabase auth kullanmıyor,
+  // signOut admin oturumunu kapatır ve döngü yaratır
   window.location.replace(window.location.origin + window.location.pathname);
 }
 
@@ -9848,14 +9849,13 @@ window.masaSilOnay = masaSilOnay;
   }
 
   // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
-  // Çıkış yapıldıysa restore etme
-  const _garsonCikisFlag = localStorage.getItem('kc_garson_cikis');
-  if (_garsonCikisFlag) {
+  // localStorage'da çıkış flag'i varsa restore YAPMA
+  if (localStorage.getItem('kc_garson_cikis')) {
     localStorage.removeItem('kc_garson_cikis');
     sessionStorage.removeItem('kc_garson_isim');
     sessionStorage.removeItem('kc_garson_kafe_id');
     sessionStorage.removeItem('kc_garson_kafe_data');
-    // Auth ekranını göster, restore etme
+    // Auth ekranına düş, aşağıdaki normal auth akışı devam eder
   } else {
     const _ssGarsonIsim = sessionStorage.getItem('kc_garson_isim');
     const _ssGarsonData = sessionStorage.getItem('kc_garson_kafe_data');
