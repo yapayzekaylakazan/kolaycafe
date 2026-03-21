@@ -939,6 +939,7 @@
             <button class="btn-bol" onclick="splitUrunSec()" style="font-size:0.72rem;padding:9px 6px;">🧾 Ürün Seçerek Öde</button>
             <button class="btn-bol" onclick="splitEsitBol()" style="font-size:0.72rem;padding:9px 6px;">➗ Adisyonu Böl</button>
             <button class="btn-bol" onclick="tahsilEt('salon-nakit')" style="font-size:0.72rem;padding:9px 6px;background:var(--success);color:#fff;">✅ Tümünü Öde</button>
+            <button class="btn-bol" id="btn-mutfaga-gonder" onclick="mutfagaGonderMasa()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 3;background:#f97316;color:#fff;border-color:#f97316;">👨‍🍳 Mutfağa Gönder</button>
             <button class="btn-bol" id="btn-hesap-iste" onclick="masaHesapIste()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 3;border-color:#f59e0b;color:#f59e0b;">💳 Hesap İstendi İşaretle</button>
           </div>
         </div>
@@ -5203,6 +5204,17 @@ function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim
 function indirimUygula(oran){if(!seciliMasa) return;getMasa().indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
 function indirimUygulaManuel(){const v=parseInt(document.getElementById('indirim-input').value);if(isNaN(v)||v<0||v>100){toast('0-100 arası girin!');return;}indirimUygula(v);}
 function indirimKaldir(){if(!seciliMasa) return;getMasa().indirim=0;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
+
+function mutfagaGonderMasa() {
+  const m = getMasa();
+  if (!m) return;
+  if (!m.siparisler || m.siparisler.length === 0) { toast('⚠️ Önce sipariş ekleyin'); return; }
+  m.mutfak_durum = 'bekliyor';
+  m.mutfak_zaman = new Date().toISOString();
+  masaSyncYaz(m.id);
+  masalarRender();
+  toast('👨‍🍳 ' + (m.ad || 'Masa ' + m.id) + ' mutfağa gönderildi!');
+}
 
 // ════════════════════════════════════════
 // GARSON
