@@ -929,6 +929,7 @@
           <div class="toplam-tutar" id="toplam-tutar">0,00 ₺</div>
         </div>
         <div class="odeme-butonlar" style="display:flex;flex-direction:column;gap:5px;">
+          <button id="btn-mutfaga-gonder" onclick="mutfagaGonder()" style="width:100%;padding:11px;border-radius:10px;border:none;background:#f97316;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;letter-spacing:0.02em;">👨‍🍳 Mutfağa Gönder</button>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
             <button class="btn-nakit" onclick="tahsilEt('salon-nakit')">💵 Nakit</button>
             <button class="btn-kart" onclick="tahsilEt('salon-kart')">💳 Kart</button>
@@ -938,9 +939,8 @@
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
             <button class="btn-bol" onclick="splitUrunSec()" style="font-size:0.72rem;padding:9px 6px;">🧾 Ürün Seçerek Öde</button>
             <button class="btn-bol" onclick="splitEsitBol()" style="font-size:0.72rem;padding:9px 6px;">➗ Adisyonu Böl</button>
-            <button class="btn-bol" onclick="tahsilEt('salon-nakit')" style="font-size:0.72rem;padding:9px 6px;background:var(--success);color:#fff;">✅ Tümünü Öde</button>
-            <button class="btn-bol" id="btn-hesap-iste" onclick="masaHesapIste()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 2;border-color:#f59e0b;color:#f59e0b;">💳 Hesap İstendi İşaretle</button>
-            <button class="btn-bol" id="btn-mutfaga-gonder" onclick="mutfagaGonder()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 1;background:#f97316;color:#fff;border-color:#f97316;font-weight:900;">👨‍🍳 Mutfağa</button>
+            <button class="btn-bol" id="btn-mutfaga-gonder" onclick="mutfagaGonder()" style="font-size:0.72rem;padding:9px 6px;background:#f97316;color:#fff;border-color:#f97316;font-weight:900;">👨‍🍳 Mutfağa Gönder</button>
+            <button class="btn-bol" id="btn-hesap-iste" onclick="masaHesapIste()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 3;border-color:#f59e0b;color:#f59e0b;">💳 Hesap İstendi İşaretle</button>
           </div>
         </div>
       </div>
