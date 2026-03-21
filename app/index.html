@@ -3762,6 +3762,8 @@ async function _masaSyncYazHemen(masaId) {
           hesap_istendi: m.hesap_istendi||false,
           garson_cagri: m.garson_cagri||false,
           garson_cagri_saat: m.garson_cagri_saat||null,
+          mutfak_durum: m.mutfak_durum||null,
+          mutfak_zaman: m.mutfak_zaman||null,
         };
         if (idx >= 0) aktif[idx] = masaData;
         else aktif.push(masaData);
