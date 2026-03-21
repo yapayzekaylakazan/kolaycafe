@@ -860,7 +860,7 @@
     <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span></div>
     <div class="hstat">Günlük: <span id="hstat-ciro">0₺</span></div>
     <button class="cikis-btn" id="tamekran-btn" onclick="tamEkranToggle()" title="Tam Ekran">⛶</button>
-    <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
+    <button class="cikis-btn" id="header-cikis-btn" onclick="cikisYap()">Çıkış</button>
   </div>
 </div>
 
@@ -2836,10 +2836,10 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
+  localStorage.setItem('kc_garson_cikis', '1');
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  localStorage.setItem('kc_garson_cikis', '1');
   window.location.replace(window.location.origin + window.location.pathname);
 }
 
@@ -2966,6 +2966,9 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('nav-rapor').style.display = 'none';
   // Garson modu nav — sadece operasyonel kısımlar
   const _gNavGoster = ['nav-gelal','nav-online','nav-kolaycafen','nav-urun','nav-mutfak','nav-cari','nav-ayarlar','nav-garson-cikis'];
+  // Garson modunda header çıkış butonunu gizle
+  const _headerCikisBtn = document.getElementById('header-cikis-btn');
+  if (_headerCikisBtn) _headerCikisBtn.style.display = 'none';
   const _gNavGizle  = ['nav-rapor','nav-recete','nav-gelgid','nav-stok','nav-ai'];
   _gNavGoster.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='flex'; });
   _gNavGizle.forEach(id  => { const el=document.getElementById(id); if(el) el.style.display='none'; });
@@ -9850,25 +9853,22 @@ window.masaSilOnay = masaSilOnay;
     sessionStorage.removeItem('kc_garson_isim');
     sessionStorage.removeItem('kc_garson_kafe_id');
     sessionStorage.removeItem('kc_garson_kafe_data');
-  } else if (sessionStorage.getItem('kc_garson_isim') && sessionStorage.getItem('kc_garson_kafe_data')) {
-  const _ssGarsonIsim = sessionStorage.getItem('kc_garson_isim');
-  const _ssGarsonData = sessionStorage.getItem('kc_garson_kafe_data');
-  if (_ssGarsonIsim && _ssGarsonData) {
-    try {
-      const _kafeData = JSON.parse(_ssGarsonData);
-      // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
-      const {data: tazeData} = await sb.from('kafeler')
-        .select('*')
-        .eq('id', _kafeData.id)
-        .maybeSingle();
-      await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
-      return;
-    } catch(e) {
-      sessionStorage.removeItem('kc_garson_isim');
-      sessionStorage.removeItem('kc_garson_kafe_id');
-      sessionStorage.removeItem('kc_garson_kafe_data');
+  } else {
+    const _ssGarsonIsim = sessionStorage.getItem('kc_garson_isim');
+    const _ssGarsonData = sessionStorage.getItem('kc_garson_kafe_data');
+    if (_ssGarsonIsim && _ssGarsonData) {
+      try {
+        const _kafeData = JSON.parse(_ssGarsonData);
+        const {data: tazeData} = await sb.from('kafeler')
+          .select('*').eq('id', _kafeData.id).maybeSingle();
+        await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
+        return;
+      } catch(e) {
+        sessionStorage.removeItem('kc_garson_isim');
+        sessionStorage.removeItem('kc_garson_kafe_id');
+        sessionStorage.removeItem('kc_garson_kafe_data');
+      }
     }
-  }
   }
 
   try {
