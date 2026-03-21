@@ -4329,7 +4329,12 @@ function masalarRender() {
     grid.appendChild(btn);
   });
   const _paketMasa = (PAKETLER[aktifPaket]||PAKETLER.deneme).masa;
-  const _gosterMasa = _paketMasa >= 999 ? masalar.length : _paketMasa;
+  // Gel-Al QR masalarını ve grupsuz QR'ları hariç tut — sadece gerçek masaları say
+  const _gercekMasaSayisi = masalar.filter(m => {
+    const ad = (m.ad || '').toLowerCase();
+    return !ad.startsWith('gel-al') && !ad.startsWith('gel al') && !ad.startsWith('gelal');
+  }).length;
+  const _gosterMasa = _paketMasa >= 999 ? _gercekMasaSayisi : _paketMasa;
   // Açık masaların anlık cirosu
   const acikCiro = masalar.reduce((s, m) => {
     if (m.siparisler.length > 0 && masaErisimVar(m.id)) s += masaToplam(m);
@@ -7762,7 +7767,7 @@ function ayarlarRender(){
     const gizliBasliklar = ['Hesap', 'Cafe Adını Değiştir', 'Garsonlar', 'Paket Seçenekleri'];
     document.querySelectorAll('#page-ayarlar .ayar-kart').forEach(kart => {
       const h3 = kart.querySelector('h3');
-      if (h3 && gizliBasliklar.some(b => h3.textContent.trim().startsWith(b))) {
+      if (h3 && gizliBasliklar.some(b => h3.textContent.includes(b))) {
         kart.style.display = 'none';
       }
     });
@@ -10198,6 +10203,8 @@ function qrMasaListeRender() {
     gruplar[g].push(m);
   });
   Object.entries(gruplar).forEach(([grup, masaList]) => {
+    // Garson modunda grupsuz masaları gizle
+    if (!grup && garsonModu) return;
     if (grup) {
       const baslik = document.createElement('div');
       baslik.style.cssText = 'font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;margin:10px 0 4px;';
