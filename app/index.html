@@ -2836,14 +2836,18 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
+  // Önce tüm garson session verilerini temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  const _url = window.location.href.split('?')[0] + '?garson=1';
+  // sessionStorage gerçekten temizlendi mi kontrol et
+  sessionStorage.clear();
+  // Temiz URL'ye yönlendir — ?garson=1 parametre ekleme, karışıklık yaratıyor
+  const _url = window.location.href.split('?')[0];
   try {
-    sb.auth.signOut().finally(() => { window.location.href = _url; });
+    sb.auth.signOut().finally(() => { window.location.replace(_url); });
   } catch(e) {
-    window.location.href = _url;
+    window.location.replace(_url);
   }
 }
 
@@ -7752,9 +7756,6 @@ function ayarlarRender(){
   document.getElementById('ayar-cafe-adi').textContent=kafeAdi;
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
-  // Garson modunda "Garson Ekle" input'u gizle
-  const garsonEkleDiv = document.getElementById('yeni-garson-ayar')?.parentElement;
-  if (garsonEkleDiv) garsonEkleDiv.style.display = garsonModu ? 'none' : 'flex';
   menuGorunumYukle();
   // Aktif temayı işaretle
   if (window._kafeData) appTemaYukle(window._kafeData);
@@ -8110,11 +8111,6 @@ async function kuponKontrol() {
 
 function garsonAyarListeRender(){
   const el=document.getElementById('garson-ayar-liste'); el.innerHTML='';
-  // Garson modunda PIN ve yönetim butonları gizlenir
-  if (garsonModu) {
-    el.innerHTML='<div style="background:#e0404015;border:1.5px solid #e0404040;border-radius:10px;padding:12px 14px;font-size:0.82rem;color:#e04040;font-weight:700;">⛔ Garson modunda PIN ve garson yönetimine erişilemez.</div>';
-    return;
-  }
   // garsonlar artık obje array: {id, isim, pin, aktif}
   // Geriye dönük uyumluluk: string ise objeye çevir
   garsonlar = garsonlar.map(g => typeof g === 'string' ? {id: Date.now()+Math.random(), isim: g, pin: '', aktif: true} : g);
@@ -8135,7 +8131,7 @@ function garsonAyarListeRender(){
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <input type="password" class="gb-pin" data-i="${i}" value="${g.pin||''}" placeholder="5 haneli PIN" inputmode="numeric" maxlength="5"
+        <input type="text" class="gb-pin" data-i="${i}" value="${g.pin||''}" placeholder="5 haneli PIN" inputmode="numeric" maxlength="5"
           style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
         <button class="gb-pin-kaydet" data-i="${i}" style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">Kaydet</button>
       </div>`;
@@ -9859,6 +9855,7 @@ window.masaSilOnay = masaSilOnay;
   // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
   const _ssGarsonIsim   = sessionStorage.getItem('kc_garson_isim');
   const _ssGarsonData   = sessionStorage.getItem('kc_garson_kafe_data');
+  // URL'de çıkış işareti varsa veya session temiz geliyorsa garson oturumunu restore etme
   if (_ssGarsonIsim && _ssGarsonData) {
     try {
       const _kafeData = JSON.parse(_ssGarsonData);
