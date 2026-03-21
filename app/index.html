@@ -2836,14 +2836,10 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
-  // localStorage'a çıkış flag'i yaz — sayfa yenilemeden etkilenmez
-  localStorage.setItem('kc_garson_cikis', '1');
-  // sessionStorage'ı temizle
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  // signOut YAPMA — garson Supabase auth kullanmıyor,
-  // signOut admin oturumunu kapatır ve döngü yaratır
+  localStorage.setItem('kc_garson_cikis', '1');
   window.location.replace(window.location.origin + window.location.pathname);
 }
 
@@ -9848,30 +9844,31 @@ window.masaSilOnay = masaSilOnay;
     }
   }
 
-  // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
-  // localStorage'da çıkış flag'i varsa restore YAPMA
+  // Garson oturumu geri yukle
   if (localStorage.getItem('kc_garson_cikis')) {
     localStorage.removeItem('kc_garson_cikis');
     sessionStorage.removeItem('kc_garson_isim');
     sessionStorage.removeItem('kc_garson_kafe_id');
     sessionStorage.removeItem('kc_garson_kafe_data');
-    // Auth ekranına düş, aşağıdaki normal auth akışı devam eder
-  } else {
-    const _ssGarsonIsim = sessionStorage.getItem('kc_garson_isim');
-    const _ssGarsonData = sessionStorage.getItem('kc_garson_kafe_data');
-    if (_ssGarsonIsim && _ssGarsonData) {
-      try {
-        const _kafeData = JSON.parse(_ssGarsonData);
-        const {data: tazeData} = await sb.from('kafeler')
-          .select('*').eq('id', _kafeData.id).maybeSingle();
-        await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
-        return;
-      } catch(e) {
-        sessionStorage.removeItem('kc_garson_isim');
-        sessionStorage.removeItem('kc_garson_kafe_id');
-        sessionStorage.removeItem('kc_garson_kafe_data');
-      }
+  } else if (sessionStorage.getItem('kc_garson_isim') && sessionStorage.getItem('kc_garson_kafe_data')) {
+  const _ssGarsonIsim = sessionStorage.getItem('kc_garson_isim');
+  const _ssGarsonData = sessionStorage.getItem('kc_garson_kafe_data');
+  if (_ssGarsonIsim && _ssGarsonData) {
+    try {
+      const _kafeData = JSON.parse(_ssGarsonData);
+      // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
+      const {data: tazeData} = await sb.from('kafeler')
+        .select('*')
+        .eq('id', _kafeData.id)
+        .maybeSingle();
+      await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
+      return;
+    } catch(e) {
+      sessionStorage.removeItem('kc_garson_isim');
+      sessionStorage.removeItem('kc_garson_kafe_id');
+      sessionStorage.removeItem('kc_garson_kafe_data');
     }
+  }
   }
 
   try {
