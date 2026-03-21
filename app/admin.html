@@ -74,6 +74,7 @@
   .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:999;align-items:center;justify-content:center;padding:14px;}
   .overlay.ac{display:flex;}
   .modal{background:var(--bg2);border:1px solid var(--border);border-radius:17px;padding:24px;width:100%;max-width:640px;max-height:89vh;overflow-y:auto;}
+  @media(max-width:640px){.modal{border-radius:0;max-height:100vh;padding:16px;}.overlay.ac{align-items:flex-start;}}
   .modal-tit{font-size:0.98rem;font-weight:800;margin-bottom:15px;color:var(--accent);}
   .ms{display:flex;gap:9px;margin-bottom:9px;align-items:flex-start;}
   .mk{font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:128px;padding-top:2px;}
@@ -524,6 +525,16 @@ async function genelYenile() {
   sureDolacakListe();
   sehirDagilim();
   await bugunkuCiroYukle();
+  await hataliKafeSayisi();
+}
+
+async function hataliKafeSayisi() {
+  try {
+    const dun = new Date(); dun.setDate(dun.getDate() - 1);
+    const { data } = await sb.from('hata_loglari').select('kafe_id').gte('created_at', dun.toISOString());
+    const benzersiz = new Set((data||[]).map(h => h.kafe_id)).size;
+    document.getElementById('kpi-hatali').textContent = benzersiz;
+  } catch(e) { document.getElementById('kpi-hatali').textContent = '?'; }
 }
 
 async function bugunkuCiroYukle() {
@@ -1203,7 +1214,7 @@ async function analitikYukle() {
         <div style="font-size:0.72rem;font-weight:700;padding:7px 10px;background:var(--surface);border-radius:7px;border-left:3px solid var(--accent);">
           👤 Kafe Sahibi (Admin) — Son giriş: ${sonGirisGun===null?'Hiç giriş yok':sonGirisGun===0?'Bugün':sonGirisGun+' gün önce'}
         </div>
-        ${garsonlar.length > 0 ? garsonlar.map(g => `<div style="font-size:0.72rem;padding:7px 10px;background:var(--surface);border-radius:7px;border-left:3px solid var(--blue);"><span style="font-weight:700;">🍽️ ${g}</span> <span style="font-size:0.62rem;color:var(--text2);">(garson kayıtlı — giriş verisi Supabase Auth'ta)</span></div>`).join('') : '<div style="font-size:0.72rem;color:var(--text2);">Henüz garson tanımlanmamış.</div>'}
+        ${garsonlar.length > 0 ? garsonlar.map(g => { const ad = typeof g === 'string' ? g : (g.isim||'?'); const aktif = typeof g === 'object' ? g.aktif !== false : true; return `<div style="font-size:0.72rem;padding:7px 10px;background:var(--surface);border-radius:7px;border-left:3px solid ${aktif?'var(--blue)':'var(--border)'};"><span style="font-weight:700;">🍽️ ${ad}</span> <span style="font-size:0.62rem;color:var(--text2);">${aktif?'Aktif':'Pasif'}</span></div>`; }).join('') : '<div style="font-size:0.72rem;color:var(--text2);">Henüz garson tanımlanmamış.</div>'}
       </div>
     </div>
     <div class="pk">
@@ -1303,8 +1314,7 @@ async function canliYukle() {
 
   liste.innerHTML = '';
   onlineKafeler.sort((a,b) => (b.aktif_masalar||[]).length - (a.aktif_masalar||[]).length).forEach(k => {
-    const tumMasalar = k.aktif_masalar || [];
-    const acikMasalar = tumMasalar.filter(m => { const ad=(m.ad||'').toLowerCase(); return !ad.startsWith('gel-al') && !ad.startsWith('gel al') && !ad.startsWith('gelal') && !m.gelal; });
+    const acikMasalar = k.aktif_masalar || [];
     const kafeCiro = acikMasalar.reduce((t,m) => t + (m.siparisler||[]).reduce((tt,s) => tt+s.fiyat*s.adet, 0), 0);
     const div = document.createElement('div');
     div.style.cssText = 'background:var(--surface);border-radius:9px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--green);';
