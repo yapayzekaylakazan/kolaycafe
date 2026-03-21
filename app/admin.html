@@ -138,6 +138,7 @@
     <button class="tab-btn" onclick="sayfaGit('analitik',this)">📈 Analitik</button>
     <button class="tab-btn" onclick="sayfaGit('canli',this)">🔴 Canlı</button>
     <button class="tab-btn" onclick="sayfaGit('hatalar',this)">🐛 Hatalar</button>
+    <button class="tab-btn" onclick="sayfaGit('adisyonlar',this)">🧾 Adisyonlar</button>
     <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
     <button class="tab-btn" onclick="sayfaGit('test',this)">🧪 Test</button>
     <div class="topbar-sag">
@@ -253,6 +254,43 @@
       <div class="pk"><div class="pk-ust"><span>📊 SAATLIK HATA DAĞILIMI</span></div><div class="chart-box"><canvas id="gr-hata"></canvas></div></div>
     </div>
     <div class="tw"><table><thead><tr><th>ZAMAN</th><th>KAFE</th><th>HATA MESAJI</th><th>KAYNAK</th><th>BROWSER</th></tr></thead><tbody id="hata-body"><tr><td colspan="5" class="yukl">⏳</td></tr></tbody></table></div>
+  </div>
+
+  <!-- ADİSYONLAR -->
+  <div class="sayfa" id="sayfa-adisyonlar">
+    <div class="toolbar">
+      <div class="toolbar-baslik">🧾 Adisyonlar</div>
+      <select class="sel" id="adis-kafe"><option value="">Tüm Kafeler</option></select>
+      <input type="date" class="arama" id="adis-tarih" style="width:140px;">
+      <button class="ebtn" onclick="adisyonlarYukle()">🔄</button>
+      <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:var(--text2);">
+        <input type="checkbox" id="adis-oto" onchange="adisOtoAyarla(this.checked)"> Otomatik (30sn)
+      </label>
+    </div>
+    <!-- Özet KPI -->
+    <div class="nabiz" id="adis-kpi" style="margin-bottom:12px;">
+      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-acik" style="color:var(--cyan);">—</div><div class="nb-ad">AÇIK MASA</div></div>
+      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-kapali" style="color:var(--green);">—</div><div class="nb-ad">KAPANAN (BUGÜN)</div></div>
+      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-ciro" style="color:var(--accent);">—</div><div class="nb-ad">BUGÜN CİRO (₺)</div></div>
+      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-ort" style="color:var(--purple);">—</div><div class="nb-ad">ORT. ADİSYON (₺)</div></div>
+    </div>
+    <!-- Açık masalar -->
+    <div class="pk" style="margin-bottom:12px;">
+      <div class="pk-ust"><span>🟡 ŞU AN AÇIK MASALAR</span><span id="adis-acik-zaman" style="font-size:0.6rem;color:var(--text2);"></span></div>
+      <div id="adis-acik-liste"><div class="yukl">⏳</div></div>
+    </div>
+    <!-- Kapanan adisyonlar -->
+    <div class="pk">
+      <div class="pk-ust"><span>✅ KAPANAN ADİSYONLAR</span></div>
+      <div class="tw" style="margin:0;">
+        <table>
+          <thead><tr>
+            <th>SAAT</th><th>KAFE</th><th>MASA</th><th>GARSON</th><th>ÜRÜNLER</th><th>TUTAR</th><th>ÖDEME</th>
+          </tr></thead>
+          <tbody id="adis-kapali-body"><tr><td colspan="7" class="yukl">⏳</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- FİNANS -->
@@ -400,6 +438,7 @@ function sayfaGit(id, btn) {
   if (id === 'analitik') { analitikKafeDoldur(); analitikYukle(); }
   if (id === 'canli') { canliYukle(); canliOtoAyarla(true); }
   if (id === 'hatalar') { hatalarYukle(); hatalarOtoAyarla(true); }
+  if (id === 'adisyonlar') { adisyonlarKafeDoldur(); adisyonlarYukle(); adisOtoAyarla(true); }
   if (id === 'finans') finansYukle();
   if (id === 'test') { testPanelRender(); testKafeListesiDoldur(); }
 }
@@ -1406,6 +1445,118 @@ let _analitikOto = null;
 function analitikOtoAyarla(aktif) {
   clearInterval(_analitikOto);
   if (aktif) _analitikOto = setInterval(analitikYukle, 60000);
+}
+
+let _adisOto = null;
+function adisOtoAyarla(aktif) {
+  clearInterval(_adisOto);
+  if (aktif) _adisOto = setInterval(adisyonlarYukle, 30000);
+}
+
+function adisyonlarKafeDoldur() {
+  const sel = document.getElementById('adis-kafe');
+  if (!sel || sel.options.length > 1) return;
+  tumKafeler.forEach(k => {
+    const o = document.createElement('option');
+    o.value = k.id;
+    o.textContent = k.kafe_adi || k.id;
+    sel.appendChild(o);
+  });
+  // Bugünün tarihini default yap
+  const tarihInp = document.getElementById('adis-tarih');
+  if (tarihInp && !tarihInp.value) {
+    tarihInp.value = new Date().toISOString().slice(0,10);
+  }
+}
+
+async function adisyonlarYukle() {
+  const kafeId = document.getElementById('adis-kafe')?.value || '';
+  const tarih = document.getElementById('adis-tarih')?.value || new Date().toISOString().slice(0,10);
+  const simdi = new Date();
+
+  // Açık masalar - tumKafeler'dan
+  const acikListeEl = document.getElementById('adis-acik-liste');
+  const zamanEl = document.getElementById('adis-acik-zaman');
+  if (zamanEl) zamanEl.textContent = 'Son: ' + simdi.toLocaleTimeString('tr-TR');
+
+  // tumKafeler güncel çek
+  const { data: kafeData } = await sb.from('kafeler')
+    .select('id, kafe_adi, aktif_masalar, garsonlar')
+    .order('kafe_adi');
+  const kafeler = kafeData || [];
+
+  let tumAcikMasalar = [];
+  kafeler.forEach(k => {
+    if (kafeId && k.id !== kafeId) return;
+    (k.aktif_masalar||[]).forEach(m => {
+      const ad = (m.ad||'').toLowerCase();
+      if (ad.startsWith('gel-al') || ad.startsWith('gelal') || m.gelal) return;
+      if (!m.siparisler || m.siparisler.length === 0) return;
+      const toplam = m.siparisler.reduce((t,s) => t + s.fiyat*s.adet, 0);
+      tumAcikMasalar.push({ kafe: k.kafe_adi, masa: m.ad||'Masa '+m.id, garson: m.garson||'—', siparisler: m.siparisler, toplam });
+    });
+  });
+
+  if (acikListeEl) {
+    if (tumAcikMasalar.length === 0) {
+      acikListeEl.innerHTML = '<div style="font-size:0.75rem;color:var(--text2);padding:8px;">Şu an açık masa yok</div>';
+    } else {
+      acikListeEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px;">` +
+        tumAcikMasalar.map(m => {
+          const urunler = m.siparisler.map(s=>`${s.isim||'?'} x${s.adet||1}`).join(', ');
+          return `<div style="background:var(--surface2);border-radius:7px;padding:8px 12px;border-left:3px solid var(--accent);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+              <span style="font-size:0.78rem;font-weight:800;">🪑 ${m.masa} <span style="color:var(--text2);font-size:0.68rem;">— ${m.kafe}</span>${m.garson!=='—'?` <span style="color:var(--blue);font-size:0.68rem;">· 👤${m.garson}</span>`:''}</span>
+              <span style="font-size:0.78rem;font-weight:800;color:var(--green);">${fmt(m.toplam)}₺</span>
+            </div>
+            <div style="font-size:0.63rem;color:var(--text2);">${urunler}</div>
+          </div>`;
+        }).join('') + `</div>`;
+    }
+  }
+
+  // Kapanan adisyonlar
+  const baslangic = new Date(tarih + 'T00:00:00');
+  const bitis = new Date(tarih + 'T23:59:59');
+  let sorgu = sb.from('kolaycafenlar')
+    .select('*, kafeler(kafe_adi)')
+    .gte('created_at', baslangic.toISOString())
+    .lte('created_at', bitis.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (kafeId) sorgu = sorgu.eq('kafe_id', kafeId);
+  const { data: adisyonlar } = await sorgu;
+  const liste = adisyonlar || [];
+
+  // KPI güncelle
+  const toplamCiro = liste.reduce((t,a) => t + parseFloat(a.toplam||0), 0);
+  const ortAlisyon = liste.length > 0 ? Math.round(toplamCiro / liste.length) : 0;
+  document.getElementById('adis-nb-acik').textContent = tumAcikMasalar.length;
+  document.getElementById('adis-nb-kapali').textContent = liste.length;
+  document.getElementById('adis-nb-ciro').textContent = fmt(toplamCiro);
+  document.getElementById('adis-nb-ort').textContent = fmt(ortAlisyon);
+
+  // Tablo
+  const tbody = document.getElementById('adis-kapali-body');
+  if (liste.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="yukl">${tarih} tarihinde adisyon bulunamadı</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = liste.map(a => {
+    const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const kafeAdi = a.kafeler?.kafe_adi || tumKafeler.find(k=>k.id===a.kafe_id)?.kafe_adi || '?';
+    const urunler = (a.siparisler||[]).slice(0,3).map(s=>`${s.isim||'?'} x${s.adet||1}`).join(', ') + ((a.siparisler||[]).length>3?` +${(a.siparisler||[]).length-3}`:'');
+    const odemeRenk = {'salon-nakit':'#22c55e','salon-kart':'#3b82f6','nakit':'#22c55e','kart':'#3b82f6','cari':'#a78bfa','ikram':'#6b7280','mutfak-teslim':'#f97316'}[a.odeme_tipi]||'var(--text2)';
+    return `<tr>
+      <td style="font-size:0.7rem;font-family:'Space Mono',monospace;white-space:nowrap;">${saat}</td>
+      <td style="font-size:0.72rem;font-weight:700;">${kafeAdi}</td>
+      <td style="font-size:0.72rem;">${a.masa_ad||'?'}</td>
+      <td style="font-size:0.7rem;color:var(--blue);">${a.garson||'—'}</td>
+      <td style="font-size:0.68rem;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${urunler||'—'}</td>
+      <td style="font-size:0.75rem;font-weight:800;color:#30d080;white-space:nowrap;">${fmt(parseFloat(a.toplam||0))}₺</td>
+      <td style="font-size:0.65rem;color:${odemeRenk};font-weight:700;">${a.odeme_tipi||'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── HATALAR ──
