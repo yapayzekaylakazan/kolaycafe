@@ -4581,10 +4581,17 @@ function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
       secimOzeti,
       ilkSaat: saat,
       ilkGarson: ekleyenGarson,
-      eklemeler: [{saat, garson: ekleyenGarson, adet:1}]
+      eklemeler: [{saat, garson: ekleyenGarson, adet:1}],
+      musteri: true,
+      mutfak_teslim: false
     });
   }
-  siparisListeRender(); masalarRender(); if(seciliMasa) masaSyncYaz(seciliMasa);
+  siparisListeRender(); masalarRender();
+  if (seciliMasa) {
+    const _m = getMasa();
+    if (_m && !_m.mutfak_durum) { _m.mutfak_durum = 'bekliyor'; _m.mutfak_zaman = new Date().toISOString(); }
+    masaSyncYaz(seciliMasa);
+  }
 }
 
 // ── VARYANT MODALİ (Garson/Admin tarafı) ──
