@@ -5211,6 +5211,8 @@ function mutfagaGonderMasa() {
   const m = getMasa();
   if (!m) return;
   if (!m.siparisler || m.siparisler.length === 0) { toast('⚠️ Önce sipariş ekleyin'); return; }
+  // Siparişleri mutfak için musteri:true yap
+  m.siparisler = m.siparisler.map(s => ({...s, musteri: true, mutfak_teslim: false}));
   m.mutfak_durum = 'bekliyor';
   m.mutfak_zaman = new Date().toISOString();
   masaSyncYaz(m.id);
