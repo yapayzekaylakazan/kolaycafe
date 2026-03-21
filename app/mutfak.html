@@ -140,19 +140,7 @@
     .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:10px 22px;border-radius:12px;font-weight:800;font-size:.85rem;z-index:9999;animation:toastIn .3s ease;border:1px solid var(--border);}
     .bildirim{position:fixed;top:76px;right:20px;background:var(--orange);color:#1a0f00;padding:12px 18px;border-radius:13px;font-weight:900;font-size:.9rem;z-index:9998;animation:bildirimIn .35s ease;box-shadow:0 6px 20px rgba(249,115,22,.4);}
 
-    /* TAM EKRAN */
-    .tam-ekran-btn{padding:6px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:.75rem;cursor:pointer;}
-    .tam-ekran-btn:hover{border-color:var(--accent);color:var(--accent);}
-    .geri-btn{padding:6px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:.75rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
-    .geri-btn:hover{border-color:var(--accent);color:var(--accent);}
-
-    /* İLAVE SİPARİŞ KARTI */
-    .kart.ilave{border-color:#a855f7;animation:slideIn .35s ease;}
-    .kh.ilave{background:#a855f715;}
-    .masa-no.ilave{color:#a855f7;}
-    .durum-lbl.ilave{color:#a855f7;}
-    .sure.ilave{background:#a855f722;color:#a855f7;}
-    .ilave-badge{display:inline-block;background:#a855f722;color:#a855f7;border:1px solid #a855f740;border-radius:8px;padding:2px 9px;font-size:.68rem;font-weight:900;margin-left:6px;}
+    /* BOTTOM NAV */
     .mutfak-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:2px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:6px 0 8px;z-index:200;}
     .mutfak-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:0.62rem;font-weight:800;font-family:'Nunito',sans-serif;text-decoration:none;padding:4px 12px;border-radius:10px;transition:color .15s;}
     .mutfak-nav a.aktif{color:var(--accent);}
@@ -178,14 +166,10 @@
 <!-- ANA EKRAN -->
 <div id="ana">
   <div class="header">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <a href="index.html" class="geri-btn">← Geri</a>
-      <div class="header-logo">🍳 Mutfak — <span id="h-kafe"></span></div>
-    </div>
+    <div class="header-logo">🍳 Mutfak — <span id="h-kafe"></span></div>
     <div style="display:flex;align-items:center;gap:12px;">
       <div class="saat" id="saat"></div>
       <button class="ses-btn on" id="ses-btn" onclick="sesToggle()">🔔 Ses</button>
-      <button class="tam-ekran-btn" id="tam-ekran-btn" onclick="tamEkranToggle()">⛶ Tam Ekran</button>
       <div class="online"></div>
     </div>
   </div>
@@ -241,10 +225,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let kafeId = null, aktifFiltre = 'hepsi', sesAcik = true;
 let siparisler = [], sub = null, garsonCagriler = [], onlineSiparislerMutfak = [], onlineSub = null;
-let gecmisTarih = new Date().toISOString().split('T')[0];
-// İlave sipariş takibi: masaNo → {urunler, zaman} (son görülen sipariş snapshot'ı)
-let _oncekiSiparisDurum = {}; // masaNo → urun listesi JSON
-let ilaveSiparisler = []; // Mutfakta gösterilecek ilave kartlar
+let gecmisTarih = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
 // Saat
 setInterval(()=>{const e=document.getElementById('saat');if(e)e.textContent=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
@@ -348,6 +329,7 @@ async function yukle(){
       ? (masa.ad || '🍽️ Dijital Menü')
       : ((kayitliMasa&&kayitliMasa.ad)?kayitliMasa.ad:(masa.ad||'Masa '+masa.id));
 
+    // Garson çağrısı var mı?
     if(masa.garson_cagri){
       yeniCagriler.push({
         id:'cagri_'+masa.id,
@@ -361,7 +343,7 @@ async function yukle(){
     const mSip=masa.siparisler.filter(s=>s.musteri===true);
     if(mSip.length===0)return;
 
-    // Ürünleri grupla
+    // Ürünleri grupla — isim + secimOzeti kombinasyonu (farklı varyantlar ayrı satır)
     const gruplu={};
     mSip.forEach(s=>{
       const ozet=s.secimOzeti||'';
@@ -369,48 +351,12 @@ async function yukle(){
       if(!gruplu[k])gruplu[k]={isim:s.isim,ikon:s.ikon||'🍽️',adet:0,secimOzeti:ozet,fiyat:s.fiyat||0};
       gruplu[k].adet+=(s.adet||1);
     });
-    const simdikiUrunler = Object.values(gruplu);
-
-    // ── İLAVE SİPARİŞ KONTROLÜ ──────────────────────────
-    const masaKey = String(masa.id);
-    const simdikiJSON = JSON.stringify(simdikiUrunler.map(u=>({isim:u.isim,adet:u.adet,ozet:u.secimOzeti})));
-    const oncekiJSON = _oncekiSiparisDurum[masaKey];
-
-    if (oncekiJSON && oncekiJSON !== simdikiJSON) {
-      // Farkı bul — yeni eklenenler
-      const onceki = JSON.parse(oncekiJSON);
-      const ilaveler = [];
-      simdikiUrunler.forEach(u => {
-        const eskiUrun = onceki.find(o => o.isim === u.isim && o.ozet === (u.secimOzeti||''));
-        const eskiAdet = eskiUrun ? eskiUrun.adet : 0;
-        if (u.adet > eskiAdet) {
-          ilaveler.push({...u, adet: u.adet - eskiAdet});
-        }
-      });
-      if (ilaveler.length > 0) {
-        // Aynı masanın eski ilave kartını kaldır, yenisini ekle
-        ilaveSiparisler = ilaveSiparisler.filter(il => il.masaNo !== masa.id);
-        ilaveSiparisler.push({
-          id: 'ilave_'+masa.id+'_'+Date.now(),
-          masaNo: masa.id,
-          masaAdi: masaAdi,
-          urunler: ilaveler,
-          zaman: Date.now(),
-          not: masa.not||'',
-          garson: masa.garson||''
-        });
-        bildirim('➕ İlave: '+masaAdi, ilaveler.reduce((t,u)=>t+u.adet,0));
-      }
-    }
-    // Snapshot güncelle
-    _oncekiSiparisDurum[masaKey] = simdikiJSON;
-    // ────────────────────────────────────────────────────
 
     yeni.push({
       id:'masa_'+masa.id,
       masaNo:masa.id,
       masaAdi:masaAdi,
-      urunler:simdikiUrunler,
+      urunler:Object.values(gruplu),
       hamSiparisler:mSip,
       durum:masa.mutfak_durum||'bekliyor',
       zaman:masa.mutfak_zaman?new Date(masa.mutfak_zaman).getTime():Date.now()-10000,
@@ -419,10 +365,10 @@ async function yukle(){
     });
   });
 
-  // Yeni garson çağrısı geldi mi?
+  // Yeni garson çağrısı geldi mi? Ses çal
   const eskiCagriIdler = garsonCagriler.map(c=>c.id);
   yeniCagriler.filter(c=>!eskiCagriIdler.includes(c.id)).forEach(c=>{
-    bildirim('🔔 '+c.masaAdi, 0, true);
+    bildirim('🔔 '+c.masaAdi, 0, true); // true = garson çağrısı
   });
   garsonCagriler = yeniCagriler;
 
@@ -432,11 +378,9 @@ async function yukle(){
     .forEach(s=>bildirim(s.masaAdi,s.urunler.reduce((t,u)=>t+u.adet,0)));
 
   siparisler=yeni;
-  // Kapanan masaların ilave kartlarını temizle
-  const aktifMasaIdler = yeni.map(s=>s.masaNo);
-  ilaveSiparisler = ilaveSiparisler.filter(il => aktifMasaIdler.includes(il.masaNo));
-
+  // Online siparişleri yükle
   await yukleOnline();
+  // Geçmiş (yola çıkanlar) güncelle
   await yukleGecmis();
   render();
 }
@@ -493,30 +437,7 @@ function render(){
     grid.appendChild(el);
   });
 
-  // 2.5) İlave sipariş kartları (mor renk, ana kartların üstünde)
-  ilaveSiparisler.forEach(s => {
-    const sure = sureFmt(Date.now()-s.zaman);
-    const urunHTML = s.urunler.map(u=>{
-      const pillHtml=u.secimOzeti?u.secimOzeti.split(',').map(p=>`<span class="varyant-pill">${p.trim()}</span>`).join(''):''
-      const ozHtml=pillHtml?`<div class="varyant-ozet">${pillHtml}</div>`:''
-      return `<div class="urun"><div class="urun-sol"><div class="urun-sol-ust"><span>${u.ikon||'🍽️'}</span><span>${u.isim}</span></div>${ozHtml}</div><span class="adet">x${u.adet}</span></div>`;
-    }).join('');
-    const kart = document.createElement('div');
-    kart.className = 'kart ilave';
-    kart.innerHTML = `
-      <div class="kh ilave">
-        <div>
-          <div class="masa-no ilave">${s.masaAdi} <span class="ilave-badge">➕ İLAVE</span></div>
-          <div class="durum-lbl ilave">Yeni ürün eklendi${s.garson?' · 👤 '+s.garson:''}</div>
-        </div>
-        <span class="sure ilave">${sure}</span>
-      </div>
-      <div class="urunler">${urunHTML}</div>
-      <div class="aksiyonlar">
-        <button class="ak-btn" style="background:#a855f722;color:#a855f7;border:1.5px solid #a855f7;" onclick="ilaveTamam('${s.id}')">✓ Görüldü</button>
-      </div>`;
-    grid.appendChild(kart);
-  });
+  // 2) Online sipariş kartları
   onlineFiltreli.forEach(s => {
     const durRenk = s.durum==='bekleniyor'?'#f0b830':'#3b82f6';
     const durLbl = s.durum==='bekleniyor'?'⏳ Bekliyor':'👨‍🍳 Hazırlanıyor';
@@ -730,48 +651,46 @@ async function durumGuncelle(masaNo,yeniDurum){
 }
 
 async function teslim(masaNo){
-  const{data}=await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
+  const{data}=await sb.from('kafeler').select('aktif_masalar,masalar').eq('id',kafeId).single();
   const aktifMasalar=data?.aktif_masalar||[];
+  const kayitliMasalar=data?.masalar||[];
   const masa=aktifMasalar.find(m=>Number(m.id)===Number(masaNo)||String(m.id)===String(masaNo));
   if(!masa)return;
   const isDijitalMenu = String(masaNo).startsWith('dm_');
+
   if(isDijitalMenu){
-    // Dijital menü siparişi: teslim sonrası listeden tamamen kaldır
     const idx = aktifMasalar.findIndex(m=>String(m.id)===String(masaNo));
     if(idx>-1) aktifMasalar.splice(idx,1);
   } else {
-    // Normal masa: müşteri siparişlerini normal siparişe çevir
+    // kolaycafenlar tablosuna yaz — mutfak teslim kaydı
+    try {
+      const mutfakSiparisler = (masa.siparisler||[]).filter(s=>s.musteri===true);
+      if(mutfakSiparisler.length > 0){
+        const toplam = mutfakSiparisler.reduce((t,s)=>t+(s.fiyat||0)*(s.adet||1),0);
+        const kayitliMasa = kayitliMasalar.find(m=>Number(m.id)===Number(masaNo));
+        const masaAdi = kayitliMasa?.ad || masa.ad || 'Masa '+masaNo;
+        await sb.from('kolaycafenlar').insert({
+          kafe_id: kafeId,
+          masa_no: Number(masaNo)||0,
+          masa_ad: masaAdi,
+          toplam: toplam,
+          garson: masa.garson||'',
+          masa_notu: masa.not||null,
+          siparisler: mutfakSiparisler,
+          odeme_tipi: 'mutfak-teslim',
+        });
+      }
+    } catch(e){ console.error('Teslim kayıt hatası:',e); }
+
+    // Siparişleri teslim edildi olarak işaretle
     masa.siparisler=(masa.siparisler||[]).map(s=>s.musteri?{...s,musteri:false,mutfak_teslim:true}:s);
-    masa.mutfak_durum=null;masa.mutfak_zaman=null;
+    masa.mutfak_durum=null; masa.mutfak_zaman=null;
   }
+
   await sb.from('kafeler').update({aktif_masalar:aktifMasalar}).eq('id',kafeId);
-  toast(isDijitalMenu?'🏁 Dijital menü siparişi teslim edildi':'🏁 Teslim edildi — masa hesabına eklendi');
+  toast(isDijitalMenu?'🏁 Dijital menü siparişi teslim edildi':'🏁 Teslim edildi!');
   await yukle();
 }
-
-function ilaveTamam(ilaveId) {
-  ilaveSiparisler = ilaveSiparisler.filter(il => il.id !== ilaveId);
-  render();
-  toast('✓ İlave sipariş görüldü');
-}
-
-function tamEkranToggle() {
-  const btn = document.getElementById('tam-ekran-btn');
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().then(() => {
-      btn.textContent = '✕ Tam Ekrandan Çık';
-    }).catch(()=>{});
-  } else {
-    document.exitFullscreen().then(() => {
-      btn.textContent = '⛶ Tam Ekran';
-    }).catch(()=>{});
-  }
-}
-
-document.addEventListener('fullscreenchange', () => {
-  const btn = document.getElementById('tam-ekran-btn');
-  if (btn) btn.textContent = document.fullscreenElement ? '✕ Tam Ekrandan Çık' : '⛶ Tam Ekran';
-});
 
 function filtrele(f,btn){
   aktifFiltre=f;
