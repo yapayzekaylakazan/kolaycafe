@@ -938,7 +938,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
             <button class="btn-bol" onclick="splitUrunSec()" style="font-size:0.72rem;padding:9px 6px;">🧾 Ürün Seçerek Öde</button>
             <button class="btn-bol" onclick="splitEsitBol()" style="font-size:0.72rem;padding:9px 6px;">➗ Adisyonu Böl</button>
-            <button class="btn-bol" id="btn-mutfaga-gonder" onclick="mutfagaGonder()" style="font-size:0.72rem;padding:9px 6px;background:#f97316;color:#fff;border-color:#f97316;font-weight:900;">👨‍🍳 Mutfağa Gönder</button>
+            <button class="btn-bol" onclick="tahsilEt('salon-nakit')" style="font-size:0.72rem;padding:9px 6px;background:var(--success);color:#fff;">✅ Tümünü Öde</button>
             <button class="btn-bol" id="btn-hesap-iste" onclick="masaHesapIste()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 3;border-color:#f59e0b;color:#f59e0b;">💳 Hesap İstendi İşaretle</button>
           </div>
         </div>
@@ -2836,14 +2836,16 @@ async function cikisYap() {
 
 function garsonCikis() {
   garsonModu = false; aktifGarsonAdi = ''; garsonKafeId = null;
+  // Çıkış flag'ini önce set et, sonra temizle
+  sessionStorage.setItem('kc_garson_cikis', '1');
   sessionStorage.removeItem('kc_garson_isim');
   sessionStorage.removeItem('kc_garson_kafe_id');
   sessionStorage.removeItem('kc_garson_kafe_data');
-  const _url = window.location.href.split('?')[0] + '?garson=1';
+  const _url = window.location.origin + window.location.pathname;
   try {
-    sb.auth.signOut().finally(() => { window.location.href = _url; });
+    sb.auth.signOut().finally(() => { window.location.replace(_url); });
   } catch(e) {
-    window.location.href = _url;
+    window.location.replace(_url);
   }
 }
 
@@ -8919,73 +8921,6 @@ window.modalKapat = modalKapat;
 window.modalAc = modalAc;
 window.sayfaGit = sayfaGit;
 window.garsonCikis = garsonCikis;
-
-// ── MUTFAĞA GÖNDER ──────────────────────────────────────
-async function mutfagaGonder() {
-  if (!seciliMasa) return;
-  const m = getMasa(); if (!m) return;
-  if (!m.siparisler || m.siparisler.length === 0) {
-    toast('⚠️ Önce sipariş ekleyin!'); return;
-  }
-
-  const btn = document.getElementById('btn-mutfaga-gonder');
-  if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
-
-  try {
-    const { data, error: re } = await sb.from('kafeler')
-      .select('aktif_masalar').eq('id', kafeId).single();
-    if (re) throw re;
-
-    let aktif = data?.aktif_masalar || [];
-    const idx = aktif.findIndex(x => x.id === seciliMasa);
-
-    // Tüm siparişleri mutfak flag'iyle işaretle
-    const siparislerle = m.siparisler.map(s => ({
-      ...s,
-      musteri: true,
-      mutfak_teslim: false
-    }));
-    m.siparisler = siparislerle; // lokalde güncelle
-
-    const masaData = {
-      id: m.id, ad: m.ad, not: m.not||'',
-      siparisler: siparislerle,
-      garson: m.garson||'', indirim: m.indirim||0,
-      kisi_sayisi: m.kisi_sayisi||0,
-      hesap_istendi: m.hesap_istendi||false,
-      garson_cagri: m.garson_cagri||false,
-      garson_cagri_saat: m.garson_cagri_saat||null,
-      mutfak_durum: 'bekliyor',
-      mutfak_zaman: new Date().toISOString()
-    };
-
-    if (idx >= 0) aktif[idx] = masaData;
-    else aktif.push(masaData);
-
-    const { error: we } = await sb.from('kafeler')
-      .update({ aktif_masalar: aktif }).eq('id', kafeId);
-    if (we) throw we;
-
-    toast('👨‍🍳 ' + m.ad + ' mutfağa gönderildi!');
-    if (btn) {
-      btn.textContent = '✅ Gönderildi';
-      btn.style.background = '#22c55e';
-      btn.style.borderColor = '#22c55e';
-      setTimeout(() => {
-        btn.textContent = '👨‍🍳 Mutfağa';
-        btn.style.background = '#f97316';
-        btn.style.borderColor = '#f97316';
-        btn.disabled = false;
-      }, 2500);
-    }
-  } catch(e) {
-    console.error('Mutfağa gönder hatası:', e);
-    toast('❌ ' + (e?.message || 'Hata oluştu'));
-    if (btn) { btn.textContent = '👨‍🍳 Mutfağa'; btn.disabled = false; }
-  }
-}
-window.mutfagaGonder = mutfagaGonder;
-// ────────────────────────────────────────────────────────
 window.donemSec = donemSec;
 window.authTab = authTab;
 window.girisYap = girisYap;
@@ -9916,22 +9851,26 @@ window.masaSilOnay = masaSilOnay;
   }
 
   // Garson oturumu geri yükle (sayfa yenilemede oturumu koru)
-  const _ssGarsonIsim   = sessionStorage.getItem('kc_garson_isim');
-  const _ssGarsonData   = sessionStorage.getItem('kc_garson_kafe_data');
-  if (_ssGarsonIsim && _ssGarsonData) {
-    try {
-      const _kafeData = JSON.parse(_ssGarsonData);
-      // kafeData'yı Supabase'den tazele (masalar/ürünler güncellenmiş olabilir)
-      const {data: tazeData} = await sb.from('kafeler')
-        .select('*')
-        .eq('id', _kafeData.id)
-        .maybeSingle();
-      await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
-      return;
-    } catch(e) {
-      sessionStorage.removeItem('kc_garson_isim');
-      sessionStorage.removeItem('kc_garson_kafe_id');
-      sessionStorage.removeItem('kc_garson_kafe_data');
+  // Çıkış yapıldıysa restore etme
+  const _cikisYapildi = sessionStorage.getItem('kc_garson_cikis');
+  if (_cikisYapildi) {
+    sessionStorage.removeItem('kc_garson_cikis');
+    // Auth ekranını göster
+  } else {
+    const _ssGarsonIsim   = sessionStorage.getItem('kc_garson_isim');
+    const _ssGarsonData   = sessionStorage.getItem('kc_garson_kafe_data');
+    if (_ssGarsonIsim && _ssGarsonData) {
+      try {
+        const _kafeData = JSON.parse(_ssGarsonData);
+        const {data: tazeData} = await sb.from('kafeler')
+          .select('*').eq('id', _kafeData.id).maybeSingle();
+        await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
+        return;
+      } catch(e) {
+        sessionStorage.removeItem('kc_garson_isim');
+        sessionStorage.removeItem('kc_garson_kafe_id');
+        sessionStorage.removeItem('kc_garson_kafe_data');
+      }
     }
   }
 
