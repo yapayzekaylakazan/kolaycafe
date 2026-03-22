@@ -262,7 +262,9 @@
     <div class="toolbar">
       <div class="toolbar-baslik">🧾 Adisyonlar</div>
       <select class="sel" id="adis-kafe"><option value="">Tüm Kafeler</option></select>
-      <input type="date" class="arama" id="adis-tarih" style="width:140px;">
+      <input type="date" class="arama" id="adis-tarih" style="width:130px;" title="Başlangıç tarihi">
+      <input type="date" class="arama" id="adis-tarih-bitis" style="width:130px;" title="Bitiş tarihi">
+      <button class="fbtn" id="adis-mod-btn" onclick="adisModToggle()" style="border-color:var(--accent);color:var(--accent);">📅 Gün Gün</button>
       <button class="ebtn" onclick="adisyonlarYukle()">🔄</button>
       <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:var(--text2);">
         <input type="checkbox" id="adis-oto" onchange="adisOtoAyarla(this.checked)"> Otomatik (30sn)
@@ -271,8 +273,8 @@
     <!-- Özet KPI -->
     <div class="nabiz" id="adis-kpi" style="margin-bottom:12px;">
       <div class="nb-kart"><div class="nb-sayi" id="adis-nb-acik" style="color:var(--cyan);">—</div><div class="nb-ad">AÇIK MASA</div></div>
-      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-kapali" style="color:var(--green);">—</div><div class="nb-ad">KAPANAN (BUGÜN)</div></div>
-      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-ciro" style="color:var(--accent);">—</div><div class="nb-ad">BUGÜN CİRO (₺)</div></div>
+      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-kapali" style="color:var(--green);">—</div><div class="nb-ad">ADİSYON SAYISI</div></div>
+      <div class="nb-kart"><div class="nb-sayi" id="adis-nb-ciro" style="color:var(--accent);">—</div><div class="nb-ad">TOPLAM CİRO (₺)</div></div>
       <div class="nb-kart"><div class="nb-sayi" id="adis-nb-ort" style="color:var(--purple);">—</div><div class="nb-ad">ORT. ADİSYON (₺)</div></div>
     </div>
     <!-- Açık masalar -->
@@ -281,16 +283,31 @@
       <div id="adis-acik-liste"><div class="yukl">⏳</div></div>
     </div>
     <!-- Kapanan adisyonlar -->
-    <div class="pk">
-      <div class="pk-ust"><span>✅ KAPANAN ADİSYONLAR</span></div>
-      <div class="tw" style="margin:0;">
-        <table>
-          <thead><tr>
-            <th>SAAT</th><th>KAFE</th><th>MASA</th><th>GARSON</th><th>ÜRÜNLER</th><th>TUTAR</th><th>ÖDEME</th>
-          </tr></thead>
-          <tbody id="adis-kapali-body"><tr><td colspan="7" class="yukl">⏳</td></tr></tbody>
-        </table>
+    <div class="pk" id="adis-kapali-wrap">
+      <div class="pk-ust"><span>✅ KAPANAN ADİSYONLAR</span><span id="adis-kapali-ozet" style="font-size:0.62rem;color:var(--text2);font-family:'Space Mono',monospace;"></span></div>
+      <!-- Tablo görünümü -->
+      <div id="adis-tablo-view">
+        <div class="tw" style="margin:0;">
+          <table>
+            <thead><tr>
+              <th>SAAT</th><th>KAFE</th><th>MASA</th><th>GARSON</th><th>ÜRÜNLER</th><th>TUTAR</th><th>ÖDEME</th>
+            </tr></thead>
+            <tbody id="adis-kapali-body"><tr><td colspan="7" class="yukl">⏳</td></tr></tbody>
+          </table>
+        </div>
       </div>
+      <!-- Gün gün görünüm -->
+      <div id="adis-gun-view" style="display:none;">
+        <div id="adis-gun-liste"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FİŞ MODAL -->
+  <div class="overlay" id="fis-modal" onclick="if(event.target===this)fisModalKapat()">
+    <div class="modal" style="max-width:400px;font-family:'Space Mono',monospace;">
+      <div id="fis-icerik"></div>
+      <button class="mkapatbtn" onclick="fisModalKapat()">✕ Kapat</button>
     </div>
   </div>
 
@@ -1454,6 +1471,77 @@ function adisOtoAyarla(aktif) {
   if (aktif) _adisOto = setInterval(adisyonlarYukle, 30000);
 }
 
+// ── ADİSYON MODU (tablo / gün-gün) ──
+let _adisGunMod = false;
+
+function adisModToggle() {
+  _adisGunMod = !_adisGunMod;
+  const btn = document.getElementById('adis-mod-btn');
+  const tabloView = document.getElementById('adis-tablo-view');
+  const gunView = document.getElementById('adis-gun-view');
+  if (_adisGunMod) {
+    btn.textContent = '📋 Liste';
+    btn.style.borderColor = 'var(--cyan)'; btn.style.color = 'var(--cyan)';
+    tabloView.style.display = 'none'; gunView.style.display = 'block';
+  } else {
+    btn.textContent = '📅 Gün Gün';
+    btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
+    tabloView.style.display = 'block'; gunView.style.display = 'none';
+  }
+  adisyonlarYukle();
+}
+
+// ── FİŞ MODAL ──
+function fisGoster(a) {
+  const kafeAdi = a.kafeler?.kafe_adi || tumKafeler.find(k=>k.id===a.kafe_id)?.kafe_adi || '?';
+  const tarih = new Date(a.created_at);
+  const tarihStr = tarih.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const saatStr = tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  const odemeRenk = {'salon-nakit':'#22c55e','salon-kart':'#3b82f6','nakit':'#22c55e','kart':'#3b82f6','cari':'#a78bfa','ikram':'#6b7280','mutfak-teslim':'#f97316'}[a.odeme_tipi]||'var(--text2)';
+  const siparisler = a.siparisler || [];
+  const araToplam = siparisler.reduce((t,s) => t + (s.fiyat||0)*(s.adet||1), 0);
+  const indirim = araToplam - parseFloat(a.toplam||0);
+
+  const satirlar = siparisler.map(s => {
+    const satirtoplam = (s.fiyat||0)*(s.adet||1);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed #333;">
+      <div>
+        <div style="font-size:0.78rem;font-weight:700;">${s.isim||'?'}</div>
+        <div style="font-size:0.62rem;color:var(--text2);">${s.adet||1} × ${fmt(s.fiyat||0)}₺</div>
+      </div>
+      <div style="font-size:0.78rem;font-weight:800;color:var(--text);">${fmt(satirtoplam)}₺</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fis-icerik').innerHTML = `
+    <div style="text-align:center;margin-bottom:14px;">
+      <div style="font-size:1.3rem;">🧾</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--accent);margin-top:4px;">${kafeAdi}</div>
+      <div style="font-size:0.65rem;color:var(--text2);margin-top:2px;">${tarihStr} — ${saatStr}</div>
+    </div>
+    <div style="border-top:2px dashed #333;border-bottom:2px dashed #333;padding:8px 0;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text2);margin-bottom:6px;">
+        <span>🪑 ${a.masa_ad||'?'}</span>
+        <span>${a.garson ? '👤 '+a.garson : ''}</span>
+      </div>
+      ${satirlar}
+    </div>
+    ${indirim > 0.5 ? `<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text2);margin-bottom:4px;"><span>Ara Toplam</span><span>${fmt(araToplam)}₺</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--red);margin-bottom:4px;"><span>İndirim</span><span>-${fmt(indirim)}₺</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:10px;border-top:2px solid var(--border);">
+      <span style="font-size:0.85rem;font-weight:800;">TOPLAM</span>
+      <span style="font-size:1.2rem;font-weight:900;color:#30d080;">${fmt(parseFloat(a.toplam||0))}₺</span>
+    </div>
+    <div style="text-align:center;margin-top:10px;padding:6px;border-radius:7px;background:var(--surface);font-size:0.7rem;font-weight:800;color:${odemeRenk};">${(a.odeme_tipi||'—').toUpperCase()}</div>
+    <div style="text-align:center;margin-top:10px;font-size:0.55rem;color:var(--text2);letter-spacing:1px;">KolayCafe • ${kafeAdi}</div>
+  `;
+  document.getElementById('fis-modal').classList.add('ac');
+}
+
+function fisModalKapat() {
+  document.getElementById('fis-modal').classList.remove('ac');
+}
+
 function adisyonlarKafeDoldur() {
   const sel = document.getElementById('adis-kafe');
   if (!sel || sel.options.length > 1) return;
@@ -1463,24 +1551,26 @@ function adisyonlarKafeDoldur() {
     o.textContent = k.kafe_adi || k.id;
     sel.appendChild(o);
   });
-  // Bugünün tarihini default yap
+  // Tarih aralığı: bugün
+  const bugun = new Date().toISOString().slice(0,10);
   const tarihInp = document.getElementById('adis-tarih');
-  if (tarihInp && !tarihInp.value) {
-    tarihInp.value = new Date().toISOString().slice(0,10);
-  }
+  const tarihBitisInp = document.getElementById('adis-tarih-bitis');
+  if (tarihInp && !tarihInp.value) tarihInp.value = bugun;
+  if (tarihBitisInp && !tarihBitisInp.value) tarihBitisInp.value = bugun;
 }
 
 async function adisyonlarYukle() {
   const kafeId = document.getElementById('adis-kafe')?.value || '';
-  const tarih = document.getElementById('adis-tarih')?.value || new Date().toISOString().slice(0,10);
+  const bugun = new Date().toISOString().slice(0,10);
+  const tarihBas = document.getElementById('adis-tarih')?.value || bugun;
+  const tarihBit = document.getElementById('adis-tarih-bitis')?.value || bugun;
   const simdi = new Date();
 
-  // Açık masalar - tumKafeler'dan
+  // Açık masalar
   const acikListeEl = document.getElementById('adis-acik-liste');
   const zamanEl = document.getElementById('adis-acik-zaman');
   if (zamanEl) zamanEl.textContent = 'Son: ' + simdi.toLocaleTimeString('tr-TR');
 
-  // tumKafeler güncel çek
   const { data: kafeData } = await sb.from('kafeler')
     .select('id, kafe_adi, aktif_masalar, garsonlar')
     .order('kafe_adi');
@@ -1494,7 +1584,7 @@ async function adisyonlarYukle() {
       if (ad.startsWith('gel-al') || ad.startsWith('gelal') || m.gelal) return;
       if (!m.siparisler || m.siparisler.length === 0) return;
       const toplam = m.siparisler.reduce((t,s) => t + s.fiyat*s.adet, 0);
-      tumAcikMasalar.push({ kafe: k.kafe_adi, masa: m.ad||'Masa '+m.id, garson: m.garson||'—', siparisler: m.siparisler, toplam });
+      tumAcikMasalar.push({ kafe: k.kafe_adi, kafeId: k.id, masa: m.ad||'Masa '+m.id, garson: m.garson||'—', siparisler: m.siparisler, toplam });
     });
   });
 
@@ -1516,15 +1606,15 @@ async function adisyonlarYukle() {
     }
   }
 
-  // Kapanan adisyonlar
-  const baslangic = new Date(tarih + 'T00:00:00');
-  const bitis = new Date(tarih + 'T23:59:59');
+  // Kapanan adisyonlar — tarih aralığı
+  const baslangic = new Date(tarihBas + 'T00:00:00');
+  const bitis = new Date(tarihBit + 'T23:59:59');
   let sorgu = sb.from('kolaycafenlar')
     .select('*, kafeler(kafe_adi)')
     .gte('created_at', baslangic.toISOString())
     .lte('created_at', bitis.toISOString())
     .order('created_at', { ascending: false })
-    .limit(200);
+    .limit(500);
   if (kafeId) sorgu = sorgu.eq('kafe_id', kafeId);
   const { data: adisyonlar } = await sorgu;
   const liste = adisyonlar || [];
@@ -1536,20 +1626,33 @@ async function adisyonlarYukle() {
   document.getElementById('adis-nb-kapali').textContent = liste.length;
   document.getElementById('adis-nb-ciro').textContent = fmt(toplamCiro);
   document.getElementById('adis-nb-ort').textContent = fmt(ortAlisyon);
+  const ozet = document.getElementById('adis-kapali-ozet');
+  if (ozet) ozet.textContent = `${liste.length} adisyon · ${fmt(toplamCiro)}₺`;
 
-  // Tablo
+  if (_adisGunMod) {
+    // GÜN GÜN GÖRÜNÜM
+    adisGunRender(liste);
+  } else {
+    // TABLO GÖRÜNÜM
+    adisTabloRender(liste);
+  }
+}
+
+function adisTabloRender(liste) {
   const tbody = document.getElementById('adis-kapali-body');
   if (liste.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="yukl">${tarih} tarihinde adisyon bulunamadı</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="yukl">Seçili tarih aralığında adisyon bulunamadı</td></tr>`;
     return;
   }
   tbody.innerHTML = liste.map(a => {
     const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const tarihStr = new Date(a.created_at).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
     const kafeAdi = a.kafeler?.kafe_adi || tumKafeler.find(k=>k.id===a.kafe_id)?.kafe_adi || '?';
     const urunler = (a.siparisler||[]).slice(0,3).map(s=>`${s.isim||'?'} x${s.adet||1}`).join(', ') + ((a.siparisler||[]).length>3?` +${(a.siparisler||[]).length-3}`:'');
     const odemeRenk = {'salon-nakit':'#22c55e','salon-kart':'#3b82f6','nakit':'#22c55e','kart':'#3b82f6','cari':'#a78bfa','ikram':'#6b7280','mutfak-teslim':'#f97316'}[a.odeme_tipi]||'var(--text2)';
-    return `<tr>
-      <td style="font-size:0.7rem;font-family:'Space Mono',monospace;white-space:nowrap;">${saat}</td>
+    const aDataStr = JSON.stringify(a).replace(/"/g,'&quot;');
+    return `<tr style="cursor:pointer;" onclick='fisGoster(${JSON.stringify(a)})' title="Fişi görüntüle">
+      <td style="font-size:0.7rem;font-family:'Space Mono',monospace;white-space:nowrap;">${tarihStr} ${saat}</td>
       <td style="font-size:0.72rem;font-weight:700;">${kafeAdi}</td>
       <td style="font-size:0.72rem;">${a.masa_ad||'?'}</td>
       <td style="font-size:0.7rem;color:var(--blue);">${a.garson||'—'}</td>
@@ -1557,6 +1660,70 @@ async function adisyonlarYukle() {
       <td style="font-size:0.75rem;font-weight:800;color:#30d080;white-space:nowrap;">${fmt(parseFloat(a.toplam||0))}₺</td>
       <td style="font-size:0.65rem;color:${odemeRenk};font-weight:700;">${a.odeme_tipi||'—'}</td>
     </tr>`;
+  }).join('');
+}
+
+function adisGunRender(liste) {
+  const gunListe = document.getElementById('adis-gun-liste');
+  if (liste.length === 0) {
+    gunListe.innerHTML = '<div class="yukl">Seçili tarih aralığında adisyon bulunamadı</div>';
+    return;
+  }
+
+  // Güne göre grupla
+  const gunler = {};
+  liste.forEach(a => {
+    const gun = a.created_at.slice(0,10);
+    if (!gunler[gun]) gunler[gun] = [];
+    gunler[gun].push(a);
+  });
+
+  const siraliGunler = Object.keys(gunler).sort().reverse();
+
+  gunListe.innerHTML = siraliGunler.map(gun => {
+    const gunAdisyonlar = gunler[gun];
+    const gunCiro = gunAdisyonlar.reduce((t,a) => t + parseFloat(a.toplam||0), 0);
+    const tarihStr = new Date(gun+'T12:00:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+    const satirlar = gunAdisyonlar.map(a => {
+      const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+      const kafeAdi = a.kafeler?.kafe_adi || tumKafeler.find(k=>k.id===a.kafe_id)?.kafe_adi || '?';
+      const urunler = (a.siparisler||[]).slice(0,2).map(s=>`${s.isim||'?'} x${s.adet||1}`).join(', ') + ((a.siparisler||[]).length>2?` +${(a.siparisler||[]).length-2}`:'' );
+      const odemeRenk = {'salon-nakit':'#22c55e','salon-kart':'#3b82f6','nakit':'#22c55e','kart':'#3b82f6','cari':'#a78bfa','ikram':'#6b7280','mutfak-teslim':'#f97316'}[a.odeme_tipi]||'var(--text2)';
+      return `<div onclick='fisGoster(${JSON.stringify(a)})' title="Fişi görüntüle" style="display:grid;grid-template-columns:48px 1fr 80px 70px 55px;gap:6px;align-items:center;padding:7px 10px;border-radius:7px;margin-bottom:3px;background:var(--surface);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
+        <div style="font-size:0.65rem;color:var(--text2);font-family:'Space Mono',monospace;">${saat}</div>
+        <div>
+          <div style="font-size:0.72rem;font-weight:700;">${a.masa_ad||'?'} <span style="color:var(--text2);font-weight:400;font-size:0.62rem;">— ${kafeAdi}</span></div>
+          <div style="font-size:0.6rem;color:var(--text2);margin-top:1px;">${urunler||'—'}</div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--blue);">${a.garson||'—'}</div>
+        <div style="font-size:0.65rem;color:${odemeRenk};font-weight:700;text-align:center;">${(a.odeme_tipi||'—').replace('salon-','')}</div>
+        <div style="font-size:0.75rem;font-weight:800;color:#30d080;text-align:right;">${fmt(parseFloat(a.toplam||0))}₺</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:0.82rem;font-weight:800;color:var(--accent);">📅 ${tarihStr}</div>
+          <div style="font-size:0.6rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:2px;">${gunAdisyonlar.length} adisyon</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1rem;font-weight:900;color:#30d080;">${fmt(gunCiro)}₺</div>
+          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;">ort. ${fmt(gunCiro/gunAdisyonlar.length)}₺</div>
+        </div>
+      </div>
+      <div style="padding:8px 10px;">
+        <div style="display:grid;grid-template-columns:48px 1fr 80px 70px 55px;gap:6px;padding:4px 10px;margin-bottom:2px;">
+          <div style="font-size:0.55rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.5px;">SAAT</div>
+          <div style="font-size:0.55rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.5px;">MASA / ÜRÜNLER</div>
+          <div style="font-size:0.55rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.5px;">GARSON</div>
+          <div style="font-size:0.55rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.5px;text-align:center;">ÖDEME</div>
+          <div style="font-size:0.55rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.5px;text-align:right;">TUTAR</div>
+        </div>
+        ${satirlar}
+      </div>
+    </div>`;
   }).join('');
 }
 
