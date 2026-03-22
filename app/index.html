@@ -62,11 +62,10 @@
   .hstat { font-size: 0.72rem; color: var(--text2); font-weight: 700; }
   .hstat span { color: var(--accent2); }
   .cikis-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; cursor: pointer; }
-  /* ── VARDİYA BUTONU ── */
-  .vardiya-btn { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; border:1.5px solid; font-family:'Nunito',sans-serif; font-size:0.7rem; font-weight:800; cursor:pointer; transition:all .2s; white-space:nowrap; }
-  .vardiya-btn.kapali { background:#e0404015; border-color:#e0404060; color:#e04040; }
-  .vardiya-btn.acik { background:#3db85a15; border-color:#3db85a60; color:#3db85a; animation: vardiyaPls 3s infinite; }
-  @keyframes vardiyaPls { 0%,100%{box-shadow:0 0 0 0 #3db85a30} 50%{box-shadow:0 0 0 4px #3db85a10} }
+  .vardiya-btn { display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid;font-family:'Nunito',sans-serif;font-size:0.7rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap; }
+  .vardiya-btn.kapali { background:#e0404015;border-color:#e0404060;color:#e04040; }
+  .vardiya-btn.acik { background:#3db85a15;border-color:#3db85a60;color:#3db85a;animation:vardiyaPls 3s infinite; }
+  @keyframes vardiyaPls { 0%,100%{box-shadow:0 0 0 0 #3db85a30}50%{box-shadow:0 0 0 4px #3db85a10} }
 
   /* ── BOTTOM NAV ── */
   .bottom-nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -865,8 +864,7 @@
     <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span></div>
     <div class="hstat">Vardiya: <span id="hstat-ciro">0₺</span></div>
     <button class="vardiya-btn kapali" id="vardiya-btn" onclick="vardiyaToggle()">
-      <span id="vardiya-dot">⏸</span>
-      <span id="vardiya-btn-text">Vardiya Başlat</span>
+      <span id="vardiya-dot">⏸</span><span id="vardiya-btn-text">Vardiya Başlat</span>
     </button>
     <button class="cikis-btn" id="tamekran-btn" onclick="tamEkranToggle()" title="Tam Ekran">⛶</button>
     <button class="cikis-btn" id="header-cikis-btn" onclick="cikisYap()">Çıkış</button>
@@ -1129,6 +1127,7 @@
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;">
     <!-- Dönem seçici -->
     <div style="display:flex;gap:5px;margin-bottom:8px;overflow-x:auto;scrollbar-width:none;">
+      <button class="donem-tab" data-donem="vardiya" style="white-space:nowrap;border-color:#3db85a60;color:#3db85a;" onclick="donemSec('vardiya',this)">🟢 Bu Vardiya</button>
       <button class="donem-tab active" data-donem="gun" style="white-space:nowrap;">📅 Bugün</button>
       <button class="donem-tab" data-donem="hafta" style="white-space:nowrap;">📆 Bu Hafta</button>
       <button class="donem-tab" data-donem="ay" style="white-space:nowrap;">🗓 Bu Ay</button>
@@ -3190,8 +3189,7 @@ async function uygulamaBaslat(user) {
   }
   setSyncOnline(true);
   kuponYonetimGoster();
-  // Vardiya yükle
-  setTimeout(() => vardiyayukle(), 500);
+  setTimeout(() => vardiyayukle(), 600);
   // Son giriş zamanını kaydet
   if (kafeId) sb.from('kafeler').update({ son_giris: new Date().toISOString() }).eq('id', kafeId).then(()=>{}).catch(()=>{});
   // Admin banner mesajı varsa göster, sonra temizle
@@ -4883,11 +4881,10 @@ async function tahsilEt(odemeTipi) {
   kolaycafen.siparisler.forEach(s => stokDus(s.isim, s.adet));
   if(tip!=='ikram') { gunlukCiro+=son; vardiyaCiro+=son; }
   gunlukAdi++;
-  // Vardiya cirosunu localStorage'a kaydet
   if (aktifVardiyaId) {
-    const v = JSON.parse(localStorage.getItem('kc_vardiya_' + kafeId)||'{}');
-    v.ciro = vardiyaCiro;
-    localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify(v));
+    const _v = JSON.parse(localStorage.getItem('kc_vardiya_' + kafeId)||'{}');
+    _v.ciro = vardiyaCiro;
+    localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify(_v));
   }
   vardiyaBtnGuncelle();
   m.siparisler.forEach(s=>{ 
@@ -5059,7 +5056,7 @@ async function splitUrunOde(odemeTipi) {
   };
   kapaliKolayCafenlar.unshift(kolaycafen);
   seciliSiparisler.forEach(s => stokDus(s.isim, s.adet));
-  gunlukCiro += toplam; vardiyaCiro += toplam; gunlukAdi++;
+  gunlukCiro += toplam; if(aktifVardiyaId) vardiyaCiro += toplam; gunlukAdi++;
 
   // Seçili ürünleri adisyondan kaldır
   seciliIdx.forEach(i => m.siparisler.splice(i, 1));
@@ -5170,7 +5167,7 @@ async function splitEsitOde(odemeTipi) {
     dbId: Date.now() + kisiNo
   };
   kapaliKolayCafenlar.unshift(kolaycafen);
-  gunlukCiro += kisiBas; vardiyaCiro += kisiBas; gunlukAdi++;
+  gunlukCiro += kisiBas; if(aktifVardiyaId) vardiyaCiro += kisiBas; gunlukAdi++;
 
   await kolaycafenKaydet(kolaycafen);
   splitEsitGuncelle();
@@ -6122,6 +6119,10 @@ function ozelDonemUygula(){
 
 function donemBaslangic() {
   const simdi = new Date();
+  if (aktifDonem === 'vardiya') {
+    if (!aktifVardiyaBaslangic) return new Date(simdi).toISOString(); // vardiya yoksa bugün
+    return aktifVardiyaBaslangic.toISOString();
+  }
   if (aktifDonem === 'gun') { const d = new Date(simdi); d.setHours(0,0,0,0); return d.toISOString(); }
   if (aktifDonem === 'hafta') { const d = new Date(simdi); d.setDate(simdi.getDate()-((simdi.getDay()+6)%7)); d.setHours(0,0,0,0); return d.toISOString(); }
   if (aktifDonem === 'ay') { return new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString(); }
@@ -6135,6 +6136,11 @@ function donemFiltrele(kolaycafenlar){
   return kolaycafenlar.filter(a=>{
     if(!a.tarihObj) return aktifDonem==='tum';
     const t=new Date(a.tarihObj);
+    // Vardiya filtresi — aktif vardiya başlangıcından itibaren
+    if(aktifDonem==='vardiya'){
+      if(!aktifVardiyaBaslangic) return false;
+      return t >= aktifVardiyaBaslangic;
+    }
     if(aktifDonem==='gun') return t.toDateString()===simdi.toDateString();
     if(aktifDonem==='hafta'){
       const hb=new Date(simdi); hb.setDate(simdi.getDate()-((simdi.getDay()+6)%7)); hb.setHours(0,0,0,0);
@@ -6144,7 +6150,6 @@ function donemFiltrele(kolaycafenlar){
     if(aktifDonem==='yil') return t.getFullYear()===simdi.getFullYear();
     if(aktifDonem==='ozel'){
       if(!_ozelBaslangic) return false;
-      // Yerel tarih karşılaştırması: tarihObj'i YYYY-MM-DD formatına çevir
       const tYMD = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
       return tYMD >= _ozelBaslangic && tYMD <= (_ozelBitis || _ozelBaslangic);
     }
@@ -7024,7 +7029,12 @@ async function raporRenderTam() {
       .eq('kafe_id', kafeId)
       .neq('odeme_tipi', 'cari_tahsil')
       .order('created_at', {ascending: false});
-    if (baslangic) q = q.gte('created_at', baslangic);
+    // Vardiya seçiliyse vardiya_id ile filtrele (daha doğru)
+    if (aktifDonem === 'vardiya' && aktifVardiyaId && !aktifVardiyaId.startsWith('local_')) {
+      q = q.eq('vardiya_id', aktifVardiyaId);
+    } else {
+      if (baslangic) q = q.gte('created_at', baslangic);
+    }
     // Özel dönem bitiş tarihi
     if (aktifDonem === 'ozel' && _ozelBitis) {
       q = q.lte('created_at', new Date(_ozelBitis + 'T23:59:59').toISOString());
@@ -8767,14 +8777,12 @@ window.birlestirYap = birlestirYap;
 window.fisYazdir = fisYazdir;
 window.masaTemizle = masaTemizle;
 window.tahsilEt = tahsilEt;
-window.yeniKategoriEkle = yeniKategoriEkle;
 
 // ════════════════════════════════════════
 // VARDİYA SİSTEMİ
 // ════════════════════════════════════════
 
 async function vardiyayukle() {
-  // Açık vardiya var mı kontrol et (localStorage'dan hızlı yükle)
   const kayitli = localStorage.getItem('kc_vardiya_' + kafeId);
   if (kayitli) {
     try {
@@ -8783,33 +8791,27 @@ async function vardiyayukle() {
       aktifVardiyaBaslangic = new Date(v.baslangic);
       vardiyaCiro = v.ciro || 0;
       vardiyaBtnGuncelle();
+      clearInterval(_vardiyaTimer);
       _vardiyaTimer = setInterval(vardiyaBtnGuncelle, 60000);
     } catch(e) {}
   }
-  // Supabase'den de kontrol et (başka cihazdan açılmış olabilir)
   try {
     const { data } = await sb.from('vardiyalar')
-      .select('*')
-      .eq('kafe_id', kafeId)
-      .is('bitis', null)
-      .order('baslangic', { ascending: false })
-      .limit(1);
+      .select('*').eq('kafe_id', kafeId).is('bitis', null)
+      .order('baslangic', { ascending: false }).limit(1);
     if (data && data.length > 0) {
       const v = data[0];
       aktifVardiyaId = v.id;
       aktifVardiyaBaslangic = new Date(v.baslangic);
-      // Vardiya cirosunu DB'den hesapla
       const { data: adisyonlar } = await sb.from('kolaycafenlar')
-        .select('toplam')
-        .eq('vardiya_id', v.id)
-        .neq('odeme_tipi', 'ikram');
+        .select('toplam').eq('vardiya_id', v.id).neq('odeme_tipi','ikram');
       vardiyaCiro = (adisyonlar||[]).reduce((t,a) => t + parseFloat(a.toplam||0), 0);
       localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify({
         id: aktifVardiyaId, baslangic: aktifVardiyaBaslangic.toISOString(), ciro: vardiyaCiro
       }));
-      vardiyaBtnGuncelle();
       clearInterval(_vardiyaTimer);
       _vardiyaTimer = setInterval(vardiyaBtnGuncelle, 60000);
+      vardiyaBtnGuncelle();
     }
   } catch(e) {}
 }
@@ -8845,7 +8847,7 @@ async function vardiyaToggle() {
   if (aktifVardiyaId) {
     vardiyaKapatModal();
   } else {
-    vardiyaBaslat();
+    await vardiyaBaslat();
   }
 }
 
@@ -8853,41 +8855,33 @@ async function vardiyaBaslat() {
   const baslangic = new Date();
   try {
     const { data, error } = await sb.from('vardiyalar').insert({
-      kafe_id: kafeId,
-      baslangic: baslangic.toISOString(),
-      aciklama: ''
+      kafe_id: kafeId, baslangic: baslangic.toISOString(), aciklama: ''
     }).select().single();
     if (error) throw error;
     aktifVardiyaId = data.id;
-    aktifVardiyaBaslangic = baslangic;
-    vardiyaCiro = 0;
-    localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify({
-      id: aktifVardiyaId, baslangic: baslangic.toISOString(), ciro: 0
-    }));
-    clearInterval(_vardiyaTimer);
-    _vardiyaTimer = setInterval(vardiyaBtnGuncelle, 60000);
-    vardiyaBtnGuncelle();
-    toast('🟢 Vardiya başlatıldı!');
   } catch(e) {
-    // DB yoksa local çalış
     aktifVardiyaId = 'local_' + Date.now();
-    aktifVardiyaBaslangic = baslangic;
-    vardiyaCiro = 0;
-    localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify({
-      id: aktifVardiyaId, baslangic: baslangic.toISOString(), ciro: 0
-    }));
-    clearInterval(_vardiyaTimer);
-    _vardiyaTimer = setInterval(vardiyaBtnGuncelle, 60000);
-    vardiyaBtnGuncelle();
-    toast('🟢 Vardiya başlatıldı! (çevrimdışı)');
   }
+  aktifVardiyaBaslangic = baslangic;
+  vardiyaCiro = 0;
+  localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify({
+    id: aktifVardiyaId, baslangic: baslangic.toISOString(), ciro: 0
+  }));
+  clearInterval(_vardiyaTimer);
+  _vardiyaTimer = setInterval(vardiyaBtnGuncelle, 60000);
+  vardiyaBtnGuncelle();
+  // Rapor sekmesi açıksa vardiya moduna geç
+  if (document.getElementById('page-rapor')?.classList.contains('active')) {
+    const vardiyaTab = document.querySelector('.donem-tab[data-donem="vardiya"]');
+    if (vardiyaTab) donemSec('vardiya', vardiyaTab);
+  }
+  toast('🟢 Vardiya başlatıldı!');
 }
 
 function vardiyaKapatModal() {
   const sure = vardiyaSureFmt(aktifVardiyaBaslangic);
-  const basTarih = aktifVardiyaBaslangic.toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const bitTarih = new Date().toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-
+  const basTarih = aktifVardiyaBaslangic.toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const bitTarih = new Date().toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   document.getElementById('vardiya-modal-icerik').innerHTML = `
     <div style="padding:20px;">
       <div style="text-align:center;margin-bottom:16px;">
@@ -8906,13 +8900,23 @@ function vardiyaKapatModal() {
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="vardiyaRaporaGit()" style="width:100%;padding:11px;border-radius:12px;border:1.5px solid #3db85a;background:#3db85a15;color:#3db85a;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.88rem;cursor:pointer;">📊 Vardiya Raporunu Gör</button>
         <button onclick="vardiyaKapat()" style="width:100%;padding:13px;border-radius:12px;border:none;background:#e04040;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">🏁 Vardiyayı Kapat</button>
         <button onclick="vardiyaModalKapat()" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;">← Geri Dön</button>
       </div>
     </div>
   `;
-  const modal = document.getElementById('vardiya-modal');
-  modal.style.display = 'flex';
+  document.getElementById('vardiya-modal').style.display = 'flex';
+}
+
+function vardiyaRaporaGit() {
+  vardiyaModalKapat();
+  // Rapor sekmesine git ve vardiya modunu seç
+  sayfaGit('rapor');
+  setTimeout(() => {
+    const vardiyaTab = document.querySelector('.donem-tab[data-donem="vardiya"]');
+    if (vardiyaTab) donemSec('vardiya', vardiyaTab);
+  }, 150);
 }
 
 async function vardiyaKapat() {
@@ -8920,25 +8924,19 @@ async function vardiyaKapat() {
   try {
     if (aktifVardiyaId && !aktifVardiyaId.startsWith('local_')) {
       await sb.from('vardiyalar').update({
-        bitis: bitis.toISOString(),
-        toplam_ciro: vardiyaCiro
+        bitis: bitis.toISOString(), toplam_ciro: vardiyaCiro
       }).eq('id', aktifVardiyaId);
     }
   } catch(e) {}
-
   localStorage.removeItem('kc_vardiya_' + kafeId);
   clearInterval(_vardiyaTimer);
-
   const ciroStr = Math.round(vardiyaCiro).toLocaleString('tr-TR');
   const sure = vardiyaSureFmt(aktifVardiyaBaslangic);
-
   aktifVardiyaId = null;
   aktifVardiyaBaslangic = null;
   vardiyaCiro = 0;
-
   vardiyaBtnGuncelle();
   vardiyaModalKapat();
-
   toast(`✅ Vardiya kapatıldı — ${ciroStr}₺ / ${sure}`);
 }
 
@@ -8949,6 +8947,8 @@ function vardiyaModalKapat() {
 window.vardiyaToggle = vardiyaToggle;
 window.vardiyaKapat = vardiyaKapat;
 window.vardiyaModalKapat = vardiyaModalKapat;
+window.vardiyaRaporaGit = vardiyaRaporaGit;
+window.yeniKategoriEkle = yeniKategoriEkle;
 window.urunKaydet = urunKaydet;
 window.varyantSecimiOnayla = varyantSecimiOnayla;
 window.varyantModalKapat = varyantModalKapat;
@@ -9731,7 +9731,7 @@ async function gelAlOdeTipi(tip) {
 
   // Rapora ekle
   kapaliKolayCafenlar.unshift(kolaycafen);
-  if (tip !== 'ikram') { gunlukCiro += toplam; vardiyaCiro += toplam; }
+  if (tip !== 'ikram') { gunlukCiro += toplam; if(aktifVardiyaId) vardiyaCiro += toplam; }
   gunlukAdi++;
   kolaycafen.siparisler.forEach(u => {
     if (!gunlukSatis[u.isim]) gunlukSatis[u.isim] = {adet:0, toplam:0};
