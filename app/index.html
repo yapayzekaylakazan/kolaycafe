@@ -148,7 +148,7 @@
   .masa-kart .mb { display:none; } /* eski badge gizle */
 
   /* ── ADİSYON ── */
-  .page-kolaycafen { flex-direction: column; overflow: hidden; display: flex; min-height: 0; }
+  .page-kolaycafen { flex: 1; flex-direction: column; overflow: hidden; display: flex; min-height: 0; }
   .kolaycafen-masa-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 6px; }
   .amh-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .amh-title { font-size: 1rem; font-weight: 900; color: var(--accent2); }
@@ -183,8 +183,15 @@
   body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
   body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
   body.pc-mod .urun-kart .uadet { display: block; }
-  body.pc-mod .siparis-bolumu { width: 300px; flex-shrink: 0; overflow-y: auto; min-height: 0; border-left: 1px solid var(--border); }
-  body.pc-mod .kolaycafen-footer { position: sticky; bottom: 0; z-index: 10; }
+  body.pc-mod .siparis-bolumu { width: 300px; flex-shrink: 0; overflow: hidden; min-height: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+  body.pc-mod .siparis-bolumu .siparis-baslik { flex-shrink: 0; }
+  body.pc-mod .siparis-bolumu .siparis-liste { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
+  body.pc-mod .kolaycafen-footer { position: sticky; bottom: 0; z-index: 10; flex-shrink: 0; }
+  @media (min-width: 900px) {
+    .siparis-bolumu { width: 300px; flex-shrink: 0; overflow: hidden !important; min-height: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+    .siparis-bolumu .siparis-baslik { flex-shrink: 0; }
+    .siparis-bolumu .siparis-liste { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
+  }
   /* PC toggle butonu */
   #pc-mobil-toggle { position: fixed; bottom: 70px; right: 12px; z-index: 500; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 50px; padding: 6px 12px; font-family: 'Nunito', sans-serif; font-size: 0.72rem; font-weight: 800; cursor: pointer; color: var(--text2); box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
   #pc-mobil-toggle.goster { display: flex; align-items: center; gap: 5px; }
