@@ -2346,20 +2346,20 @@
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
-  <button class="bnav-btn active" id="nav-masalar" ><div class="nav-icon">🪑</div>Masalar</button>
-  <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')"><div class="nav-icon">🛍️</div>Gel-Al</button>
-  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;" id="online-badge">0</span></button>
-  <button class="bnav-btn" id="nav-kolaycafen" ><div class="nav-icon">🧾</div>KolayCafen</button>
-  <button class="bnav-btn" id="nav-urun" ><div class="nav-icon">➕</div>Ürün</button>
-  <button class="bnav-btn" id="nav-cari" ><div class="nav-icon">📋</div>Cari</button>
-  <button class="bnav-btn" id="nav-gelgid" ><div class="nav-icon">💰</div>Gelir/Gider</button>
-  <button class="bnav-btn" id="nav-stok" onclick="sayfaGit('stok')"><div class="nav-icon">📦</div>Stok</button>
-  <button class="bnav-btn" id="nav-recete" onclick="sayfaGit('recete')"><div class="nav-icon">🧪</div>Reçete</button>
-  <button class="bnav-btn" id="nav-rapor" ><div class="nav-icon">📊</div>Rapor</button>
-  <button class="bnav-btn" id="nav-ayarlar" ><div class="nav-icon">⚙️</div>Ayarlar</button>
-  <button class="bnav-btn" id="nav-mutfak" onclick="window.open('mutfak.html','_blank')"><div class="nav-icon">🍳</div>Mutfak</button>
-  <button class="bnav-btn" id="nav-ai" ><div class="nav-icon">🤖</div>AI Asistan</button>
-  <button class="bnav-btn" id="nav-garson-cikis" style="display:none;" ><div class="nav-icon">🚪</div>Çıkış</button>
+  <button class="bnav-btn active" id="nav-masalar" data-yetki="masalar"><div class="nav-icon">🪑</div>Masalar</button>
+  <button class="bnav-btn" id="nav-kolaycafen" data-yetki="kolaycafen"><div class="nav-icon">🧾</div>KolayCafen</button>
+  <button class="bnav-btn" id="nav-urun" data-yetki="urun"><div class="nav-icon">➕</div>Ürün</button>
+  <button class="bnav-btn" id="nav-cari" data-yetki="cari"><div class="nav-icon">📋</div>Cari</button>
+  <button class="bnav-btn" id="nav-gelgid" data-yetki="gelgid"><div class="nav-icon">💰</div>Gelir/Gider</button>
+  <button class="bnav-btn" id="nav-rapor" data-yetki="rapor"><div class="nav-icon">📊</div>Rapor</button>
+  <button class="bnav-btn" id="nav-stok" onclick="sayfaGit('stok')" data-yetki="stok"><div class="nav-icon">📦</div>Stok</button>
+  <button class="bnav-btn" id="nav-recete" onclick="sayfaGit('recete')" data-yetki="recete"><div class="nav-icon">🧪</div>Reçete</button>
+  <button class="bnav-btn" id="nav-ai" data-yetki="ai"><div class="nav-icon">🤖</div>AI Asistan</button>
+  <button class="bnav-btn" id="nav-ayarlar" data-yetki="ayarlar"><div class="nav-icon">⚙️</div>Ayarlar</button>
+  <button class="bnav-btn" id="nav-mutfak" onclick="window.open('mutfak.html','_blank')" data-yetki="mutfak"><div class="nav-icon">🍳</div>Mutfak</button>
+  <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')" data-yetki="gelal"><div class="nav-icon">🛍️</div>Gel-Al</button>
+  <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')" data-yetki="online"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;">0</span></button>
+  <button class="bnav-btn" id="nav-garson-cikis" style="display:none;"><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
 
 </div><!-- /app -->
@@ -2994,15 +2994,28 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('auth-screen').style.display = 'none';
   const appEl = document.getElementById('app');
   appEl.style.display = 'flex'; appEl.style.flexDirection = 'column';
-  // Rapor ve Ayarlar gizle
-  document.getElementById('nav-rapor').style.display = 'none';
-  // Garson modu nav — sadece operasyonel kısımlar
-  const _gNavGoster = ['nav-gelal','nav-online','nav-kolaycafen','nav-urun','nav-mutfak','nav-cari','nav-ayarlar','nav-garson-cikis'];
+
+  // Garson yetkilerini bul
+  const garsonObj = garsonlar.find(g => (typeof g === 'string' ? g : g.isim) === aktifGarsonAdi);
+  // Varsayılan garson yetkileri (yetki tanımlı değilse)
+  const varsayilanYetkiler = ['masalar','kolaycafen','gelal','online','mutfak'];
+  const garsonYetkiler = (typeof garsonObj === 'object' && garsonObj?.yetkiler?.length > 0)
+    ? garsonObj.yetkiler
+    : varsayilanYetkiler;
+
+  // Admin navları — tümünü önce gizle, sonra yetkiye göre göster
+  const tumNavlar = ['masalar','kolaycafen','urun','cari','gelgid','rapor','stok','recete','ai','ayarlar','mutfak','gelal','online'];
+  tumNavlar.forEach(id => {
+    const el = document.getElementById('nav-' + id);
+    if (!el) return;
+    el.style.display = garsonYetkiler.includes(id) ? 'flex' : 'none';
+  });
+  // Garson çıkış butonu her zaman göster
+  const gCikis = document.getElementById('nav-garson-cikis');
+  if (gCikis) gCikis.style.display = 'flex';
+  // Header çıkış gizle
   const _hcBtn = document.getElementById('header-cikis-btn');
   if (_hcBtn) _hcBtn.style.display = 'none';
-  const _gNavGizle  = ['nav-rapor','nav-recete','nav-gelgid','nav-stok','nav-ai'];
-  _gNavGoster.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='flex'; });
-  _gNavGizle.forEach(id  => { const el=document.getElementById(id); if(el) el.style.display='none'; });
   // Header'da garson adını göster
   document.getElementById('header-cafe-adi').textContent = kafeAdi;
   setTimeout(() => { onlineSiparisYukle(); onlineRealtimeBaslat(); }, 1000);
@@ -8239,15 +8252,32 @@ function garsonAyarListeRender(){
     el.innerHTML='<div style="background:#e0404015;border:1.5px solid #e0404040;border-radius:10px;padding:12px 14px;font-size:0.82rem;color:#e04040;font-weight:700;">⛔ Garson modunda PIN ve garson yönetimine erişilemez.</div>';
     return;
   }
-  // garsonlar artık obje array: {id, isim, pin, aktif}
-  // Geriye dönük uyumluluk: string ise objeye çevir
   garsonlar = garsonlar.map(g => typeof g === 'string' ? {id: Date.now()+Math.random(), isim: g, pin: '', aktif: true} : g);
   
   if(garsonlar.length===0){
     el.innerHTML='<p style="color:var(--muted);font-size:0.82rem;padding:8px 0;">Henüz garson eklenmedi</p>';
     return;
   }
+
+  const tumYetkiler = [
+    { id: 'masalar',   label: '🪑 Masalar' },
+    { id: 'kolaycafen',label: '🧾 KolayCafen' },
+    { id: 'gelal',     label: '🛍️ Gel-Al' },
+    { id: 'online',    label: '🌐 Online' },
+    { id: 'mutfak',    label: '🍳 Mutfak' },
+    { id: 'urun',      label: '➕ Ürün' },
+    { id: 'cari',      label: '📋 Cari' },
+    { id: 'stok',      label: '📦 Stok' },
+    { id: 'gelgid',    label: '💰 Gelir/Gider' },
+    { id: 'rapor',     label: '📊 Rapor' },
+    { id: 'recete',    label: '🧪 Reçete' },
+    { id: 'ayarlar',   label: '⚙️ Ayarlar' },
+    { id: 'ai',        label: '🤖 AI Asistan' },
+  ];
+  const varsayilanYetkiler = ['masalar','kolaycafen','gelal','online','mutfak'];
+
   garsonlar.forEach((g,i)=>{
+    const gYetkiler = g.yetkiler && g.yetkiler.length > 0 ? g.yetkiler : varsayilanYetkiler;
     const row=document.createElement('div');
     row.style.cssText='background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:8px;';
     row.innerHTML=`
@@ -8258,10 +8288,18 @@ function garsonAyarListeRender(){
           <button class="gb-sil" data-i="${i}" style="padding:4px 10px;border-radius:8px;border:none;background:#e0404022;color:#e04040;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">Sil</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <input type="text" class="gb-pin" data-i="${i}" value="${g.pin||''}" placeholder="5 haneli PIN" inputmode="numeric" maxlength="5"
           style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
         <button class="gb-pin-kaydet" data-i="${i}" style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">Kaydet</button>
+      </div>
+      <div style="font-size:0.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🔐 Yetkiler</div>
+      <div class="gb-yetkiler" data-i="${i}" style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${tumYetkiler.map(y => `
+          <label style="display:flex;align-items:center;gap:4px;background:var(--surface3);border-radius:8px;padding:4px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;border:1.5px solid ${gYetkiler.includes(y.id)?'var(--accent)':'var(--border)'};color:${gYetkiler.includes(y.id)?'var(--accent2)':'var(--muted)'};">
+            <input type="checkbox" class="gb-yetki-cb" data-yetki="${y.id}" ${gYetkiler.includes(y.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer;">
+            ${y.label}
+          </label>`).join('')}
       </div>`;
     el.appendChild(row);
   });
@@ -8287,6 +8325,24 @@ function garsonAyarListeRender(){
       const i=parseInt(btn.dataset.i);
       const pin=el.querySelector('.gb-pin[data-i="'+i+'"]').value.trim();
       garsonlar[i].pin=pin; bulutKaydet(); toast('✓ PIN güncellendi: '+garsonlar[i].isim);
+    });
+  });
+  // Yetki checkbox değişince kaydet
+  el.querySelectorAll('.gb-yetkiler').forEach(wrap=>{
+    wrap.querySelectorAll('.gb-yetki-cb').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const i = parseInt(wrap.dataset.i);
+        const secilenler = [...wrap.querySelectorAll('.gb-yetki-cb:checked')].map(c=>c.dataset.yetki);
+        garsonlar[i].yetkiler = secilenler;
+        bulutKaydet();
+        toast('✓ '+garsonlar[i].isim+' yetkileri güncellendi');
+        // Label stilini güncelle
+        wrap.querySelectorAll('label').forEach(lbl=>{
+          const c=lbl.querySelector('.gb-yetki-cb');
+          lbl.style.borderColor=c.checked?'var(--accent)':'var(--border)';
+          lbl.style.color=c.checked?'var(--accent2)':'var(--muted)';
+        });
+      });
     });
   });
 }
