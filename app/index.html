@@ -8630,14 +8630,31 @@ function garsonCagriSesCal() {
 async function garsonCagriKapat(masaId) {
   // Lokal güncelle
   const m = masalar.find(x => x.id === masaId || Number(x.id) === Number(masaId));
-  if (m) { m.garson_cagri = false; m.garson_cagri_saat = null; }
+  if (m) {
+    m.garson_cagri = false;
+    m.garson_cagri_saat = null;
+    // Masa notundan "Garson çağrıldı" yazısını temizle
+    if (m.not) {
+      m.not = m.not.replace(/\s*\|\s*🔔 Garson çağrıldı \d{2}:\d{2}/g, '')
+                   .replace(/^🔔 Garson çağrıldı \d{2}:\d{2}\s*\|?\s*/g, '')
+                   .trim();
+    }
+  }
   masalarRender();
   // Supabase güncelle
   try {
     const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
     const aktifMasalar = data?.aktif_masalar || [];
     const am = aktifMasalar.find(x => Number(x.id) === Number(masaId));
-    if (am) { am.garson_cagri = false; am.garson_cagri_saat = null; }
+    if (am) {
+      am.garson_cagri = false;
+      am.garson_cagri_saat = null;
+      if (am.not) {
+        am.not = am.not.replace(/\s*\|\s*🔔 Garson çağrıldı \d{2}:\d{2}/g, '')
+                       .replace(/^🔔 Garson çağrıldı \d{2}:\d{2}\s*\|?\s*/g, '')
+                       .trim();
+      }
+    }
     await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', kafeId);
   } catch(e) {}
   toast('✓ Garson çağrısı kapatıldı');
