@@ -6012,6 +6012,7 @@ function varyantEditorRender(container, kat, idx) {
 
   // Gruplar
   varyantlar.forEach((grup, gi) => {
+    const _gi = gi;
     const gDiv = document.createElement('div');
     gDiv.className = 'vgrup-editor';
     gDiv.innerHTML = `
@@ -6028,22 +6029,23 @@ function varyantEditorRender(container, kat, idx) {
     const secDiv = gDiv.querySelector('.vge-secenekler');
     const seceneklerRender = () => {
       secDiv.innerHTML = '';
-      (grup.secenekler||[]).forEach((s, si) => {
+      (URUNLER[kat][idx].varyantlar[_gi].secenekler||[]).forEach((s, si) => {
         const row = document.createElement('div');
         row.className = 'vsecenek-satir';
         row.innerHTML = `<input type="text" class="vs-isim" value="${s.isim}" placeholder="Seçenek adı">
           <input type="number" class="fiyat-input vs-fiyat" value="${s.fiyatFark||0}" placeholder="+₺0" step="0.5">
           <button class="vs-sil">✕</button>`;
+        const _gi = gi; const _si = si;
         row.querySelector('.vs-isim').addEventListener('change', e => {
-          URUNLER[kat][idx].varyantlar[gi].secenekler[si].isim = e.target.value.trim();
+          URUNLER[kat][idx].varyantlar[_gi].secenekler[_si].isim = e.target.value.trim();
           bulutKaydet();
         });
         row.querySelector('.vs-fiyat').addEventListener('change', e => {
-          URUNLER[kat][idx].varyantlar[gi].secenekler[si].fiyatFark = parseFloat(e.target.value)||0;
+          URUNLER[kat][idx].varyantlar[_gi].secenekler[_si].fiyatFark = parseFloat(e.target.value)||0;
           bulutKaydet();
         });
         row.querySelector('.vs-sil').addEventListener('click', () => {
-          URUNLER[kat][idx].varyantlar[gi].secenekler.splice(si, 1);
+          URUNLER[kat][idx].varyantlar[_gi].secenekler.splice(_si, 1);
           bulutKaydet(); varyantEditorRender(container, kat, idx);
         });
         secDiv.appendChild(row);
@@ -6051,21 +6053,21 @@ function varyantEditorRender(container, kat, idx) {
     };
     seceneklerRender();
     gDiv.querySelector('.vge-secenek-ekle').addEventListener('click', () => {
-      if (!URUNLER[kat][idx].varyantlar[gi].secenekler) URUNLER[kat][idx].varyantlar[gi].secenekler = [];
-      URUNLER[kat][idx].varyantlar[gi].secenekler.push({isim:'', fiyatFark:0});
+      if (!URUNLER[kat][idx].varyantlar[_gi].secenekler) URUNLER[kat][idx].varyantlar[_gi].secenekler = [];
+      URUNLER[kat][idx].varyantlar[_gi].secenekler.push({isim:'', fiyatFark:0});
       bulutKaydet(); varyantEditorRender(container, kat, idx);
     });
     gDiv.querySelector('.vge-ad').addEventListener('change', e => {
-      URUNLER[kat][idx].varyantlar[gi].ad = e.target.value.trim();
+      URUNLER[kat][idx].varyantlar[_gi].ad = e.target.value.trim();
       bulutKaydet();
     });
     gDiv.querySelector('.vge-zorunlu').addEventListener('change', e => {
-      URUNLER[kat][idx].varyantlar[gi].zorunlu = e.target.checked;
+      URUNLER[kat][idx].varyantlar[_gi].zorunlu = e.target.checked;
       bulutKaydet();
     });
     gDiv.querySelector('.vge-sil-btn').addEventListener('click', () => {
       if (!confirm('"'+grup.ad+'" varyant grubu silinsin mi?')) return;
-      URUNLER[kat][idx].varyantlar.splice(gi, 1);
+      URUNLER[kat][idx].varyantlar.splice(_gi, 1);
       bulutKaydet(); varyantEditorRender(container, kat, idx);
     });
   });
