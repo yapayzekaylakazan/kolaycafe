@@ -54,18 +54,22 @@
   .auth-loading { text-align: center; color: var(--muted); font-size: 0.85rem; font-weight: 700; padding: 8px; display: none; }
 
   /* ── HEADER ── */
-  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .header-left { display: flex; align-items: center; gap: 8px; }
-  .header h1 { font-size: 1.2rem; font-weight: 900; color: var(--accent2); }
-  .header-kafe { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
-  .header-stats { display: flex; gap: 8px; align-items: center; }
-  .hstat { font-size: 0.72rem; color: var(--text2); font-weight: 700; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 6px; }
+  .header-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .header h1 { font-size: 1.2rem; font-weight: 900; color: var(--accent2); white-space: nowrap; }
+  .header-kafe { font-size: 0.7rem; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+  .header-stats { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .hstat { font-size: 0.72rem; color: var(--text2); font-weight: 700; white-space: nowrap; }
   .hstat span { color: var(--accent2); }
-  .cikis-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; cursor: pointer; }
+  /* Mobilede hstat'ları gizle */
+  @media (max-width: 640px) { .hstat { display: none; } }
+  .cikis-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; cursor: pointer; white-space: nowrap; }
   .vardiya-btn { display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid;font-family:'Nunito',sans-serif;font-size:0.7rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap; }
   .vardiya-btn.kapali { background:#e0404015;border-color:#e0404060;color:#e04040; }
   .vardiya-btn.acik { background:#3db85a15;border-color:#3db85a60;color:#3db85a;animation:vardiyaPls 3s infinite; }
   @keyframes vardiyaPls { 0%,100%{box-shadow:0 0 0 0 #3db85a30}50%{box-shadow:0 0 0 4px #3db85a10} }
+  /* Mobilede vardiya buton metnini gizle, sadece ikon kalsın */
+  @media (max-width: 640px) { #vardiya-btn-text { display: none; } }
 
   /* ── BOTTOM NAV ── */
   .bottom-nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
