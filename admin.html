@@ -354,12 +354,27 @@
     <div id="modal-icerik"></div>
     <hr class="maya">
     <div class="modal-tit" style="font-size:0.83rem;margin-bottom:8px;">Plan Güncelle</div>
-    <select class="mkat" id="modal-plan-sec">
+    <select class="mkat" id="modal-plan-sec" onchange="modalPlanFiyatGoster()">
       <option value="deneme">🆓 Deneme</option><option value="start">🚀 Start — 299₺/ay</option>
       <option value="grow">🌱 Grow — 399₺/ay</option><option value="gold">🥇 Gold — 499₺/ay</option>
       <option value="platin">💎 Platin — 599₺/ay</option><option value="ultra">🚀 Ultra — 699₺/ay</option>
       <option value="elite">👑 Elite — 799₺/ay</option><option value="pro">⭐ Pro — 899₺/ay</option>
     </select>
+    <!-- Dönem Seçici -->
+    <div style="display:flex;align-items:center;gap:10px;margin:9px 0 6px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;">
+      <span style="font-size:0.75rem;font-weight:800;color:var(--text2);">DÖNEM:</span>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="radio" name="modal-donem" id="modal-donem-aylik" value="aylik" checked onchange="modalDonemDegis()" style="accent-color:#7c3aed;">
+        <span style="font-size:0.78rem;font-weight:700;color:var(--text);">Aylık</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="radio" name="modal-donem" id="modal-donem-yillik" value="yillik" onchange="modalDonemDegis()" style="accent-color:#22c55e;">
+        <span style="font-size:0.78rem;font-weight:700;color:#22c55e;">Yıllık</span>
+        <span style="background:#22c55e;color:#000;font-size:0.6rem;font-weight:900;padding:1px 6px;border-radius:20px;">%20 İNDİRİM</span>
+      </label>
+    </div>
+    <!-- Fiyat Özeti -->
+    <div id="modal-fiyat-ozet" style="font-size:0.73rem;color:var(--text2);margin-bottom:7px;min-height:18px;"></div>
     <div style="display:flex;gap:7px;align-items:center;margin-bottom:7px;">
       <input type="number" id="modal-gun" placeholder="Gün (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
@@ -542,7 +557,10 @@ function kpiGuncelle() {
   const odPlanlar = ['start','grow','gold','platin','ultra','elite','pro'];
   const planFiyat = { start:299, grow:399, gold:499, platin:599, ultra:699, elite:799, pro:899 };
   const aktifler = tumKafeler.filter(k => k.plan_bitis && new Date(k.plan_bitis) > simdi);
-  const aylikGelir = aktifler.filter(k => odPlanlar.includes(k.plan)).reduce((t,k) => t + (planFiyat[k.plan]||0), 0);
+  const aylikGelir = aktifler.filter(k => odPlanlar.includes(k.plan)).reduce((t,k) => {
+    const fiyat = planFiyat[k.plan]||0;
+    return t + (k.plan_donem === 'yillik' ? Math.round(fiyat * 0.8) : fiyat);
+  }, 0);
   const online15 = tumKafeler.filter(k => k.son_giris && (simdi - new Date(k.son_giris)) < 15*60*1000).length;
 
   document.getElementById('kpi-toplam').textContent = tumKafeler.length;
@@ -771,7 +789,7 @@ function tabloRender() {
       </div></td>
       <td style="font-size:0.75rem;">${k.email || '<span style="color:var(--red);font-size:0.68rem;">⚠ eksik</span>'}</td>
       <td style="font-size:0.75rem;"><div>${k.telefon||'—'}</div><div style="font-size:0.65rem;color:var(--text2);">${k.fatura_il||k.adres||'—'}</div></td>
-      <td>${planBadge(k.plan)}</td>
+      <td>${planBadge(k.plan)}${k.plan_donem==='yillik'?'<span style="font-size:0.58rem;background:#22c55e;color:#000;font-weight:900;padding:1px 5px;border-radius:10px;margin-left:4px;">Y</span>':''}</td>
       <td>${sure.html}</td>
       <td>${sg}</td>
       <td>${ciro}</td>
@@ -822,6 +840,21 @@ async function detayAc(id) {
   seciliKafeId = id;
   document.getElementById('modal-kafe-adi').textContent = '☕ ' + (k.kafe_adi||'Kafe');
   document.getElementById('modal-plan-sec').value = k.plan||'deneme';
+  // Dönem sıfırla — kafeye kayıtlı dönem varsa onu seç
+  const kayitliDonem = k.plan_donem || 'aylik';
+  const rdAylik = document.getElementById('modal-donem-aylik');
+  const rdYillik = document.getElementById('modal-donem-yillik');
+  if (rdAylik && rdYillik) {
+    rdAylik.checked = kayitliDonem === 'aylik';
+    rdYillik.checked = kayitliDonem === 'yillik';
+    const gunInput = document.getElementById('modal-gun');
+    if (gunInput) {
+      gunInput.value = kayitliDonem === 'yillik' ? 365 : 30;
+      gunInput.style.borderColor = kayitliDonem === 'yillik' ? '#22c55e' : '';
+    }
+  }
+  // Fiyat özetini göster
+  setTimeout(modalPlanFiyatGoster, 50);
   const sure = sureBilgi(k.plan_bitis);
   const simdi = new Date();
 
@@ -883,7 +916,10 @@ async function detayAc(id) {
   html += satirHtml('Şehir / İlçe', sehir, false);
 
   html += bb('💳', 'Plan & Abonelik');
-  html += satirHtml('Plan', planBadge(k.plan), false);
+  const donemBadge = k.plan_donem === 'yillik'
+    ? '<span style="background:#22c55e;color:#000;font-size:0.62rem;font-weight:900;padding:2px 7px;border-radius:12px;margin-left:6px;">YILLIK %20</span>'
+    : '<span style="background:rgba(255,255,255,0.1);color:var(--text2);font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:12px;margin-left:6px;">AYLIK</span>';
+  html += satirHtml('Plan', planBadge(k.plan) + donemBadge, false);
   html += satirHtml('Başlangıç', tarihFmt(k.created_at), false);
   html += satirHtml('Bitiş', tarihFmt(k.plan_bitis), false);
   html += satirHtml('Kalan', sure.doldu ? '<span style="color:var(--red)">❌ Süresi dolmuş</span>' : sure.html.replace(/<[^>]+>/g,'').trim()+' gün', false);
@@ -1069,22 +1105,53 @@ async function emailKaydet() {
   await yukle();
 }
 
+const PLAN_FIYAT_AYLIK_MODAL = { start:299, grow:399, gold:499, platin:599, ultra:699, elite:799, pro:899 };
+
+function modalPlanFiyatGoster() {
+  const plan = document.getElementById('modal-plan-sec')?.value;
+  const donem = document.querySelector('input[name="modal-donem"]:checked')?.value || 'aylik';
+  const fiyatEl = document.getElementById('modal-fiyat-ozet');
+  if (!fiyatEl) return;
+  const aylik = PLAN_FIYAT_AYLIK_MODAL[plan];
+  if (!aylik) { fiyatEl.textContent = ''; return; }
+  if (donem === 'yillik') {
+    const indirimli = Math.round(aylik * 0.8);
+    const tasarruf = Math.round(aylik * 12 * 0.2);
+    fiyatEl.innerHTML = `<span style="color:#22c55e;font-weight:800;">${indirimli}₺/ay</span> <span style="text-decoration:line-through;opacity:0.5;">${aylik}₺</span> · Yıllık toplam: <b>${indirimli*12}₺</b> · <span style="color:#22c55e;">Tasarruf: ${tasarruf}₺</span>`;
+  } else {
+    fiyatEl.innerHTML = `<span style="font-weight:700;">${aylik}₺/ay</span> · Aylık fatura`;
+  }
+}
+
+function modalDonemDegis() {
+  const donem = document.querySelector('input[name="modal-donem"]:checked')?.value || 'aylik';
+  const gunInput = document.getElementById('modal-gun');
+  if (gunInput) {
+    gunInput.value = donem === 'yillik' ? 365 : 30;
+    gunInput.style.borderColor = donem === 'yillik' ? '#22c55e' : '';
+  }
+  modalPlanFiyatGoster();
+}
+
 async function planGuncelle() {
   if (!seciliKafeId) return;
   const plan = document.getElementById('modal-plan-sec').value;
-  const gun = parseInt(document.getElementById('modal-gun').value) || 30;
+  const donem = document.querySelector('input[name="modal-donem"]:checked')?.value || 'aylik';
+  const gun = parseInt(document.getElementById('modal-gun').value) || (donem === 'yillik' ? 365 : 30);
   const bitis = new Date();
   bitis.setDate(bitis.getDate() + gun);
 
   const { error } = await sb.from('kafeler').update({
     plan: plan,
-    plan_bitis: bitis.toISOString()
+    plan_bitis: bitis.toISOString(),
+    plan_donem: donem
   }).eq('id', seciliKafeId);
 
   if (error) { alert('Hata: ' + error.message); return; }
   modalKapat();
   await yukle();
-  alert(`✓ Plan güncellendi: ${plan.toUpperCase()} — ${gun} gün`);
+  const donemStr = donem === 'yillik' ? 'Yıllık (%20 indirimli)' : 'Aylık';
+  alert(`✓ Plan güncellendi: ${plan.toUpperCase()} — ${gun} gün (${donemStr})`);
 }
 
 
@@ -1637,7 +1704,10 @@ async function finansYukle() {
   const PLAN_MASA = { deneme:6, start:4, grow:6, gold:8, platin:10, ultra:12, elite:15, pro:999 };
 
   const aktifler = tumKafeler.filter(k => k.plan_bitis && new Date(k.plan_bitis) > simdi);
-  const aylikGelir = aktifler.filter(k => Object.keys(planFiyat).includes(k.plan)).reduce((t,k) => t + (planFiyat[k.plan]||0), 0);
+  const aylikGelir = aktifler.filter(k => Object.keys(planFiyat).includes(k.plan)).reduce((t,k) => {
+    const fiyat = planFiyat[k.plan]||0;
+    return t + (k.plan_donem === 'yillik' ? Math.round(fiyat * 0.8) : fiyat);
+  }, 0);
   const buAyYeni = tumKafeler.filter(k => new Date(k.created_at) >= ayBas).length;
   const bitecek7 = tumKafeler.filter(k => { if (!k.plan_bitis) return false; const g = Math.ceil((new Date(k.plan_bitis)-simdi)/(1000*60*60*24)); return g>0&&g<=7; }).length;
 
@@ -1648,7 +1718,12 @@ async function finansYukle() {
 
   // Paket gelir grafiği
   const paketSayim = {};
-  aktifler.forEach(k => { if (planFiyat[k.plan]) paketSayim[k.plan] = (paketSayim[k.plan]||0) + planFiyat[k.plan]; });
+  aktifler.forEach(k => {
+    if (planFiyat[k.plan]) {
+      const fiyat = k.plan_donem === 'yillik' ? Math.round(planFiyat[k.plan] * 0.8) : planFiyat[k.plan];
+      paketSayim[k.plan] = (paketSayim[k.plan]||0) + fiyat;
+    }
+  });
   const pl = Object.keys(paketSayim); const pd = pl.map(p => paketSayim[p]);
   const pr = pl.map(p => ({ start:'#94a3b8', grow:'#22c55e', gold:'#ffd700', platin:'#e0e0e0', ultra:'#9060f0', elite:'#f97316', pro:'#f0b940' }[p]||'#555'));
   if (_grafikler['paket']) _grafikler['paket'].destroy();
