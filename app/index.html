@@ -1080,16 +1080,31 @@
 
   <!-- MUHASEBE HEADER -->
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-size:1rem;font-weight:900;color:var(--accent2);">💰 Muhasebe</div>
-      <select id="gg-donem" onchange="muhasebeRender()" style="background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;outline:none;">
-        <option value="bugun">Bugün</option>
-        <option value="hafta">Bu Hafta</option>
-        <option value="ay" selected>Bu Ay</option>
-        <option value="yil">Bu Yıl</option>
-        <option value="tumu">Tümü</option>
-      </select>
     </div>
+    <!-- Dönem seçici -->
+    <div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px;padding-bottom:2px;">
+      <button class="muh-donem-btn aktif" data-donem="bugun"   onclick="muhasebeDonemSec('bugun',this)"   style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--accent);background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">Bugün</button>
+      <button class="muh-donem-btn"       data-donem="hafta"   onclick="muhasebeDonemSec('hafta',this)"   style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">Bu Hafta</button>
+      <button class="muh-donem-btn"       data-donem="ay"      onclick="muhasebeDonemSec('ay',this)"      style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">Bu Ay</button>
+      <button class="muh-donem-btn"       data-donem="yil"     onclick="muhasebeDonemSec('yil',this)"     style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">Bu Yıl</button>
+      <button class="muh-donem-btn"       data-donem="tumu"    onclick="muhasebeDonemSec('tumu',this)"    style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">Tümü</button>
+      <button class="muh-donem-btn"       data-donem="vardiya" onclick="muhasebeDonemSec('vardiya',this)" style="padding:5px 10px;border-radius:20px;border:1.5px solid #3db85a60;background:var(--surface2);color:#3db85a;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">🟢 Vardiya</button>
+      <button class="muh-donem-btn"       data-donem="ozel"    onclick="muhasebeOzelDonemAc(this)"        style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">📆 Özel</button>
+    </div>
+    <!-- Özel tarih seçici (gizli) -->
+    <div id="muh-ozel-wrap" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;font-weight:800;color:var(--muted);">Başlangıç:</span>
+        <input type="date" id="muh-ozel-bas" style="flex:1;min-width:120px;background:var(--surface3);border:1.5px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;outline:none;">
+        <span style="font-size:0.72rem;font-weight:800;color:var(--muted);">Bitiş:</span>
+        <input type="date" id="muh-ozel-bit" style="flex:1;min-width:120px;background:var(--surface3);border:1.5px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;outline:none;">
+        <button onclick="muhasebeOzelUygula()" style="background:var(--accent);border:none;border-radius:9px;padding:7px 14px;color:#1a0f00;font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">Uygula</button>
+      </div>
+    </div>
+    <!-- hidden input for donem value (backward compat) -->
+    <input type="hidden" id="gg-donem" value="bugun">
     <!-- Sekmeler -->
     <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px;">
       <button id="mtab-ozet"     onclick="muhasebeSecme('ozet')"     style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">📊 Özet</button>
@@ -9823,13 +9838,17 @@ async function kasaRender() {
   if (!kafeId) return;
   const donem = document.getElementById('gg-donem')?.value || 'ay';
   const baslangic = muhasebeBaslangic(donem) || '2020-01-01T00:00:00Z';
+  const bitis = (donem === 'ozel' && _muhOzelBit) ? new Date(_muhOzelBit + 'T23:59:59').toISOString() : null;
   let q = sb.from('kasa_hareketler').select('*').eq('kafe_id', kafeId).order('tarih', {ascending:false});
   if (donem !== 'tumu') q = q.gte('tarih', baslangic);
+  if (bitis) q = q.lte('tarih', bitis);
   const { data } = await q;
   const hareketler = data || [];
   let nakit = 0, kart = 0;
   try {
-    const { data: adisyonlar } = await sb.from('kolaycafenlar').select('toplam,odeme_tipi').eq('kafe_id', kafeId).gte('created_at', baslangic);
+    let aq = sb.from('kolaycafenlar').select('toplam,odeme_tipi').eq('kafe_id', kafeId).gte('created_at', baslangic);
+    if (bitis) aq = aq.lte('created_at', bitis);
+    const { data: adisyonlar } = await aq;
     (adisyonlar||[]).forEach(a => {
       if (['ikram','cari','cari_tahsil'].includes(a.odeme_tipi)) return;
       if (a.odeme_tipi?.includes('kart')) kart += a.toplam;
@@ -9899,11 +9918,56 @@ function muhasebeBaslangic(donem) {
   if (donem === 'hafta') { const d = new Date(simdi); d.setDate(simdi.getDate()-simdi.getDay()); d.setHours(0,0,0,0); return d.toISOString(); }
   if (donem === 'ay') return new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString();
   if (donem === 'yil') return new Date(simdi.getFullYear(), 0, 1).toISOString();
-  return null;
+  if (donem === 'vardiya') return aktifVardiyaBaslangic ? aktifVardiyaBaslangic.toISOString() : new Date(simdi).toISOString();
+  if (donem === 'ozel') return _muhOzelBas ? new Date(_muhOzelBas + 'T00:00:00').toISOString() : null;
+  return null; // tumu
+}
+
+let _muhOzelBas = null;
+let _muhOzelBit = null;
+let _muhDonem = 'bugun';
+
+function muhasebeDonemSec(donem, btn) {
+  _muhDonem = donem;
+  document.getElementById('gg-donem').value = donem;
+  document.querySelectorAll('.muh-donem-btn').forEach(b => {
+    const aktif = b === btn;
+    b.style.background = aktif ? 'var(--accent)' : 'var(--surface2)';
+    b.style.borderColor = aktif ? 'var(--accent)' : (b.dataset.donem === 'vardiya' ? '#3db85a60' : 'var(--border)');
+    b.style.color = aktif ? '#1a0f00' : (b.dataset.donem === 'vardiya' ? '#3db85a' : 'var(--text2)');
+  });
+  document.getElementById('muh-ozel-wrap').style.display = 'none';
+  muhasebeRender();
+}
+
+function muhasebeOzelDonemAc(btn) {
+  _muhDonem = 'ozel';
+  document.getElementById('gg-donem').value = 'ozel';
+  document.querySelectorAll('.muh-donem-btn').forEach(b => {
+    const aktif = b === btn;
+    b.style.background = aktif ? 'var(--accent)' : 'var(--surface2)';
+    b.style.borderColor = aktif ? 'var(--accent)' : 'var(--border)';
+    b.style.color = aktif ? '#1a0f00' : 'var(--text2)';
+  });
+  const bugun = new Date().toISOString().slice(0,10);
+  const bas = document.getElementById('muh-ozel-bas');
+  const bit = document.getElementById('muh-ozel-bit');
+  if (bas && !bas.value) bas.value = bugun;
+  if (bit && !bit.value) bit.value = bugun;
+  document.getElementById('muh-ozel-wrap').style.display = 'block';
+}
+
+function muhasebeOzelUygula() {
+  _muhOzelBas = document.getElementById('muh-ozel-bas')?.value || null;
+  _muhOzelBit = document.getElementById('muh-ozel-bit')?.value || null;
+  muhasebeRender();
 }
 
 window.muhasebeSecme = muhasebeSecme;
 window.muhasebeRender = muhasebeRender;
+window.muhasebeDonemSec = muhasebeDonemSec;
+window.muhasebeOzelDonemAc = muhasebeOzelDonemAc;
+window.muhasebeOzelUygula = muhasebeOzelUygula;
 window.toptanciEkleModal = toptanciEkleModal;
 window.toptanciKaydet = toptanciKaydet;
 window.toptanciHareketKaydet = toptanciHareketKaydet;
