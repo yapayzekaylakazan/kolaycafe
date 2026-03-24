@@ -12295,22 +12295,15 @@ async function aiVeriTopla() {
     .map(([isim, d]) => ({ isim, ...d, ortAdisyon: d.adisyon > 0 ? d.ciro / d.adisyon : 0 }))
     .sort((a, b) => b.ciro - a.ciro);
 
-  // ── Gelir/Gider özeti (dönem bağımsız son 30 gün) ──
-  // Gerçek gelir = adisyon toplamı (kolaycafenlar) + manuel gelir_gider girişleri
-  let gelirGiderOzet = { toplamGelir: 0, toplamGider: 0 };
+  // ── Gelir/Gider özeti — seçili dönemin adisyon toplamı + manuel gider girişleri ──
+  let gelirGiderOzet = { toplamGelir: toplamCiro, toplamGider: 0 };
   try {
-    const ggBaslangic = new Date(); ggBaslangic.setDate(ggBaslangic.getDate() - 30);
-    // Adisyon gelirlerini çek (son 30 gün)
-    const { data: adisyonGelir } = await sb.from('kolaycafenlar')
-      .select('toplam')
-      .eq('kafe_id', kafeId)
-      .gte('created_at', ggBaslangic.toISOString());
-    gelirGiderOzet.toplamGelir = (adisyonGelir || []).reduce((s, a) => s + parseFloat(a.toplam || 0), 0);
-    // Manuel gelir/gider girişlerini de ekle
-    const { data: ggData } = await sb.from('gelir_gider')
+    // Manuel gider girişlerini çek (seçili dönem)
+    let ggQuery = sb.from('gelir_gider')
       .select('tip, tutar, kategori')
-      .eq('kafe_id', kafeId)
-      .gte('tarih', ggBaslangic.toISOString().split('T')[0]);
+      .eq('kafe_id', kafeId);
+    if (baslangic) ggQuery = ggQuery.gte('tarih', baslangic.split('T')[0]);
+    const { data: ggData } = await ggQuery;
     (ggData || []).forEach(r => {
       if (r.tip === 'gelir') gelirGiderOzet.toplamGelir += parseFloat(r.tutar || 0);
       else gelirGiderOzet.toplamGider += parseFloat(r.tutar || 0);
