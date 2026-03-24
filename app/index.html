@@ -12219,7 +12219,7 @@ async function aiVeriTopla() {
   const adisyonlar = data || [];
 
   // Toplam ciro
-  const toplamCiro = adisyonlar.reduce((s, a) => s + (a.toplam || 0), 0);
+  const toplamCiro = adisyonlar.reduce((s, a) => s + parseFloat(a.toplam || 0), 0);
   const adisyonSayisi = adisyonlar.length;
   const ortHarcama = adisyonSayisi > 0 ? toplamCiro / adisyonSayisi : 0;
 
@@ -12264,7 +12264,7 @@ async function aiVeriTopla() {
     const tarih = new Date(a.created_at);
     if (isNaN(tarih)) return;
     const key = tarih.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit' });
-    gunlukCiro[key] = (gunlukCiro[key] || 0) + (a.toplam || 0);
+    gunlukCiro[key] = (gunlukCiro[key] || 0) + parseFloat(a.toplam || 0);
   });
 
   // Önceki dönem karşılaştırması
@@ -12277,7 +12277,7 @@ async function aiVeriTopla() {
       .eq('kafe_id', kafeId)
       .gte('created_at', oncekiBaslangic.toISOString())
       .lt('created_at', baslangic);
-    oncekiCiro = (oncekiData || []).reduce((s, a) => s + (a.toplam || 0), 0);
+    oncekiCiro = (oncekiData || []).reduce((s, a) => s + parseFloat(a.toplam || 0), 0);
   }
 
   const trenYuzde = oncekiCiro > 0 ? ((toplamCiro - oncekiCiro) / oncekiCiro * 100).toFixed(1) : null;
@@ -12288,7 +12288,7 @@ async function aiVeriTopla() {
     const g = (a.garson && typeof a.garson === 'string' && a.garson.trim()) ? a.garson.trim() : 'Belirtilmemiş';
     if (!garsonPerf[g]) garsonPerf[g] = { adisyon: 0, ciro: 0, urun: 0 };
     garsonPerf[g].adisyon++;
-    garsonPerf[g].ciro += (a.toplam || 0);
+    garsonPerf[g].ciro += parseFloat(a.toplam || 0);
     garsonPerf[g].urun += (a.siparisler || []).reduce((s, x) => s + (x.adet || 1), 0);
   });
   const garsonSirali = Object.entries(garsonPerf)
