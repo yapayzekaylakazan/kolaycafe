@@ -12296,16 +12296,24 @@ async function aiVeriTopla() {
     .sort((a, b) => b.ciro - a.ciro);
 
   // ── Gelir/Gider özeti (dönem bağımsız son 30 gün) ──
+  // Gerçek gelir = adisyon toplamı (kolaycafenlar) + manuel gelir_gider girişleri
   let gelirGiderOzet = { toplamGelir: 0, toplamGider: 0 };
   try {
     const ggBaslangic = new Date(); ggBaslangic.setDate(ggBaslangic.getDate() - 30);
+    // Adisyon gelirlerini çek (son 30 gün)
+    const { data: adisyonGelir } = await sb.from('kolaycafenlar')
+      .select('toplam')
+      .eq('kafe_id', kafeId)
+      .gte('created_at', ggBaslangic.toISOString());
+    gelirGiderOzet.toplamGelir = (adisyonGelir || []).reduce((s, a) => s + parseFloat(a.toplam || 0), 0);
+    // Manuel gelir/gider girişlerini de ekle
     const { data: ggData } = await sb.from('gelir_gider')
       .select('tip, tutar, kategori')
       .eq('kafe_id', kafeId)
       .gte('tarih', ggBaslangic.toISOString().split('T')[0]);
     (ggData || []).forEach(r => {
-      if (r.tip === 'gelir') gelirGiderOzet.toplamGelir += (r.tutar || 0);
-      else gelirGiderOzet.toplamGider += (r.tutar || 0);
+      if (r.tip === 'gelir') gelirGiderOzet.toplamGelir += parseFloat(r.tutar || 0);
+      else gelirGiderOzet.toplamGider += parseFloat(r.tutar || 0);
     });
   } catch(_) {}
 
