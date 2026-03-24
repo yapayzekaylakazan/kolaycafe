@@ -37,7 +37,7 @@
   .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
   .kpi.mavi::before{background:var(--blue);}.kpi.yesil::before{background:var(--green);}.kpi.turuncu::before{background:var(--accent);}
   .kpi.mor::before{background:var(--purple);}.kpi.kirmizi::before{background:var(--red);}.kpi.cyan::before{background:var(--cyan);}.kpi.pembe::before{background:var(--pink);}
-  .kpi-ic{font-size:1.2rem;margin-bottom:5px;}.kpi-sayi{font-size:1.65rem;font-weight:700;line-height:1;margin-bottom:2px;font-family:'Space Mono',monospace;letter-spacing:-1px;}
+  .kpi-ic{font-size:1.2rem;margin-bottom:5px;}.kpi-sayi{font-size:1.65rem;font-weight:800;line-height:1;margin-bottom:2px;}
   .kpi-etiket{font-size:0.62rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.4px;}
   .toolbar{display:flex;align-items:center;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
   .toolbar-baslik{font-size:0.92rem;font-weight:800;flex:1;min-width:80px;}
@@ -93,9 +93,7 @@
   .chart-tall{position:relative;height:250px;}
   .nabiz{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:18px;}
   .nb-kart{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px;text-align:center;}
-  .nb-sayi{font-size:1.9rem;font-weight:700;font-family:'Space Mono',monospace;line-height:1;margin-bottom:3px;letter-spacing:-1px;}
-  /* Tüm büyük para/sayı gösterimleri Space Mono */
-  .fin-sayi, .rakam { font-family:'Space Mono',monospace !important; font-weight:700; letter-spacing:-1px; }
+  .nb-sayi{font-size:1.9rem;font-weight:800;font-family:'Space Mono',monospace;line-height:1;margin-bottom:3px;}
   .nb-ad{font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.4px;text-transform:uppercase;}
   .log-s{display:flex;gap:7px;padding:6px 9px;border-radius:6px;margin-bottom:3px;font-size:0.7rem;background:var(--surface);border-left:3px solid;}
   .log-s.err{border-color:var(--red);}.log-s.warn{border-color:var(--accent);}.log-s.info{border-color:var(--blue);}
@@ -117,6 +115,9 @@
   .hm-lbl{color:var(--text2);display:flex;align-items:center;font-family:'Space Mono',monospace;padding-right:4px;white-space:nowrap;font-size:0.52rem;}
   .yukl{text-align:center;padding:32px;color:var(--text2);font-family:'Space Mono',monospace;font-size:0.78rem;}
   @media(max-width:768px){.topbar .tab-btn{font-size:0.68rem;padding:4px 8px;}.kpi-grid{grid-template-columns:repeat(2,1fr);}.kpi-sayi{font-size:1.3rem;}.pgrid{grid-template-columns:1fr;}.sayfa{padding:9px;}.arama{width:100%;}}
+  /* ── Tüm rakam/tutar gösterimleri Space Mono ── */
+  .tw td { font-family: 'Space Mono', monospace !important; }
+  .tw td:nth-child(6), .tw td:nth-child(7) { letter-spacing: -0.5px; }
 </style>
 </head>
 <body>
@@ -488,6 +489,9 @@ function toast(msg, sure=3000) {
 
 
 function fmt(n) { const v = parseFloat(n); return isNaN(v) ? '0' : Math.round(v).toLocaleString('tr-TR'); }
+function fmtTL(n) { return `<span style="font-family:'Space Mono',monospace;letter-spacing:-0.5px;">${fmt(n)}</span>`; }
+// Garson adını güvenli şekilde çıkar (string veya {isim,aktif} object olabilir)
+function garsonAd(g) { if (!g) return ''; return typeof g === 'string' ? g : (g.isim || g.ad || '?'); }
 
 // ── GİRİŞ / ÇIKIŞ ──
 async function girisYap() {
@@ -750,7 +754,7 @@ function tabloRender() {
       const r = fark === 0 ? '#30d080' : fark <= 3 ? '#f0b940' : fark <= 7 ? '#e07840' : '#e04050';
       return `<span style="color:${r};font-size:0.72rem;font-family:'Space Mono',monospace;">${fark===0?'Bugün':fark===1?'Dün':fark+'g önce'}</span>`;
     })() : '<span style="color:var(--text2);font-size:0.68rem;">—</span>';
-    const ciro = k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:700;font-size:0.75rem;">${fmt(k.toplam_ciro)}₺</span>` : '<span style="color:var(--text2);">—</span>';
+    const ciro = k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:700;font-size:0.75rem;">${fmtTL(k.toplam_ciro)}₺</span>` : '<span style="color:var(--text2);">—</span>';
     const notSayisi = (k.crm_notlar||[]).length;
     const online = k.son_giris && (simdi - new Date(k.son_giris)) < 15*60*1000;
     const tr = document.createElement('tr');
@@ -893,9 +897,9 @@ async function detayAc(id) {
   html += bb('⚙️', 'Sistem & Kullanım');
   html += satirHtml('Kafe Kodu', k.kafe_kodu||'—', true);
   html += satirHtml('Son Giriş', sonGiris, false);
-  html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${fmt(k.toplam_ciro)}₺</span>` : '—', false);
+  html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${fmtTL(k.toplam_ciro)}₺</span>` : '—', false);
   html += satirHtml('Ürün Sayısı', urunSayisi + ' ürün', false);
-  html += satirHtml('Garson Sayısı', garsonlar.length + ' garson (' + garsonlar.map(g => typeof g === 'string' ? g : (g.isim||'?')).join(', ') + ')', false);
+  html += satirHtml('Garson Sayısı', garsonlar.length + ' garson (' + garsonlar.map(g => garsonAd(g)).join(', ') + ')', false);
   html += satirHtml('Masa Durumu', `${mevcutMasa} / ${masaLimit === 999 ? 'Sınırsız' : masaLimit} masa (${acikMasalar.length} açık)`, false);
   if (mevcutMasa > masaLimit) {
     html += `<div style="background:#e0405015;border:1.5px solid #e0405040;border-radius:8px;padding:8px 11px;font-size:0.75rem;color:var(--red);font-weight:700;margin-bottom:6px;">⚠️ Masa limiti aşılmış! (${mevcutMasa} / ${masaLimit})</div>`;
@@ -909,11 +913,11 @@ async function detayAc(id) {
       const sipSayisi = (m.siparisler||[]).length;
       const toplam = (m.siparisler||[]).reduce((t,s) => t + s.fiyat*s.adet, 0);
       const urunler = (m.siparisler||[]).map(s => `${s.isim||'?'} x${s.adet||1}`).join(', ');
-      const garsonAdi = m.garson ? ` · 👤 ${m.garson}` : '';
+      const garsonAdi = m.garson ? ` · 👤 ${garsonAd(m.garson)}` : '';
       html += `<div style="background:var(--surface);border-radius:7px;padding:8px 11px;border-left:3px solid var(--accent);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
           <div style="font-size:0.78rem;font-weight:700;">🪑 ${m.ad||'Masa '+m.id}<span style="color:var(--blue);font-size:0.68rem;">${garsonAdi}</span></div>
-          <div style="font-size:0.75rem;font-weight:800;color:var(--green);">${fmt(toplam)}₺</div>
+          <div style="font-size:0.75rem;font-weight:800;color:var(--green);">${fmtTL(toplam)}₺</div>
         </div>
         <div style="font-size:0.65rem;color:var(--text2);">${urunler||'—'}</div>
       </div>`;
@@ -931,7 +935,7 @@ async function detayAc(id) {
     .limit(50);
   if (bugunAdisyonlar && bugunAdisyonlar.length > 0) {
     const kapananCiro = bugunAdisyonlar.reduce((t,a) => t + parseFloat(a.toplam||0), 0);
-    html += bb('📋', `Bugün Kapanan Adisyonlar (${bugunAdisyonlar.length}) — ${fmt(kapananCiro)}₺`);
+    html += bb('📋', `Bugün Kapanan Adisyonlar (${bugunAdisyonlar.length}) — ${fmtTL(kapananCiro)}₺`);
     html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">`;
     bugunAdisyonlar.forEach(a => {
       const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
@@ -939,8 +943,8 @@ async function detayAc(id) {
       const artik = (a.siparisler||[]).length > 4 ? `+${(a.siparisler||[]).length-4}` : '';
       html += `<div style="background:var(--surface);border-radius:7px;padding:7px 10px;border-left:3px solid #30d08050;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <span style="font-size:0.75rem;font-weight:800;">🪑 ${a.masa_ad||'?'} <span style="color:var(--text2);font-size:0.65rem;">${saat}${a.garson?' · 👤'+a.garson:''}</span></span>
-          <span style="font-size:0.75rem;font-weight:800;color:#30d080;">${fmt(parseFloat(a.toplam||0))}₺</span>
+          <span style="font-size:0.75rem;font-weight:800;">🪑 ${a.masa_ad||'?'} <span style="color:var(--text2);font-size:0.65rem;">${saat}${a.garson?' · 👤'+garsonAd(a.garson):''}</span></span>
+          <span style="font-size:0.75rem;font-weight:800;color:#30d080;">${fmtTL(parseFloat(a.toplam||0))}₺</span>
         </div>
         <div style="font-size:0.63rem;color:var(--text2);">${urunler}${artik?` <b>${artik} daha</b>`:''}</div>
       </div>`;
@@ -1119,7 +1123,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;">
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
       <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:3px;">TOPLAM CİRO</div>
-      <div style="font-size:1.1rem;font-weight:900;color:#30d080;">${fmt(toplamCiro)}₺</div>
+      <div style="font-size:1.1rem;font-weight:900;color:#30d080;">${fmtTL(toplamCiro)}₺</div>
     </div>
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
       <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:3px;">ADİSYON SAYISI</div>
@@ -1127,7 +1131,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
     </div>
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
       <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:3px;">ORT. ADİSYON</div>
-      <div style="font-size:1.1rem;font-weight:900;color:var(--purple);">${fmt(toplamCiro/data.length)}₺</div>
+      <div style="font-size:1.1rem;font-weight:900;color:var(--purple);">${fmtTL(toplamCiro/data.length)}₺</div>
     </div>
   </div>`;
 
@@ -1146,7 +1150,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
         <div style="flex:1;background:var(--surface2);border-radius:3px;height:16px;overflow:hidden;">
           <div style="width:${yuzde}%;height:100%;background:linear-gradient(90deg,#30d080,#30d08088);border-radius:3px;"></div>
         </div>
-        <div style="font-size:0.62rem;font-weight:800;color:#30d080;min-width:58px;text-align:right;">${fmt(ciro)}₺</div>
+        <div style="font-size:0.62rem;font-weight:800;color:#30d080;min-width:58px;text-align:right;">${fmtTL(ciro)}₺</div>
       </div>`;
     });
     html += `</div>`;
@@ -1160,7 +1164,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
     const yuzde = Math.round(c/maxSaat*100);
     const renk = yuzde > 70 ? '#e04050' : yuzde > 40 ? '#f0b940' : yuzde > 15 ? '#30d080' : '#2a2a3a';
     const h = Math.max(4, Math.round(yuzde*0.5));
-    html += `<div title="${saat}:00 — ${fmt(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;cursor:default;"></div>`;
+    html += `<div title="${saat}:00 — ${fmtTL(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;cursor:default;"></div>`;
   });
   html += `</div><div style="display:flex;justify-content:space-between;font-size:0.52rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:12px;"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div>`;
 
@@ -1194,7 +1198,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
           <div style="width:${yuzde}%;height:100%;background:var(--accent);border-radius:2px;"></div>
         </div>
         <div style="font-size:0.62rem;font-weight:800;color:var(--text2);min-width:28px;text-align:right;">${v.adet}x</div>
-        <div style="font-size:0.62rem;font-weight:800;color:#30d080;min-width:50px;text-align:right;">${fmt(v.ciro)}₺</div>
+        <div style="font-size:0.62rem;font-weight:800;color:#30d080;min-width:50px;text-align:right;">${fmtTL(v.ciro)}₺</div>
         <div style="font-size:0.58rem;color:var(--text2);min-width:28px;text-align:right;">%${katkiYuzde}</div>
       </div>`;
     });
@@ -1256,7 +1260,7 @@ async function analitikYukle() {
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">
       <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center;">
-        <div style="font-size:1.3rem;font-weight:800;color:#30d080;">${fmt(toplamCiro)}₺</div>
+        <div style="font-size:1.3rem;font-weight:800;color:#30d080;">${fmtTL(toplamCiro)}₺</div>
         <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;">TOPLAM CİRO</div>
       </div>
       <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center;">
@@ -1289,7 +1293,7 @@ async function analitikYukle() {
         <div style="font-size:0.72rem;font-weight:700;padding:7px 10px;background:var(--surface);border-radius:7px;border-left:3px solid var(--accent);">
           👤 Kafe Sahibi (Admin) — Son giriş: ${sonGirisGun===null?'Hiç giriş yok':sonGirisGun===0?'Bugün':sonGirisGun+' gün önce'}
         </div>
-        ${garsonlar.length > 0 ? garsonlar.map(g => { const ad = typeof g === 'string' ? g : (g.isim||'?'); const aktif = typeof g === 'object' ? g.aktif !== false : true; return `<div style="font-size:0.72rem;padding:7px 10px;background:var(--surface);border-radius:7px;border-left:3px solid ${aktif?'var(--blue)':'var(--border)'};"><span style="font-weight:700;">🍽️ ${ad}</span> <span style="font-size:0.62rem;color:var(--text2);">${aktif?'Aktif':'Pasif'}</span></div>`; }).join('') : '<div style="font-size:0.72rem;color:var(--text2);">Henüz garson tanımlanmamış.</div>'}
+        ${garsonlar.length > 0 ? garsonlar.map(g => { const ad = garsonAd(g); const aktif = typeof g === 'object' ? g.aktif !== false : true; return `<div style="font-size:0.72rem;padding:7px 10px;background:var(--surface);border-radius:7px;border-left:3px solid ${aktif?'var(--blue)':'var(--border)'};"><span style="font-weight:700;">🍽️ ${ad}</span> <span style="font-size:0.62rem;color:var(--text2);">${aktif?'Aktif':'Pasif'}</span></div>`; }).join('') : '<div style="font-size:0.72rem;color:var(--text2);">Henüz garson tanımlanmamış.</div>'}
       </div>
     </div>
     <div class="pk">
@@ -1300,7 +1304,7 @@ async function analitikYukle() {
           return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:7px;padding:7px 10px;margin-bottom:4px;border-left:3px solid var(--accent);">
             <div style="font-size:0.75rem;font-weight:700;">🪑 ${m.ad||'Masa '+m.id}</div>
             <div style="font-size:0.68rem;color:var(--text2);">${(m.siparisler||[]).length} ürün</div>
-            <div style="font-size:0.72rem;font-weight:800;color:#30d080;">${fmt(top)}₺</div>
+            <div style="font-size:0.72rem;font-weight:800;color:#30d080;">${fmtTL(top)}₺</div>
           </div>`;
         }).join('')}
     </div>
@@ -1316,7 +1320,7 @@ async function analitikYukle() {
       const yuzde = Math.round(c/maxSaat*100);
       const renk = yuzde > 70 ? '#e04050' : yuzde > 40 ? '#f0b940' : yuzde > 15 ? '#30d080' : '#2a2a3a';
       const h = Math.max(4, Math.round(yuzde*0.55));
-      html += `<div title="${saat}:00 — ${fmt(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;" ></div>`;
+      html += `<div title="${saat}:00 — ${fmtTL(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;" ></div>`;
     });
     html += `</div><div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:3px;"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div></div>`;
 
@@ -1331,7 +1335,7 @@ async function analitikYukle() {
           <div style="flex:1;font-size:0.68rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">${isim}</div>
           <div style="width:60px;background:var(--surface2);border-radius:2px;height:5px;overflow:hidden;"><div style="width:${Math.round(v.adet/maxAdet*100)}%;height:100%;background:var(--accent);border-radius:2px;"></div></div>
           <div style="font-size:0.6rem;font-weight:800;color:var(--text2);min-width:24px;text-align:right;">${v.adet}x</div>
-          <div style="font-size:0.62rem;font-weight:800;color:#30d080;min-width:48px;text-align:right;">${fmt(v.ciro)}₺</div>
+          <div style="font-size:0.62rem;font-weight:800;color:#30d080;min-width:48px;text-align:right;">${fmtTL(v.ciro)}₺</div>
           <div style="font-size:0.58rem;color:var(--text2);min-width:26px;text-align:right;">%${kk}</div>
         </div>`;
       });
@@ -1409,8 +1413,8 @@ async function canliYukle() {
       ? acikMasalar.map(m => {
           const top = (m.siparisler||[]).reduce((t,s)=>t+s.fiyat*s.adet,0);
           const urunler = (m.siparisler||[]).map(s => `${s.isim||'?'} x${s.adet||1}`).join(', ');
-          const garsonAdi = m.garson ? ` · <span style="color:var(--blue);">👤${m.garson}</span>` : '';
-          return `<div style="background:var(--bg2);border-radius:6px;padding:7px 10px;border:1px solid var(--border);font-size:0.7rem;margin-bottom:4px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><span style="font-weight:800;">🪑 ${m.ad||'Masa '+m.id}${garsonAdi}</span><span style="color:#30d080;font-weight:800;">${fmt(top)}₺</span></div><div style="color:var(--text2);font-size:0.63rem;">${urunler||'—'}</div></div>`;
+          const garsonAdi = m.garson ? ` · <span style="color:var(--blue);">👤${garsonAd(m.garson)}</span>` : '';
+          return `<div style="background:var(--bg2);border-radius:6px;padding:7px 10px;border:1px solid var(--border);font-size:0.7rem;margin-bottom:4px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><span style="font-weight:800;">🪑 ${m.ad||'Masa '+m.id}${garsonAdi}</span><span style="color:#30d080;font-weight:800;">${fmtTL(top)}₺</span></div><div style="color:var(--text2);font-size:0.63rem;">${urunler||'—'}</div></div>`;
         }).join('')
       : '<div style="font-size:0.7rem;color:var(--text2);padding:4px 0;">Açık masa yok</div>';
 
@@ -1420,14 +1424,14 @@ async function canliYukle() {
       const adisyonListHTML = kafeAdisyonlar.slice(0,15).map(a => {
         const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
         const urunler = (a.siparisler||[]).slice(0,3).map(s=>`${s.isim||'?'} x${s.adet||1}`).join(', ');
-        return `<div style="background:var(--surface2);border-radius:5px;padding:4px 8px;font-size:0.63rem;border:1px solid var(--border);margin-bottom:3px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><div><span style="font-weight:800;">${a.masa_ad||'?'}</span> <span style="color:var(--text2);">${saat}</span>${a.garson?` <span style="color:var(--blue);">· ${a.garson}</span>`:''}<div style="color:var(--text2);font-size:0.6rem;margin-top:1px;">${urunler}${(a.siparisler||[]).length>3?'...':''}</div></div><span style="color:#30d080;font-weight:800;white-space:nowrap;">${fmt(parseFloat(a.toplam||0))}₺</span></div>`;
+        return `<div style="background:var(--surface2);border-radius:5px;padding:4px 8px;font-size:0.63rem;border:1px solid var(--border);margin-bottom:3px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><div><span style="font-weight:800;">${a.masa_ad||'?'}</span> <span style="color:var(--text2);">${saat}</span>${a.garson?` <span style="color:var(--blue);">· ${garsonAd(a.garson)}</span>`:''}<div style="color:var(--text2);font-size:0.6rem;margin-top:1px;">${urunler}${(a.siparisler||[]).length>3?'...':''}</div></div><span style="color:#30d080;font-weight:800;white-space:nowrap;">${fmtTL(parseFloat(a.toplam||0))}₺</span></div>`;
       }).join('');
-      kapananHTML = `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;"><div style="font-size:0.62rem;color:var(--text2);font-weight:800;letter-spacing:1px;margin-bottom:6px;">📋 BUGÜN KAPANAN — ${kafeAdisyonlar.length} adisyon · ${fmt(kafeKapananCiro)}₺</div>${adisyonListHTML}${kafeAdisyonlar.length>15?`<div style="font-size:0.62rem;color:var(--muted);text-align:center;padding:4px;">+${kafeAdisyonlar.length-15} daha</div>`:''}</div>`;
+      kapananHTML = `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;"><div style="font-size:0.62rem;color:var(--text2);font-weight:800;letter-spacing:1px;margin-bottom:6px;">📋 BUGÜN KAPANAN — ${kafeAdisyonlar.length} adisyon · ${fmtTL(kafeKapananCiro)}₺</div>${adisyonListHTML}${kafeAdisyonlar.length>15?`<div style="font-size:0.62rem;color:var(--muted);text-align:center;padding:4px;">+${kafeAdisyonlar.length-15} daha</div>`:''}</div>`;
     }
 
     const div = document.createElement('div');
     div.style.cssText = 'background:var(--surface);border-radius:9px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--green);';
-    div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);"></div><div><div style="font-size:0.85rem;font-weight:800;">☕ ${k.kafe_adi}</div><div style="font-size:0.62rem;color:var(--text2);">${k.fatura_il||'?'} · ${planBadge(k.plan)} · ${(k.garsonlar||[]).length} garson</div></div></div><div style="text-align:right;"><div style="font-size:0.8rem;font-weight:800;color:var(--green);">${fmt(kafeCiro)}₺ açık</div><div style="font-size:0.62rem;color:var(--text2);">${acikMasalar.length} açık · ${kafeAdisyonlar.length} kapandı</div></div></div>${acikMasalarHTML}${kapananHTML}`;
+    div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);"></div><div><div style="font-size:0.85rem;font-weight:800;">☕ ${k.kafe_adi}</div><div style="font-size:0.62rem;color:var(--text2);">${k.fatura_il||'?'} · ${planBadge(k.plan)} · ${(k.garsonlar||[]).length} garson</div></div></div><div style="text-align:right;"><div style="font-size:0.8rem;font-weight:800;color:var(--green);">${fmtTL(kafeCiro)}₺ açık</div><div style="font-size:0.62rem;color:var(--text2);">${acikMasalar.length} açık · ${kafeAdisyonlar.length} kapandı</div></div></div>${acikMasalarHTML}${kapananHTML}`;
     liste.appendChild(div);
   });
 }
@@ -1496,7 +1500,7 @@ async function adisyonlarYukle() {
       if (ad.startsWith('gel-al') || ad.startsWith('gelal') || m.gelal) return;
       if (!m.siparisler || m.siparisler.length === 0) return;
       const toplam = m.siparisler.reduce((t,s) => t + s.fiyat*s.adet, 0);
-      tumAcikMasalar.push({ kafe: k.kafe_adi, masa: m.ad||'Masa '+m.id, garson: m.garson||'—', siparisler: m.siparisler, toplam });
+      tumAcikMasalar.push({ kafe: k.kafe_adi, masa: m.ad||'Masa '+m.id, garson: garsonAd(m.garson)||'—', siparisler: m.siparisler, toplam });
     });
   });
 
@@ -1509,8 +1513,8 @@ async function adisyonlarYukle() {
           const urunler = m.siparisler.map(s=>`${s.isim||'?'} x${s.adet||1}`).join(', ');
           return `<div style="background:var(--surface2);border-radius:7px;padding:8px 12px;border-left:3px solid var(--accent);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-              <span style="font-size:0.78rem;font-weight:800;">🪑 ${m.masa} <span style="color:var(--text2);font-size:0.68rem;">— ${m.kafe}</span>${m.garson!=='—'?` <span style="color:var(--blue);font-size:0.68rem;">· 👤${m.garson}</span>`:''}</span>
-              <span style="font-size:0.78rem;font-weight:800;color:var(--green);">${fmt(m.toplam)}₺</span>
+              <span style="font-size:0.78rem;font-weight:800;">🪑 ${m.masa} <span style="color:var(--text2);font-size:0.68rem;">— ${m.kafe}</span>${m.garson!=='—'?` <span style="color:var(--blue);font-size:0.68rem;">· 👤${garsonAd(m.garson)}</span>`:''}</span>
+              <span style="font-size:0.78rem;font-weight:800;color:var(--green);">${fmtTL(m.toplam)}₺</span>
             </div>
             <div style="font-size:0.63rem;color:var(--text2);">${urunler}</div>
           </div>`;
@@ -1554,9 +1558,9 @@ async function adisyonlarYukle() {
       <td style="font-size:0.7rem;font-family:'Space Mono',monospace;white-space:nowrap;">${saat}</td>
       <td style="font-size:0.72rem;font-weight:700;">${kafeAdi}</td>
       <td style="font-size:0.72rem;">${a.masa_ad||'?'}</td>
-      <td style="font-size:0.7rem;color:var(--blue);">${a.garson||'—'}</td>
+      <td style="font-size:0.7rem;color:var(--blue);">${garsonAd(a.garson)||'—'}</td>
       <td style="font-size:0.68rem;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${urunler||'—'}</td>
-      <td style="font-size:0.75rem;font-weight:800;color:#30d080;white-space:nowrap;">${fmt(parseFloat(a.toplam||0))}₺</td>
+      <td style="font-size:0.75rem;font-weight:800;color:#30d080;white-space:nowrap;">${fmtTL(parseFloat(a.toplam||0))}₺</td>
       <td style="font-size:0.65rem;color:${odemeRenk};font-weight:700;">${a.odeme_tipi||'—'}</td>
     </tr>`;
   }).join('');
