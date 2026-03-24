@@ -12018,9 +12018,14 @@ function aiSayfaAc() {
   }
   // Kullanım sayaçlarını yükle
   aiKullanimYukle();
-  // İlk defa açılıyorsa otomatik başlat
+  // Otomatik analiz KAPALIDI — kullanıcı "Analiz Et" butonuna basmalı
+  // (Her sayfa yenilemede kredi harcanmasını önlemek için)
+  // Eğer daha önce analiz yapılmadıysa boş ekranı göster
   if (!aiAnalizVerisi) {
-    aiAnalizBaslat();
+    const bos = document.getElementById('ai-bos');
+    const yukleniyor = document.getElementById('ai-yukleniyor');
+    if (bos) bos.style.display = 'block';
+    if (yukleniyor) yukleniyor.style.display = 'none';
   }
 }
 
