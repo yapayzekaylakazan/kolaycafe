@@ -1680,10 +1680,11 @@
     <button onclick="gelAlYeniAc()" style="padding:8px 16px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">+ Yeni</button>
   </div>
 
-  <!-- SEKME: Aktif / Geçmiş -->
+  <!-- SEKME: Aktif / Geçmiş / Müşteriler -->
   <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface);border-radius:12px;padding:3px;">
-    <button id="gelal-tab-aktif" onclick="gelAlTabSec('aktif')" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🟡 Aktif</button>
-    <button id="gelal-tab-gecmis" onclick="gelAlTabSec('gecmis')" style="flex:1;padding:8px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📋 Geçmiş</button>
+    <button id="gelal-tab-aktif"    onclick="gelAlTabSec('aktif')"    style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🟡 Aktif</button>
+    <button id="gelal-tab-gecmis"   onclick="gelAlTabSec('gecmis')"   style="flex:1;padding:8px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">📋 Geçmiş</button>
+    <button id="gelal-tab-musteriler" onclick="gelAlTabSec('musteriler')" style="flex:1;padding:8px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">👤 Müşteriler</button>
   </div>
 
   <!-- AKTİF -->
@@ -1698,11 +1699,20 @@
 
   <!-- GEÇMİŞ -->
   <div id="gelal-gecmis-wrap" style="display:none;">
-    <!-- Tarih filtresi -->
     <input type="date" id="gelal-gecmis-tarih" onchange="gelAlGecmisYukle()"
       style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:12px;">
     <div id="gelal-gecmis-ozet" style="display:flex;gap:10px;margin-bottom:12px;"></div>
     <div id="gelal-gecmis-liste"></div>
+  </div>
+
+  <!-- MÜŞTERİ REHBERİ -->
+  <div id="gelal-musteriler-wrap" style="display:none;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="text" id="musteri-arama-inp" placeholder="🔍 Ad veya telefon ara..." oninput="musteriRehberiRender()"
+        style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;outline:none;">
+      <button onclick="musteriYeniKaydet()" style="padding:9px 14px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">+ Ekle</button>
+    </div>
+    <div id="musteri-rehber-liste"></div>
   </div>
 </div>
 
@@ -1894,13 +1904,39 @@
       <button onclick="gelAlModalKapat()" style="background:var(--surface2);border:none;border-radius:8px;padding:6px 10px;color:var(--text);cursor:pointer;font-size:0.9rem;">✕</button>
     </div>
 
+    <!-- TELEFON ARAMA -->
+    <div style="position:relative;margin-bottom:10px;">
+      <div style="display:flex;gap:6px;">
+        <input id="gelal-musteri-tel" type="tel" placeholder="📞 Telefon ile ara..." inputmode="tel"
+          style="flex:1;background:var(--surface2);border:1.5px solid var(--accent);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;"
+          oninput="musteriTelAra(this.value)" autocomplete="off">
+        <button onclick="musteriYeniKaydet()" style="padding:10px 14px;border-radius:10px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;">+ Yeni</button>
+      </div>
+      <!-- Arama sonuçları dropdown -->
+      <div id="musteri-arama-sonuc" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;z-index:99;max-height:200px;overflow-y:auto;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div>
+    </div>
+
+    <!-- Tanınan müşteri kartı -->
+    <div id="musteri-taninmis-kart" style="display:none;background:var(--surface2);border:1.5px solid #3db85a60;border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div>
+          <div style="font-size:0.92rem;font-weight:900;color:#3db85a;" id="mtk-isim">—</div>
+          <div style="font-size:0.7rem;color:var(--muted);" id="mtk-tel">—</div>
+          <div style="font-size:0.72rem;color:var(--text2);margin-top:2px;" id="mtk-adres"></div>
+        </div>
+        <button onclick="musteriKartTemizle()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:2px 6px;">✕</button>
+      </div>
+      <div id="mtk-son-siparis" style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;"></div>
+      <button id="mtk-tekrar-btn" onclick="musteriSonSiparisEkle()" style="display:none;width:100%;padding:7px;border-radius:8px;border:1px solid #3db85a60;background:#3db85a15;color:#3db85a;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">🔁 Son Siparişi Tekrarla</button>
+    </div>
+
     <!-- Müşteri adı -->
     <input id="gelal-musteri-adi" type="text" placeholder="Müşteri Adı (zorunlu)" 
       style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;margin-bottom:10px;">
 
-    <!-- Telefon (opsiyonel) -->
-    <input id="gelal-musteri-tel" type="tel" placeholder="Telefon (opsiyonel)" inputmode="tel"
-      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;margin-bottom:14px;">
+    <!-- Adres -->
+    <input id="gelal-musteri-adres" type="text" placeholder="Adres (opsiyonel)"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;outline:none;margin-bottom:10px;">
 
     <!-- Not -->
     <input id="gelal-not" type="text" placeholder="Sipariş notu (opsiyonel)"
@@ -1929,6 +1965,21 @@
     <button onclick="gelAlSiparisVer()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">
       ✓ Siparişi Ver → Mutfağa Gönder
     </button>
+  </div>
+</div>
+
+<!-- MÜŞTERİ KAYDET MODAL -->
+<div id="musteri-kaydet-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:380px;padding:20px;">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);margin-bottom:14px;" id="mkm-baslik">👤 Müşteri Kaydet</div>
+    <input type="text" id="mkm-isim" placeholder="Ad Soyad *" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="tel" id="mkm-tel" placeholder="Telefon *" inputmode="tel" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="text" id="mkm-adres" placeholder="Adres" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="text" id="mkm-not" placeholder="Not (alerji, özel istek vb.)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:14px;box-sizing:border-box;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="musteriKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✓ Kaydet</button>
+      <button onclick="document.getElementById('musteri-kaydet-modal').style.display='none'" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+    </div>
   </div>
 </div>
 
@@ -10019,27 +10070,23 @@ let gelAlAktifTab = 'aktif';
 
 function gelAlTabSec(tab) {
   gelAlAktifTab = tab;
-  const aktifBtn = document.getElementById('gelal-tab-aktif');
-  const gecmisBtn = document.getElementById('gelal-tab-gecmis');
-  const aktifWrap = document.getElementById('gelal-aktif-wrap');
-  const gecmisWrap = document.getElementById('gelal-gecmis-wrap');
-
-  if (tab === 'aktif') {
-    aktifBtn.style.background = 'var(--accent2)'; aktifBtn.style.color = '#fff';
-    gecmisBtn.style.background = 'transparent'; gecmisBtn.style.color = 'var(--muted)';
-    aktifWrap.style.display = 'block';
-    gecmisWrap.style.display = 'none';
-  } else {
-    gecmisBtn.style.background = 'var(--accent2)'; gecmisBtn.style.color = '#fff';
-    aktifBtn.style.background = 'transparent'; aktifBtn.style.color = 'var(--muted)';
-    aktifWrap.style.display = 'none';
-    gecmisWrap.style.display = 'block';
-    // Bugünün tarihini otomatik seç
+  const tabs = ['aktif','gecmis','musteriler'];
+  tabs.forEach(t => {
+    const btn = document.getElementById('gelal-tab-' + t);
+    const wrap = document.getElementById('gelal-' + (t==='aktif'?'aktif-wrap': t==='gecmis'?'gecmis-wrap':'musteriler-wrap'));
+    if (!btn) return;
+    const aktif = t === tab;
+    btn.style.background = aktif ? 'var(--accent2)' : 'transparent';
+    btn.style.color = aktif ? '#fff' : 'var(--muted)';
+    if (wrap) wrap.style.display = aktif ? 'block' : 'none';
+  });
+  if (tab === 'gecmis') {
     const tarihInp = document.getElementById('gelal-gecmis-tarih');
-    if (!tarihInp.value) {
-      tarihInp.value = new Date().toISOString().slice(0, 10);
-    }
+    if (!tarihInp.value) tarihInp.value = new Date().toISOString().slice(0, 10);
     gelAlGecmisYukle();
+  }
+  if (tab === 'musteriler') {
+    musteriRehberiRender();
   }
 }
 
@@ -10299,6 +10346,13 @@ async function gelAlSiparisVer() {
     await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
   } catch(e) { console.log('Gel-al mutfak sync hatası:', e); }
 
+  // Müşteriyi kaydet/güncelle
+  const tel = document.getElementById('gelal-musteri-tel').value.trim();
+  const adres = document.getElementById('gelal-musteri-adres')?.value.trim() || '';
+  if (tel) {
+    musteriSiparisKaydet(tel, adi, adres, gelAlSepet, toplam);
+  }
+
   gelAlModalKapat();
   gelAlRender();
   toast('✓ Sipariş mutfağa gönderildi!');
@@ -10414,6 +10468,225 @@ async function gelAlSiparislerYukle() {
 
 window.gelAlYeniAc = gelAlYeniAc;
 window.gelAlTabSec = gelAlTabSec;
+
+// ════════════════════════════════════════
+// MÜŞTERİ REHBERİ & CALLER ID SİSTEMİ
+// ════════════════════════════════════════
+let _aktifMusteri = null; // Seçili müşteri objesi
+let _musteriDuzenleId = null;
+
+// Telefon ile canlı arama (dropdown)
+async function musteriTelAra(tel) {
+  const sonuc = document.getElementById('musteri-arama-sonuc');
+  if (!sonuc) return;
+  const temizTel = tel.replace(/\D/g,'');
+  if (temizTel.length < 3) { sonuc.style.display = 'none'; return; }
+  try {
+    const { data } = await sb.from('musteriler')
+      .select('*').eq('kafe_id', kafeId)
+      .ilike('telefon', '%' + temizTel + '%')
+      .limit(5);
+    if (!data || data.length === 0) {
+      sonuc.style.display = 'none'; return;
+    }
+    sonuc.innerHTML = data.map(m => `
+      <div onclick="musteriSec(${JSON.stringify(m).replace(/"/g,'&quot;')})" 
+        style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"
+      >
+        <div>
+          <div style="font-size:0.88rem;font-weight:800;">👤 ${m.isim}</div>
+          <div style="font-size:0.7rem;color:var(--muted);">📞 ${m.telefon}${m.adres?' · '+m.adres:''}</div>
+        </div>
+        <div style="font-size:0.65rem;color:var(--accent);font-weight:700;">${m.siparis_sayisi||0} sipariş</div>
+      </div>`).join('');
+    sonuc.style.display = 'block';
+  } catch(e) { sonuc.style.display = 'none'; }
+}
+
+// Müşteri seç — form doldur
+function musteriSec(m) {
+  if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) { return; } }
+  _aktifMusteri = m;
+  document.getElementById('musteri-arama-sonuc').style.display = 'none';
+  document.getElementById('gelal-musteri-tel').value = m.telefon || '';
+  document.getElementById('gelal-musteri-adi').value = m.isim || '';
+  document.getElementById('gelal-musteri-adres').value = m.adres || '';
+
+  // Tanınan müşteri kartını göster
+  const kart = document.getElementById('musteri-taninmis-kart');
+  if (kart) {
+    kart.style.display = 'block';
+    document.getElementById('mtk-isim').textContent = '✅ ' + m.isim;
+    document.getElementById('mtk-tel').textContent = '📞 ' + (m.telefon||'');
+    document.getElementById('mtk-adres').textContent = m.adres ? '📍 ' + m.adres : '';
+    // Son sipariş
+    const sonSipEl = document.getElementById('mtk-son-siparis');
+    const tekrarBtn = document.getElementById('mtk-tekrar-btn');
+    if (m.son_siparis && m.son_siparis.length > 0) {
+      const urunler = m.son_siparis.slice(0,3).map(s=>`${s.isim} x${s.adet||1}`).join(', ');
+      sonSipEl.textContent = `🕐 Son sipariş: ${urunler}${m.son_siparis.length>3?'...':''}`;
+      if (tekrarBtn) tekrarBtn.style.display = 'block';
+    } else {
+      sonSipEl.textContent = 'İlk sipariş';
+      if (tekrarBtn) tekrarBtn.style.display = 'none';
+    }
+  }
+  toast('✅ ' + m.isim + ' tanındı!');
+}
+
+// Son siparişi sepete ekle
+function musteriSonSiparisEkle() {
+  if (!_aktifMusteri?.son_siparis) return;
+  // gelal sepetine ekle
+  if (typeof gelAlSepet !== 'undefined') {
+    gelAlSepet = [...(_aktifMusteri.son_siparis||[])];
+    if (typeof gelAlSepetRender === 'function') gelAlSepetRender();
+    toast('🔁 Son sipariş eklendi!');
+  }
+}
+
+// Müşteri kartını temizle
+function musteriKartTemizle() {
+  _aktifMusteri = null;
+  document.getElementById('musteri-taninmis-kart').style.display = 'none';
+  document.getElementById('gelal-musteri-tel').value = '';
+  document.getElementById('gelal-musteri-adi').value = '';
+  document.getElementById('gelal-musteri-adres').value = '';
+}
+
+// Yeni müşteri kaydet modalı
+function musteriYeniKaydet() {
+  _musteriDuzenleId = null;
+  const telInp = document.getElementById('gelal-musteri-tel');
+  document.getElementById('mkm-baslik').textContent = '👤 Yeni Müşteri Kaydet';
+  document.getElementById('mkm-isim').value = '';
+  document.getElementById('mkm-tel').value = telInp?.value || '';
+  document.getElementById('mkm-adres').value = '';
+  document.getElementById('mkm-not').value = '';
+  document.getElementById('musteri-kaydet-modal').style.display = 'flex';
+}
+
+async function musteriKaydet() {
+  const isim = document.getElementById('mkm-isim').value.trim();
+  const tel = document.getElementById('mkm-tel').value.trim();
+  if (!isim) { toast('Ad girin!'); return; }
+  if (!tel) { toast('Telefon girin!'); return; }
+  const veri = {
+    kafe_id: kafeId,
+    isim,
+    telefon: tel,
+    adres: document.getElementById('mkm-adres').value.trim() || null,
+    notlar: document.getElementById('mkm-not').value.trim() || null,
+  };
+  if (_musteriDuzenleId) {
+    await sb.from('musteriler').update(veri).eq('id', _musteriDuzenleId);
+    toast('✓ Müşteri güncellendi');
+  } else {
+    const { data, error } = await sb.from('musteriler').insert(veri).select().single();
+    if (error) { toast('Hata: ' + error.message); return; }
+    // Hemen seç
+    if (data) musteriSec(data);
+    toast('✓ Müşteri kaydedildi');
+  }
+  document.getElementById('musteri-kaydet-modal').style.display = 'none';
+  musteriRehberiRender();
+}
+
+// Müşteri rehberi listesi
+async function musteriRehberiRender() {
+  const liste = document.getElementById('musteri-rehber-liste');
+  if (!liste || !kafeId) return;
+  liste.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:0.82rem;">⏳</div>';
+  const ara = document.getElementById('musteri-arama-inp')?.value.trim() || '';
+  let q = sb.from('musteriler').select('*').eq('kafe_id', kafeId).order('isim');
+  if (ara) q = q.or(`isim.ilike.%${ara}%,telefon.ilike.%${ara}%`);
+  const { data } = await q;
+  const musteriler = data || [];
+  if (musteriler.length === 0) {
+    liste.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.85rem;">Henüz müşteri eklenmedi.<br><br>Gel-Al siparişlerinde telefon numarası kayıtlı müşteriler burada görünür.</div>';
+    return;
+  }
+  liste.innerHTML = musteriler.map(m => `
+    <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div>
+          <div style="font-size:0.9rem;font-weight:900;">👤 ${m.isim}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">📞 ${m.telefon}</div>
+          ${m.adres ? `<div style="font-size:0.7rem;color:var(--text2);">📍 ${m.adres}</div>` : ''}
+          ${m.notlar ? `<div style="font-size:0.68rem;color:var(--accent);margin-top:2px;">📌 ${m.notlar}</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.72rem;font-weight:800;color:var(--accent2);">${m.siparis_sayisi||0} sipariş</div>
+          <div style="font-size:0.65rem;color:var(--muted);">${m.toplam_harcama?fmt(m.toplam_harcama)+'₺':''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button onclick="gelAlYeniAcMusteri(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="flex:1;padding:6px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🛍️ Sipariş Al</button>
+        <button onclick="musteriDuzenle(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.72rem;cursor:pointer;">✏️</button>
+        <button onclick="musteriSil('${m.id}')" style="padding:6px 10px;border-radius:8px;border:1px solid #e0404040;background:#e0404010;color:#e04040;font-family:'Nunito',sans-serif;font-size:0.72rem;cursor:pointer;">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function musteriDuzenle(m) {
+  if (typeof m === 'string') m = JSON.parse(m);
+  _musteriDuzenleId = m.id;
+  document.getElementById('mkm-baslik').textContent = '✏️ Müşteri Düzenle';
+  document.getElementById('mkm-isim').value = m.isim || '';
+  document.getElementById('mkm-tel').value = m.telefon || '';
+  document.getElementById('mkm-adres').value = m.adres || '';
+  document.getElementById('mkm-not').value = m.notlar || '';
+  document.getElementById('musteri-kaydet-modal').style.display = 'flex';
+}
+
+async function musteriSil(id) {
+  if (!confirm('Bu müşteri silinsin mi?')) return;
+  await sb.from('musteriler').delete().eq('id', id);
+  toast('✓ Müşteri silindi');
+  musteriRehberiRender();
+}
+
+function gelAlYeniAcMusteri(m) {
+  if (typeof m === 'string') m = JSON.parse(m);
+  gelAlYeniAc();
+  setTimeout(() => musteriSec(m), 300);
+}
+
+// Sipariş kaydedilince müşteri güncelle
+async function musteriSiparisKaydet(tel, isim, adres, siparisler, toplam) {
+  if (!tel || !kafeId) return;
+  try {
+    const { data: mevcut } = await sb.from('musteriler').select('*').eq('kafe_id', kafeId).eq('telefon', tel).single();
+    if (mevcut) {
+      await sb.from('musteriler').update({
+        isim,
+        adres: adres || mevcut.adres,
+        son_siparis: siparisler,
+        siparis_sayisi: (mevcut.siparis_sayisi||0) + 1,
+        toplam_harcama: (mevcut.toplam_harcama||0) + toplam,
+        son_siparis_tarih: new Date().toISOString(),
+      }).eq('id', mevcut.id);
+    } else if (isim) {
+      await sb.from('musteriler').insert({
+        kafe_id: kafeId, isim, telefon: tel, adres: adres||null,
+        son_siparis: siparisler, siparis_sayisi: 1,
+        toplam_harcama: toplam, son_siparis_tarih: new Date().toISOString(),
+      });
+    }
+  } catch(e) {}
+}
+
+window.musteriTelAra = musteriTelAra;
+window.musteriSec = musteriSec;
+window.musteriKartTemizle = musteriKartTemizle;
+window.musteriYeniKaydet = musteriYeniKaydet;
+window.musteriKaydet = musteriKaydet;
+window.musteriDuzenle = musteriDuzenle;
+window.musteriSil = musteriSil;
+window.musteriSonSiparisEkle = musteriSonSiparisEkle;
+window.gelAlYeniAcMusteri = gelAlYeniAcMusteri;
+window.musteriRehberiRender = musteriRehberiRender;
 window.gelAlGecmisYukle = gelAlGecmisYukle;
 window.gelAlModalKapat = gelAlModalKapat;
 window.gelAlSiparisVer = gelAlSiparisVer;
