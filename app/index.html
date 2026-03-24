@@ -1076,40 +1076,98 @@
 
 </div>
 
-<div class="page" id="page-gelgid" style="overflow-y:auto;padding:12px;">
-  <div class="page-title">💰 Gelir / Gider</div>
+<div class="page" id="page-gelgid" style="overflow-y:auto;padding:0;flex-direction:column;">
 
-  <!-- Özet kartlar -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
-    <div style="background:var(--surface2);border-radius:14px;padding:14px;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">TOPLAM GELİR</div>
-      <div style="font-size:1.3rem;font-weight:900;color:#22c55e;" id="gg-toplam-gelir">0₺</div>
+  <!-- MUHASEBE HEADER -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-size:1rem;font-weight:900;color:var(--accent2);">💰 Muhasebe</div>
+      <select id="gg-donem" onchange="muhasebeRender()" style="background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;outline:none;">
+        <option value="bugun">Bugün</option>
+        <option value="hafta">Bu Hafta</option>
+        <option value="ay" selected>Bu Ay</option>
+        <option value="yil">Bu Yıl</option>
+        <option value="tumu">Tümü</option>
+      </select>
     </div>
-    <div style="background:var(--surface2);border-radius:14px;padding:14px;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">TOPLAM GİDER</div>
-      <div style="font-size:1.3rem;font-weight:900;color:var(--danger);" id="gg-toplam-gider">0₺</div>
-    </div>
-    <div style="background:var(--surface2);border-radius:14px;padding:14px;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:700;">NET KAR</div>
-      <div style="font-size:1.3rem;font-weight:900;" id="gg-net-kar">0₺</div>
+    <!-- Sekmeler -->
+    <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px;">
+      <button id="mtab-ozet"     onclick="muhasebeSecme('ozet')"     style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">📊 Özet</button>
+      <button id="mtab-toptanci" onclick="muhasebeSecme('toptanci')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">🏪 Toptancılar</button>
+      <button id="mtab-kasa"     onclick="muhasebeSecme('kasa')"     style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">💳 Kasa</button>
+      <button id="mtab-gelgid"   onclick="muhasebeSecme('gelgid')"   style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">📋 Gelir/Gider</button>
     </div>
   </div>
 
-  <!-- Filtre -->
-  <div style="display:flex;gap:8px;margin-bottom:12px;">
-    <select id="gg-donem" onchange="gelgidRender()" style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
-      <option value="bugun">Bugün</option>
-      <option value="hafta">Bu Hafta</option>
-      <option value="ay" selected>Bu Ay</option>
-      <option value="yil">Bu Yıl</option>
-      <option value="tumü">Tümü</option>
-    </select>
-    <button onclick="gelgidEkleModal('gelir')" style="padding:9px 14px;border-radius:10px;border:none;background:#22c55e;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">+ Gelir</button>
-    <button onclick="gelgidEkleModal('gider')" style="padding:9px 14px;border-radius:10px;border:none;background:var(--danger);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">+ Gider</button>
+  <!-- ÖZET SEKMESİ -->
+  <div id="msekme-ozet" style="padding:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:14px;padding:12px;border-left:3px solid #22c55e;">
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TOPLAM GELİR</div>
+        <div style="font-size:1.2rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="gg-toplam-gelir">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:14px;padding:12px;border-left:3px solid var(--danger);">
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TOPLAM GİDER</div>
+        <div style="font-size:1.2rem;font-weight:900;color:var(--danger);font-family:'Space Mono',monospace;" id="gg-toplam-gider">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:14px;padding:12px;border-left:3px solid var(--accent2);">
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:3px;">NET KAR</div>
+        <div style="font-size:1.2rem;font-weight:900;font-family:'Space Mono',monospace;" id="gg-net-kar">0₺</div>
+      </div>
+    </div>
+    <!-- Toptancı borç özeti -->
+    <div style="background:var(--surface2);border-radius:14px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">🏪 Toptancı Borçları</div>
+      <div id="ozet-toptanci-borc" style="display:flex;flex-direction:column;gap:5px;"></div>
+    </div>
+    <!-- Kasa özeti -->
+    <div style="background:var(--surface2);border-radius:14px;padding:12px;">
+      <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">💳 Kasa Durumu</div>
+      <div id="ozet-kasa" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
+    </div>
   </div>
 
-  <!-- Liste -->
-  <div id="gg-liste"></div>
+  <!-- TOPTANCI SEKMESİ -->
+  <div id="msekme-toptanci" style="display:none;padding:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:0.82rem;font-weight:800;">🏪 Toptancı Kartları</div>
+      <button onclick="toptanciEkleModal()" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">+ Ekle</button>
+    </div>
+    <div id="toptanci-liste"></div>
+  </div>
+
+  <!-- KASA SEKMESİ -->
+  <div id="msekme-kasa" style="display:none;padding:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:0.82rem;font-weight:800;">💳 Kasa Defteri</div>
+      <button onclick="kasaHareketModal()" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">+ Hareket</button>
+    </div>
+    <!-- Kasa bakiye kartları -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid #22c55e;">
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">NAKİT KASA</div>
+        <div style="font-size:1rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="kasa-nakit">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid #3b82f6;">
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">KART</div>
+        <div style="font-size:1rem;font-weight:900;color:#3b82f6;font-family:'Space Mono',monospace;" id="kasa-kart">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid var(--accent2);">
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">TOPLAM</div>
+        <div style="font-size:1rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;" id="kasa-toplam">0₺</div>
+      </div>
+    </div>
+    <div id="kasa-liste"></div>
+  </div>
+
+  <!-- GELİR/GİDER SEKMESİ -->
+  <div id="msekme-gelgid" style="display:none;padding:12px;">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button onclick="gelgidEkleModal('gelir')" style="flex:1;padding:9px;border-radius:10px;border:none;background:#22c55e;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;">+ Gelir</button>
+      <button onclick="gelgidEkleModal('gider')" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--danger);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;">+ Gider</button>
+    </div>
+    <div id="gg-liste"></div>
+  </div>
 </div>
 
 <!-- GELİR/GİDER EKLE MODAL -->
@@ -1121,14 +1179,80 @@
       <option value="Personel">👤 Personel</option>
       <option value="Malzeme">📦 Malzeme/Ham madde</option>
       <option value="Fatura">💡 Fatura (elektrik/su/gaz)</option>
+      <option value="Toptancı">🏪 Toptancı Ödemesi</option>
       <option value="Diğer">📌 Diğer</option>
     </select>
     <input type="text" id="gg-aciklama" placeholder="Açıklama..." style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box;">
-    <input type="number" id="gg-tutar" placeholder="Tutar (₺)" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
+    <input type="number" id="gg-tutar" placeholder="Tutar (₺)" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
     <input type="date" id="gg-tarih" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:14px;box-sizing:border-box;">
     <div style="display:flex;gap:8px;">
       <button onclick="gelgidKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">✓ Kaydet</button>
       <button onclick="document.getElementById('gelgid-modal').style.display='none'" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPTANCI EKLE/DÜZENLE MODAL -->
+<div id="toptanci-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;padding:20px;">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);margin-bottom:16px;" id="toptanci-modal-baslik">🏪 Toptancı Ekle</div>
+    <input type="text" id="tm-isim" placeholder="Toptancı Adı *" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="text" id="tm-yetkili" placeholder="Yetkili / Satış Temsilcisi" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="tel" id="tm-telefon" placeholder="Telefon" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="number" id="tm-limit" placeholder="Kart Limiti (₺) - boş bırakabilirsiniz" inputmode="numeric" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <textarea id="tm-not" placeholder="Not..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;resize:none;height:60px;outline:none;margin-bottom:14px;box-sizing:border-box;"></textarea>
+    <div style="display:flex;gap:8px;">
+      <button onclick="toptanciKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✓ Kaydet</button>
+      <button onclick="document.getElementById('toptanci-modal').style.display='none'" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPTANCI HAREKET MODAL -->
+<div id="toptanci-hareket-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:380px;padding:20px;">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);margin-bottom:4px;" id="thm-baslik">Hareket Ekle</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:14px;" id="thm-toptanci-adi"></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button class="thm-tip-btn" data-tip="alis" onclick="thmTipSec('alis')" style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--danger);background:#e0404020;color:var(--danger);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">📦 Alış (Borç)</button>
+      <button class="thm-tip-btn" data-tip="odeme" onclick="thmTipSec('odeme')" style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">💳 Ödeme</button>
+    </div>
+    <div id="thm-odeme-tip-wrap" style="display:none;margin-bottom:10px;">
+      <div style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-bottom:5px;">Ödeme Yöntemi:</div>
+      <div style="display:flex;gap:6px;">
+        <button class="thm-odeme-btn" data-odeme="nakit" onclick="thmOdemeSec('nakit')" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid #22c55e;background:#22c55e20;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">💵 Nakit</button>
+        <button class="thm-odeme-btn" data-odeme="kart" onclick="thmOdemeSec('kart')" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">💳 Kart</button>
+        <button class="thm-odeme-btn" data-odeme="cari" onclick="thmOdemeSec('cari')" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">📋 Cari</button>
+      </div>
+    </div>
+    <input type="number" id="thm-tutar" placeholder="Tutar (₺) *" inputmode="numeric" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="text" id="thm-aciklama" placeholder="Açıklama (opsiyonel)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="date" id="thm-tarih" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;outline:none;margin-bottom:14px;box-sizing:border-box;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="toptanciHareketKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✓ Kaydet</button>
+      <button onclick="document.getElementById('toptanci-hareket-modal').style.display='none'" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- KASA HAREKET MODAL -->
+<div id="kasa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:360px;padding:20px;">
+    <div style="font-size:1rem;font-weight:900;color:var(--accent2);margin-bottom:14px;">💳 Kasa Hareketi</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button onclick="kasaTipSec('giris')" id="kasa-tip-giris" style="flex:1;padding:9px;border-radius:9px;border:1.5px solid #22c55e;background:#22c55e20;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">⬆ Giriş</button>
+      <button onclick="kasaTipSec('cikis')" id="kasa-tip-cikis" style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">⬇ Çıkış</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button onclick="kasaOdemeSec('nakit')" id="km-nakit" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid #22c55e;background:#22c55e20;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">💵 Nakit</button>
+      <button onclick="kasaOdemeSec('kart')" id="km-kart" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">💳 Kart</button>
+    </div>
+    <input type="number" id="km-tutar" placeholder="Tutar (₺) *" inputmode="numeric" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="text" id="km-aciklama" placeholder="Açıklama *" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;outline:none;margin-bottom:8px;box-sizing:border-box;">
+    <input type="date" id="km-tarih" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;outline:none;margin-bottom:14px;box-sizing:border-box;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="kasaHareketKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✓ Kaydet</button>
+      <button onclick="document.getElementById('kasa-modal').style.display='none'" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
     </div>
   </div>
 </div>
@@ -3988,7 +4112,7 @@ function sayfaGit(sayfa) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+sayfa).classList.add('active');
-  if (sayfa === 'gelgid') gelgidRender();
+  if (sayfa === 'gelgid') { muhasebeSecme(_aktifMuhasebeSecme || 'ozet'); }
   document.getElementById('nav-'+sayfa).classList.add('active');
   if (sayfa==='rapor') { kolaycafenVerisiYukle().then(()=>raporRender()); }
   if (sayfa==='recete') receteListeRender();
@@ -9459,6 +9583,336 @@ window.gelgidEkleModal = gelgidEkleModal;
 window.gelgidKaydet = gelgidKaydet;
 window.gelgidSil = gelgidSil;
 window.gelgidRender = gelgidRender;
+
+// ════════════════════════════════════════
+// MUHASEBE — SEKME YÖNETİMİ
+// ════════════════════════════════════════
+let _aktifMuhasebeSecme = 'ozet';
+
+function muhasebeSecme(sekme) {
+  _aktifMuhasebeSecme = sekme;
+  ['ozet','toptanci','kasa','gelgid'].forEach(s => {
+    const el = document.getElementById('msekme-' + s);
+    const btn = document.getElementById('mtab-' + s);
+    if (!el || !btn) return;
+    const aktif = s === sekme;
+    el.style.display = aktif ? 'block' : 'none';
+    btn.style.background = aktif ? 'var(--accent)' : 'none';
+    btn.style.color = aktif ? '#1a0f00' : 'var(--muted)';
+  });
+  muhasebeRender();
+}
+
+async function muhasebeRender() {
+  const s = _aktifMuhasebeSecme;
+  await gelgidRender();
+  if (s === 'toptanci' || s === 'ozet') await toptanciRender();
+  if (s === 'kasa' || s === 'ozet') await kasaRender();
+  if (s === 'ozet') await ozetRender();
+}
+
+// ════════════════════════════════════════
+// TOPTANCI SİSTEMİ
+// ════════════════════════════════════════
+let _toptanciDuzenleId = null;
+let _thmTip = 'alis';
+let _thmOdemeTip = 'nakit';
+let _thmToptanciId = null;
+
+async function toptanciRender() {
+  if (!kafeId) return;
+  const liste = document.getElementById('toptanci-liste');
+  if (!liste) return;
+  liste.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;font-size:0.82rem;">⏳</div>';
+  try {
+    const { data: toptancilar } = await sb.from('toptancilar').select('*').eq('kafe_id', kafeId).order('isim');
+    if (!toptancilar || toptancilar.length === 0) {
+      liste.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:0.85rem;">Henüz toptancı eklenmedi.<br><br>+ Ekle butonuna basın.</div>';
+      return;
+    }
+    liste.innerHTML = '';
+    for (const t of toptancilar) {
+      const { data: hareketler } = await sb.from('toptanci_hareketler').select('tip,tutar').eq('toptanci_id', t.id);
+      const borc = (hareketler||[]).filter(h=>h.tip==='alis').reduce((s,h)=>s+h.tutar,0);
+      const odeme = (hareketler||[]).filter(h=>h.tip==='odeme').reduce((s,h)=>s+h.tutar,0);
+      const netBorc = borc - odeme;
+      const limitYuzde = t.kart_limit > 0 ? Math.min(100, Math.round(netBorc/t.kart_limit*100)) : 0;
+      const limitRenk = limitYuzde > 80 ? '#e04040' : limitYuzde > 50 ? '#f59e0b' : '#22c55e';
+      const kart = document.createElement('div');
+      kart.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid var(--border);';
+      kart.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:0.92rem;font-weight:900;">${t.isim}</div>
+            ${t.yetkili ? `<div style="font-size:0.7rem;color:var(--muted);">👤 ${t.yetkili}</div>` : ''}
+            ${t.telefon ? `<div style="font-size:0.7rem;color:var(--muted);">📞 ${t.telefon}</div>` : ''}
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:1rem;font-weight:900;color:${netBorc>0?'#e04040':'#22c55e'};font-family:'Space Mono',monospace;">${netBorc>0?'-':''}${fmt(Math.abs(netBorc))}₺</div>
+            <div style="font-size:0.62rem;color:var(--muted);">${netBorc>0?'BORÇ':'ALACAK'}</div>
+          </div>
+        </div>
+        ${t.kart_limit > 0 ? `
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);margin-bottom:3px;">
+            <span>Limit Kullanımı</span><span style="color:${limitRenk};">${fmt(netBorc)}₺ / ${fmt(t.kart_limit)}₺</span>
+          </div>
+          <div style="background:var(--surface3);border-radius:4px;height:6px;overflow:hidden;">
+            <div style="width:${limitYuzde}%;height:100%;background:${limitRenk};border-radius:4px;"></div>
+          </div>
+          ${limitYuzde > 80 ? `<div style="font-size:0.65rem;color:#e04040;margin-top:3px;">⚠️ Limite yaklaşıldı!</div>` : ''}
+        </div>` : ''}
+        <div style="display:flex;gap:6px;">
+          <button data-id="${t.id}" data-isim="${t.isim}" class="thm-ac-btn" style="flex:1;padding:7px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">+ Hareket</button>
+          <button data-id="${t.id}" class="toptanci-gecmis-btn" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.75rem;cursor:pointer;">📋 Geçmiş</button>
+          <button data-id="${t.id}" data-t='${JSON.stringify(t).replace(/'/g,"&#39;")}' class="toptanci-duzenle-btn" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.75rem;cursor:pointer;">✏️</button>
+          <button data-id="${t.id}" class="toptanci-sil-btn" style="padding:7px 10px;border-radius:8px;border:1px solid #e0404040;background:#e0404010;color:#e04040;font-family:'Nunito',sans-serif;font-size:0.75rem;cursor:pointer;">🗑</button>
+        </div>`;
+      liste.appendChild(kart);
+    }
+    liste.querySelectorAll('.thm-ac-btn').forEach(btn => btn.addEventListener('click', () => toptanciHareketModalAc(btn.dataset.id, btn.dataset.isim)));
+    liste.querySelectorAll('.toptanci-gecmis-btn').forEach(btn => btn.addEventListener('click', () => toptanciGecmisGoster(btn.dataset.id)));
+    liste.querySelectorAll('.toptanci-duzenle-btn').forEach(btn => btn.addEventListener('click', () => { try { toptanciEkleModal(JSON.parse(btn.dataset.t.replace(/&#39;/g,"'"))); } catch(e){} }));
+    liste.querySelectorAll('.toptanci-sil-btn').forEach(btn => btn.addEventListener('click', async () => {
+      if (!confirm('Bu toptancı silinsin mi?')) return;
+      await sb.from('toptanci_hareketler').delete().eq('toptanci_id', btn.dataset.id);
+      await sb.from('toptancilar').delete().eq('id', btn.dataset.id);
+      toast('✓ Silindi'); toptanciRender(); ozetRender();
+    }));
+  } catch(e) {
+    liste.innerHTML = `<div style="color:var(--danger);font-size:0.82rem;padding:12px;">Hata: ${e.message}</div>`;
+  }
+}
+
+function toptanciEkleModal(t = null) {
+  _toptanciDuzenleId = t?.id || null;
+  document.getElementById('toptanci-modal-baslik').textContent = t ? '✏️ Toptancı Düzenle' : '🏪 Toptancı Ekle';
+  document.getElementById('tm-isim').value = t?.isim || '';
+  document.getElementById('tm-yetkili').value = t?.yetkili || '';
+  document.getElementById('tm-telefon').value = t?.telefon || '';
+  document.getElementById('tm-limit').value = t?.limit || '';
+  document.getElementById('tm-not').value = t?.not || '';
+  document.getElementById('toptanci-modal').style.display = 'flex';
+}
+
+async function toptanciKaydet() {
+  const isim = document.getElementById('tm-isim').value.trim();
+  if (!isim) { toast('Toptancı adı girin!'); return; }
+  const veri = { kafe_id: kafeId, isim, yetkili: document.getElementById('tm-yetkili').value.trim()||null, telefon: document.getElementById('tm-telefon').value.trim()||null, kart_limit: parseFloat(document.getElementById('tm-limit').value)||0, notlar: document.getElementById('tm-not').value.trim()||null };
+  if (_toptanciDuzenleId) { await sb.from('toptancilar').update(veri).eq('id', _toptanciDuzenleId); toast('✓ Güncellendi'); }
+  else { await sb.from('toptancilar').insert(veri); toast('✓ Toptancı eklendi'); }
+  document.getElementById('toptanci-modal').style.display = 'none';
+  toptanciRender(); ozetRender();
+}
+
+function toptanciHareketModalAc(toptanciId, toptanciIsim) {
+  _thmToptanciId = toptanciId; _thmTip = 'alis'; _thmOdemeTip = 'nakit';
+  document.getElementById('thm-toptanci-adi').textContent = '🏪 ' + toptanciIsim;
+  document.getElementById('thm-tutar').value = '';
+  document.getElementById('thm-aciklama').value = '';
+  document.getElementById('thm-tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('thm-odeme-tip-wrap').style.display = 'none';
+  thmTipSec('alis');
+  document.getElementById('toptanci-hareket-modal').style.display = 'flex';
+}
+
+function thmTipSec(tip) {
+  _thmTip = tip;
+  document.querySelectorAll('.thm-tip-btn').forEach(b => {
+    const a = b.dataset.tip === tip;
+    b.style.background = a ? (tip==='alis'?'#e0404020':'#22c55e20') : 'transparent';
+    b.style.borderColor = a ? (tip==='alis'?'var(--danger)':'#22c55e') : 'var(--border)';
+    b.style.color = a ? (tip==='alis'?'var(--danger)':'#22c55e') : 'var(--muted)';
+  });
+  document.getElementById('thm-odeme-tip-wrap').style.display = tip === 'odeme' ? 'block' : 'none';
+  if (tip === 'odeme') thmOdemeSec('nakit');
+}
+
+function thmOdemeSec(odeme) {
+  _thmOdemeTip = odeme;
+  document.querySelectorAll('.thm-odeme-btn').forEach(b => {
+    const a = b.dataset.odeme === odeme;
+    b.style.background = a ? '#22c55e20' : 'transparent';
+    b.style.borderColor = a ? '#22c55e' : 'var(--border)';
+    b.style.color = a ? '#22c55e' : 'var(--muted)';
+  });
+}
+
+async function toptanciHareketKaydet() {
+  const tutar = parseFloat(document.getElementById('thm-tutar').value);
+  const tarih = document.getElementById('thm-tarih').value;
+  if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
+  await sb.from('toptanci_hareketler').insert({ toptanci_id: _thmToptanciId, kafe_id: kafeId, tip: _thmTip, odeme_tip: _thmTip==='odeme'?_thmOdemeTip:null, tutar, aciklama: document.getElementById('thm-aciklama').value.trim()||(_thmTip==='alis'?'Alış':'Ödeme'), tarih: new Date(tarih).toISOString() });
+  document.getElementById('toptanci-hareket-modal').style.display = 'none';
+  toast(_thmTip === 'alis' ? '📦 Alış kaydedildi' : '💳 Ödeme kaydedildi');
+  toptanciRender(); ozetRender();
+}
+
+async function toptanciGecmisGoster(toptanciId) {
+  const { data } = await sb.from('toptanci_hareketler').select('*').eq('toptanci_id', toptanciId).order('tarih',{ascending:false}).limit(50);
+  const { data: t } = await sb.from('toptancilar').select('isim').eq('id', toptanciId).single();
+  const satirlar = (data||[]).map(h => {
+    const tarih = new Date(h.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div><div style="font-size:0.8rem;font-weight:700;">${h.tip==='alis'?'📦':'💳'} ${h.aciklama}</div><div style="font-size:0.65rem;color:var(--muted);">${tarih}${h.odeme_tip?' · '+h.odeme_tip:''}</div></div>
+      <div style="font-size:0.85rem;font-weight:900;color:${h.tip==='alis'?'#e04040':'#22c55e'};font-family:'Space Mono',monospace;">${h.tip==='alis'?'-':'+'}${fmt(h.tutar)}₺</div>
+    </div>`;
+  }).join('')||'<div style="color:var(--muted);text-align:center;padding:16px;font-size:0.82rem;">Hareket yok</div>';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:1001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML = `<div style="background:var(--surface);border-radius:20px;width:100%;max-width:400px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:16px;border-bottom:1px solid var(--border);font-size:1rem;font-weight:900;color:var(--accent2);">🏪 ${t?.isim||''} — Geçmiş</div>
+    <div style="overflow-y:auto;padding:12px 16px;">${satirlar}</div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border);"><button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">✕ Kapat</button></div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+// ════════════════════════════════════════
+// KASA DEFTERİ
+// ════════════════════════════════════════
+let _kasaTip = 'giris';
+let _kasaOdemeTip = 'nakit';
+
+function kasaHareketModal() {
+  _kasaTip = 'giris'; _kasaOdemeTip = 'nakit';
+  document.getElementById('km-tutar').value = '';
+  document.getElementById('km-aciklama').value = '';
+  document.getElementById('km-tarih').value = new Date().toISOString().split('T')[0];
+  kasaTipSec('giris'); kasaOdemeSec('nakit');
+  document.getElementById('kasa-modal').style.display = 'flex';
+}
+
+function kasaTipSec(tip) {
+  _kasaTip = tip;
+  ['giris','cikis'].forEach(t => {
+    const btn = document.getElementById('kasa-tip-' + t);
+    if (!btn) return;
+    const a = t === tip;
+    btn.style.background = a ? (t==='giris'?'#22c55e20':'#e0404020') : 'transparent';
+    btn.style.borderColor = a ? (t==='giris'?'#22c55e':'var(--danger)') : 'var(--border)';
+    btn.style.color = a ? (t==='giris'?'#22c55e':'var(--danger)') : 'var(--muted)';
+  });
+}
+
+function kasaOdemeSec(odeme) {
+  _kasaOdemeTip = odeme;
+  ['nakit','kart'].forEach(o => {
+    const btn = document.getElementById('km-' + o);
+    if (!btn) return;
+    const a = o === odeme;
+    btn.style.background = a ? '#3b82f620' : 'transparent';
+    btn.style.borderColor = a ? '#3b82f6' : 'var(--border)';
+    btn.style.color = a ? '#3b82f6' : 'var(--muted)';
+  });
+}
+
+async function kasaHareketKaydet() {
+  const tutar = parseFloat(document.getElementById('km-tutar').value);
+  const aciklama = document.getElementById('km-aciklama').value.trim();
+  const tarih = document.getElementById('km-tarih').value;
+  if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
+  if (!aciklama) { toast('Açıklama girin!'); return; }
+  await sb.from('kasa_hareketler').insert({ kafe_id: kafeId, tip: _kasaTip, odeme_tip: _kasaOdemeTip, tutar, aciklama, tarih: new Date(tarih).toISOString() });
+  document.getElementById('kasa-modal').style.display = 'none';
+  toast(_kasaTip === 'giris' ? '⬆ Giriş kaydedildi' : '⬇ Çıkış kaydedildi');
+  kasaRender(); ozetRender();
+}
+
+async function kasaRender() {
+  if (!kafeId) return;
+  const donem = document.getElementById('gg-donem')?.value || 'ay';
+  const baslangic = muhasebeBaslangic(donem) || '2020-01-01T00:00:00Z';
+  let q = sb.from('kasa_hareketler').select('*').eq('kafe_id', kafeId).order('tarih', {ascending:false});
+  if (donem !== 'tumu') q = q.gte('tarih', baslangic);
+  const { data } = await q;
+  const hareketler = data || [];
+  let nakit = 0, kart = 0;
+  try {
+    const { data: adisyonlar } = await sb.from('kolaycafenlar').select('toplam,odeme_tipi').eq('kafe_id', kafeId).gte('created_at', baslangic);
+    (adisyonlar||[]).forEach(a => {
+      if (['ikram','cari','cari_tahsil'].includes(a.odeme_tipi)) return;
+      if (a.odeme_tipi?.includes('kart')) kart += a.toplam;
+      else nakit += a.toplam;
+    });
+  } catch(e) {}
+  hareketler.forEach(h => {
+    const m = h.tip === 'giris' ? h.tutar : -h.tutar;
+    if (h.odeme_tip === 'kart') kart += m; else nakit += m;
+  });
+  const toplam = nakit + kart;
+  const nakitEl = document.getElementById('kasa-nakit');
+  const kartEl = document.getElementById('kasa-kart');
+  const toplamEl = document.getElementById('kasa-toplam');
+  if (nakitEl) nakitEl.textContent = fmt(nakit) + '₺';
+  if (kartEl) kartEl.textContent = fmt(kart) + '₺';
+  if (toplamEl) toplamEl.textContent = fmt(toplam) + '₺';
+  const liste = document.getElementById('kasa-liste');
+  if (!liste) return;
+  liste.innerHTML = hareketler.length === 0
+    ? '<div style="text-align:center;color:var(--muted);padding:20px;font-size:0.82rem;">Bu dönemde manuel hareket yok.</div>'
+    : hareketler.map(h => {
+        const tarih = new Date(h.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
+        return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+          <div><div style="font-size:0.82rem;font-weight:700;">${h.tip==='giris'?'⬆':'⬇'} ${h.aciklama}</div><div style="font-size:0.65rem;color:var(--muted);">${tarih} · ${h.odeme_tip||'nakit'}</div></div>
+          <div style="font-size:0.88rem;font-weight:900;color:${h.tip==='giris'?'#22c55e':'#e04040'};font-family:'Space Mono',monospace;">${h.tip==='giris'?'+':'-'}${fmt(h.tutar)}₺</div>
+        </div>`;
+      }).join('');
+}
+
+async function ozetRender() {
+  if (!kafeId) return;
+  await kasaRender();
+  const ozetBorc = document.getElementById('ozet-toptanci-borc');
+  if (ozetBorc) {
+    const { data: toptancilar } = await sb.from('toptancilar').select('id,isim,limit').eq('kafe_id', kafeId);
+    if (!toptancilar || toptancilar.length === 0) {
+      ozetBorc.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;">Toptancı eklenmemiş.</div>';
+    } else {
+      let html = '';
+      for (const t of toptancilar) {
+        const { data: h } = await sb.from('toptanci_hareketler').select('tip,tutar').eq('toptanci_id', t.id);
+        const net = (h||[]).reduce((s,x) => s + (x.tip==='alis'?x.tutar:-x.tutar), 0);
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:0.8rem;font-weight:700;">🏪 ${t.isim}</span>
+          <span style="font-size:0.82rem;font-weight:900;color:${net>0?'#e04040':'#22c55e'};font-family:'Space Mono',monospace;">${net>0?'-':''}${fmt(Math.abs(net))}₺</span>
+        </div>`;
+      }
+      ozetBorc.innerHTML = html;
+    }
+  }
+  const ozetKasa = document.getElementById('ozet-kasa');
+  if (ozetKasa) {
+    const n = document.getElementById('kasa-nakit')?.textContent||'0₺';
+    const k = document.getElementById('kasa-kart')?.textContent||'0₺';
+    const to = document.getElementById('kasa-toplam')?.textContent||'0₺';
+    ozetKasa.innerHTML = `
+      <div style="background:var(--surface3);border-radius:9px;padding:9px;text-align:center;"><div style="font-size:0.6rem;color:var(--muted);font-weight:700;">NAKİT</div><div style="font-size:0.9rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;">${n}</div></div>
+      <div style="background:var(--surface3);border-radius:9px;padding:9px;text-align:center;"><div style="font-size:0.6rem;color:var(--muted);font-weight:700;">KART</div><div style="font-size:0.9rem;font-weight:900;color:#3b82f6;font-family:'Space Mono',monospace;">${k}</div></div>
+      <div style="background:var(--surface3);border-radius:9px;padding:9px;text-align:center;"><div style="font-size:0.6rem;color:var(--muted);font-weight:700;">TOPLAM</div><div style="font-size:0.9rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;">${to}</div></div>`;
+  }
+}
+
+function muhasebeBaslangic(donem) {
+  const simdi = new Date();
+  if (donem === 'bugun') { const d = new Date(simdi); d.setHours(0,0,0,0); return d.toISOString(); }
+  if (donem === 'hafta') { const d = new Date(simdi); d.setDate(simdi.getDate()-simdi.getDay()); d.setHours(0,0,0,0); return d.toISOString(); }
+  if (donem === 'ay') return new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString();
+  if (donem === 'yil') return new Date(simdi.getFullYear(), 0, 1).toISOString();
+  return null;
+}
+
+window.muhasebeSecme = muhasebeSecme;
+window.muhasebeRender = muhasebeRender;
+window.toptanciEkleModal = toptanciEkleModal;
+window.toptanciKaydet = toptanciKaydet;
+window.toptanciHareketKaydet = toptanciHareketKaydet;
+window.thmTipSec = thmTipSec;
+window.thmOdemeSec = thmOdemeSec;
+window.kasaHareketModal = kasaHareketModal;
+window.kasaHareketKaydet = kasaHareketKaydet;
+window.kasaTipSec = kasaTipSec;
+window.kasaOdemeSec = kasaOdemeSec;
 window.kuponSil = kuponSil;
 window.whatsappGonder = whatsappGonder;
 window.fisKopyala = fisKopyala;
