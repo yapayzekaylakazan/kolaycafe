@@ -2506,6 +2506,15 @@
       <div id="ai-trend-icerik"></div>
     </div>
 
+    <!-- Garson Performansı -->
+    <div id="ai-garson-kart" style="display:none;background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:1.2rem;">👨‍🍳</div>
+        <div style="font-weight:800;font-size:0.9rem;">Garson Performansı</div>
+      </div>
+      <div id="ai-garson-icerik"></div>
+    </div>
+
     <!-- AI Öneriler -->
     <div id="ai-oneriler-kart" style="display:none;background:linear-gradient(135deg,rgba(212,150,14,0.12),rgba(240,184,48,0.06));border-radius:14px;padding:14px;border:1.5px solid rgba(212,150,14,0.35);">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -2528,7 +2537,7 @@
         <button onclick="aiSoruGonder()" style="background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:10px 14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">➤</button>
       </div>
       <!-- Hızlı sorular -->
-      <div id="ai-hizli-sorular" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+      <div id="ai-hizli-sorular" style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;"></div>
     </div>
 
   </div>
@@ -11879,28 +11888,49 @@ async function mmGarsonCagir() {
 // ── AI API PROXY (Supabase Edge Function üzerinden) ──
 async function claudeAPI(messages, system = '', maxTokens = 1000) {
   const body = {
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5-20251001',
     max_tokens: maxTokens,
     messages,
   };
   if (system) body.system = system;
 
   // Supabase Edge Function proxy üzerinden çağır (CORS sorunsuz)
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-proxy`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-    body: JSON.stringify(body)
-  });
+  let response;
+  try {
+    response = await fetch(`${SUPABASE_URL}/functions/v1/claude-proxy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify(body)
+    });
+  } catch (fetchErr) {
+    throw new Error('Bağlantı hatası: ' + fetchErr.message);
+  }
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error('Proxy hata: ' + err);
+    let errText = '';
+    try { errText = await response.text(); } catch(_) {}
+    throw new Error(`Proxy hata (${response.status}): ${errText}`);
   }
-  const data = await response.json();
-  return data.content?.[0]?.text || '';
+
+  let data;
+  try {
+    data = await response.json();
+  } catch(_) {
+    throw new Error('Yanıt parse hatası');
+  }
+
+  // content dizisinden text blokunu bul
+  if (Array.isArray(data.content)) {
+    const textBlock = data.content.find(b => b.type === 'text');
+    if (textBlock?.text) return textBlock.text;
+  }
+  // Direkt text alanı (proxy wrapper)
+  if (data.text) return data.text;
+  if (typeof data === 'string') return data;
+  throw new Error('Yanıtta metin bulunamadı');
 }
 let aiAktifDonem = 'hafta';
 let aiSohbetGecmisi = [];
@@ -11965,6 +11995,11 @@ let aiHizliSorularListesi = [
   "Müşteri başına ortalama harcama ne?",
   "Hangi saatlerde daha fazla personel gerekir?",
   "Gelirimi artırmak için ne yapabilirim?",
+  "En az satan ürünleri kaldırmalı mıyım?",
+  "Hangi garson en yüksek ciro yapıyor?",
+  "Giderlerimi nasıl azaltabilirim?",
+  "Hangi gün kampanya yapmalıyım?",
+  "Toptancı borcumu nasıl yönetmeliyim?",
 ];
 
 function aiDonemSec(donem, btn) {
@@ -11998,6 +12033,7 @@ function aiKilitEkraniGoster() {
   document.getElementById('ai-cok-satanlar-kart').style.display = 'none';
   document.getElementById('ai-yogun-saatler-kart').style.display = 'none';
   document.getElementById('ai-trend-kart').style.display = 'none';
+  document.getElementById('ai-garson-kart').style.display = 'none';
   document.getElementById('ai-oneriler-kart').style.display = 'none';
   document.getElementById('ai-sohbet-kart').style.display = 'none';
 
@@ -12124,10 +12160,13 @@ async function aiAnalizBaslat() {
     // 5) Trend
     aiTrendRender(veri);
 
-    // 6) Claude AI öneriler
+    // 6) Garson performansı
+    aiGarsonRender(veri);
+
+    // 7) Claude AI öneriler
     await aiOnerilerUret(veri);
 
-    // 7) Sohbet paneli
+    // 8) Sohbet paneli
     aiSohbetPanelAc(veri);
 
     // Kullanım kaydet
@@ -12238,10 +12277,45 @@ async function aiVeriTopla() {
 
   const trenYuzde = oncekiCiro > 0 ? ((toplamCiro - oncekiCiro) / oncekiCiro * 100).toFixed(1) : null;
 
+  // ── Garson performansı ──
+  const garsonPerf = {};
+  adisyonlar.forEach(a => {
+    const g = (a.garson && typeof a.garson === 'string' && a.garson.trim()) ? a.garson.trim() : 'Belirtilmemiş';
+    if (!garsonPerf[g]) garsonPerf[g] = { adisyon: 0, ciro: 0, urun: 0 };
+    garsonPerf[g].adisyon++;
+    garsonPerf[g].ciro += (a.toplam || 0);
+    garsonPerf[g].urun += (a.siparisler || []).reduce((s, x) => s + (x.adet || 1), 0);
+  });
+  const garsonSirali = Object.entries(garsonPerf)
+    .map(([isim, d]) => ({ isim, ...d, ortAdisyon: d.adisyon > 0 ? d.ciro / d.adisyon : 0 }))
+    .sort((a, b) => b.ciro - a.ciro);
+
+  // ── Gelir/Gider özeti (dönem bağımsız son 30 gün) ──
+  let gelirGiderOzet = { toplamGelir: 0, toplamGider: 0 };
+  try {
+    const ggBaslangic = new Date(); ggBaslangic.setDate(ggBaslangic.getDate() - 30);
+    const { data: ggData } = await sb.from('gelir_gider')
+      .select('tip, tutar, kategori')
+      .eq('kafe_id', kafeId)
+      .gte('tarih', ggBaslangic.toISOString().split('T')[0]);
+    (ggData || []).forEach(r => {
+      if (r.tip === 'gelir') gelirGiderOzet.toplamGelir += (r.tutar || 0);
+      else gelirGiderOzet.toplamGider += (r.tutar || 0);
+    });
+  } catch(_) {}
+
+  // ── Toptancı borç özeti ──
+  let toptanciBorcToplam = 0;
+  try {
+    const { data: tData } = await sb.from('toptancilar').select('bakiye').eq('kafe_id', kafeId);
+    toptanciBorcToplam = (tData || []).reduce((s, t) => s + Math.max(0, -(t.bakiye || 0)), 0);
+  } catch(_) {}
+
   return {
     adisyonlar, toplamCiro, adisyonSayisi, ortHarcama,
     urunSirali, yogunSaatSirali, yogunGunSirali,
     gunlukCiro, trenYuzde, oncekiCiro,
+    garsonSirali, gelirGiderOzet, toptanciBorcToplam,
     donemAdi: { hafta: 'Bu Hafta', ay: 'Bu Ay', yil: 'Bu Yıl', tum: 'Tüm Zamanlar' }[aiAktifDonem]
   };
 }
@@ -12383,6 +12457,42 @@ function aiTrendRender(v) {
   `;
 }
 
+function aiGarsonRender(v) {
+  const kart = document.getElementById('ai-garson-kart');
+  const icerik = document.getElementById('ai-garson-icerik');
+  if (!kart || !icerik) return;
+
+  const liste = (v.garsonSirali || []).filter(g => g.isim !== 'Belirtilmemiş');
+  if (liste.length === 0) {
+    // Tüm adisyonlar belirtilmemişse yine de göster
+    const hepsi = v.garsonSirali || [];
+    if (hepsi.length === 0) { kart.style.display = 'none'; return; }
+  }
+
+  const gosterListe = (v.garsonSirali || []);
+  if (gosterListe.length === 0) { kart.style.display = 'none'; return; }
+
+  kart.style.display = 'block';
+  const maxCiro = Math.max(...gosterListe.map(g => g.ciro), 1);
+  const renkler = ['#f0b830', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c'];
+
+  icerik.innerHTML = gosterListe.map((g, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="width:28px;height:28px;border-radius:50%;background:${renkler[i%renkler.length]}22;color:${renkler[i%renkler.length]};display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;flex-shrink:0;">${i+1}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.isim}</div>
+        <div style="height:5px;background:var(--surface3);border-radius:4px;margin-top:4px;">
+          <div style="height:100%;width:${(g.ciro/maxCiro*100).toFixed(0)}%;background:${renkler[i%renkler.length]};border-radius:4px;"></div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:0.8rem;font-weight:900;font-family:'Space Mono',monospace;">${fmt(g.ciro)}</div>
+        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;">${g.adisyon} adisyon · ort ${fmt(g.ortAdisyon)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
 async function aiOnerilerUret(v) {
   const kart = document.getElementById('ai-oneriler-kart');
   const icerik = document.getElementById('ai-oneriler-icerik');
@@ -12390,41 +12500,63 @@ async function aiOnerilerUret(v) {
   kart.style.display = 'block';
   icerik.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">🤖 Claude AI analiz ediyor...</div>';
 
-  const prompt = `Sen bir cafe işletme danışmanısın. Aşağıdaki cafe satış verilerini analiz et ve Türkçe, kısa, uygulanabilir 5-6 madde öneri ver.
+  const garsonStr = (v.garsonSirali||[]).filter(g=>g.isim!=='Belirtilmemiş').slice(0,3)
+    .map((g,i)=>`${i+1}. ${g.isim}: ${g.adisyon} adisyon, ${fmt(g.ciro)} ciro, ort ${fmt(g.ortAdisyon)}/adisyon`).join('\n') || 'Garson verisi yok';
 
-DÖNEM: ${v.donemAdi}
-TOPLAM CİRO: ${fmt(v.toplamCiro)}
-ADİSYON SAYISI: ${v.adisyonSayisi}
-ORTALAMA HARCAMA: ${fmt(v.ortHarcama)}
-CİRO DEĞİŞİMİ: ${v.trenYuzde !== null ? '%' + v.trenYuzde + ' (önceki döneme göre)' : 'Karşılaştırma verisi yok'}
+  const ggStr = v.gelirGiderOzet
+    ? `Son 30 Gün Gelir: ${fmt(v.gelirGiderOzet.toplamGelir)} | Gider: ${fmt(v.gelirGiderOzet.toplamGider)} | Net: ${fmt(v.gelirGiderOzet.toplamGelir - v.gelirGiderOzet.toplamGider)}`
+    : 'Gelir/gider verisi yok';
 
-EN ÇOK SATAN ÜRÜNLER (İlk 5):
-${v.urunSirali.slice(0,5).map((u,i) => `${i+1}. ${u.isim}: ${u.adet} adet, ${fmt(u.gelir)}`).join('\n')}
+  const toptanciStr = v.toptanciBorcToplam > 0 ? `Toptancı toplam borç: ${fmt(v.toptanciBorcToplam)}` : 'Toptancı borcu yok';
 
-EN YOĞUN SAATLER: ${v.yogunSaatSirali.slice(0,3).map(s => s.saat+':00 ('+s.sayi+' adisyon)').join(', ')}
-EN YOĞUN GÜNLER: ${v.yogunGunSirali.slice(0,3).map(g => g.gun+' ('+g.sayi+' adisyon)').join(', ')}
-
-Lütfen şunları yap:
-- Her öneriyi "✅" ile başlat
-- Kısa ve doğrudan konuya gir, gereksiz giriş cümlesi yazma
-- Somut, uygulanabilir öneriler ver (kampanya fikirleri, menü optimizasyonu, personel planlaması vs.)
-- Veriyi yorumla, sadece tekrarlama
-- Toplam 5-6 öneri, her biri 1-2 cümle`;
+  const prompt = [
+    `Sen bir cafe işletme danışmanısın. Aşağıdaki cafe satış verilerini analiz et ve Türkçe, kısa, uygulanabilir 5-6 madde öneri ver.`,
+    ``,
+    `DÖNEM: ${v.donemAdi}`,
+    `TOPLAM CİRO: ${fmt(v.toplamCiro)}`,
+    `ADİSYON SAYISI: ${v.adisyonSayisi}`,
+    `ORTALAMA HARCAMA: ${fmt(v.ortHarcama)}`,
+    `CİRO DEĞİŞİMİ: ${v.trenYuzde !== null ? '%' + v.trenYuzde + ' (önceki döneme göre)' : 'Karşılaştırma verisi yok'}`,
+    ``,
+    `EN ÇOK SATAN ÜRÜNLER (İlk 5):`,
+    ...v.urunSirali.slice(0,5).map((u,i) => `${i+1}. ${u.isim}: ${u.adet} adet, ${fmt(u.gelir)}`),
+    ``,
+    `EN YOĞUN SAATLER: ${v.yogunSaatSirali.slice(0,3).map(s => s.saat+':00 ('+s.sayi+' adisyon)').join(', ')}`,
+    `EN YOĞUN GÜNLER: ${v.yogunGunSirali.slice(0,3).map(g => g.gun+' ('+g.sayi+' adisyon)').join(', ')}`,
+    ``,
+    `GARSON PERFORMANSI:`,
+    garsonStr,
+    ``,
+    `MALİ DURUM:`,
+    ggStr,
+    toptanciStr,
+    ``,
+    `Lütfen şunları yap:`,
+    `- Her öneriyi "✅" ile başlat`,
+    `- Kısa ve doğrudan konuya gir, gereksiz giriş cümlesi yazma`,
+    `- Somut, uygulanabilir öneriler ver (kampanya fikirleri, menü optimizasyonu, personel planlaması, maliyet kontrolü vs.)`,
+    `- Veriyi yorumla, sadece tekrarlama`,
+    `- Toplam 5-6 öneri, her biri 1-2 cümle`,
+  ].join('\n');
 
   try {
     const metin = await claudeAPI(
       [{ role: 'user', content: prompt }],
-      '',
-      1000
+      'Sen KolayCafe için Türkçe konuşan, cafe işletme konusunda uzman bir AI asistansın. Kısa, pratik, samimi öneriler ver.',
+      1200
     );
     // Satırları HTML'e çevir
     const html = metin.split('\n')
       .filter(l => l.trim())
-      .map(l => `<div style="padding:6px 0;border-bottom:1px solid rgba(212,150,14,0.1);line-height:1.5;">${l}</div>`)
+      .map(l => {
+        const isOneri = l.trim().startsWith('✅');
+        return `<div style="padding:7px 0;border-bottom:1px solid rgba(212,150,14,0.08);line-height:1.55;${isOneri ? 'font-weight:700;' : 'color:var(--text2);font-size:0.82rem;'}">${l}</div>`;
+      })
       .join('');
     icerik.innerHTML = html;
+
   } catch (e) {
-    icerik.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">AI önerileri şu an alınamıyor. Verileriniz başarıyla analiz edildi.</div>';
+    icerik.innerHTML = `<div style="color:var(--muted);font-size:0.8rem;">⚠️ AI önerileri alınamadı: ${e.message || 'Bağlantı hatası'}.<br><span style="font-size:0.72rem;">Supabase edge function'ın çalıştığından emin olun.</span></div>`;
   }
 }
 
@@ -12485,9 +12617,12 @@ async function aiSoruGonder() {
   const baglamStr = v ? `
 Cafe satış verileri (${v.donemAdi}):
 - Toplam ciro: ${fmt(v.toplamCiro)}, Adisyon: ${v.adisyonSayisi}, Ortalama: ${fmt(v.ortHarcama)}
+- Ciro değişimi: ${v.trenYuzde !== null ? '%' + v.trenYuzde + ' (önceki dönem)' : 'Karşılaştırma yok'}
 - En çok satanlar: ${v.urunSirali.slice(0,5).map(u=>u.isim+' ('+u.adet+' adet)').join(', ')}
 - Yoğun saatler: ${v.yogunSaatSirali.slice(0,3).map(s=>s.saat+':00').join(', ')}
 - Yoğun günler: ${v.yogunGunSirali.slice(0,3).map(g=>g.gun).join(', ')}
+- Garsonlar: ${(v.garsonSirali||[]).filter(g=>g.isim!=='Belirtilmemiş').slice(0,3).map(g=>g.isim+' ('+fmt(g.ciro)+')').join(', ') || 'Belirtilmemiş'}
+- Son 30 gün mali: Gelir ${fmt((v.gelirGiderOzet||{}).toplamGelir||0)}, Gider ${fmt((v.gelirGiderOzet||{}).toplamGider||0)}${v.toptanciBorcToplam > 0 ? ', Toptancı borç '+fmt(v.toptanciBorcToplam) : ''}
 ` : '';
 
   try {
