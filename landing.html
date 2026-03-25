@@ -403,7 +403,8 @@
     <div id="sepet-toplam" style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--accent2);">0₺</div>
     <div id="sepet-tasarruf" style="font-size:0.7rem;color:#22c55e;font-weight:700;display:none;"></div>
   </div>
-  <a id="sepet-whatsapp" href="#" target="_blank" style="padding:13px 28px;border-radius:30px;background:#25d366;color:#fff;font-weight:900;font-size:0.95rem;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(37,211,102,0.4);">💬 WhatsApp ile Satın Al</a>
+  <button onclick="iyzicoOdemeBaslat()" style="padding:13px 28px;border-radius:30px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-weight:900;font-size:0.95rem;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 4px 16px rgba(124,58,237,0.45);">💳 Hemen Satın Al</button>
+
   <button onclick="sepetTemizle()" style="padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">✕</button>
 </div>
 
@@ -629,11 +630,7 @@ function sepetGuncelle() {
     tasarrufEl.style.display = 'none';
   }
 
-  // WhatsApp mesajı
-  const aiMsg = aiEklendi ? `%0A🤖 AI Asistan (+${aiFiyatAylik}₺/ay)` : '';
-  const donemMsg = donemYillik ? `Yıllık fatura (${toplamYillik}₺/yıl)` : `Aylık fatura (${toplam}₺/ay)`;
-  const msg = `Merhaba, KolayCafe paket almak istiyorum:%0A%0A📦 ${PLAN_ISIMLER[seciliPlan].replace(/[^\w\s]/g,'')} - ${paketFiyat}₺/ay${aiMsg}%0A💳 ${donemMsg}%0A%0AToplam: ${toplam}₺/ay`;
-  document.getElementById('sepet-whatsapp').href = `https://wa.me/905326873195?text=${msg}`;
+
 }
 
 function sepetTemizle() {
@@ -693,3 +690,188 @@ function sepetTemizle() {
     </div>
     <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
       <p st
+<!-- ── İYZİCO ÖDEME MODALI ───────────────────────────────────────── -->
+<div id="iyzico-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:#0f0a00;border:1.5px solid rgba(124,58,237,0.5);border-radius:22px;width:min(480px,94vw);max-height:90vh;overflow-y:auto;padding:28px 24px;position:relative;">
+    <button onclick="iyzicoKapat()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:1.5rem;margin-bottom:6px;">💳</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:900;color:#fff;">Güvenli Ödeme</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">256-bit SSL şifreli · İyzico altyapısı</div>
+    </div>
+    <div id="iyzico-ozet" style="background:rgba(124,58,237,0.08);border:1.5px solid rgba(124,58,237,0.25);border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:0.82rem;"></div>
+    <div id="iyzico-form" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="iyzico-ad"    placeholder="Ad Soyad *"              style="background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px 14px;color:#fff;font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;" oninput="this.style.borderColor='rgba(255,255,255,0.12)'">
+      <input id="iyzico-email" placeholder="E-posta *" type="email"  style="background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px 14px;color:#fff;font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;" oninput="this.style.borderColor='rgba(255,255,255,0.12)'">
+      <input id="iyzico-tel"   placeholder="Telefon * (05xx xxx xx xx)" style="background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px 14px;color:#fff;font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;" oninput="this.style.borderColor='rgba(255,255,255,0.12)'">
+      <input id="iyzico-kafe"  placeholder="Kafe Adı *"              style="background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px 14px;color:#fff;font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;" oninput="this.style.borderColor='rgba(255,255,255,0.12)'">
+    </div>
+    <div id="iyzico-hata" style="display:none;color:#f87171;font-size:0.78rem;font-weight:700;margin-bottom:10px;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);"></div>
+    <div id="iyzico-checkout-alani" style="display:none;"></div>
+    <button id="iyzico-btn" onclick="iyzicoFormGonder()" style="width:100%;padding:15px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;border:none;cursor:pointer;margin-top:4px;transition:opacity 0.2s;">🔒 Ödemeye Geç</button>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px;opacity:0.55;font-size:0.68rem;color:var(--muted);">
+      <span>🔒 SSL</span><span>•</span><span>3D Secure</span><span>•</span><span>İyzico</span><span>•</span><span>PCI DSS</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── ÖDEME SONUÇ OVERLAY ───────────────────────────────────────── -->
+<div id="odeme-sonuc-overlay" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;text-align:center;">
+  <div style="background:#0f0a00;border-radius:22px;padding:40px 32px;width:min(380px,90vw);">
+    <div id="odeme-sonuc-ikon" style="font-size:3.5rem;margin-bottom:16px;"></div>
+    <div id="odeme-sonuc-baslik" style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:8px;"></div>
+    <div id="odeme-sonuc-mesaj" style="font-size:0.82rem;color:var(--muted);margin-bottom:24px;line-height:1.6;"></div>
+    <button onclick="document.getElementById('odeme-sonuc-overlay').style.display='none'" style="padding:12px 28px;border-radius:30px;background:var(--accent);color:#000;font-weight:900;border:none;cursor:pointer;font-family:'Nunito',sans-serif;">Tamam</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_FUNC_URL  = 'https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/iyzico-odeme';
+const SUPABASE_ANON_KEY2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs';
+const SUPABASE_REST      = 'https://sjfcdthwlwmbdmcevobv.supabase.co/rest/v1';
+const PLAN_FIYAT_L       = { start:299,grow:399,gold:499,platin:599,ultra:699,elite:799,pro:899 };
+const PLAN_ISIMLER_L     = { start:'🚀 Start',grow:'🌱 Grow',gold:'🥇 Gold',platin:'💎 Platin',ultra:'🚀 Ultra',elite:'👑 Elite',pro:'⭐ Pro' };
+const AI_FIYAT_L         = 199;
+
+function iyzicoOdemeBaslat() {
+  if (!seciliPlan) { alert('Lütfen önce bir paket seçin.'); return; }
+  const aylik = PLAN_FIYAT_L[seciliPlan];
+  const fiyat = donemYillik ? Math.round(aylik * 0.8) : aylik;
+  const aiFiyat = aiEklendi ? (donemYillik ? Math.round(AI_FIYAT_L * 0.8) : AI_FIYAT_L) : 0;
+  const toplam = fiyat + aiFiyat;
+  const toplamYillik = donemYillik ? toplam * 12 : toplam;
+  const donemStr = donemYillik ? 'Yıllık' : 'Aylık';
+  const tasarruf = donemYillik ? Math.round((aylik + (aiEklendi ? AI_FIYAT_L : 0)) * 12 * 0.2) : 0;
+  document.getElementById('iyzico-ozet').innerHTML = `
+    <div style="font-weight:900;font-size:0.95rem;color:#fff;margin-bottom:8px;">${PLAN_ISIMLER_L[seciliPlan]}${aiEklendi?' + 🤖 AI':''} · ${donemStr}</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;">
+      <span style="color:var(--muted);font-size:0.75rem;">${donemYillik?'Yıllık toplam':'Aylık ödeme'}</span>
+      <span style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--accent2);">${donemYillik?toplamYillik+'₺/yıl':toplam+'₺/ay'}</span>
+    </div>
+    ${tasarruf>0?`<div style="margin-top:6px;font-size:0.72rem;color:#22c55e;font-weight:700;">🎉 Yıllık ödeyerek ${tasarruf}₺ tasarruf ediyorsunuz</div>`:''}`;
+  document.getElementById('iyzico-hata').style.display = 'none';
+  document.getElementById('iyzico-checkout-alani').style.display = 'none';
+  document.getElementById('iyzico-form').style.display = 'flex';
+  const btn = document.getElementById('iyzico-btn');
+  btn.style.display = 'block';
+  btn.textContent = '🔒 Ödemeye Geç';
+  btn.disabled = false;
+  document.getElementById('iyzico-overlay').style.display = 'flex';
+}
+
+function iyzicoKapat() {
+  document.getElementById('iyzico-overlay').style.display = 'none';
+}
+
+async function iyzicoFormGonder() {
+  const ad    = document.getElementById('iyzico-ad').value.trim();
+  const email = document.getElementById('iyzico-email').value.trim();
+  const tel   = document.getElementById('iyzico-tel').value.trim();
+  const kafe  = document.getElementById('iyzico-kafe').value.trim();
+  const hataEl = document.getElementById('iyzico-hata');
+  // Validasyon
+  if (!ad || !email || !tel || !kafe) {
+    ['iyzico-ad','iyzico-email','iyzico-tel','iyzico-kafe'].forEach(id => {
+      if (!document.getElementById(id).value.trim()) document.getElementById(id).style.borderColor = '#f87171';
+    });
+    hataEl.textContent = 'Lütfen tüm alanları doldurun.';
+    hataEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('iyzico-email').style.borderColor = '#f87171';
+    hataEl.textContent = 'Geçerli bir e-posta adresi girin.';
+    hataEl.style.display = 'block';
+    return;
+  }
+  hataEl.style.display = 'none';
+  const btn = document.getElementById('iyzico-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Hazırlanıyor...';
+  try {
+    // Mevcut kafe kaydı ara
+    const mevcutRes = await fetch(`${SUPABASE_REST}/kafeler?email=eq.${encodeURIComponent(email)}&select=id`, {
+      headers: { apikey: SUPABASE_ANON_KEY2, Authorization: 'Bearer ' + SUPABASE_ANON_KEY2 }
+    });
+    const mevcutData = await mevcutRes.json();
+    let kafeId = mevcutData?.[0]?.id;
+    if (!kafeId) {
+      const bitis = new Date(Date.now() + 10*24*60*60*1000).toISOString();
+      const yeniRes = await fetch(`${SUPABASE_REST}/kafeler`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_ANON_KEY2, Authorization: 'Bearer ' + SUPABASE_ANON_KEY2, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ kafe_adi:kafe, email, telefon:tel, plan:'deneme', plan_bitis:bitis, created_at:new Date().toISOString() })
+      });
+      const yeniData = await yeniRes.json();
+      kafeId = yeniData?.[0]?.id;
+    }
+    if (!kafeId) throw new Error('Kayıt oluşturulamadı.');
+    // Edge Function
+    const res = await fetch(SUPABASE_FUNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + SUPABASE_ANON_KEY2 },
+      body: JSON.stringify({
+        action: 'baslat',
+        kafeId, kafeAdi: kafe, email,
+        telefon: tel.startsWith('+') ? tel : '+90' + tel.replace(/^0/,''),
+        plan: seciliPlan,
+        donem: donemYillik ? 'yillik' : 'aylik',
+        aiEklendi,
+        callbackUrl: window.location.href.split('?')[0] + '?odeme=sonuc'
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.hata ?? 'Ödeme başlatılamadı.');
+    // İyzico checkout form
+    document.getElementById('iyzico-form').style.display = 'none';
+    btn.style.display = 'none';
+    const alan = document.getElementById('iyzico-checkout-alani');
+    alan.style.display = 'block';
+    alan.innerHTML = data.checkoutFormContent;
+    alan.querySelectorAll('script').forEach(s => {
+      const ns = document.createElement('script');
+      if (s.src) ns.src = s.src; else ns.textContent = s.textContent;
+      document.head.appendChild(ns);
+    });
+  } catch(err) {
+    hataEl.textContent = '❌ ' + (err.message ?? 'Bir hata oluştu.');
+    hataEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '🔒 Ödemeye Geç';
+  }
+}
+
+// Callback: URL'de token varsa sonucu kontrol et
+(async function() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  if (!token) return;
+  const overlay = document.getElementById('odeme-sonuc-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('odeme-sonuc-ikon').textContent = '⏳';
+  document.getElementById('odeme-sonuc-baslik').textContent = 'Ödeme kontrol ediliyor...';
+  document.getElementById('odeme-sonuc-mesaj').textContent = 'Lütfen bekleyin.';
+  try {
+    const res = await fetch(SUPABASE_FUNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + SUPABASE_ANON_KEY2 },
+      body: JSON.stringify({ action: 'sonuc', token })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('odeme-sonuc-ikon').textContent = '🎉';
+      document.getElementById('odeme-sonuc-baslik').textContent = 'Ödeme Başarılı!';
+      document.getElementById('odeme-sonuc-mesaj').innerHTML =
+        `<b>${(data.plan||'').toUpperCase()}</b> planınız aktifleştirildi.<br>Dönem: ${data.donem==='yillik'?'Yıllık':'Aylık'}<br>Giriş bilgileri e-postanıza gönderildi.`;
+    } else {
+      document.getElementById('odeme-sonuc-ikon').textContent = '❌';
+      document.getElementById('odeme-sonuc-baslik').textContent = 'Ödeme Başarısız';
+      document.getElementById('odeme-sonuc-mesaj').textContent = data.hata ?? 'Bir sorun oluştu.';
+    }
+  } catch {
+    document.getElementById('odeme-sonuc-ikon').textContent = '❌';
+    document.getElementById('odeme-sonuc-baslik').textContent = 'Bağlantı Hatası';
+    document.getElementById('odeme-sonuc-mesaj').textContent = 'Lütfen WhatsApp üzerinden iletişime geçin.';
+  }
+})();
+</script>
