@@ -1078,7 +1078,7 @@
 
 </div>
 
-<div class="page" id="page-gelgid" style="overflow:hidden;padding:0;flex-direction:column;height:100%;min-height:0;">
+<div class="page" id="page-gelgid" style="overflow:hidden;padding:0;flex-direction:column;min-height:0;">
 
   <!-- MUHASEBE HEADER -->
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
@@ -9915,9 +9915,9 @@ function muhasebeSecme(sekme) {
     btn.style.background = aktif ? 'var(--accent)' : 'none';
     btn.style.color = aktif ? '#1a0f00' : 'var(--muted)';
   });
-  // Sayfa scroll'unu sıfırla ve aktif et
-  const pg = document.getElementById('page-gelgid');
-  if (pg) { pg.scrollTop = 0; pg.style.overflowY = 'auto'; }
+  // Aktif sekmeyi en üste scroll et
+  const aktifSekme = document.getElementById('msekme-' + sekme);
+  if (aktifSekme) aktifSekme.scrollTop = 0;
   muhasebeRender();
 }
 
