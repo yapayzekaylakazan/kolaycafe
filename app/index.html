@@ -3313,6 +3313,18 @@ async function garsonGiris(isim, kafeData) {
 
       // Cari güncelleme (seyrek)
       if (Date.now() % 10000 < 3000) await kolaycafenVerisiYukle();
+
+      // Vardiya durumu kontrolü — admin kapattıysa garson ekranını güncelle
+      if (Date.now() % 15000 < 3000) {
+        const { data: vData } = await sb.from('vardiyalar')
+          .select('id,baslangic,bitis').eq('kafe_id', kafeId)
+          .is('bitis', null).order('baslangic', {ascending:false}).limit(1);
+        const yeniVardiyaId = (vData && vData.length > 0) ? vData[0].id : null;
+        if (yeniVardiyaId !== aktifVardiyaId) {
+          // Vardiya değişti (kapandı veya yeni açıldı) — yeniden yükle
+          await vardiyayukle();
+        }
+      }
     } catch(e) { console.log('Garson sync hatası:', e); }
     finally { _garsonPolling = false; }
   }, 3000); // 2000ms → 3000ms: daha seyrek polling = daha az çakışma
