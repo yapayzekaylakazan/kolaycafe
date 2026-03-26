@@ -82,7 +82,7 @@
 
   /* ── PAGES ── */
   .page { display: none; flex: 1; overflow: hidden; flex-direction: column; min-height: 0; }
-  .page.active { display: flex; }
+  .page.active { display: flex; flex-direction: column; min-height: 0; }
   #page-gelgid.active { overflow-y: auto; overflow-x: hidden; }
 
   #msekme-ozet, #msekme-toptanci, #msekme-kasa, #msekme-gelgid, #msekme-kredikart {
@@ -1081,7 +1081,7 @@
 
 </div>
 
-<div class="page" id="page-gelgid" style="overflow:hidden;padding:0;flex-direction:column;">
+<div class="page" id="page-gelgid" style="overflow:hidden;padding:0;flex-direction:column;min-height:0;height:100%;">
 
   <!-- MUHASEBE HEADER - sabit kalır -->
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
