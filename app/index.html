@@ -3228,6 +3228,8 @@ async function garsonGiris(isim, kafeData) {
   if (kafeData.app_tema) appTemaYukle(kafeData);
   // Adisyon yükle (garson kendi masalarını görsün)
   await adisyonVerisiYukle();
+  // Garson modunda da aktif vardiyayı yükle — adisyonlar vardiya_id ile kayıtlansın
+  await vardiyayukle();
   masalarRender(); urunListesiRender();
   setSyncOnline(true);
   toast('Hoş geldin, ' + isim + '! ☕');
