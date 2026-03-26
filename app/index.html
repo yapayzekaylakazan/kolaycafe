@@ -1246,7 +1246,19 @@
     </select>
     <input type="text" id="gg-aciklama" placeholder="Açıklama..." style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box;">
     <input type="number" id="gg-tutar" placeholder="Tutar (₺)" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
-    <input type="date" id="gg-tarih" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:14px;box-sizing:border-box;">
+    <input type="date" id="gg-tarih" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
+    <!-- Ödeme tipi seçimi -->
+    <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:6px;">ÖDEME TİPİ</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;" id="gg-odeme-sec">
+      <button onclick="ggOdemeSec('nakit',this)" id="gg-odeme-nakit" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid #22c55e;background:#22c55e22;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💵 Nakit</button>
+      <button onclick="ggOdemeSec('kart',this)" id="gg-odeme-kart" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💳 Kart</button>
+      <button onclick="ggOdemeSec('veresiye',this)" id="gg-odeme-veresiye" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">⏳ Veresiye</button>
+    </div>
+    <!-- Vade tarihi — sadece veresiye seçilince görünür -->
+    <div id="gg-vade-wrap" style="display:none;margin-bottom:10px;">
+      <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:6px;">VADE TARİHİ</div>
+      <input type="date" id="gg-vade" style="width:100%;background:var(--surface3);border:1.5px solid #f59e0b;border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;box-sizing:border-box;">
+    </div>
     <div style="display:flex;gap:8px;">
       <button onclick="gelgidKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">✓ Kaydet</button>
       <button onclick="document.getElementById('gelgid-modal').style.display='none'" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
@@ -8237,20 +8249,37 @@ function ayarlarRender(){
 // GELİR / GİDER
 // ════════════════════════════════════════
 let ggTip = 'gider'; // aktif modal tipi
+let ggOdemeTip = 'nakit'; // nakit / kart / veresiye
+
+function ggOdemeSec(tip, btn) {
+  ggOdemeTip = tip;
+  ['nakit','kart','veresiye'].forEach(t => {
+    const b = document.getElementById('gg-odeme-' + t);
+    if (!b) return;
+    const renkMap = { nakit: '#22c55e', kart: '#3b82f6', veresiye: '#f59e0b' };
+    const renk = renkMap[t];
+    const aktif = t === tip;
+    b.style.background = aktif ? renk + '22' : 'transparent';
+    b.style.borderColor = aktif ? renk : 'var(--border)';
+    b.style.color = aktif ? renk : 'var(--muted)';
+  });
+  // Vade tarihi sadece veresiye seçince görünsün
+  const vadeWrap = document.getElementById('gg-vade-wrap');
+  if (vadeWrap) vadeWrap.style.display = tip === 'veresiye' ? 'block' : 'none';
+}
 
 function gelgidEkleModal(tip) {
   ggTip = tip;
+  ggOdemeTip = 'nakit';
   document.getElementById('gelgid-modal-baslik').textContent = tip === 'gelir' ? '+ Gelir Ekle' : '+ Gider Ekle';
-  // Gelir için kategori gizle
   const kat = document.getElementById('gg-kategori');
-  if (tip === 'gelir') {
-    kat.style.display = 'none';
-  } else {
-    kat.style.display = 'block';
-  }
+  if (tip === 'gelir') kat.style.display = 'none';
+  else kat.style.display = 'block';
   document.getElementById('gg-aciklama').value = '';
   document.getElementById('gg-tutar').value = '';
   document.getElementById('gg-tarih').value = new Date().toISOString().split('T')[0];
+  if (document.getElementById('gg-vade')) document.getElementById('gg-vade').value = '';
+  ggOdemeSec('nakit', null); // Nakit seçili başlat
   document.getElementById('gelgid-modal').style.display = 'flex';
 }
 
@@ -8259,20 +8288,26 @@ async function gelgidKaydet() {
   const aciklama = document.getElementById('gg-aciklama').value.trim();
   const tarih = document.getElementById('gg-tarih').value;
   const kategori = ggTip === 'gider' ? document.getElementById('gg-kategori').value : 'Gelir';
+  const vade = ggOdemeTip === 'veresiye' ? document.getElementById('gg-vade').value : null;
   if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
   if (!tarih) { toast('Tarih girin!'); return; }
+  if (ggOdemeTip === 'veresiye' && !vade) { toast('Vade tarihi girin!'); return; }
   const {error} = await sb.from('gelir_gider').insert({
     kafe_id: kafeId,
     tip: ggTip,
     kategori,
     aciklama: aciklama || kategori,
     tutar,
-    tarih: new Date(tarih).toISOString()
+    tarih: new Date(tarih).toISOString(),
+    odeme_tip: ggOdemeTip,
+    vade_tarihi: vade ? new Date(vade).toISOString() : null,
+    odendi: ggOdemeTip !== 'veresiye' // nakit/kart → anında ödendi, veresiye → bekliyor
   });
   if (error) { toast('Hata: ' + error.message); return; }
   document.getElementById('gelgid-modal').style.display = 'none';
-  toast(ggTip === 'gelir' ? '✓ Gelir eklendi' : '✓ Gider eklendi');
+  toast(ggTip === 'gelir' ? '✓ Gelir eklendi' : (ggOdemeTip === 'veresiye' ? '⏳ Veresiye gider eklendi' : '✓ Gider eklendi'));
   await gelgidRender();
+  await kasaRender();
 }
 
 async function gelgidSil(id) {
@@ -10009,7 +10044,28 @@ async function kasaRender() {
     if (satirKart > 0) satirGelirler.push({ aciklama:'Satış Gelirleri (Kart)', tutar: satirKart, odeme:'kart', tip:'gelir', otomatik:true });
   } catch(e) {}
 
-  // 3) Toptancı ödemeleri — gider olarak yansıt
+  // 3) Gelir/Gider sekmesindeki manuel kayıtlar
+  let ggGelirler = [], ggGiderler = [], ggVadelier = [];
+  try {
+    let ggq = sb.from('gelir_gider').select('*').eq('kafe_id', kafeId).order('tarih', {ascending:false});
+    if (donem !== 'tumu') ggq = ggq.gte('tarih', baslangic);
+    if (bitis) ggq = ggq.lte('tarih', bitis);
+    const { data: ggData } = await ggq;
+    (ggData||[]).forEach(g => {
+      const odeme = g.odeme_tip || 'nakit';
+      if (g.tip === 'gelir') {
+        ggGelirler.push({ aciklama: g.aciklama||g.kategori, tutar: g.tutar, odeme, tarih: g.tarih, id: g.id });
+      } else if (odeme === 'veresiye' && !g.odendi) {
+        // Veresiye + ödenmemiş → vadeli bölüme
+        const vadeStr = g.vade_tarihi ? new Date(g.vade_tarihi).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}) : '';
+        ggVadelier.push({ aciklama: g.aciklama||g.kategori, tutar: g.tutar, vade: vadeStr, id: g.id });
+      } else {
+        ggGiderler.push({ aciklama: g.aciklama||g.kategori, tutar: g.tutar, odeme, tarih: g.tarih, id: g.id });
+      }
+    });
+  } catch(e) {}
+
+  // 4) Toptancı ödemeleri — gider olarak yansıt
   let toptanciGiderler = [];
   try {
     const { data: toptancilar } = await sb.from('toptancilar').select('id,isim').eq('kafe_id', kafeId);
@@ -10062,11 +10118,14 @@ async function kasaRender() {
   manuelGelirler.forEach(h => { if (h.odeme_tip==='kart') kartBakiye+=h.tutar; else nakitBakiye+=h.tutar; });
   manuelGiderler.forEach(h => { if (h.odeme_tip==='kart') kartBakiye-=h.tutar; else nakitBakiye-=h.tutar; });
   toptanciGiderler.forEach(h => { if (h.odeme==='kart') kartBakiye-=h.tutar; else nakitBakiye-=h.tutar; });
+  ggGelirler.forEach(h => { if (h.odeme==='kart') kartBakiye+=h.tutar; else nakitBakiye+=h.tutar; });
+  ggGiderler.forEach(h => { if (h.odeme==='kart') kartBakiye-=h.tutar; else nakitBakiye-=h.tutar; });
+  // ggVadelier (veresiye) henüz ödenmedi → bakiyeden düşülmez
   const toplamBakiye = nakitBakiye + kartBakiye;
 
   // Toplam gelir/gider
   const toplamGelir = nakitGelir + kartGelir + manuelGelirler.reduce((s,h)=>s+h.tutar,0);
-  const toplamGider = manuelGiderler.reduce((s,h)=>s+h.tutar,0) + toptanciGiderler.reduce((s,h)=>s+h.tutar,0);
+  const toplamGider = manuelGiderler.reduce((s,h)=>s+h.tutar,0) + toptanciGiderler.reduce((s,h)=>s+h.tutar,0) + ggGiderler.reduce((s,h)=>s+h.tutar,0);
   const netKasa = toplamBakiye;
 
   // Bakiye kartları
@@ -10119,7 +10178,7 @@ async function kasaRender() {
   // Giderler listesi
   const giderListe = document.getElementById('kasa-gider-liste');
   if (giderListe) {
-    const tumGiderler = [...toptanciGiderler, ...manuelGiderler.map(h=>({aciklama:h.aciklama, tutar:h.tutar, odeme:h.odeme_tip||'nakit', tarih:h.tarih, id:h.id}))];
+    const tumGiderler = [...toptanciGiderler, ...ggGiderler, ...manuelGiderler.map(h=>({aciklama:h.aciklama, tutar:h.tutar, odeme:h.odeme_tip||'nakit', tarih:h.tarih, id:h.id}))];
     if (tumGiderler.length === 0) {
       giderListe.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:6px 0;">Bu dönemde gider yok.</div>';
     } else {
@@ -10134,6 +10193,8 @@ async function kasaRender() {
   // Vadeli/bekleyen listesi
   const vadeliListe = document.getElementById('kasa-vadeli-liste');
   if (vadeliListe) {
+    // gelir_gider tablosundan gelen vadelileri de ekle
+    vadelier = [...vadelier, ...ggVadelier];
     if (vadelier.length === 0) {
       vadeliListe.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:6px 0;">Bekleyen vadeli ödeme yok.</div>';
     } else {
