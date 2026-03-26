@@ -1107,12 +1107,16 @@
     <!-- hidden input for donem value (backward compat) -->
     <input type="hidden" id="gg-donem" value="bugun">
     <!-- Sekmeler -->
-    <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px;">
-      <button id="mtab-ozet"      onclick="muhasebeSecme('ozet')"      style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.65rem;cursor:pointer;">📊 Özet</button>
-      <button id="mtab-toptanci"  onclick="muhasebeSecme('toptanci')"  style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.65rem;cursor:pointer;">🏪 Toptancı</button>
-      <button id="mtab-kasa"      onclick="muhasebeSecme('kasa')"      style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.65rem;cursor:pointer;">💰 Kasa</button>
-      <button id="mtab-gelgid"    onclick="muhasebeSecme('gelgid')"    style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.65rem;cursor:pointer;">📋 Gelir/Gider</button>
-      <button id="mtab-kredikart" onclick="muhasebeSecme('kredikart')" style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.65rem;cursor:pointer;">💳 Kartlarım</button>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px;">
+        <button id="mtab-ozet"      onclick="muhasebeSecme('ozet')"      style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.68rem;cursor:pointer;">📊 Özet</button>
+        <button id="mtab-toptanci"  onclick="muhasebeSecme('toptanci')"  style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.68rem;cursor:pointer;">🏪 Toptancı</button>
+        <button id="mtab-kasa"      onclick="muhasebeSecme('kasa')"      style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.68rem;cursor:pointer;">💰 Kasa</button>
+      </div>
+      <div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:3px;">
+        <button id="mtab-gelgid"    onclick="muhasebeSecme('gelgid')"    style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.68rem;cursor:pointer;">📋 Gelir/Gider</button>
+        <button id="mtab-kredikart" onclick="muhasebeSecme('kredikart')" style="flex:1;padding:7px 2px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.68rem;cursor:pointer;">💳 Kartlarım</button>
+      </div>
     </div>
   </div>
 
