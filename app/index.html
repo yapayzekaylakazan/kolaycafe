@@ -7257,9 +7257,10 @@ async function raporRenderTam() {
       .eq('kafe_id', kafeId)
       .neq('odeme_tipi', 'cari_tahsil')
       .order('created_at', {ascending: false});
-    // Vardiya seçiliyse vardiya_id ile filtrele (daha doğru)
-    if (aktifDonem === 'vardiya' && aktifVardiyaId && !aktifVardiyaId.startsWith('local_')) {
-      q = q.eq('vardiya_id', aktifVardiyaId);
+    // Vardiya seçiliyse başlangıç zamanına göre filtrele
+    // (vardiya_id=null olan eski kayıtları da kapsaması için created_at kullanıyoruz)
+    if (aktifDonem === 'vardiya' && aktifVardiyaBaslangic) {
+      q = q.gte('created_at', aktifVardiyaBaslangic.toISOString());
     } else {
       if (baslangic) q = q.gte('created_at', baslangic);
     }
@@ -9091,14 +9092,12 @@ async function vardiyayukle() {
       const v = data[0];
       aktifVardiyaId = v.id;
       aktifVardiyaBaslangic = new Date(v.baslangic);
+      // Vardiya başlangıcından itibaren TÜM adisyonları say (vardiya_id bağımsız)
+      // Bu sayede admin ve garson ekranı her zaman aynı rakamı gösterir
       const { data: adisyonlar } = await sb.from('kolaycafenlar')
-        .select('toplam').eq('vardiya_id', v.id).neq('odeme_tipi','ikram');
-      // Eski kayıtlar (vardiya_id=null) için de vardiya başlangıcından itibaren olanları say
-      const { data: eskiAdisyonlar } = await sb.from('kolaycafenlar')
-        .select('toplam').eq('kafe_id', kafeId).is('vardiya_id', null)
-        .neq('odeme_tipi','ikram')
+        .select('toplam').eq('kafe_id', kafeId).neq('odeme_tipi','ikram')
         .gte('created_at', v.baslangic);
-      vardiyaCiro = [...(adisyonlar||[]), ...(eskiAdisyonlar||[])].reduce((t,a) => t + parseFloat(a.toplam||0), 0);
+      vardiyaCiro = (adisyonlar||[]).reduce((t,a) => t + parseFloat(a.toplam||0), 0);
       localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify({
         id: aktifVardiyaId, baslangic: aktifVardiyaBaslangic.toISOString(), ciro: vardiyaCiro
       }));
