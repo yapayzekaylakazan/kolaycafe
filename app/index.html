@@ -83,7 +83,7 @@
   /* ── PAGES ── */
   .page { display: none; flex: 1; overflow: hidden; flex-direction: column; min-height: 0; }
   .page.active { display: flex; }
-  #page-gelgid { flex-direction: column; overflow: hidden; }
+  #page-gelgid { flex-direction: column; overflow-y: auto !important; overflow-x: hidden; }
   #page-gelgid .muhasebe-header { flex-shrink: 0; }
   #msekme-ozet, #msekme-toptanci, #msekme-kasa, #msekme-gelgid, #msekme-kredikart {
     padding-bottom: 100px;
@@ -1081,10 +1081,10 @@
 
 </div>
 
-<div class="page" id="page-gelgid" style="padding:0;">
+<div class="page" id="page-gelgid" style="padding:0;overflow-y:auto;overflow-x:hidden;">
 
   <!-- MUHASEBE HEADER -->
-  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;position:sticky;top:0;z-index:10;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-size:1rem;font-weight:900;color:var(--accent2);">💰 Muhasebe</div>
     </div>
@@ -1123,7 +1123,7 @@
   </div>
 
   <!-- SEKME İÇERİK WRAPPER - bu scroll eder -->
-  <div id="muhasebe-sekme-wrapper" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;">
+  <div id="muhasebe-sekme-wrapper">
 
   <!-- ÖZET SEKMESİ -->
   <div id="msekme-ozet" style="padding:12px;">
