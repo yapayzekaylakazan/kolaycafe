@@ -86,7 +86,7 @@
   #page-gelgid { flex-direction: column; overflow: hidden; }
   #page-gelgid .muhasebe-header { flex-shrink: 0; }
   #msekme-ozet, #msekme-toptanci, #msekme-kasa, #msekme-gelgid, #msekme-kredikart {
-    flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding-bottom: 100px;
+    padding-bottom: 100px;
   }
   .page-masalar { overflow-y: auto; padding: 12px; }
 
@@ -1122,6 +1122,9 @@
     </div>
   </div>
 
+  <!-- SEKME İÇERİK WRAPPER - bu scroll eder -->
+  <div id="muhasebe-sekme-wrapper" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;">
+
   <!-- ÖZET SEKMESİ -->
   <div id="msekme-ozet" style="padding:12px;">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
@@ -1248,6 +1251,8 @@
     </div>
     <div id="kredikart-liste"></div>
   </div>
+
+  </div><!-- /muhasebe-sekme-wrapper -->
 
   <!-- KREDİ KARTI EKLE MODAL -->
   <div class="modal-overlay" id="kredikart-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:flex-end;padding-bottom:0;">
