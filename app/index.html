@@ -83,8 +83,11 @@
   /* ── PAGES ── */
   .page { display: none; flex: 1; overflow: hidden; flex-direction: column; min-height: 0; }
   .page.active { display: flex; }
-  #page-gelgid.active { overflow: hidden; height: 100%; display: flex; flex-direction: column; }
-  #page-gelgid .msekme-icerik { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 100px; }
+  #page-gelgid { flex-direction: column; overflow: hidden; }
+  #page-gelgid .muhasebe-header { flex-shrink: 0; }
+  #msekme-ozet, #msekme-toptanci, #msekme-kasa, #msekme-gelgid, #msekme-kredikart {
+    flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding-bottom: 100px;
+  }
   .page-masalar { overflow-y: auto; padding: 12px; }
 
   /* ── AI ASİSTAN ── */
@@ -1078,7 +1081,7 @@
 
 </div>
 
-<div class="page" id="page-gelgid" style="overflow:hidden;padding:0;flex-direction:column;min-height:0;">
+<div class="page" id="page-gelgid" style="padding:0;">
 
   <!-- MUHASEBE HEADER -->
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
@@ -1120,7 +1123,7 @@
   </div>
 
   <!-- ÖZET SEKMESİ -->
-  <div id="msekme-ozet" style="padding:12px;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:100px;">
+  <div id="msekme-ozet" style="padding:12px;">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div style="background:var(--surface2);border-radius:14px;padding:12px;border-left:3px solid #22c55e;">
         <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TOPLAM GELİR</div>
@@ -1148,7 +1151,7 @@
   </div>
 
   <!-- TOPTANCI SEKMESİ -->
-  <div id="msekme-toptanci" style="display:none;padding:12px;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:100px;">
+  <div id="msekme-toptanci" style="display:none;padding:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div style="font-size:0.82rem;font-weight:800;">🏪 Toptancı Kartları</div>
       <button onclick="toptanciEkleModal()" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">+ Ekle</button>
@@ -1157,7 +1160,7 @@
   </div>
 
   <!-- KASA SEKMESİ -->
-  <div id="msekme-kasa" style="display:none;padding:12px;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:100px;">
+  <div id="msekme-kasa" style="display:none;padding:12px;">
     <!-- Bakiye kartları -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid #22c55e;">
@@ -1213,7 +1216,7 @@
   </div>
 
   <!-- GELİR/GİDER SEKMESİ -->
-  <div id="msekme-gelgid" style="display:none;padding:12px;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:100px;">
+  <div id="msekme-gelgid" style="display:none;padding:12px;">
     <!-- Özet kartlar -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
       <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid #22c55e;">
@@ -1238,7 +1241,7 @@
 </div>
 
   <!-- KREDİ KARTLARIM SEKMESİ -->
-  <div id="msekme-kredikart" style="display:none;padding:12px;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:120px;">
+  <div id="msekme-kredikart" style="display:none;padding:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div style="font-size:0.82rem;font-weight:800;">💳 Kredi Kartlarım</div>
       <button onclick="krediKartEkleModal()" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">+ Kart Ekle</button>
@@ -9910,8 +9913,7 @@ function muhasebeSecme(sekme) {
     const btn = document.getElementById('mtab-' + s);
     if (!el || !btn) return;
     const aktif = s === sekme;
-    el.style.display = aktif ? 'flex' : 'none';
-    el.style.flexDirection = 'column';
+    el.style.display = aktif ? 'block' : 'none';
     btn.style.background = aktif ? 'var(--accent)' : 'none';
     btn.style.color = aktif ? '#1a0f00' : 'var(--muted)';
   });
