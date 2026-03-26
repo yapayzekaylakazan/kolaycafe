@@ -9093,7 +9093,12 @@ async function vardiyayukle() {
       aktifVardiyaBaslangic = new Date(v.baslangic);
       const { data: adisyonlar } = await sb.from('kolaycafenlar')
         .select('toplam').eq('vardiya_id', v.id).neq('odeme_tipi','ikram');
-      vardiyaCiro = (adisyonlar||[]).reduce((t,a) => t + parseFloat(a.toplam||0), 0);
+      // Eski kayıtlar (vardiya_id=null) için de vardiya başlangıcından itibaren olanları say
+      const { data: eskiAdisyonlar } = await sb.from('kolaycafenlar')
+        .select('toplam').eq('kafe_id', kafeId).is('vardiya_id', null)
+        .neq('odeme_tipi','ikram')
+        .gte('created_at', v.baslangic);
+      vardiyaCiro = [...(adisyonlar||[]), ...(eskiAdisyonlar||[])].reduce((t,a) => t + parseFloat(a.toplam||0), 0);
       localStorage.setItem('kc_vardiya_' + kafeId, JSON.stringify({
         id: aktifVardiyaId, baslangic: aktifVardiyaBaslangic.toISOString(), ciro: vardiyaCiro
       }));
@@ -9132,6 +9137,15 @@ function vardiyaBtnGuncelle() {
 }
 
 async function vardiyaToggle() {
+  // Garson modunda vardiya başlatma/kapatma yasak — sadece gösterge
+  if (garsonModu) {
+    if (aktifVardiyaId) {
+      toast('ℹ️ Vardiya admin tarafından yönetilir');
+    } else {
+      toast('⚠️ Aktif vardiya yok — admin vardiya başlatmalı');
+    }
+    return;
+  }
   if (aktifVardiyaId) {
     vardiyaKapatModal();
   } else {
