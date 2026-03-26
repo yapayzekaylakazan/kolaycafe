@@ -1081,10 +1081,10 @@
 
 </div>
 
-<div class="page" id="page-gelgid" style="overflow-y:auto;overflow-x:hidden;padding:0;flex-direction:column;">
+<div class="page" id="page-gelgid" style="overflow:hidden;padding:0;flex-direction:column;">
 
-  <!-- MUHASEBE HEADER -->
-  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;">
+  <!-- MUHASEBE HEADER - sabit kalır -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-size:1rem;font-weight:900;color:var(--accent2);">💰 Muhasebe</div>
     </div>
@@ -1122,7 +1122,8 @@
     </div>
   </div>
 
-
+  <!-- SCROLL ALAN - sadece bu kısım kayar -->
+  <div id="muh-scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;">
 
   <!-- ÖZET SEKMESİ -->
   <div id="msekme-ozet" style="padding:12px;">
@@ -1251,7 +1252,7 @@
     <div id="kredikart-liste"></div>
   </div>
 
-
+  </div><!-- /muh-scroll -->
 
   <!-- KREDİ KARTI EKLE MODAL -->
   <div class="modal-overlay" id="kredikart-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:flex-end;padding-bottom:0;">
