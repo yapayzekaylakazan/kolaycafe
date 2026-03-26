@@ -1160,15 +1160,15 @@
     <!-- Kasa bakiye kartları -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid #22c55e;">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">NAKİT KASA</div>
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">💵 NAKİT BAKİYE</div>
         <div style="font-size:1rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="kasa-nakit">0₺</div>
       </div>
       <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid #3b82f6;">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">KART</div>
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">💳 KART BAKİYE</div>
         <div style="font-size:1rem;font-weight:900;color:#3b82f6;font-family:'Space Mono',monospace;" id="kasa-kart">0₺</div>
       </div>
       <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid var(--accent2);">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">TOPLAM</div>
+        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">🏦 TOPLAM BAKİYE</div>
         <div style="font-size:1rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;" id="kasa-toplam">0₺</div>
       </div>
     </div>
@@ -1177,6 +1177,21 @@
 
   <!-- GELİR/GİDER SEKMESİ -->
   <div id="msekme-gelgid" style="display:none;padding:12px;">
+    <!-- Özet kartlar -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid #22c55e;">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TOPLAM GELİR</div>
+        <div style="font-size:0.95rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="gg-sekme-gelir">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid var(--danger);">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TOPLAM GİDER</div>
+        <div style="font-size:0.95rem;font-weight:900;color:var(--danger);font-family:'Space Mono',monospace;" id="gg-sekme-gider">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid var(--accent2);">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;">NET KAR</div>
+        <div style="font-size:0.95rem;font-weight:900;font-family:'Space Mono',monospace;" id="gg-sekme-net">0₺</div>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button onclick="gelgidEkleModal('gelir')" style="flex:1;padding:9px;border-radius:10px;border:none;background:#22c55e;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;">+ Gelir</button>
       <button onclick="gelgidEkleModal('gider')" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--danger);color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;">+ Gider</button>
@@ -8286,6 +8301,13 @@ async function gelgidRender() {
   const karEl = document.getElementById('gg-net-kar');
   karEl.textContent = fmt(netKar);
   karEl.style.color = netKar >= 0 ? '#22c55e' : 'var(--danger)';
+  // Gelir/Gider sekmesindeki özet kartları da güncelle
+  const ggSekmeGelir = document.getElementById('gg-sekme-gelir');
+  const ggSekmeGider = document.getElementById('gg-sekme-gider');
+  const ggSekmeNet = document.getElementById('gg-sekme-net');
+  if (ggSekmeGelir) ggSekmeGelir.textContent = fmt(toplamGelir);
+  if (ggSekmeGider) ggSekmeGider.textContent = fmt(toplamGider);
+  if (ggSekmeNet) { ggSekmeNet.textContent = fmt(netKar); ggSekmeNet.style.color = netKar >= 0 ? '#22c55e' : 'var(--danger)'; }
 
   const liste = document.getElementById('gg-liste');
 
