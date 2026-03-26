@@ -1111,6 +1111,7 @@
       <button id="mtab-toptanci" onclick="muhasebeSecme('toptanci')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">🏪 Toptancılar</button>
       <button id="mtab-kasa"     onclick="muhasebeSecme('kasa')"     style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">💳 Kasa</button>
       <button id="mtab-gelgid"   onclick="muhasebeSecme('gelgid')"   style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">📋 Gelir/Gider</button>
+      <button id="mtab-kredikart" onclick="muhasebeSecme('kredikart')" style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">💳 Kartlarım</button>
     </div>
   </div>
 
@@ -1232,6 +1233,85 @@
   </div>
 </div>
 
+  <!-- KREDİ KARTLARIM SEKMESİ -->
+  <div id="msekme-kredikart" style="display:none;padding:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:0.82rem;font-weight:800;">💳 Kredi Kartlarım</div>
+      <button onclick="krediKartEkleModal()" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">+ Kart Ekle</button>
+    </div>
+    <div id="kredikart-liste"></div>
+  </div>
+
+  <!-- KREDİ KARTI EKLE MODAL -->
+  <div class="modal-overlay" id="kredikart-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:center;">
+    <div style="background:var(--surface2);border-radius:18px;padding:22px;width:90%;max-width:380px;">
+      <div style="font-size:1rem;font-weight:900;margin-bottom:14px;" id="kredikart-modal-baslik">+ Kart Ekle</div>
+      <input type="text" id="kk-banka" placeholder="Banka adı (örn: Garanti, Akbank)" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <input type="text" id="kk-son4" placeholder="Son 4 hane (opsiyonel)" maxlength="4" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <input type="number" id="kk-limit" placeholder="Kart limiti (₺)" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div>
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-bottom:4px;">HESAP KESİM GÜNÜ</div>
+          <input type="number" id="kk-kesim" placeholder="Gün (1-31)" min="1" max="31" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ÖDEME GÜNÜ</div>
+          <input type="number" id="kk-odeme-gun" placeholder="Gün (1-31)" min="1" max="31" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-bottom:6px;">KART RENGİ</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;" id="kk-renk-sec">
+        <button onclick="kkRenkSec('#3b82f6',this)" data-renk="#3b82f6" style="width:28px;height:28px;border-radius:50%;background:#3b82f6;border:3px solid #3b82f6;cursor:pointer;"></button>
+        <button onclick="kkRenkSec('#22c55e',this)" data-renk="#22c55e" style="width:28px;height:28px;border-radius:50%;background:#22c55e;border:3px solid transparent;cursor:pointer;"></button>
+        <button onclick="kkRenkSec('#f59e0b',this)" data-renk="#f59e0b" style="width:28px;height:28px;border-radius:50%;background:#f59e0b;border:3px solid transparent;cursor:pointer;"></button>
+        <button onclick="kkRenkSec('#e04040',this)" data-renk="#e04040" style="width:28px;height:28px;border-radius:50%;background:#e04040;border:3px solid transparent;cursor:pointer;"></button>
+        <button onclick="kkRenkSec('#8b5cf6',this)" data-renk="#8b5cf6" style="width:28px;height:28px;border-radius:50%;background:#8b5cf6;border:3px solid transparent;cursor:pointer;"></button>
+        <button onclick="kkRenkSec('#ec4899',this)" data-renk="#ec4899" style="width:28px;height:28px;border-radius:50%;background:#ec4899;border:3px solid transparent;cursor:pointer;"></button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="krediKartKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">✓ Kaydet</button>
+        <button onclick="modalKapat('kredikart-modal')" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KREDİ KARTI HARCAMA MODAL -->
+  <div class="modal-overlay" id="kk-harcama-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:center;">
+    <div style="background:var(--surface2);border-radius:18px;padding:22px;width:90%;max-width:360px;">
+      <div style="font-size:1rem;font-weight:900;margin-bottom:4px;">+ Harcama Ekle</div>
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:14px;" id="kk-harcama-kart-adi"></div>
+      <input type="text" id="kk-h-aciklama" placeholder="Açıklama (örn: Toptancı ödemesi)" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <input type="number" id="kk-h-tutar" placeholder="Tutar (₺)" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <input type="date" id="kk-h-tarih" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:14px;box-sizing:border-box;">
+      <div style="display:flex;gap:8px;">
+        <button onclick="kkHarcamaKaydet()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">✓ Kaydet</button>
+        <button onclick="modalKapat('kk-harcama-modal')" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KREDİ KARTI ÖDEME MODAL -->
+  <div class="modal-overlay" id="kk-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:center;">
+    <div style="background:var(--surface2);border-radius:18px;padding:22px;width:90%;max-width:360px;">
+      <div style="font-size:1rem;font-weight:900;margin-bottom:4px;">💳 Hesap Öde</div>
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-bottom:14px;" id="kk-odeme-kart-adi"></div>
+      <div style="background:var(--surface3);border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:4px;">DÖNEM BORCU</div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--danger);font-family:'Space Mono',monospace;" id="kk-odeme-borc">0₺</div>
+      </div>
+      <input type="number" id="kk-o-tutar" placeholder="Ödenecek tutar (₺)" inputmode="numeric" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;margin-bottom:10px;box-sizing:border-box;">
+      <div style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-bottom:6px;">ÖDEME YÖNTEMİ (KASADAN)</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <button onclick="kkOdemeTipSec('nakit',this)" id="kk-ot-nakit" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid #22c55e;background:#22c55e22;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💵 Nakit</button>
+        <button onclick="kkOdemeTipSec('kart',this)" id="kk-ot-kart" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💳 Banka Kartı</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="kkOdemeYap()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#22c55e;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.92rem;cursor:pointer;">✓ Ödendi</button>
+        <button onclick="modalKapat('kk-odeme-modal')" style="padding:12px 16px;border-radius:10px;border:none;background:var(--surface3);color:var(--text);font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;">✕</button>
+      </div>
+    </div>
+  </div>
+
 <!-- GELİR/GİDER EKLE MODAL -->
 <div class="modal-overlay" id="gelgid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:center;">
   <div style="background:var(--surface2);border-radius:18px;padding:22px;width:90%;max-width:360px;">
@@ -1250,9 +1330,17 @@
     <!-- Ödeme tipi seçimi -->
     <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:6px;">ÖDEME TİPİ</div>
     <div style="display:flex;gap:6px;margin-bottom:10px;" id="gg-odeme-sec">
-      <button onclick="ggOdemeSec('nakit',this)" id="gg-odeme-nakit" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid #22c55e;background:#22c55e22;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💵 Nakit</button>
-      <button onclick="ggOdemeSec('kart',this)" id="gg-odeme-kart" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💳 Kart</button>
-      <button onclick="ggOdemeSec('veresiye',this)" id="gg-odeme-veresiye" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">⏳ Veresiye</button>
+      <button onclick="ggOdemeSec('nakit',this)" id="gg-odeme-nakit" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid #22c55e;background:#22c55e22;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">💵 Nakit</button>
+      <button onclick="ggOdemeSec('kart',this)" id="gg-odeme-kart" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🏦 Banka</button>
+      <button onclick="ggOdemeSec('kredikart',this)" id="gg-odeme-kredikart" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">💳 K.Kart</button>
+      <button onclick="ggOdemeSec('veresiye',this)" id="gg-odeme-veresiye" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">⏳ Vadeli</button>
+    </div>
+    <!-- Kredi kartı seçimi — sadece kredi kartı seçilince görünür -->
+    <div id="gg-kredikart-wrap" style="display:none;margin-bottom:10px;">
+      <div style="font-size:0.72rem;font-weight:800;color:var(--muted);margin-bottom:6px;">KREDİ KARTI SEÇ</div>
+      <select id="gg-kredikart-sec" style="width:100%;background:var(--surface3);border:1.5px solid #3b82f6;border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;box-sizing:border-box;">
+        <option value="">-- Kart seçin --</option>
+      </select>
     </div>
     <!-- Vade tarihi — sadece veresiye seçilince görünür -->
     <div id="gg-vade-wrap" style="display:none;margin-bottom:10px;">
@@ -8253,10 +8341,10 @@ let ggOdemeTip = 'nakit'; // nakit / kart / veresiye
 
 function ggOdemeSec(tip, btn) {
   ggOdemeTip = tip;
-  ['nakit','kart','veresiye'].forEach(t => {
+  ['nakit','kart','kredikart','veresiye'].forEach(t => {
     const b = document.getElementById('gg-odeme-' + t);
     if (!b) return;
-    const renkMap = { nakit: '#22c55e', kart: '#3b82f6', veresiye: '#f59e0b' };
+    const renkMap = { nakit: '#22c55e', kart: '#3b82f6', kredikart: '#8b5cf6', veresiye: '#f59e0b' };
     const renk = renkMap[t];
     const aktif = t === tip;
     b.style.background = aktif ? renk + '22' : 'transparent';
@@ -8266,6 +8354,24 @@ function ggOdemeSec(tip, btn) {
   // Vade tarihi sadece veresiye seçince görünsün
   const vadeWrap = document.getElementById('gg-vade-wrap');
   if (vadeWrap) vadeWrap.style.display = tip === 'veresiye' ? 'block' : 'none';
+  // Kredi kartı seçimi sadece kredi kartı seçince görünsün
+  const kkWrap = document.getElementById('gg-kredikart-wrap');
+  if (kkWrap) {
+    if (tip === 'kredikart') {
+      kkWrap.style.display = 'block';
+      // Kartları yükle
+      sb.from('kredi_kartlar').select('id,banka,son_4_hane').eq('kafe_id', kafeId).then(({data}) => {
+        const sel = document.getElementById('gg-kredikart-sec');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">-- Kart seçin --</option>';
+        (data||[]).forEach(k => {
+          sel.innerHTML += `<option value="${k.id}">${k.banka}${k.son_4_hane?' ···'+k.son_4_hane:''}</option>`;
+        });
+      });
+    } else {
+      kkWrap.style.display = 'none';
+    }
+  }
 }
 
 function gelgidEkleModal(tip) {
@@ -8289,23 +8395,31 @@ async function gelgidKaydet() {
   const tarih = document.getElementById('gg-tarih').value;
   const kategori = ggTip === 'gider' ? document.getElementById('gg-kategori').value : 'Gelir';
   const vade = ggOdemeTip === 'veresiye' ? document.getElementById('gg-vade').value : null;
+  const secilenKartId = ggOdemeTip === 'kredikart' ? (document.getElementById('gg-kredikart-sec')?.value || null) : null;
   if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
   if (!tarih) { toast('Tarih girin!'); return; }
   if (ggOdemeTip === 'veresiye' && !vade) { toast('Vade tarihi girin!'); return; }
-  const {error} = await sb.from('gelir_gider').insert({
-    kafe_id: kafeId,
-    tip: ggTip,
-    kategori,
-    aciklama: aciklama || kategori,
-    tutar,
+  if (ggOdemeTip === 'kredikart' && !secilenKartId) { toast('Kredi kartı seçin!'); return; }
+  const { data: ggKayit, error } = await sb.from('gelir_gider').insert({
+    kafe_id: kafeId, tip: ggTip, kategori,
+    aciklama: aciklama || kategori, tutar,
     tarih: new Date(tarih).toISOString(),
     odeme_tip: ggOdemeTip,
     vade_tarihi: vade ? new Date(vade).toISOString() : null,
-    odendi: ggOdemeTip !== 'veresiye' // nakit/kart → anında ödendi, veresiye → bekliyor
-  });
+    odendi: ggOdemeTip !== 'veresiye'
+  }).select().single();
   if (error) { toast('Hata: ' + error.message); return; }
+  // Kredi kartı seçildiyse harcama tablosuna da kaydet
+  if (ggOdemeTip === 'kredikart' && secilenKartId && ggTip === 'gider') {
+    await sb.from('kredi_kart_harcamalar').insert({
+      kart_id: secilenKartId, kafe_id: kafeId,
+      aciklama: aciklama || kategori, tutar,
+      tarih: new Date(tarih).toISOString(),
+      gelir_gider_id: ggKayit?.id || null
+    });
+  }
   document.getElementById('gelgid-modal').style.display = 'none';
-  toast(ggTip === 'gelir' ? '✓ Gelir eklendi' : (ggOdemeTip === 'veresiye' ? '⏳ Veresiye gider eklendi' : '✓ Gider eklendi'));
+  toast(ggTip === 'gelir' ? '✓ Gelir eklendi' : ggOdemeTip === 'veresiye' ? '⏳ Veresiye gider eklendi' : ggOdemeTip === 'kredikart' ? '💳 Kredi kartına işlendi' : '✓ Gider eklendi');
   await gelgidRender();
   await kasaRender();
 }
@@ -9787,7 +9901,7 @@ let _aktifMuhasebeSecme = 'ozet';
 
 function muhasebeSecme(sekme) {
   _aktifMuhasebeSecme = sekme;
-  ['ozet','toptanci','kasa','gelgid'].forEach(s => {
+  ['ozet','toptanci','kasa','gelgid','kredikart'].forEach(s => {
     const el = document.getElementById('msekme-' + s);
     const btn = document.getElementById('mtab-' + s);
     if (!el || !btn) return;
@@ -9805,6 +9919,7 @@ async function muhasebeRender() {
   if (s === 'toptanci' || s === 'ozet') await toptanciRender();
   if (s === 'kasa' || s === 'ozet') await kasaRender();
   if (s === 'ozet') await ozetRender();
+  if (s === 'kredikart') await krediKartRender();
 }
 
 // ════════════════════════════════════════
@@ -10211,6 +10326,346 @@ async function kasaHareketSil(id) {
   toast('Hareket silindi');
   kasaRender(); ozetRender();
 }
+// ════════════════════════════════════════
+// KREDİ KARTI SİSTEMİ
+// ════════════════════════════════════════
+let _kkAktifKartId = null;
+let _kkRenk = '#3b82f6';
+let _kkOdemeTip = 'nakit';
+let _kkDuzenleId = null;
+
+function kkRenkSec(renk, btn) {
+  _kkRenk = renk;
+  document.querySelectorAll('#kk-renk-sec button').forEach(b => {
+    b.style.borderColor = 'transparent';
+  });
+  if (btn) btn.style.borderColor = renk;
+}
+
+function kkOdemeTipSec(tip, btn) {
+  _kkOdemeTip = tip;
+  ['nakit','kart'].forEach(t => {
+    const b = document.getElementById('kk-ot-' + t);
+    if (!b) return;
+    const renk = t === 'nakit' ? '#22c55e' : '#3b82f6';
+    b.style.background = t === tip ? renk + '22' : 'transparent';
+    b.style.borderColor = t === tip ? renk : 'var(--border)';
+    b.style.color = t === tip ? renk : 'var(--muted)';
+  });
+}
+
+function krediKartEkleModal(kartId) {
+  _kkDuzenleId = kartId || null;
+  _kkRenk = '#3b82f6';
+  document.getElementById('kredikart-modal-baslik').textContent = kartId ? '✏️ Kartı Düzenle' : '+ Kart Ekle';
+  document.getElementById('kk-banka').value = '';
+  document.getElementById('kk-son4').value = '';
+  document.getElementById('kk-limit').value = '';
+  document.getElementById('kk-kesim').value = '';
+  document.getElementById('kk-odeme-gun').value = '';
+  kkRenkSec('#3b82f6', document.querySelector('#kk-renk-sec button'));
+
+  if (kartId) {
+    // Düzenleme: mevcut veriyi doldur
+    sb.from('kredi_kartlar').select('*').eq('id', kartId).single().then(({data}) => {
+      if (!data) return;
+      document.getElementById('kk-banka').value = data.banka || '';
+      document.getElementById('kk-son4').value = data.son_4_hane || '';
+      document.getElementById('kk-limit').value = data.limit_tutar || '';
+      document.getElementById('kk-kesim').value = data.kesim_gunu || '';
+      document.getElementById('kk-odeme-gun').value = data.odeme_gunu || '';
+      _kkRenk = data.renk || '#3b82f6';
+      const renkBtn = document.querySelector(`#kk-renk-sec button[data-renk="${data.renk}"]`);
+      if (renkBtn) kkRenkSec(data.renk, renkBtn);
+    });
+  }
+  document.getElementById('kredikart-modal').style.display = 'flex';
+}
+
+async function krediKartKaydet() {
+  const banka = document.getElementById('kk-banka').value.trim();
+  const son4 = document.getElementById('kk-son4').value.trim();
+  const limit = parseFloat(document.getElementById('kk-limit').value) || 0;
+  const kesim = parseInt(document.getElementById('kk-kesim').value) || null;
+  const odemeGun = parseInt(document.getElementById('kk-odeme-gun').value) || null;
+  if (!banka) { toast('Banka adı girin!'); return; }
+
+  const veri = {
+    kafe_id: kafeId, banka, son_4_hane: son4 || null,
+    limit_tutar: limit, kesim_gunu: kesim, odeme_gunu: odemeGun, renk: _kkRenk
+  };
+
+  if (_kkDuzenleId) {
+    await sb.from('kredi_kartlar').update(veri).eq('id', _kkDuzenleId);
+    toast('✓ Kart güncellendi');
+  } else {
+    await sb.from('kredi_kartlar').insert(veri);
+    toast('✓ Kart eklendi');
+  }
+  modalKapat('kredikart-modal');
+  await krediKartRender();
+}
+
+async function krediKartSil(kartId) {
+  if (!confirm('Bu kartı silmek istiyor musunuz? Tüm harcama geçmişi de silinecek.')) return;
+  await sb.from('kredi_kartlar').delete().eq('id', kartId);
+  toast('Kart silindi');
+  await krediKartRender();
+}
+
+function kkHarcamaModal(kartId, kartAdi, renk) {
+  _kkAktifKartId = kartId;
+  document.getElementById('kk-harcama-kart-adi').textContent = kartAdi;
+  document.getElementById('kk-harcama-kart-adi').style.color = renk || 'var(--accent)';
+  document.getElementById('kk-h-aciklama').value = '';
+  document.getElementById('kk-h-tutar').value = '';
+  document.getElementById('kk-h-tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('kk-harcama-modal').style.display = 'flex';
+}
+
+async function kkHarcamaKaydet() {
+  const aciklama = document.getElementById('kk-h-aciklama').value.trim();
+  const tutar = parseFloat(document.getElementById('kk-h-tutar').value);
+  const tarih = document.getElementById('kk-h-tarih').value;
+  if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
+  if (!tarih) { toast('Tarih girin!'); return; }
+
+  await sb.from('kredi_kart_harcamalar').insert({
+    kart_id: _kkAktifKartId, kafe_id: kafeId,
+    aciklama: aciklama || 'Harcama',
+    tutar, tarih: new Date(tarih).toISOString()
+  });
+  toast('✓ Harcama eklendi');
+  modalKapat('kk-harcama-modal');
+  await krediKartRender();
+}
+
+async function kkHarcamaSil(harcamaId) {
+  if (!confirm('Bu harcamayı silmek istiyor musunuz?')) return;
+  await sb.from('kredi_kart_harcamalar').delete().eq('id', harcamaId);
+  toast('Harcama silindi');
+  await krediKartRender();
+}
+
+async function kkOdemeModal(kartId, kartAdi, renk, donemBorc) {
+  _kkAktifKartId = kartId;
+  _kkOdemeTip = 'nakit';
+  document.getElementById('kk-odeme-kart-adi').textContent = kartAdi;
+  document.getElementById('kk-odeme-kart-adi').style.color = renk || 'var(--accent)';
+  document.getElementById('kk-odeme-borc').textContent = fmt(donemBorc) + '₺';
+  document.getElementById('kk-o-tutar').value = donemBorc;
+  kkOdemeTipSec('nakit', null);
+  document.getElementById('kk-odeme-modal').style.display = 'flex';
+}
+
+async function kkOdemeYap() {
+  const tutar = parseFloat(document.getElementById('kk-o-tutar').value);
+  if (!tutar || tutar <= 0) { toast('Tutar girin!'); return; }
+
+  // Kasa hareketine gider olarak yaz
+  await sb.from('kasa_hareketler').insert({
+    kafe_id: kafeId,
+    tip: 'cikis',
+    odeme_tip: _kkOdemeTip,
+    tutar,
+    aciklama: 'Kredi kartı ödemesi — ' + (document.getElementById('kk-odeme-kart-adi').textContent || ''),
+    tarih: new Date().toISOString()
+  });
+
+  // Kredi kart ödemesi tablosuna kaydet
+  await sb.from('kredi_kart_odemeler').insert({
+    kart_id: _kkAktifKartId, kafe_id: kafeId,
+    tutar, odeme_tip: _kkOdemeTip,
+    tarih: new Date().toISOString()
+  });
+
+  toast('✓ Ödeme yapıldı — kasa güncellendi');
+  modalKapat('kk-odeme-modal');
+  await krediKartRender();
+  await kasaRender();
+}
+
+async function krediKartRender() {
+  if (!kafeId) return;
+  const liste = document.getElementById('kredikart-liste');
+  if (!liste) return;
+  liste.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;">⏳</div>';
+
+  try {
+    const { data: kartlar } = await sb.from('kredi_kartlar')
+      .select('*').eq('kafe_id', kafeId).order('created_at');
+
+    if (!kartlar || kartlar.length === 0) {
+      liste.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:0.85rem;">Henüz kart eklenmedi.<br><br>+ Kart Ekle butonuna basın.</div>';
+      return;
+    }
+
+    const simdi = new Date();
+    let html = '';
+
+    for (const k of kartlar) {
+      // Dönem başlangıcı: kesim gününe göre hesapla
+      let donemBaslangic = new Date(simdi);
+      if (k.kesim_gunu) {
+        donemBaslangic.setDate(k.kesim_gunu);
+        if (donemBaslangic >= simdi) donemBaslangic.setMonth(donemBaslangic.getMonth() - 1);
+      } else {
+        donemBaslangic.setDate(1);
+      }
+
+      // Dönem harcamaları
+      const { data: harcamalar } = await sb.from('kredi_kart_harcamalar')
+        .select('*').eq('kart_id', k.id)
+        .gte('tarih', donemBaslangic.toISOString())
+        .order('tarih', {ascending: false});
+
+      // Dönem ödemeleri
+      const { data: odemeler } = await sb.from('kredi_kart_odemeler')
+        .select('tutar').eq('kart_id', k.id)
+        .gte('tarih', donemBaslangic.toISOString());
+
+      const donemHarcama = (harcamalar||[]).reduce((s,h) => s + parseFloat(h.tutar||0), 0);
+      const donemOdeme = (odemeler||[]).reduce((s,o) => s + parseFloat(o.tutar||0), 0);
+      const donemBorc = Math.max(0, donemHarcama - donemOdeme);
+      const limitYuzde = k.limit_tutar > 0 ? Math.min(100, Math.round(donemBorc / k.limit_tutar * 100)) : 0;
+      const kalan = k.limit_tutar - donemBorc;
+
+      // Ödeme günü uyarısı
+      let odemeUyari = '';
+      if (k.odeme_gunu) {
+        let odemeTarih = new Date(simdi);
+        odemeTarih.setDate(k.odeme_gunu);
+        if (odemeTarih < simdi) odemeTarih.setMonth(odemeTarih.getMonth() + 1);
+        const kalanGun = Math.ceil((odemeTarih - simdi) / (1000*60*60*24));
+        if (kalanGun <= 3 && donemBorc > 0) {
+          odemeUyari = `<div style="background:#e0404015;border:1px solid #e0404040;border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:0.75rem;font-weight:800;color:#e04040;">⚠️ Ödeme günü ${kalanGun === 0 ? 'BUGÜN' : kalanGun + ' gün sonra'} — ${fmt(donemBorc)}₺ ödenmeli</div>`;
+        } else if (kalanGun <= 7 && donemBorc > 0) {
+          odemeUyari = `<div style="background:#f59e0b15;border:1px solid #f59e0b40;border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:0.75rem;font-weight:800;color:#f59e0b;">⏳ Ödeme günü ${kalanGun} gün sonra — ${fmt(donemBorc)}₺</div>`;
+        }
+      }
+
+      // Harcama listesi
+      const harcamaHtml = (harcamalar||[]).slice(0,5).map(h => {
+        const tarih = new Date(h.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);">
+          <div>
+            <div style="font-size:0.78rem;font-weight:700;">${h.aciklama}</div>
+            <div style="font-size:0.62rem;color:var(--muted);">${tarih}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:0.82rem;font-weight:900;color:var(--danger);">-${fmt(h.tutar)}₺</span>
+            <button onclick="kkHarcamaSil('${h.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.72rem;padding:0 2px;">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      html += `<div style="background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:12px;border-left:4px solid ${k.renk||'#3b82f6'};">
+        <!-- Kart başlık -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:0.95rem;font-weight:900;color:${k.renk||'#3b82f6'};">${k.banka}${k.son_4_hane?' ···'+k.son_4_hane:''}</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">
+              ${k.kesim_gunu?'Kesim: '+k.kesim_gunu+'. gün':''} ${k.odeme_gunu?'· Ödeme: '+k.odeme_gunu+'. gün':''}
+            </div>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button onclick="krediKartEkleModal('${k.id}')" style="padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);font-size:0.7rem;cursor:pointer;">✏️</button>
+            <button onclick="krediKartSil('${k.id}')" style="padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);font-size:0.7rem;cursor:pointer;">🗑</button>
+          </div>
+        </div>
+
+        ${odemeUyari}
+
+        <!-- Limit bar -->
+        ${k.limit_tutar > 0 ? `
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);margin-bottom:4px;">
+            <span>Kullanılan: ${fmt(donemBorc)}₺</span>
+            <span>Kalan: ${fmt(kalan)}₺ / ${fmt(k.limit_tutar)}₺</span>
+          </div>
+          <div style="background:var(--surface3);border-radius:4px;height:6px;overflow:hidden;">
+            <div style="width:${limitYuzde}%;height:100%;background:${limitYuzde>80?'#e04040':limitYuzde>50?'#f59e0b':k.renk||'#3b82f6'};border-radius:4px;transition:width .3s;"></div>
+          </div>
+        </div>` : ''}
+
+        <!-- Özet rakamlar -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+          <div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center;">
+            <div style="font-size:0.55rem;color:var(--muted);font-weight:700;">DÖNEM HARCAMA</div>
+            <div style="font-size:0.85rem;font-weight:900;color:var(--danger);">${fmt(donemHarcama)}₺</div>
+          </div>
+          <div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center;">
+            <div style="font-size:0.55rem;color:var(--muted);font-weight:700;">ÖDENEN</div>
+            <div style="font-size:0.85rem;font-weight:900;color:#22c55e;">${fmt(donemOdeme)}₺</div>
+          </div>
+          <div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center;">
+            <div style="font-size:0.55rem;color:var(--muted);font-weight:700;">DÖNEM BORCU</div>
+            <div style="font-size:0.85rem;font-weight:900;color:${donemBorc>0?'#e04040':'#22c55e'};">${fmt(donemBorc)}₺</div>
+          </div>
+        </div>
+
+        <!-- Harcamalar -->
+        ${harcamaHtml ? `<div style="margin-bottom:10px;">${harcamaHtml}</div>` : '<div style="font-size:0.75rem;color:var(--muted);margin-bottom:10px;">Bu dönemde harcama yok.</div>'}
+
+        <!-- Butonlar -->
+        <div style="display:flex;gap:6px;">
+          <button onclick="kkHarcamaModal('${k.id}','${k.banka}${k.son_4_hane?' ···'+k.son_4_hane:''}','${k.renk||'#3b82f6'}')" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid ${k.renk||'#3b82f6'};background:${(k.renk||'#3b82f6')}18;color:${k.renk||'#3b82f6'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">+ Harcama</button>
+          ${donemBorc > 0 ? `<button onclick="kkOdemeModal('${k.id}','${k.banka}${k.son_4_hane?' ···'+k.son_4_hane:''}','${k.renk||'#3b82f6'}',${donemBorc})" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid #22c55e;background:#22c55e18;color:#22c55e;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">💳 Hesap Öde</button>` : ''}
+        </div>
+      </div>`;
+    }
+
+    liste.innerHTML = html;
+
+    // Vadeli ödemeler bölümüne de yansıt
+    await kkVadeliGuncelle(kartlar);
+
+  } catch(e) {
+    console.error('Kredi kart render hatası:', e);
+    liste.innerHTML = '<div style="color:var(--danger);padding:16px;font-size:0.82rem;">Yükleme hatası: ' + e.message + '</div>';
+  }
+}
+
+async function kkVadeliGuncelle(kartlar) {
+  // kasaRender'daki vadeli listesine kredi kartı ödeme günlerini ekle
+  const vadeliEl = document.getElementById('kasa-vadeli-liste');
+  if (!vadeliEl) return;
+  const simdi = new Date();
+
+  for (const k of (kartlar||[])) {
+    if (!k.odeme_gunu) continue;
+    let odemeTarih = new Date(simdi);
+    odemeTarih.setDate(k.odeme_gunu);
+    if (odemeTarih < simdi) odemeTarih.setMonth(odemeTarih.getMonth() + 1);
+    const kalanGun = Math.ceil((odemeTarih - simdi) / (1000*60*60*24));
+    if (kalanGun > 30) continue; // Sadece 30 gün içindekiler
+
+    // Dönem borcu
+    let donemBaslangic = new Date(simdi);
+    if (k.kesim_gunu) {
+      donemBaslangic.setDate(k.kesim_gunu);
+      if (donemBaslangic >= simdi) donemBaslangic.setMonth(donemBaslangic.getMonth() - 1);
+    } else { donemBaslangic.setDate(1); }
+
+    const { data: h } = await sb.from('kredi_kart_harcamalar').select('tutar').eq('kart_id', k.id).gte('tarih', donemBaslangic.toISOString());
+    const { data: o } = await sb.from('kredi_kart_odemeler').select('tutar').eq('kart_id', k.id).gte('tarih', donemBaslangic.toISOString());
+    const borc = (h||[]).reduce((s,x)=>s+parseFloat(x.tutar||0),0) - (o||[]).reduce((s,x)=>s+parseFloat(x.tutar||0),0);
+    if (borc <= 0) continue;
+
+    const vadeStr = odemeTarih.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+    const satir = `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);">
+      <div>
+        <div style="font-size:0.82rem;font-weight:700;">💳 ${k.banka}${k.son_4_hane?' ···'+k.son_4_hane:''}</div>
+        <div style="font-size:0.65rem;color:var(--muted);">Vade: ${vadeStr} · ${kalanGun} gün kaldı</div>
+      </div>
+      <span style="font-size:0.88rem;font-weight:900;color:#f59e0b;font-family:'Space Mono',monospace;">-${fmt(borc)}₺</span>
+    </div>`;
+
+    vadeliEl.innerHTML += satir;
+  }
+}
+
+
 
 async function ozetRender() {
   if (!kafeId) return;
