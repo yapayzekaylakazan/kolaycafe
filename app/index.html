@@ -1153,26 +1153,58 @@
 
   <!-- KASA SEKMESİ -->
   <div id="msekme-kasa" style="display:none;padding:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="font-size:0.82rem;font-weight:800;">💳 Kasa Defteri</div>
+    <!-- Bakiye kartları -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid #22c55e;">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:2px;">💵 NAKİT BAKİYE</div>
+        <div style="font-size:1rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="kasa-nakit">0₺</div>
+        <div style="font-size:0.58rem;color:var(--muted);margin-top:2px;">Gelir - Nakit gider</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid #3b82f6;">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:2px;">💳 KART BAKİYE</div>
+        <div style="font-size:1rem;font-weight:900;color:#3b82f6;font-family:'Space Mono',monospace;" id="kasa-kart">0₺</div>
+        <div style="font-size:0.58rem;color:var(--muted);margin-top:2px;">Kart tahsilatlar</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:10px;border-left:3px solid var(--accent2);">
+        <div style="font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:2px;">🏦 TOPLAM BAKİYE</div>
+        <div style="font-size:1rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;" id="kasa-toplam">0₺</div>
+        <div style="font-size:0.58rem;color:var(--muted);margin-top:2px;">Nakit + Kart</div>
+      </div>
+    </div>
+    <!-- Alt özet: toplam gelir/gider/net -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;">
+        <div style="font-size:0.55rem;color:var(--muted);font-weight:700;margin-bottom:2px;">TOPLAM GELİR</div>
+        <div style="font-size:0.88rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="kasa-ozet-gelir">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;">
+        <div style="font-size:0.55rem;color:var(--muted);font-weight:700;margin-bottom:2px;">TOPLAM GİDER</div>
+        <div style="font-size:0.88rem;font-weight:900;color:var(--danger);font-family:'Space Mono',monospace;" id="kasa-ozet-gider">0₺</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;">
+        <div style="font-size:0.55rem;color:var(--muted);font-weight:700;margin-bottom:2px;">NET KASA</div>
+        <div style="font-size:0.88rem;font-weight:900;font-family:'Space Mono',monospace;" id="kasa-ozet-net">0₺</div>
+      </div>
+    </div>
+    <!-- Manuel hareket butonu -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
       <button onclick="kasaHareketModal()" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.8rem;cursor:pointer;">+ Hareket</button>
     </div>
-    <!-- Kasa bakiye kartları -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid #22c55e;">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">💵 NAKİT BAKİYE</div>
-        <div style="font-size:1rem;font-weight:900;color:#22c55e;font-family:'Space Mono',monospace;" id="kasa-nakit">0₺</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid #3b82f6;">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">💳 KART BAKİYE</div>
-        <div style="font-size:1rem;font-weight:900;color:#3b82f6;font-family:'Space Mono',monospace;" id="kasa-kart">0₺</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:12px;padding:10px;text-align:center;border-left:3px solid var(--accent2);">
-        <div style="font-size:0.6rem;color:var(--muted);font-weight:700;">🏦 TOPLAM BAKİYE</div>
-        <div style="font-size:1rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;" id="kasa-toplam">0₺</div>
-      </div>
+    <!-- Gelirler bölümü -->
+    <div style="background:var(--surface2);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📈 Gelirler</div>
+      <div id="kasa-gelir-liste"></div>
     </div>
-    <div id="kasa-liste"></div>
+    <!-- Giderler bölümü -->
+    <div style="background:var(--surface2);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📉 Giderler</div>
+      <div id="kasa-gider-liste"></div>
+    </div>
+    <!-- Vadeli / Bekleyen ödemeler -->
+    <div style="background:var(--surface2);border-radius:12px;padding:10px 12px;">
+      <div style="font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">⏳ Vadeli / Bekleyen Ödemeler</div>
+      <div id="kasa-vadeli-liste"></div>
+    </div>
   </div>
 
   <!-- GELİR/GİDER SEKMESİ -->
@@ -9953,44 +9985,170 @@ async function kasaRender() {
   const donem = document.getElementById('gg-donem')?.value || 'ay';
   const baslangic = muhasebeBaslangic(donem) || '2020-01-01T00:00:00Z';
   const bitis = (donem === 'ozel' && _muhOzelBit) ? new Date(_muhOzelBit + 'T23:59:59').toISOString() : null;
+
+  // 1) Manuel kasa hareketleri
   let q = sb.from('kasa_hareketler').select('*').eq('kafe_id', kafeId).order('tarih', {ascending:false});
   if (donem !== 'tumu') q = q.gte('tarih', baslangic);
   if (bitis) q = q.lte('tarih', bitis);
-  const { data } = await q;
-  const hareketler = data || [];
-  let nakit = 0, kart = 0;
+  const { data: hareketler } = await q;
+
+  // 2) Satış gelirleri (adisyonlar)
+  let nakitGelir = 0, kartGelir = 0;
+  let satirGelirler = [];
   try {
-    let aq = sb.from('kolaycafenlar').select('toplam,odeme_tipi').eq('kafe_id', kafeId).gte('created_at', baslangic);
+    let aq = sb.from('kolaycafenlar').select('toplam,odeme_tipi,created_at,masa_ad,garson').eq('kafe_id', kafeId).gte('created_at', baslangic).order('created_at',{ascending:false});
     if (bitis) aq = aq.lte('created_at', bitis);
     const { data: adisyonlar } = await aq;
+    let satirNakit = 0, satirKart = 0;
     (adisyonlar||[]).forEach(a => {
       if (['ikram','cari','cari_tahsil'].includes(a.odeme_tipi)) return;
-      if (a.odeme_tipi?.includes('kart')) kart += a.toplam;
-      else nakit += a.toplam;
+      if (a.odeme_tipi?.includes('kart') || a.odeme_tipi==='kart') { kartGelir += a.toplam||0; satirKart += a.toplam||0; }
+      else { nakitGelir += a.toplam||0; satirNakit += a.toplam||0; }
     });
+    if (satirNakit > 0) satirGelirler.push({ aciklama:'Satış Gelirleri (Nakit)', tutar: satirNakit, odeme:'nakit', tip:'gelir', otomatik:true });
+    if (satirKart > 0) satirGelirler.push({ aciklama:'Satış Gelirleri (Kart)', tutar: satirKart, odeme:'kart', tip:'gelir', otomatik:true });
   } catch(e) {}
-  hareketler.forEach(h => {
-    const m = h.tip === 'giris' ? h.tutar : -h.tutar;
-    if (h.odeme_tip === 'kart') kart += m; else nakit += m;
-  });
-  const toplam = nakit + kart;
+
+  // 3) Toptancı ödemeleri — gider olarak yansıt
+  let toptanciGiderler = [];
+  try {
+    const { data: toptancilar } = await sb.from('toptancilar').select('id,isim').eq('kafe_id', kafeId);
+    for (const t of (toptancilar||[])) {
+      let thq = sb.from('toptanci_hareketler').select('*').eq('toptanci_id', t.id).eq('tip','odeme').order('tarih',{ascending:false});
+      if (donem !== 'tumu') thq = thq.gte('tarih', baslangic);
+      if (bitis) thq = thq.lte('tarih', bitis);
+      const { data: odemeler } = await thq;
+      (odemeler||[]).forEach(o => {
+        toptanciGiderler.push({
+          aciklama: 'Toptancı — ' + t.isim,
+          tutar: o.tutar,
+          odeme: o.odeme_tip || 'nakit',
+          tip: 'gider',
+          tarih: o.tarih,
+          id: o.id
+        });
+      });
+    }
+  } catch(e) {}
+
+  // 4) Vadeli toptancı borçları (ödenmemiş)
+  let vadelier = [];
+  try {
+    const { data: toptancilar } = await sb.from('toptancilar').select('id,isim,vade_gunu').eq('kafe_id', kafeId);
+    for (const t of (toptancilar||[])) {
+      const { data: hareketlerT } = await sb.from('toptanci_hareketler').select('tip,tutar').eq('toptanci_id', t.id);
+      const borc = (hareketlerT||[]).filter(x=>x.tip==='alis').reduce((s,x)=>s+parseFloat(x.tutar||0),0);
+      const odeme = (hareketlerT||[]).filter(x=>x.tip==='odeme').reduce((s,x)=>s+parseFloat(x.tutar||0),0);
+      const net = borc - odeme;
+      if (net > 0) {
+        let vadeStr = '';
+        if (t.vade_gunu) {
+          const now = new Date();
+          const vadeTarih = new Date(now.getFullYear(), now.getMonth()+1, t.vade_gunu);
+          vadeStr = vadeTarih.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+        }
+        vadelier.push({ aciklama: t.isim, tutar: net, vade: vadeStr });
+      }
+    }
+  } catch(e) {}
+
+  // 5) Tüm manuel hareketleri ayır: gelir / gider
+  const manuelGelirler = (hareketler||[]).filter(h=>h.tip==='giris');
+  const manuelGiderler = (hareketler||[]).filter(h=>h.tip==='cikis');
+
+  // 6) Bakiye hesapla
+  let nakitBakiye = nakitGelir;
+  let kartBakiye = kartGelir;
+  manuelGelirler.forEach(h => { if (h.odeme_tip==='kart') kartBakiye+=h.tutar; else nakitBakiye+=h.tutar; });
+  manuelGiderler.forEach(h => { if (h.odeme_tip==='kart') kartBakiye-=h.tutar; else nakitBakiye-=h.tutar; });
+  toptanciGiderler.forEach(h => { if (h.odeme==='kart') kartBakiye-=h.tutar; else nakitBakiye-=h.tutar; });
+  const toplamBakiye = nakitBakiye + kartBakiye;
+
+  // Toplam gelir/gider
+  const toplamGelir = nakitGelir + kartGelir + manuelGelirler.reduce((s,h)=>s+h.tutar,0);
+  const toplamGider = manuelGiderler.reduce((s,h)=>s+h.tutar,0) + toptanciGiderler.reduce((s,h)=>s+h.tutar,0);
+  const netKasa = toplamBakiye;
+
+  // Bakiye kartları
+  const _sn = v => (v<0?'-':'')+fmt(Math.abs(v))+'₺';
+  const _renk = v => v < 0 ? 'var(--danger)' : v === 0 ? 'var(--muted)' : null;
   const nakitEl = document.getElementById('kasa-nakit');
   const kartEl = document.getElementById('kasa-kart');
   const toplamEl = document.getElementById('kasa-toplam');
-  if (nakitEl) nakitEl.textContent = fmt(nakit) + '₺';
-  if (kartEl) kartEl.textContent = fmt(kart) + '₺';
-  if (toplamEl) toplamEl.textContent = fmt(toplam) + '₺';
-  const liste = document.getElementById('kasa-liste');
-  if (!liste) return;
-  liste.innerHTML = hareketler.length === 0
-    ? '<div style="text-align:center;color:var(--muted);padding:20px;font-size:0.82rem;">Bu dönemde manuel hareket yok.</div>'
-    : hareketler.map(h => {
-        const tarih = new Date(h.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
-        return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
-          <div><div style="font-size:0.82rem;font-weight:700;">${h.tip==='giris'?'⬆':'⬇'} ${h.aciklama}</div><div style="font-size:0.65rem;color:var(--muted);">${tarih} · ${h.odeme_tip||'nakit'}</div></div>
-          <div style="font-size:0.88rem;font-weight:900;color:${h.tip==='giris'?'#22c55e':'#e04040'};font-family:'Space Mono',monospace;">${h.tip==='giris'?'+':'-'}${fmt(h.tutar)}₺</div>
-        </div>`;
+  if (nakitEl) { nakitEl.textContent = _sn(nakitBakiye); if(_renk(nakitBakiye)) nakitEl.style.color=_renk(nakitBakiye); }
+  if (kartEl) { kartEl.textContent = _sn(kartBakiye); if(_renk(kartBakiye)) kartEl.style.color=_renk(kartBakiye); }
+  if (toplamEl) { toplamEl.textContent = _sn(toplamBakiye); if(_renk(toplamBakiye)) toplamEl.style.color=_renk(toplamBakiye); }
+
+  // Özet satırı
+  const ozGelir = document.getElementById('kasa-ozet-gelir');
+  const ozGider = document.getElementById('kasa-ozet-gider');
+  const ozNet = document.getElementById('kasa-ozet-net');
+  if (ozGelir) ozGelir.textContent = '+'+fmt(toplamGelir)+'₺';
+  if (ozGider) ozGider.textContent = '-'+fmt(toplamGider)+'₺';
+  if (ozNet) { ozNet.textContent = _sn(netKasa); ozNet.style.color = netKasa < 0 ? 'var(--danger)' : '#22c55e'; }
+
+  // Satır render yardımcı
+  const satirHtml = (aciklama, alt, tutar, renk, etiket, etiketRenk, sil) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);">
+      <div>
+        <div style="font-size:0.82rem;font-weight:700;">${aciklama}</div>
+        ${alt?`<div style="font-size:0.65rem;color:var(--muted);">${alt}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span style="font-size:0.68rem;padding:2px 8px;border-radius:8px;font-weight:800;background:${etiketRenk}22;color:${etiketRenk};">${etiket}</span>
+        <span style="font-size:0.88rem;font-weight:900;color:${renk};font-family:'Space Mono',monospace;">${tutar}</span>
+        ${sil?`<button onclick="${sil}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0 4px;">✕</button>`:''}
+      </div>
+    </div>`;
+
+  // Gelirler listesi
+  const gelirListe = document.getElementById('kasa-gelir-liste');
+  if (gelirListe) {
+    const tumGelirler = [...satirGelirler, ...manuelGelirler.map(h=>({aciklama:h.aciklama, tutar:h.tutar, odeme:h.odeme_tip||'nakit', tip:'gelir', tarih:h.tarih, id:h.id}))];
+    if (tumGelirler.length === 0) {
+      gelirListe.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:6px 0;">Bu dönemde gelir yok.</div>';
+    } else {
+      gelirListe.innerHTML = tumGelirler.map(g => {
+        const tarih = g.tarih ? new Date(g.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'}) : '';
+        const sil = g.id && !g.otomatik ? `kasaHareketSil('${g.id}')` : '';
+        return satirHtml(g.aciklama, tarih, '+'+fmt(g.tutar)+'₺', '#22c55e', g.odeme==='kart'?'kart':'nakit', g.odeme==='kart'?'#3b82f6':'#22c55e', sil);
       }).join('');
+    }
+  }
+
+  // Giderler listesi
+  const giderListe = document.getElementById('kasa-gider-liste');
+  if (giderListe) {
+    const tumGiderler = [...toptanciGiderler, ...manuelGiderler.map(h=>({aciklama:h.aciklama, tutar:h.tutar, odeme:h.odeme_tip||'nakit', tarih:h.tarih, id:h.id}))];
+    if (tumGiderler.length === 0) {
+      giderListe.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:6px 0;">Bu dönemde gider yok.</div>';
+    } else {
+      giderListe.innerHTML = tumGiderler.map(g => {
+        const tarih = g.tarih ? new Date(g.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'}) : '';
+        const sil = g.id && !g.otomatik ? `kasaHareketSil('${g.id}')` : '';
+        return satirHtml(g.aciklama, tarih, '-'+fmt(g.tutar)+'₺', 'var(--danger)', g.odeme==='kart'?'kart':'nakit', g.odeme==='kart'?'#3b82f6':'#e04040', sil);
+      }).join('');
+    }
+  }
+
+  // Vadeli/bekleyen listesi
+  const vadeliListe = document.getElementById('kasa-vadeli-liste');
+  if (vadeliListe) {
+    if (vadelier.length === 0) {
+      vadeliListe.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:6px 0;">Bekleyen vadeli ödeme yok.</div>';
+    } else {
+      vadeliListe.innerHTML = vadelier.map(v =>
+        satirHtml(v.aciklama, v.vade ? 'Vade: '+v.vade : 'Vade tarihi belirtilmemiş', '-'+fmt(v.tutar)+'₺', '#f59e0b', 'veresiye', '#f59e0b', '')
+      ).join('');
+    }
+  }
+}
+
+async function kasaHareketSil(id) {
+  if (!confirm('Bu hareketi silmek istiyor musunuz?')) return;
+  await sb.from('kasa_hareketler').delete().eq('id', id);
+  toast('Hareket silindi');
+  kasaRender(); ozetRender();
 }
 
 async function ozetRender() {
