@@ -2747,18 +2747,9 @@
     right: 0;
     z-index: 500;
   }
-  /* Scroll olan sayfalara nav boşluğu — overflow:hidden olanlar hariç */
-  .page-masalar,
-  .page-rapor,
-  .page-urun,
-  .page-ayarlar,
-  .page-cari,
-  .page-stok,
-  .page-recete,
-  .page-gelal,
-  .page-online,
-  .page-kolaycafen {
-    padding-bottom: 68px;
+  /* App flex container nav yüksekliği kadar küçült */
+  #app {
+    padding-bottom: 60px;
   }
   #muh-scroll {
     padding-bottom: 68px;
@@ -4101,8 +4092,8 @@ async function kafeVerisiYukle() {
     document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':(_planRenkMap[plan]||'');
 
     // Plan bitiş bilgisini ayarlar sayfasında göster
-    if (data?.plan_bitis) {
-      const bitis = new Date(data.plan_bitis);
+    if (kafeVeri?.plan_bitis) {
+      const bitis = new Date(kafeVeri.plan_bitis);
       const kalan = Math.ceil((bitis - new Date()) / (1000*60*60*24));
       document.getElementById('ayar-plan-bitis-row').style.display = '';
       document.getElementById('ayar-plan-bitis').textContent = bitis.toLocaleDateString('tr-TR') + ' (' + kalan + ' gün)';
