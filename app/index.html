@@ -12982,6 +12982,8 @@ async function odemeSatinAl() {
 
     const EDGE_URL = `${SUPABASE_URL}/functions/v1/iyzico-odeme`;
 
+    // Edge Function'ın beklediği alan adları: action=baslat, kafeId, kafeAdi, aiEklendi, donem, callbackUrl
+    const kafeAdi = window._kafeData.isim || (ad + ' ' + soyad);
     const res = await fetch(`${EDGE_URL}`, {
       method: 'POST',
       headers: {
@@ -12989,15 +12991,15 @@ async function odemeSatinAl() {
         'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
-        action:  'token',
-        kafe_id: window._kafeData.id,
-        plan:    _odemePlan,
-        donem:   _odemeDonem,
-        ai_ekle: _odemeAi,
-        tutar,
-        email:   session.user.email,
-        ad, soyad,
-        telefon: '+905000000000',
+        action:      'baslat',
+        kafeId:      window._kafeData.id,
+        kafeAdi:     kafeAdi,
+        plan:        _odemePlan,
+        donem:       _odemeDonem,
+        aiEklendi:   _odemeAi,
+        email:       session.user.email,
+        telefon:     window._kafeData.telefon || '+905000000000',
+        callbackUrl: 'https://kolaycafe.com/app/index.html',
       }),
     });
 
@@ -13013,8 +13015,7 @@ async function odemeSatinAl() {
         document.body.appendChild(ns);
       });
     } else {
-      const hataMesaji = data.hata || data.error || data.message || JSON.stringify(data);
-      alert('Ödeme başlatılamadı: ' + hataMesaji);
+      alert('Ödeme başlatılamadı: ' + (data.hata ?? data.error ?? 'Bilinmeyen hata'));
       btn.disabled = false;
       btn.textContent = 'Tekrar Dene →';
       btn.style.opacity = '1';
