@@ -12967,8 +12967,6 @@ async function odemeSatinAl() {
   btn.textContent = '⏳ İşleniyor...';
 
   try {
-    // Token tazele — Invalid JWT hatasını önler
-    await sb.auth.refreshSession();
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { alert('Oturum süresi dolmuş, tekrar giriş yapın.'); return; }
 
@@ -12984,13 +12982,14 @@ async function odemeSatinAl() {
 
     const EDGE_URL = `${SUPABASE_URL}/functions/v1/iyzico-odeme`;
 
-    const res = await fetch(`${EDGE_URL}?action=token`, {
+    const res = await fetch(`${EDGE_URL}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
+        action:  'token',
         kafe_id: window._kafeData.id,
         plan:    _odemePlan,
         donem:   _odemeDonem,
@@ -13014,7 +13013,8 @@ async function odemeSatinAl() {
         document.body.appendChild(ns);
       });
     } else {
-      alert('Ödeme başlatılamadı: ' + (data.hata ?? 'Bilinmeyen hata'));
+      const hataMesaji = data.hata || data.error || data.message || JSON.stringify(data);
+      alert('Ödeme başlatılamadı: ' + hataMesaji);
       btn.disabled = false;
       btn.textContent = 'Tekrar Dene →';
       btn.style.opacity = '1';
