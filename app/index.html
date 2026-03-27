@@ -2721,6 +2721,27 @@
 
 </div><!-- /app -->
 
+<style>
+  /* ACİL DÜZELTME: bottom-nav her zaman görünür olsun */
+  .bottom-nav {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 500;
+  }
+  /* page içerikleri nav yüksekliği kadar boşluk bıraksın */
+  .page.active {
+    padding-bottom: 60px;
+  }
+  #page-gelgid.active {
+    padding-bottom: 0;
+  }
+  #muh-scroll {
+    padding-bottom: 60px;
+  }
+</style>
+
 <!-- MODALLER -->
 <!-- ── VARYANT SEÇİM MODALI (Garson/Admin) ── -->
 <div class="modal-overlay" id="varyant-modal" onclick="if(event.target===this)varyantModalKapat()">
