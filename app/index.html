@@ -2747,15 +2747,21 @@
     right: 0;
     z-index: 500;
   }
-  /* page içerikleri nav yüksekliği kadar boşluk bıraksın */
-  .page.active {
-    padding-bottom: 60px;
-  }
-  #page-gelgid.active {
-    padding-bottom: 0;
+  /* Scroll olan sayfalara nav boşluğu — overflow:hidden olanlar hariç */
+  .page-masalar,
+  .page-rapor,
+  .page-urun,
+  .page-ayarlar,
+  .page-cari,
+  .page-stok,
+  .page-recete,
+  .page-gelal,
+  .page-online,
+  .page-kolaycafen {
+    padding-bottom: 68px;
   }
   #muh-scroll {
-    padding-bottom: 60px;
+    padding-bottom: 68px;
   }
 </style>
 
