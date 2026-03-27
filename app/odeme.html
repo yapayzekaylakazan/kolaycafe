@@ -364,6 +364,13 @@ function sepetGuncelle() {
 async function odemeBaslat() {
   if (!seciliPlan) return;
 
+  // Giris kontrolu
+  if (!kullanici || !kafeData) {
+    alert('Lütfen önce giriş yapın.');
+    window.location.href = 'index.html';
+    return;
+  }
+
   document.getElementById('yukleniyor').classList.add('aktif');
 
   try {
@@ -381,6 +388,7 @@ async function odemeBaslat() {
         kafe_id: kafeData.id,
         plan:    seciliPlan,
         donem:   seciliDonem,
+        ai_ekle: seciliAi,
         email:   kullanici.email,
         ad, soyad,
         telefon: '+905000000000',
