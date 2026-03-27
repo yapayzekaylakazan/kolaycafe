@@ -1,4 +1,5 @@
 // KolayCafe - İyzico Ödeme Edge Function
+// İyzico imza: base64(SHA1(apiKey + secretKey + randomKey + body))
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -9,9 +10,9 @@ const corsHeaders = {
 
 async function iyzicoImza(apiKey: string, secretKey: string, randomKey: string, body: string): Promise<string> {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(apiKey + randomKey + body));
-  const hash = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  const data = enc.encode(apiKey + secretKey + randomKey + body);
+  const hashBuf = await crypto.subtle.digest("SHA-1", data);
+  const hash = btoa(String.fromCharCode(...new Uint8Array(hashBuf)));
   return `apiKey:${apiKey}&randomKey:${randomKey}&signature:${hash}`;
 }
 
@@ -29,7 +30,6 @@ Deno.serve(async (req) => {
     const SB_KEY     = Deno.env.get("SB_SERVICE_KEY")!;
     const sb         = createClient(SB_URL, SB_KEY);
 
-    // ── ÖDEME BAŞLAT ──────────────────────────────────────────────────────────
     if (action === "baslat") {
       const { kafeId, kafeAdi, email, telefon, plan, donem, aiEklendi, callbackUrl } = body;
 
@@ -39,14 +39,11 @@ Deno.serve(async (req) => {
       const paketFiyat = donem === "yillik" ? Math.round(aylik * 0.8) : aylik;
       const aiFiyat = aiEklendi ? (donem === "yillik" ? Math.round(AI_FIYAT * 0.8) : AI_FIYAT) : 0;
       const toplam = paketFiyat + aiFiyat;
-      const toplamStr = donem === "yillik"
-        ? (toplam * 12).toFixed(2)
-        : toplam.toFixed(2);
+      const toplamStr = donem === "yillik" ? (toplam * 12).toFixed(2) : toplam.toFixed(2);
 
       const randomKey = `kc${Date.now()}`;
       const convId    = `kc_${kafeId}_${Date.now()}`;
 
-      // Telefon formatla
       let tel = (telefon ?? "").replace(/\s/g, "");
       if (tel.startsWith("05")) tel = "+9" + tel;
       else if (tel.startsWith("5")) tel = "+90" + tel;
@@ -124,7 +121,6 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── ÖDEME SONUÇ ───────────────────────────────────────────────────────────
     if (action === "sonuc") {
       const { token } = body;
       const randomKey = `sonuc${Date.now()}`;
