@@ -2701,8 +2701,10 @@
   </div>
 </div>
 
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
+</div><!-- /app -->
+
+<!-- BOTTOM NAV - app dışında, her zaman görünür -->
+<div class="bottom-nav" id="bottom-nav" style="display:none;">
   <button class="bnav-btn active" id="nav-masalar" data-yetki="masalar"><div class="nav-icon">🪑</div>Masalar</button>
   <button class="bnav-btn" id="nav-kolaycafen" data-yetki="kolaycafen"><div class="nav-icon">🧾</div>KolayCafen</button>
   <button class="bnav-btn" id="nav-urun" data-yetki="urun"><div class="nav-icon">➕</div>Ürün</button>
@@ -2718,8 +2720,6 @@
   <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')" data-yetki="online"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;">0</span></button>
   <button class="bnav-btn" id="nav-garson-cikis" style="display:none;"><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
-
-</div><!-- /app -->
 
 <style>
   /* ACİL DÜZELTME: bottom-nav her zaman görünür olsun */
@@ -3372,8 +3372,7 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('auth-screen').style.display = 'none';
   const appEl = document.getElementById('app');
   appEl.style.display = 'flex'; appEl.style.flexDirection = 'column';
-
-  // Garson yetkilerini bul
+  document.getElementById('bottom-nav').style.display = 'flex';
   const garsonObj = garsonlar.find(g => (typeof g === 'string' ? g : g.isim) === aktifGarsonAdi);
   // Varsayılan garson yetkileri (yetki tanımlı değilse)
   const varsayilanYetkiler = ['masalar','kolaycafen','gelal','online','mutfak'];
@@ -3570,6 +3569,7 @@ async function uygulamaBaslat(user) {
   const appEl = document.getElementById('app');
   appEl.style.display = 'flex';
   appEl.style.flexDirection = 'column';
+  document.getElementById('bottom-nav').style.display = 'flex';
   document.getElementById('ayar-email').textContent = user.email;
   await kafeVerisiYukle();
   await kolaycafenVerisiYukle();
