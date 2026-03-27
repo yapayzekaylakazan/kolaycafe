@@ -254,9 +254,17 @@ async function init() {
   }
 
   // Kullanıcıyı kontrol et
+  // Session kontrolu - onAuthStateChange ile bekle
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = 'index.html'; return; }
-  kullanici = session.user;
+  if (!session) {
+    // Bir kez daha dene - bazen ilk yüklemede session hazır olmayabiliyor
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const { data: { session: session2 } } = await sb.auth.getSession();
+    if (!session2) { window.location.href = 'index.html'; return; }
+    kullanici = session2.user;
+  } else {
+    kullanici = session.user;
+  }
 
   // Kafe verisini çek
   const { data } = await sb.from('kafeler')
