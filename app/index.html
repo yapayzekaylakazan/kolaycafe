@@ -2169,7 +2169,24 @@
       </div>
       <div style="font-size:0.72rem;color:var(--muted);padding:4px 0 8px;font-weight:600;">Garsonlar bu kodu kullanarak giriş yapar</div>
       <div class="ayar-row"><span class="ayar-label">Plan</span><span class="plan-badge plan-ucretsiz" id="ayar-plan">Ücretsiz</span></div>
+      <div class="ayar-row" id="ayar-plan-bitis-row" style="display:none;">
+        <span class="ayar-label">Bitiş</span>
+        <span class="ayar-val" id="ayar-plan-bitis">—</span>
+      </div>
     </div>
+
+    <!-- PLAN & ÖDEME KARTI -->
+    <div class="ayar-kart" id="ayar-plan-kart">
+      <h3>💳 Plan &amp; Ödeme</h3>
+      <div id="ayar-plan-durum" style="margin-bottom:14px;font-size:0.82rem;color:var(--muted);">Yükleniyor...</div>
+      <button onclick="window.location.href='odeme.html'" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;" id="plan-degistir-btn">
+        ⭐ Planı Yükselt / Yenile
+      </button>
+      <div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:8px;">
+        🔒 iyzico güvencesiyle güvenli ödeme
+      </div>
+    </div>
+
     <div class="ayar-kart">
       <h3>Cafe Adını Değiştir</h3>
       <input type="text" id="yeni-cafe-adi" placeholder="Yeni kafe adı..." style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:10px;">
@@ -4076,6 +4093,23 @@ async function kafeVerisiYukle() {
     const _planRenkMap = {pro:'#7c3aed',elite:'#f97316',ultra:'#2d7a3a',platin:'#1a6fb5',gold:'#b8860b',grow:'#22c55e',start:'#64748b'};
     document.getElementById('ayar-plan').className = 'plan-badge ' + (['pro','elite','ultra','platin','gold','grow','start'].includes(plan)?'plan-pro':'plan-ucretsiz');
     document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':(_planRenkMap[plan]||'');
+
+    // Plan bitiş bilgisini ayarlar sayfasında göster
+    if (kafeVeri?.plan_bitis) {
+      const bitis = new Date(kafeVeri.plan_bitis);
+      const kalan = Math.ceil((bitis - new Date()) / (1000*60*60*24));
+      document.getElementById('ayar-plan-bitis-row').style.display = '';
+      document.getElementById('ayar-plan-bitis').textContent = bitis.toLocaleDateString('tr-TR') + ' (' + kalan + ' gün)';
+      document.getElementById('ayar-plan-bitis').style.color = kalan <= 3 ? 'var(--danger)' : kalan <= 7 ? '#eab308' : 'var(--green)';
+      const durumEl = document.getElementById('ayar-plan-durum');
+      if (durumEl) {
+        if (kalan > 7) durumEl.innerHTML = '<span style="color:var(--green);font-weight:800;">✅ Planınız aktif</span> · ' + kalan + ' gün kaldı';
+        else if (kalan > 0) durumEl.innerHTML = '<span style="color:#eab308;font-weight:800;">⚠️ Planınız bitiyor!</span> · ' + kalan + ' gün kaldı';
+        else durumEl.innerHTML = '<span style="color:var(--danger);font-weight:800;">❌ Plan süresi doldu</span> · Lütfen yenileyin';
+      }
+      const planBtn = document.getElementById('plan-degistir-btn');
+      if (planBtn) planBtn.textContent = kalan <= 7 ? '🔄 Planı Yenile' : '⭐ Planı Yükselt / Yenile';
+    }
 
     if (plan==='kilitli') {
       kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');

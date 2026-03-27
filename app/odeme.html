@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KolayCafe — Plan & Ödeme</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0f0a00; --bg2: #1a1200; --surface: #221a00; --surface2: #2a2000;
+    --accent: #d4960e; --accent2: #f5c842; --text: #f0e6c8; --text2: #a89060;
+    --border: #3a2c00; --danger: #e05050; --green: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; min-height: 100vh; }
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Space+Mono&display=swap');
+
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+  }
+  .logo { font-size: 1.3rem; font-weight: 900; color: var(--accent); }
+  .back-btn {
+    margin-left: auto; padding: 8px 16px; border-radius: 9px; border: 1.5px solid var(--border);
+    background: none; color: var(--text2); font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Plan kartları */
+  .plan-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .plan-kart {
+    background: var(--surface); border: 2px solid var(--border); border-radius: 16px;
+    padding: 16px; cursor: pointer; transition: all 0.18s; position: relative;
+  }
+  .plan-kart:hover { border-color: var(--accent); }
+  .plan-kart.secili { border-color: var(--accent); background: var(--surface2); }
+  .plan-kart.secili::after {
+    content: '✓'; position: absolute; top: 10px; right: 12px;
+    color: var(--accent); font-weight: 900; font-size: 1rem;
+  }
+  .plan-kart.populer { border-color: var(--accent2); }
+  .populer-badge {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: var(--accent2); color: #1a0f00; font-size: 0.62rem;
+    font-weight: 900; padding: 2px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  .plan-isim { font-size: 0.85rem; font-weight: 800; color: var(--accent2); margin-bottom: 4px; }
+  .plan-fiyat { font-size: 1.5rem; font-weight: 900; font-family: 'Space Mono', monospace; }
+  .plan-fiyat span { font-size: 0.75rem; color: var(--text2); font-family: 'Nunito', sans-serif; font-weight: 700; }
+  .plan-masa { font-size: 0.72rem; color: var(--text2); margin-top: 4px; }
+
+  /* Dönem seçici */
+  .donem-wrap {
+    display: flex; gap: 8px; margin-bottom: 20px;
+    background: var(--surface); border-radius: 12px; padding: 4px; width: fit-content;
+  }
+  .donem-btn {
+    padding: 8px 20px; border-radius: 9px; border: none; font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 0.82rem; cursor: pointer;
+    background: none; color: var(--text2); transition: all 0.15s;
+  }
+  .donem-btn.aktif { background: var(--accent); color: #1a0f00; }
+  .indirim-chip {
+    background: rgba(34,197,94,0.15); border: 1px solid #22c55e44;
+    color: var(--green); border-radius: 20px; padding: 2px 8px;
+    font-size: 0.62rem; font-weight: 800; margin-left: 6px;
+  }
+
+  /* Mevcut plan bilgisi */
+  .mevcut-plan {
+    background: var(--surface2); border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+  }
+  .mevcut-plan-bilgi { flex: 1; }
+  .mevcut-plan-adi { font-size: 0.85rem; font-weight: 800; color: var(--accent2); }
+  .mevcut-plan-bitis { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
+
+  /* Ödeme formu alanı */
+  .odeme-formu-wrap {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 20px; margin-top: 20px; min-height: 200px;
+  }
+  .odeme-baslik { font-size: 0.9rem; font-weight: 800; margin-bottom: 16px; }
+
+  /* Ödeme butonu */
+  .odeme-btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: var(--accent); color: #1a0f00; font-family: 'Nunito', sans-serif;
+    font-size: 1rem; font-weight: 900; cursor: pointer; margin-top: 16px;
+    transition: opacity 0.15s;
+  }
+  .odeme-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .odeme-btn:not(:disabled):hover { opacity: 0.85; }
+
+  .guvenlik-notu {
+    display: flex; align-items: center; gap: 6px; justify-content: center;
+    margin-top: 10px; font-size: 0.72rem; color: var(--text2);
+  }
+
+  /* Yükleniyor */
+  .yukleniyor-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  }
+  .yukleniyor-overlay.aktif { display: flex; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Başarı / Hata mesajı */
+  .mesaj-wrap {
+    display: none; background: var(--surface2); border-radius: 16px;
+    padding: 32px; text-align: center; margin-top: 20px;
+  }
+  .mesaj-wrap.aktif { display: block; }
+  .mesaj-ikon { font-size: 2.5rem; margin-bottom: 12px; }
+  .mesaj-baslik { font-size: 1.1rem; font-weight: 900; margin-bottom: 8px; }
+  .mesaj-aciklama { font-size: 0.85rem; color: var(--text2); margin-bottom: 20px; }
+  .mesaj-btn {
+    display: inline-block; padding: 10px 24px; border-radius: 10px; border: none;
+    background: var(--accent); color: #1a0f00; font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 0.9rem; cursor: pointer; text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">☕ KolayCafe</div>
+  <span style="color:var(--text2);font-size:0.82rem;">Plan & Ödeme</span>
+  <button class="back-btn" onclick="window.location.href='index.html'">← Geri Dön</button>
+</div>
+
+<div class="container">
+
+  <!-- Mevcut plan bilgisi -->
+  <div class="mevcut-plan" id="mevcut-plan-wrap" style="display:none;">
+    <div style="font-size:1.5rem;">⭐</div>
+    <div class="mevcut-plan-bilgi">
+      <div class="mevcut-plan-adi" id="mevcut-plan-adi">—</div>
+      <div class="mevcut-plan-bitis" id="mevcut-plan-bitis">—</div>
+    </div>
+    <div id="plan-durum-chip" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;"></div>
+  </div>
+
+  <!-- Dönem seçici -->
+  <div class="donem-wrap">
+    <button class="donem-btn aktif" id="btn-aylik" onclick="donemSec('aylik')">Aylık</button>
+    <button class="donem-btn" id="btn-yillik" onclick="donemSec('yillik')">
+      Yıllık <span class="indirim-chip">%20 indirim</span>
+    </button>
+  </div>
+
+  <!-- Plan kartları -->
+  <div class="plan-grid" id="plan-grid"></div>
+
+  <!-- Ödeme butonu ve formu -->
+  <div id="odeme-bolum">
+    <button class="odeme-btn" id="odeme-btn" onclick="odemeBaslat()" disabled>
+      Plan Seç →
+    </button>
+    <div class="guvenlik-notu">
+      🔒 256-bit SSL şifreli · iyzico güvencesiyle
+    </div>
+    <!-- iyzico checkout form burada açılır -->
+    <div class="odeme-formu-wrap" id="iyzico-formu" style="display:none;">
+      <div class="odeme-baslik">💳 Ödeme Bilgileri</div>
+      <div id="iyzico-checkout-form"></div>
+    </div>
+  </div>
+
+  <!-- Başarı/Hata mesajı -->
+  <div class="mesaj-wrap" id="mesaj-wrap">
+    <div class="mesaj-ikon" id="mesaj-ikon">✅</div>
+    <div class="mesaj-baslik" id="mesaj-baslik">Ödeme Başarılı!</div>
+    <div class="mesaj-aciklama" id="mesaj-aciklama">Planınız aktifleştirildi.</div>
+    <a href="index.html" class="mesaj-btn" id="mesaj-btn">Uygulamaya Dön</a>
+  </div>
+
+</div>
+
+<!-- Yükleniyor overlay -->
+<div class="yukleniyor-overlay" id="yukleniyor">
+  <div class="spinner"></div>
+  <div style="color:var(--text2);font-size:0.85rem;">İşleniyor...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sjfcdthwlwmbdmcevobv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxMTM1NjMsImV4cCI6MjA1NDY4OTU2M30.oVHqRFJGxFgnnHTGqPYJDKfvWcpTMXqC9a9KsyqKpTw';
+const EDGE_URL = `${SUPABASE_URL}/functions/v1/iyzico-odeme`;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const PLANLAR = [
+  { id:'start',  isim:'🌱 Start',  aylik:299,  yillik:2868, masa:10  },
+  { id:'grow',   isim:'📈 Grow',   aylik:399,  yillik:3830, masa:25  },
+  { id:'gold',   isim:'⭐ Gold',   aylik:499,  yillik:4790, masa:50  },
+  { id:'platin', isim:'💎 Platin', aylik:599,  yillik:5750, masa:100, populer:true },
+  { id:'ultra',  isim:'🚀 Ultra',  aylik:699,  yillik:6710, masa:200 },
+  { id:'elite',  isim:'👑 Elite',  aylik:799,  yillik:7670, masa:500 },
+  { id:'pro',    isim:'⚡ Pro',    aylik:899,  yillik:8630, masa:999 },
+];
+
+let seciliPlan  = null;
+let seciliDonem = 'aylik';
+let kafeData    = null;
+let kullanici   = null;
+
+// ── Başlangıç ──
+async function init() {
+  // URL parametrelerini kontrol et
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('odeme') === 'basarili') {
+    mesajGoster(true, params.get('plan'));
+    return;
+  }
+  if (params.get('odeme') === 'basarisiz') {
+    mesajGoster(false);
+    return;
+  }
+
+  // Kullanıcıyı kontrol et
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  kullanici = session.user;
+
+  // Kafe verisini çek
+  const { data } = await sb.from('kafeler')
+    .select('id, isim, plan, plan_bitis, plan_donem, email')
+    .eq('sahip_id', kullanici.id).single();
+  kafeData = data;
+
+  // Mevcut plan göster
+  if (kafeData?.plan && kafeData.plan !== 'deneme') {
+    const bitis = kafeData.plan_bitis ? new Date(kafeData.plan_bitis) : null;
+    const kalan = bitis ? Math.ceil((bitis - new Date()) / (1000*60*60*24)) : 0;
+    document.getElementById('mevcut-plan-adi').textContent =
+      `${PLANLAR.find(p=>p.id===kafeData.plan)?.isim ?? kafeData.plan} — ${kafeData.plan_donem === 'yillik' ? 'Yıllık' : 'Aylık'}`;
+    document.getElementById('mevcut-plan-bitis').textContent =
+      bitis ? `Bitiş: ${bitis.toLocaleDateString('tr-TR')} (${kalan} gün kaldı)` : '';
+    const chip = document.getElementById('plan-durum-chip');
+    if (kalan > 7) { chip.style.background='rgba(34,197,94,0.15)'; chip.style.color='#22c55e'; chip.textContent='Aktif'; }
+    else if (kalan > 0) { chip.style.background='rgba(234,179,8,0.15)'; chip.style.color='#eab308'; chip.textContent='Bitiyor!'; }
+    else { chip.style.background='rgba(224,80,80,0.15)'; chip.style.color='#e05050'; chip.textContent='Süresi Doldu'; }
+    document.getElementById('mevcut-plan-wrap').style.display = 'flex';
+  }
+
+  planKartlariCiz();
+}
+
+// ── Plan kartlarını çiz ──
+function planKartlariCiz() {
+  const grid = document.getElementById('plan-grid');
+  grid.innerHTML = PLANLAR.map(p => `
+    <div class="plan-kart${p.populer?' populer':''}${seciliPlan===p.id?' secili':''}"
+         onclick="planSec('${p.id}')">
+      ${p.populer ? '<div class="populer-badge">EN POPÜLER</div>' : ''}
+      <div class="plan-isim">${p.isim}</div>
+      <div class="plan-fiyat">
+        ${seciliDonem==='aylik' ? p.aylik+'₺' : p.yillik+'₺'}
+        <span>/${seciliDonem==='aylik'?'ay':'yıl'}</span>
+      </div>
+      <div class="plan-masa">Maks ${p.masa === 999 ? 'sınırsız' : p.masa} masa</div>
+      ${seciliDonem==='yillik' ? `<div style="font-size:0.65rem;color:var(--green);margin-top:4px;">
+        Aylık ${Math.round(p.yillik/12)}₺ · ${Math.round(100-(p.yillik/12/p.aylik*100))}% indirim
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+function donemSec(d) {
+  seciliDonem = d;
+  document.getElementById('btn-aylik').classList.toggle('aktif', d==='aylik');
+  document.getElementById('btn-yillik').classList.toggle('aktif', d==='yillik');
+  planKartlariCiz();
+}
+
+function planSec(id) {
+  seciliPlan = id;
+  planKartlariCiz();
+  const plan = PLANLAR.find(p=>p.id===id);
+  const fiyat = seciliDonem==='aylik' ? plan.aylik : plan.yillik;
+  const btn = document.getElementById('odeme-btn');
+  btn.textContent = `${plan.isim} — ${fiyat}₺ öde →`;
+  btn.disabled = false;
+}
+
+// ── Ödemeyi başlat ──
+async function odemeBaslat() {
+  if (!seciliPlan) return;
+
+  document.getElementById('yukleniyor').classList.add('aktif');
+
+  try {
+    // Kullanıcı bilgilerini al
+    const [ad, ...soyadArr] = (kullanici.user_metadata?.full_name ?? 'Kafe Sahibi').split(' ');
+    const soyad = soyadArr.join(' ') || 'Sahibi';
+
+    const res = await fetch(`${EDGE_URL}?action=token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${(await sb.auth.getSession()).data.session.access_token}`,
+      },
+      body: JSON.stringify({
+        kafe_id: kafeData.id,
+        plan:    seciliPlan,
+        donem:   seciliDonem,
+        email:   kullanici.email,
+        ad, soyad,
+        telefon: '+905000000000',
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+      // iyzico checkout formunu göster
+      document.getElementById('iyzico-formu').style.display = 'block';
+      document.getElementById('odeme-btn').style.display = 'none';
+      document.getElementById('iyzico-checkout-form').innerHTML = data.checkoutFormContent;
+
+      // iyzico script'lerini çalıştır
+      const scripts = document.getElementById('iyzico-checkout-form').querySelectorAll('script');
+      scripts.forEach(s => {
+        const yeni = document.createElement('script');
+        if (s.src) yeni.src = s.src;
+        else yeni.textContent = s.textContent;
+        document.body.appendChild(yeni);
+      });
+    } else {
+      alert('Ödeme başlatılamadı: ' + (data.hata ?? 'Bilinmeyen hata'));
+    }
+  } catch(e) {
+    alert('Bağlantı hatası: ' + e.message);
+  } finally {
+    document.getElementById('yukleniyor').classList.remove('aktif');
+  }
+}
+
+// ── Ödeme sonuç mesajı ──
+function mesajGoster(basarili, plan) {
+  document.querySelector('.container > *:not(#mesaj-wrap)') &&
+    document.querySelectorAll('.container > div').forEach(d => { if(d.id!=='mesaj-wrap') d.style.display='none'; });
+  const wrap = document.getElementById('mesaj-wrap');
+  wrap.classList.add('aktif');
+  if (basarili) {
+    const planIsim = PLANLAR.find(p=>p.id===plan)?.isim ?? plan;
+    document.getElementById('mesaj-ikon').textContent = '🎉';
+    document.getElementById('mesaj-baslik').textContent = 'Ödeme Başarılı!';
+    document.getElementById('mesaj-aciklama').textContent = `${planIsim} planınız aktifleştirildi. İyi satışlar!`;
+  } else {
+    document.getElementById('mesaj-ikon').textContent = '❌';
+    document.getElementById('mesaj-baslik').textContent = 'Ödeme Başarısız';
+    document.getElementById('mesaj-aciklama').textContent = 'Kart bilgilerinizi kontrol edip tekrar deneyin.';
+    document.getElementById('mesaj-btn').textContent = 'Tekrar Dene';
+    document.getElementById('mesaj-btn').href = 'odeme.html';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
