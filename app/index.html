@@ -864,7 +864,7 @@
 </div>
 
 <!-- ── ANA UYGULAMA ── -->
-<div id="app" style="display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0;">
+<div id="app" style="display:none; flex-direction:column; overflow:hidden; height:100vh;">
 
 <div class="header">
   <div class="header-left">
@@ -2718,10 +2718,8 @@
   </div>
 </div>
 
-</div><!-- /app -->
-
 <!-- BOTTOM NAV - app dışında, her zaman görünür -->
-<div class="bottom-nav" id="bottom-nav" style="display:none;">
+<div class="bottom-nav" id="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" data-yetki="masalar"><div class="nav-icon">🪑</div>Masalar</button>
   <button class="bnav-btn" id="nav-kolaycafen" data-yetki="kolaycafen"><div class="nav-icon">🧾</div>KolayCafen</button>
   <button class="bnav-btn" id="nav-urun" data-yetki="urun"><div class="nav-icon">➕</div>Ürün</button>
@@ -2738,23 +2736,7 @@
   <button class="bnav-btn" id="nav-garson-cikis" style="display:none;"><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
 
-<style>
-  /* ACİL DÜZELTME: bottom-nav her zaman görünür olsun */
-  .bottom-nav {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 500;
-  }
-  /* App flex container nav yüksekliği kadar küçült */
-  #app {
-    padding-bottom: 60px;
-  }
-  #muh-scroll {
-    padding-bottom: 68px;
-  }
-</style>
+</div><!-- /app -->
 
 <!-- MODALLER -->
 <!-- ── VARYANT SEÇİM MODALI (Garson/Admin) ── -->
@@ -3386,7 +3368,6 @@ async function garsonGiris(isim, kafeData) {
   document.getElementById('auth-screen').style.display = 'none';
   const appEl = document.getElementById('app');
   appEl.style.display = 'flex'; appEl.style.flexDirection = 'column';
-  document.getElementById('bottom-nav').style.display = 'flex';
   const garsonObj = garsonlar.find(g => (typeof g === 'string' ? g : g.isim) === aktifGarsonAdi);
   // Varsayılan garson yetkileri (yetki tanımlı değilse)
   const varsayilanYetkiler = ['masalar','kolaycafen','gelal','online','mutfak'];
@@ -3583,7 +3564,6 @@ async function uygulamaBaslat(user) {
   const appEl = document.getElementById('app');
   appEl.style.display = 'flex';
   appEl.style.flexDirection = 'column';
-  document.getElementById('bottom-nav').style.display = 'flex';
   document.getElementById('ayar-email').textContent = user.email;
   await kafeVerisiYukle();
   await kolaycafenVerisiYukle();
