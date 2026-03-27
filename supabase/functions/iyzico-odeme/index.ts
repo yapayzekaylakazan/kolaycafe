@@ -1,5 +1,5 @@
 // KolayCafe - İyzico Ödeme Edge Function
-// İyzico imza: base64(SHA1(apiKey + secretKey + randomKey + body))
+// İyzico imza: HMAC-SHA256, key=secretKey, data=apiKey+randomKey+PKIString(body)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -8,11 +8,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function iyzicoImza(apiKey: string, secretKey: string, randomKey: string, body: string): Promise<string> {
+// iyzico PKI string formatı: [key1=val1, key2=val2, ...]
+// Nested objeler ve array'ler özyinelemeli olarak formatlanır
+function toPKIString(obj: unknown, prefix = ""): string {
+  if (obj === null || obj === undefined) return "";
+  if (Array.isArray(obj)) {
+    return obj.map((item, i) => toPKIString(item, `${prefix}[${i}]`)).join(",");
+  }
+  if (typeof obj === "object") {
+    const parts = Object.entries(obj as Record<string, unknown>)
+      .filter(([, v]) => v !== null && v !== undefined)
+      .map(([k, v]) => {
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (typeof v === "object") return toPKIString(v, key);
+        return `${key}=${v}`;
+      });
+    return parts.join(",");
+  }
+  return prefix ? `${prefix}=${obj}` : String(obj);
+}
+
+async function iyzicoImza(apiKey: string, secretKey: string, randomKey: string, pkiStr: string): Promise<string> {
   const enc = new TextEncoder();
-  const data = enc.encode(apiKey + secretKey + randomKey + body);
-  const hashBuf = await crypto.subtle.digest("SHA-1", data);
-  const hash = btoa(String.fromCharCode(...new Uint8Array(hashBuf)));
+  const keyData = enc.encode(secretKey);
+  const msgData = enc.encode(apiKey + randomKey + pkiStr);
+  const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
+  const hash = btoa(String.fromCharCode(...new Uint8Array(sig)));
   return `apiKey:${apiKey}&randomKey:${randomKey}&signature:${hash}`;
 }
 
@@ -83,12 +105,14 @@ Deno.serve(async (req) => {
         }],
       };
 
-      const bodyStr = JSON.stringify(reqObj);
-      const auth    = await iyzicoImza(API_KEY, SECRET_KEY, randomKey, bodyStr);
+      const pkiStr  = `[${toPKIString(reqObj)}]`;
+      const auth    = await iyzicoImza(API_KEY, SECRET_KEY, randomKey, pkiStr);
 
+      console.log("PKI string (ilk 200):", pkiStr.substring(0, 200));
       console.log("İyzico istek:", BASE_URL, "plan:", plan, "tutar:", toplamStr);
 
-      const iyziRes  = await fetch(`${BASE_URL}/payment/iyzipos/checkoutform/initialize`, {
+      const bodyStr = JSON.stringify(reqObj);
+      const iyziRes = await fetch(`${BASE_URL}/payment/iyzipos/checkoutform/initialize`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": auth },
         body: bodyStr,
@@ -126,8 +150,9 @@ Deno.serve(async (req) => {
       const randomKey = `sonuc${Date.now()}`;
       const convId    = `sonuc_${Date.now()}`;
       const reqObj    = { locale: "tr", conversationId: convId, token };
+      const pkiStr    = `[${toPKIString(reqObj)}]`;
+      const auth      = await iyzicoImza(API_KEY, SECRET_KEY, randomKey, pkiStr);
       const bodyStr   = JSON.stringify(reqObj);
-      const auth      = await iyzicoImza(API_KEY, SECRET_KEY, randomKey, bodyStr);
 
       const iyziRes  = await fetch(`${BASE_URL}/payment/iyzipos/checkoutform/detail`, {
         method: "POST",
