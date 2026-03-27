@@ -203,10 +203,11 @@ const PLANLAR = [
   { id:'start',  isim:'🌱 Start',  aylik:299,  yillik:2868, masa:10  },
   { id:'grow',   isim:'📈 Grow',   aylik:399,  yillik:3830, masa:25  },
   { id:'gold',   isim:'⭐ Gold',   aylik:499,  yillik:4790, masa:50  },
-  { id:'platin', isim:'💎 Platin', aylik:599,  yillik:5750, masa:100, populer:true },
+  { id:'platin', isim:'💎 Platin', aylik:599,  yillik:5750, masa:100 },
   { id:'ultra',  isim:'🚀 Ultra',  aylik:699,  yillik:6710, masa:200 },
   { id:'elite',  isim:'👑 Elite',  aylik:799,  yillik:7670, masa:500 },
-  { id:'pro',    isim:'⚡ Pro',    aylik:899,  yillik:8630, masa:999 },
+  { id:'pro',    isim:'⚡ Pro',    aylik:899,  yillik:8630, masa:999, populer:true },
+  { id:'ai',     isim:'🤖 AI Asistan', aylik:399, yillik:3830, masa:0, aiEkle:true },
 ];
 
 let seciliPlan  = null;
@@ -268,7 +269,7 @@ function planKartlariCiz() {
         ${seciliDonem==='aylik' ? p.aylik+'₺' : p.yillik+'₺'}
         <span>/${seciliDonem==='aylik'?'ay':'yıl'}</span>
       </div>
-      <div class="plan-masa">Maks ${p.masa === 999 ? 'sınırsız' : p.masa} masa</div>
+      <div class="plan-masa">${p.aiEkle ? '🤖 Mevcut plana eklenti' : `Maks ${p.masa === 999 ? 'sınırsız' : p.masa} masa`}</div>
       ${seciliDonem==='yillik' ? `<div style="font-size:0.65rem;color:var(--green);margin-top:4px;">
         Aylık ${Math.round(p.yillik/12)}₺ · ${Math.round(100-(p.yillik/12/p.aylik*100))}% indirim
       </div>` : ''}
