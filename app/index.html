@@ -3267,7 +3267,7 @@ async function kayitOl() {
     telefon: tel, adres: adres,
     garsonlar: [],
     kafe_kodu: kafeKoduYeni,
-    kupon_kodu: kuponKodu || null,
+          if (!confirm("Bu masada su an \"" + m.garson + "\" calisiyor. Yine de acmak istiyor musunuz?")) return;
     kupon_indirim: kuponIndirim,
     vergi_no: vergiNo || null,
     fatura_adres: faturaAdres || null,
