@@ -4101,8 +4101,8 @@ async function kafeVerisiYukle() {
     document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':(_planRenkMap[plan]||'');
 
     // Plan bitiş bilgisini ayarlar sayfasında göster
-    if (kafeVeri?.plan_bitis) {
-      const bitis = new Date(kafeVeri.plan_bitis);
+    if (data?.plan_bitis) {
+      const bitis = new Date(data.plan_bitis);
       const kalan = Math.ceil((bitis - new Date()) / (1000*60*60*24));
       document.getElementById('ayar-plan-bitis-row').style.display = '';
       document.getElementById('ayar-plan-bitis').textContent = bitis.toLocaleDateString('tr-TR') + ' (' + kalan + ' gün)';
