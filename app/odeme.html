@@ -200,14 +200,14 @@ const EDGE_URL = `${SUPABASE_URL}/functions/v1/iyzico-odeme`;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const PLANLAR = [
-  { id:'start',  isim:'🌱 Start',  aylik:299,  yillik:2868, masa:10  },
-  { id:'grow',   isim:'📈 Grow',   aylik:399,  yillik:3830, masa:25  },
-  { id:'gold',   isim:'⭐ Gold',   aylik:499,  yillik:4790, masa:50  },
-  { id:'platin', isim:'💎 Platin', aylik:599,  yillik:5750, masa:100 },
-  { id:'ultra',  isim:'🚀 Ultra',  aylik:699,  yillik:6710, masa:200 },
-  { id:'elite',  isim:'👑 Elite',  aylik:799,  yillik:7670, masa:500 },
-  { id:'pro',    isim:'⚡ Pro',    aylik:899,  yillik:8630, masa:999, populer:true },
-  { id:'ai',     isim:'🤖 AI Asistan', aylik:399, yillik:3830, masa:0, aiEkle:true },
+  { id:'start',  isim:'🌱 Start',  aylik:299,  yillik:2868, masa:10,  renk:'#64748b' },
+  { id:'grow',   isim:'📈 Grow',   aylik:399,  yillik:3830, masa:25,  renk:'#22c55e' },
+  { id:'gold',   isim:'⭐ Gold',   aylik:499,  yillik:4790, masa:50,  renk:'#b8860b' },
+  { id:'platin', isim:'💎 Platin', aylik:599,  yillik:5750, masa:100, renk:'#4a9fd4' },
+  { id:'ultra',  isim:'🚀 Ultra',  aylik:699,  yillik:6710, masa:200, renk:'#3db85a' },
+  { id:'elite',  isim:'👑 Elite',  aylik:799,  yillik:7670, masa:500, renk:'#fb923c' },
+  { id:'pro',    isim:'⚡ Pro',    aylik:899,  yillik:8630, masa:999, renk:'#a78bfa', populer:true },
+  { id:'ai',     isim:'🤖 AI Asistan', aylik:399, yillik:3830, masa:0, renk:'#a78bfa', aiEkle:true },
 ];
 
 let seciliPlan  = null;
@@ -262,10 +262,12 @@ function planKartlariCiz() {
   const grid = document.getElementById('plan-grid');
   grid.innerHTML = PLANLAR.map(p => `
     <div class="plan-kart${p.populer?' populer':''}${seciliPlan===p.id?' secili':''}"
-         onclick="planSec('${p.id}')">
-      ${p.populer ? '<div class="populer-badge">EN POPÜLER</div>' : ''}
-      <div class="plan-isim">${p.isim}</div>
-      <div class="plan-fiyat">
+         onclick="planSec('${p.id}')"
+         style="border-color:${seciliPlan===p.id ? p.renk : p.populer ? p.renk : 'var(--border)'};${p.aiEkle?'background:linear-gradient(135deg,rgba(124,58,237,0.08),var(--surface));':''}"
+         onmouseover="this.style.borderColor='${p.renk}'" onmouseout="this.style.borderColor='${seciliPlan===p.id||p.populer ? p.renk : 'var(--border)'}'">
+      ${p.populer ? `<div class="populer-badge" style="background:${p.renk};">EN POPÜLER</div>` : ''}
+      <div class="plan-isim" style="color:${p.renk};">${p.isim}</div>
+      <div class="plan-fiyat" style="color:${p.renk};">
         ${seciliDonem==='aylik' ? p.aylik+'₺' : p.yillik+'₺'}
         <span>/${seciliDonem==='aylik'?'ay':'yıl'}</span>
       </div>
