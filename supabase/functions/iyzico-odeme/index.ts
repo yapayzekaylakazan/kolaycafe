@@ -24,7 +24,7 @@ Deno.serve(async(req)=>{
       await sb.from("kafeler").update({plan,plan_bitis:bitis.toISOString(),plan_donem:donem,odeme_bekliyor:false,odeme_conversation_id:null,son_odeme:new Date().toISOString(),son_odeme_tutar:parseFloat(d.paidPrice??"0")}).eq("id",kafeId);
       console.log("Plan aktive:",kafeId,plan);
     }
-    return new Response(null,{status:302,headers:{...corsHeaders,"Location":"https://kolaycafe.com/app/index.html?odeme=basarili"}});
+    return new Response(null,{status:303,headers:{...corsHeaders,"Location":"https://kolaycafe.com/app/index.html?odeme=basarili"}});
   }
   try{
     const body=await req.json();const{action}=body;
