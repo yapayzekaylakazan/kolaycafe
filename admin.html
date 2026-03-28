@@ -320,6 +320,32 @@
         </div>
       </div>
     </div>
+
+    <!-- ÖDEME GEÇMİŞİ TABLOSU -->
+    <div class="pk" style="margin:12px 0;">
+      <div class="pk-ust">
+        <span>💳 ÖDEME GEÇMİŞİ</span>
+        <button class="ebtn" onclick="odemeGecmisiYukle()">🔄</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:800;font-size:0.68rem;letter-spacing:0.5px;">TARİH</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:800;font-size:0.68rem;letter-spacing:0.5px;">KAFE</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:800;font-size:0.68rem;letter-spacing:0.5px;">PLAN</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:800;font-size:0.68rem;letter-spacing:0.5px;">DÖNEM</th>
+              <th style="padding:8px 10px;text-align:right;color:var(--text2);font-weight:800;font-size:0.68rem;letter-spacing:0.5px;">TUTAR</th>
+              <th style="padding:8px 10px;text-align:center;color:var(--text2);font-weight:800;font-size:0.68rem;letter-spacing:0.5px;">DURUM</th>
+            </tr>
+          </thead>
+          <tbody id="odeme-gecmisi-body">
+            <tr><td colspan="6" class="yukl">⏳ Yükleniyor...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="odeme-gecmisi-toplam" style="text-align:right;margin-top:8px;font-size:0.78rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;"></div>
+    </div>
   </div>
 
   <!-- TEST -->
@@ -380,6 +406,7 @@
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
     </div>
     <button class="mkapatbtn" onclick="modalKapat()">✕ Kapat</button>
+    <button onclick="planSifirla()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(224,80,80,0.4);background:rgba(224,80,80,0.08);color:#e05050;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🗑️ Planı Sıfırla (Denemeye Al)</button>
   </div>
 </div>
 
@@ -1144,7 +1171,8 @@ async function planGuncelle() {
   const { error } = await sb.from('kafeler').update({
     plan: plan,
     plan_bitis: bitis.toISOString(),
-    plan_donem: donem
+    plan_donem: donem,
+    odeme_bekliyor: false
   }).eq('id', seciliKafeId);
 
   if (error) { alert('Hata: ' + error.message); return; }
@@ -1152,6 +1180,23 @@ async function planGuncelle() {
   await yukle();
   const donemStr = donem === 'yillik' ? 'Yıllık (%20 indirimli)' : 'Aylık';
   alert(`✓ Plan güncellendi: ${plan.toUpperCase()} — ${gun} gün (${donemStr})`);
+}
+
+async function planSifirla() {
+  if (!seciliKafeId) return;
+  if (!confirm('Bu kafeyi deneme planına sıfırlamak istediğinize emin misiniz?')) return;
+  const { error } = await sb.from('kafeler').update({
+    plan: 'deneme',
+    plan_bitis: null,
+    plan_donem: null,
+    son_odeme: null,
+    son_odeme_tutar: null,
+    odeme_bekliyor: false
+  }).eq('id', seciliKafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+  modalKapat();
+  await yukle();
+  alert('✓ Plan sıfırlandı — Deneme planına alındı.');
 }
 
 
@@ -1697,6 +1742,50 @@ async function hatalariTemizle() {
 }
 
 // ── FİNANS ──
+async function odemeGecmisiYukle() {
+  const tbody = document.getElementById('odeme-gecmisi-body');
+  const toplamEl = document.getElementById('odeme-gecmisi-toplam');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="yukl">⏳ Yükleniyor...</td></tr>';
+
+  const { data, error } = await sb.from('iyzico_islemler')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error || !data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text2);font-size:0.78rem;">Henüz ödeme kaydı yok</td></tr>';
+    if (toplamEl) toplamEl.textContent = '';
+    return;
+  }
+
+  // Kafe adlarını eşleştir
+  const kafeMap = {};
+  tumKafeler.forEach(k => { kafeMap[k.id] = k.kafe_adi || '—'; });
+
+  let toplamTutar = 0;
+  tbody.innerHTML = data.map(o => {
+    const tarih = new Date(o.created_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const kafeAdi = kafeMap[o.kafe_id] || '—';
+    const plan = (o.plan || '—').toUpperCase();
+    const donem = o.donem === 'yillik' ? '📅 Yıllık' : '🗓️ Aylık';
+    const tutar = parseFloat(o.tutar || 0);
+    toplamTutar += tutar;
+    const durumRenk = o.durum === 'basarili' ? '#22c55e' : '#e05050';
+    const durumIkon = o.durum === 'basarili' ? '✓' : '✕';
+    return `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px 10px;color:var(--text2);font-size:0.72rem;">${tarih}</td>
+      <td style="padding:8px 10px;font-weight:700;">☕ ${kafeAdi}</td>
+      <td style="padding:8px 10px;">${planBadge(o.plan)}</td>
+      <td style="padding:8px 10px;color:var(--text2);">${donem}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;">${fmt(tutar)}₺</td>
+      <td style="padding:8px 10px;text-align:center;"><span style="color:${durumRenk};font-weight:800;font-size:0.8rem;">${durumIkon} ${o.durum||'—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  if (toplamEl) toplamEl.textContent = `Toplam: ${fmt(toplamTutar)}₺ (${data.length} işlem)`;
+}
+
 async function finansYukle() {
   const simdi = new Date();
   const ayBas = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
@@ -1766,6 +1855,9 @@ async function finansYukle() {
       <div style="font-size:0.65rem;color:var(--text2);">${planBadge(k.plan)} · Masa: ${(k.masalar||[]).length} / ${limit} <span style="color:var(--red);font-weight:800;">(+${(k.masalar||[]).length - limit} fazla)</span></div>
     </div>`;
   }).join('');
+
+  // Ödeme geçmişini de yükle
+  odemeGecmisiYukle();
 }
 
 async function topluBannerGonder() {
