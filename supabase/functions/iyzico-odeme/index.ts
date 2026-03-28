@@ -35,24 +35,31 @@ Deno.serve(async(req)=>{
     console.log("sonuc tam:",JSON.stringify(d));
 
     if(d.paymentStatus==="SUCCESS"){
-      // basketId: "kafe_ef295a16-ae13-4c5a-9de6-69143e4930d8"
       const basketId=d.basketId??"";
       const kafeId=basketId.replace("kafe_","");
       console.log("basketId:",basketId,"kafeId:",kafeId);
 
       if(kafeId){
-        const{data:kafe}=await sb.from("kafeler").select("odeme_plan,odeme_donem").eq("id",kafeId).single();
+        const{data:kafe}=await sb.from("kafeler").select("odeme_plan,odeme_donem,plan_bitis").eq("id",kafeId).single();
         const plan=kafe?.odeme_plan??"start";
         const donem=kafe?.odeme_donem??"aylik";
         const gun=donem==="yillik"?365:30;
-        const bitis=new Date();bitis.setDate(bitis.getDate()+gun);
+
+        // Mevcut bitiş tarihi geçmemişse üzerine ekle, geçmişse bugünden başlat
+        const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : new Date();
+        const baslangic = mevcutBitis > new Date() ? mevcutBitis : new Date();
+        baslangic.setDate(baslangic.getDate() + gun);
+
         const{error}=await sb.from("kafeler").update({
-          plan,plan_bitis:bitis.toISOString(),plan_donem:donem,
-          odeme_bekliyor:false,odeme_conversation_id:null,
-          son_odeme:new Date().toISOString(),
-          son_odeme_tutar:parseFloat(d.paidPrice??"0"),
+          plan,
+          plan_bitis: baslangic.toISOString(),
+          plan_donem: donem,
+          odeme_bekliyor: false,
+          odeme_conversation_id: null,
+          son_odeme: new Date().toISOString(),
+          son_odeme_tutar: parseFloat(d.paidPrice??"0"),
         }).eq("id",kafeId);
-        console.log("Güncelleme sonucu:",error?"HATA:"+error.message:"BAŞARILI",plan,donem);
+        console.log("Güncelleme:",error?"HATA:"+error.message:"BAŞARILI",plan,donem,"bitis:",baslangic.toISOString());
       }
     }
     return new Response(null,{status:303,headers:{...corsHeaders,"Location":"https://kolaycafe.com/app/index.html?odeme=basarili"}});
