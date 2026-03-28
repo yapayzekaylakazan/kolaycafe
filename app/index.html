@@ -11924,6 +11924,13 @@ window.masaSilOnay = masaSilOnay;
         setTimeout(async()=>{
           // Kafe verisini tazele
           await kafeVerisiYukle();
+          // odeme_bekliyor'u sıfırla (güvence)
+          try {
+            if (window._kafeData?.id) {
+              await sb.from('kafeler').update({ odeme_bekliyor: false }).eq('id', window._kafeData.id);
+              if (window._kafeData) window._kafeData.odeme_bekliyor = false;
+            }
+          } catch(e) { console.warn('odeme_bekliyor sıfırlanamadı:', e); }
           // Başarılı modal göster
           odemeBasariliModalGoster();
         },1000);
@@ -12924,6 +12931,31 @@ function odemeBaslangic() {
   document.getElementById('odeme-satin-al-btn').textContent = 'Plan Seç →';
   document.getElementById('odeme-iyzico-wrap').style.display = 'none';
   document.getElementById('odeme-sonuc').style.display = 'none';
+
+  // ── odeme_bekliyor kontrolü ──────────────────────────────────────────────
+  // Eğer daha önce ödeme başlatıldıysa ve callback henüz gelmemişse
+  // butonu kilitle, kullanıcıya bilgi ver
+  if (window._kafeData?.odeme_bekliyor) {
+    const btn = document.getElementById('odeme-satin-al-btn');
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.textContent = '⏳ Ödeme işleminiz işleniyor...';
+    btn.style.display = 'block';
+
+    // Sarı uyarı mesajı göster
+    let uyariEl = document.getElementById('odeme-bekliyor-uyari');
+    if (!uyariEl) {
+      uyariEl = document.createElement('div');
+      uyariEl.id = 'odeme-bekliyor-uyari';
+      btn.parentNode.insertBefore(uyariEl, btn.nextSibling);
+    }
+    uyariEl.style.cssText = 'margin-top:10px;padding:12px 14px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.35);border-radius:10px;font-size:0.78rem;color:#eab308;font-weight:700;text-align:center;';
+    uyariEl.textContent = 'Bir ödeme işlemi zaten başlatıldı. Lütfen tamamlanmasını bekleyin veya destek ile iletişime geçin.';
+  } else {
+    // Eski uyarıyı temizle
+    const eskiUyari = document.getElementById('odeme-bekliyor-uyari');
+    if (eskiUyari) eskiUyari.remove();
+  }
 }
 
 // ── ÖDEME BAŞARILI MODAL ─────────────────────────────────────────────────────
@@ -13132,13 +13164,19 @@ async function odemeSatinAl() {
         aiEklendi:   _odemeAi,
         email:       session.user.email,
         telefon:     window._kafeData.telefon || '+905000000000',
-        callbackUrl: 'https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/iyzico-odeme',
+        callbackUrl: 'https://kolaycafe.com/app/index.html',
       }),
     });
 
     const data = await res.json();
 
     if (data.ok) {
+      // Çift ödemeyi önle: odeme_bekliyor = true yaz
+      try {
+        await sb.from('kafeler').update({ odeme_bekliyor: true }).eq('id', window._kafeData.id);
+        if (window._kafeData) window._kafeData.odeme_bekliyor = true;
+      } catch(e) { console.warn('odeme_bekliyor yazılamadı:', e); }
+
       document.getElementById('odeme-iyzico-wrap').style.display = 'block';
       btn.style.display = 'none';
       document.getElementById('odeme-iyzico-form').innerHTML = data.checkoutFormContent;
