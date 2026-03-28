@@ -531,7 +531,7 @@ function toast(msg, sure=3000) {
 
 
 function fmt(n) { const v = parseFloat(n); return isNaN(v) ? '0' : Math.round(v).toLocaleString('tr-TR'); }
-function fmtTL(n) { return `<span style="font-family:'Space Mono',monospace;letter-spacing:-0.5px;">${fmt(n)}</span>`; }
+function fmtTL(n) { return fmt(n); }
 // Garson adını güvenli şekilde çıkar (string veya {isim,aktif} object olabilir)
 function garsonAd(g) { if (!g) return ''; return typeof g === 'string' ? g : (g.isim || g.ad || '?'); }
 
@@ -960,7 +960,7 @@ async function detayAc(id) {
   html += bb('⚙️', 'Sistem & Kullanım');
   html += satirHtml('Kafe Kodu', k.kafe_kodu||'—', true);
   html += satirHtml('Son Giriş', sonGiris, false);
-  html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${fmtTL(k.toplam_ciro)}₺</span>` : '—', false);
+  html += satirHtml('Toplam Ciro', k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:800;">${fmt(k.toplam_ciro)}₺</span>` : '—', false);
   html += satirHtml('Ürün Sayısı', urunSayisi + ' ürün', false);
   html += satirHtml('Garson Sayısı', garsonlar.length + ' garson (' + garsonlar.map(g => garsonAd(g)).join(', ') + ')', false);
   html += satirHtml('Masa Durumu', `${mevcutMasa} / ${masaLimit === 999 ? 'Sınırsız' : masaLimit} masa (${acikMasalar.length} açık)`, false);
@@ -998,7 +998,7 @@ async function detayAc(id) {
     .limit(50);
   if (bugunAdisyonlar && bugunAdisyonlar.length > 0) {
     const kapananCiro = bugunAdisyonlar.reduce((t,a) => t + parseFloat(a.toplam||0), 0);
-    html += bb('📋', `Bugün Kapanan Adisyonlar (${bugunAdisyonlar.length}) — ${fmtTL(kapananCiro)}₺`);
+    html += bb('📋', `Bugün Kapanan Adisyonlar (${bugunAdisyonlar.length}) — ${fmt(kapananCiro)}₺`);
     html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">`;
     bugunAdisyonlar.forEach(a => {
       const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
@@ -1235,7 +1235,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;">
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
       <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:3px;">TOPLAM CİRO</div>
-      <div style="font-size:1.1rem;font-weight:900;color:#30d080;">${fmtTL(toplamCiro)}₺</div>
+      <div style="font-size:1.1rem;font-weight:900;color:#30d080;">${fmt(toplamCiro)}₺</div>
     </div>
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
       <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:3px;">ADİSYON SAYISI</div>
@@ -1243,7 +1243,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
     </div>
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
       <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:3px;">ORT. ADİSYON</div>
-      <div style="font-size:1.1rem;font-weight:900;color:var(--purple);">${fmtTL(toplamCiro/data.length)}₺</div>
+      <div style="font-size:1.1rem;font-weight:900;color:var(--purple);">${fmt(toplamCiro/data.length)}₺</div>
     </div>
   </div>`;
 
@@ -1276,7 +1276,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
     const yuzde = Math.round(c/maxSaat*100);
     const renk = yuzde > 70 ? '#e04050' : yuzde > 40 ? '#f0b940' : yuzde > 15 ? '#30d080' : '#2a2a3a';
     const h = Math.max(4, Math.round(yuzde*0.5));
-    html += `<div title="${saat}:00 — ${fmtTL(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;cursor:default;"></div>`;
+    html += `<div title="${saat}:00 — ${fmt(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;cursor:default;"></div>`;
   });
   html += `</div><div style="display:flex;justify-content:space-between;font-size:0.52rem;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:12px;"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div>`;
 
@@ -1372,7 +1372,7 @@ async function analitikYukle() {
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">
       <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center;">
-        <div style="font-size:1.3rem;font-weight:800;color:#30d080;">${fmtTL(toplamCiro)}₺</div>
+        <div style="font-size:1.3rem;font-weight:800;color:#30d080;">${fmt(toplamCiro)}₺</div>
         <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;">TOPLAM CİRO</div>
       </div>
       <div style="background:var(--surface);border-radius:8px;padding:10px;text-align:center;">
@@ -1416,7 +1416,7 @@ async function analitikYukle() {
           return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:7px;padding:7px 10px;margin-bottom:4px;border-left:3px solid var(--accent);">
             <div style="font-size:0.75rem;font-weight:700;">🪑 ${m.ad||'Masa '+m.id}</div>
             <div style="font-size:0.68rem;color:var(--text2);">${(m.siparisler||[]).length} ürün</div>
-            <div style="font-size:0.72rem;font-weight:800;color:#30d080;">${fmtTL(top)}₺</div>
+            <div style="font-size:0.72rem;font-weight:800;color:#30d080;">${fmt(top)}₺</div>
           </div>`;
         }).join('')}
     </div>
@@ -1432,7 +1432,7 @@ async function analitikYukle() {
       const yuzde = Math.round(c/maxSaat*100);
       const renk = yuzde > 70 ? '#e04050' : yuzde > 40 ? '#f0b940' : yuzde > 15 ? '#30d080' : '#2a2a3a';
       const h = Math.max(4, Math.round(yuzde*0.55));
-      html += `<div title="${saat}:00 — ${fmtTL(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;" ></div>`;
+      html += `<div title="${saat}:00 — ${fmt(c)}₺" style="flex:1;background:${renk};height:${h}px;border-radius:2px 2px 0 0;"></div>`;
     });
     html += `</div><div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:3px;"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div></div>`;
 
