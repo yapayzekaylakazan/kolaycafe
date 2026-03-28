@@ -11919,21 +11919,43 @@ window.masaSilOnay = masaSilOnay;
     const {data:{session}} = await sb.auth.getSession();
     if(session) {
       await uygulamaBaslat(session.user);
-      // Ödeme başarılı callback
-      if(new URLSearchParams(location.search).get("odeme")==="basarili"){
+      // Ödeme callback kontrolü
+      const _odemeParam = new URLSearchParams(location.search).get('odeme');
+      if(_odemeParam === 'basarili'){
         setTimeout(async()=>{
-          // Kafe verisini tazele
           await kafeVerisiYukle();
-          // odeme_bekliyor'u sıfırla (güvence)
           try {
             if (window._kafeData?.id) {
               await sb.from('kafeler').update({ odeme_bekliyor: false }).eq('id', window._kafeData.id);
               if (window._kafeData) window._kafeData.odeme_bekliyor = false;
             }
           } catch(e) { console.warn('odeme_bekliyor sıfırlanamadı:', e); }
-          // Başarılı modal göster
           odemeBasariliModalGoster();
+          // URL'den parametreyi temizle
+          window.history.replaceState({}, '', window.location.pathname);
         },1000);
+      } else if(_odemeParam === 'basarisiz'){
+        setTimeout(async()=>{
+          // odeme_bekliyor sıfırla — müşteri tekrar deneyebilsin
+          try {
+            if (window._kafeData?.id) {
+              await sb.from('kafeler').update({ odeme_bekliyor: false }).eq('id', window._kafeData.id);
+              if (window._kafeData) window._kafeData.odeme_bekliyor = false;
+            }
+          } catch(e) {}
+          await kafeVerisiYukle();
+          // Başarısız modal göster
+          const m = document.createElement('div');
+          m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+          m.innerHTML = `<div style="background:var(--surface);border:1.5px solid #e0505044;border-radius:20px;padding:32px 24px;max-width:360px;width:100%;text-align:center;">
+            <div style="font-size:3rem;margin-bottom:12px;">❌</div>
+            <div style="font-size:1.1rem;font-weight:900;color:#e05050;margin-bottom:8px;">Ödeme Başarısız</div>
+            <div style="font-size:0.85rem;color:var(--text2);margin-bottom:20px;">Ödemeniz tamamlanamadı. Lütfen tekrar deneyin.</div>
+            <button onclick="this.closest('div[style*=fixed]').remove();sayfaGit('odeme');" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-weight:900;cursor:pointer;font-size:0.9rem;">Tekrar Dene →</button>
+          </div>`;
+          document.body.appendChild(m);
+          window.history.replaceState({}, '', window.location.pathname);
+        },500);
       }
     } else {
       document.getElementById('auth-screen').style.display = 'flex';
