@@ -2720,14 +2720,23 @@
 
   <div style="padding:16px;max-width:700px;margin:0 auto;width:100%;">
 
-    <!-- Mevcut plan bilgisi -->
-    <div id="odeme-mevcut-plan" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:1.5rem;">⭐</div>
-      <div style="flex:1;">
-        <div id="odeme-plan-adi" style="font-size:0.85rem;font-weight:800;color:var(--accent2);">—</div>
-        <div id="odeme-plan-bitis" style="font-size:0.75rem;color:var(--text2);margin-top:2px;">—</div>
+    <!-- Mevcut plan bilgisi - Detaylı -->
+    <div id="odeme-mevcut-plan" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="font-size:1.5rem;">⭐</div>
+        <div style="flex:1;">
+          <div id="odeme-plan-adi" style="font-size:0.9rem;font-weight:900;color:var(--accent2);">—</div>
+          <div id="odeme-plan-bitis" style="font-size:0.75rem;color:var(--text2);margin-top:2px;">—</div>
+        </div>
+        <div id="odeme-plan-chip" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;"></div>
       </div>
-      <div id="odeme-plan-chip" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;"></div>
+      <div id="odeme-plan-detay" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
+
+    <!-- Ödeme Geçmişi -->
+    <div id="odeme-gecmis-wrap" style="display:none;margin-bottom:16px;">
+      <div style="font-size:0.78rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">📋 Ödeme Geçmişi</div>
+      <div id="odeme-gecmis-liste"></div>
     </div>
 
     <!-- Dönem seçici -->
@@ -11910,6 +11919,15 @@ window.masaSilOnay = masaSilOnay;
     const {data:{session}} = await sb.auth.getSession();
     if(session) {
       await uygulamaBaslat(session.user);
+      // Ödeme başarılı callback
+      if(new URLSearchParams(location.search).get("odeme")==="basarili"){
+        setTimeout(async()=>{
+          // Kafe verisini tazele
+          await kafeVerisiYukle();
+          // Başarılı modal göster
+          odemeBasariliModalGoster();
+        },1000);
+      }
     } else {
       document.getElementById('auth-screen').style.display = 'flex';
     }
@@ -12877,9 +12895,27 @@ function odemeBaslangic() {
     if (kalan > 7)  { chip.style.cssText='background:rgba(34,197,94,0.15);color:#22c55e;padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;'; chip.textContent='Aktif'; }
     else if(kalan>0){ chip.style.cssText='background:rgba(234,179,8,0.15);color:#eab308;padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;'; chip.textContent='Bitiyor!'; }
     else            { chip.style.cssText='background:rgba(224,80,80,0.15);color:#e05050;padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;'; chip.textContent='Süresi Doldu'; }
-    document.getElementById('odeme-mevcut-plan').style.display = 'flex';
+    // Plan detay kartları
+    const detayEl = document.getElementById('odeme-plan-detay');
+    if (detayEl) {
+      const baslangic = window._kafeData.son_odeme ? new Date(window._kafeData.son_odeme) : null;
+      const tutar = window._kafeData.son_odeme_tutar ?? null;
+      const detayItems = [
+        { label: '📅 Başlangıç', value: baslangic ? baslangic.toLocaleDateString('tr-TR') : '—' },
+        { label: '⏳ Bitiş', value: bitis ? bitis.toLocaleDateString('tr-TR') : '—' },
+        { label: '📆 Kalan Gün', value: kalan > 0 ? `${kalan} gün` : 'Süresi doldu' },
+        { label: '💳 Son Ödeme', value: tutar ? `${parseFloat(tutar).toFixed(2)}₺` : '—' },
+      ];
+      detayEl.innerHTML = detayItems.map(d => `
+        <div style="background:var(--surface3);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:700;">${d.label}</div>
+          <div style="font-size:0.82rem;font-weight:800;color:var(--text);margin-top:2px;">${d.value}</div>
+        </div>`).join('');
+    }
+    document.getElementById('odeme-mevcut-plan').style.display = 'block';
   }
 
+  odemeGecmisYukle();
   odemeDonemSec('aylik');
   document.getElementById('odeme-ai-wrap').style.display = 'none';
   document.getElementById('odeme-sepet').style.display = 'none';
@@ -12888,6 +12924,102 @@ function odemeBaslangic() {
   document.getElementById('odeme-satin-al-btn').textContent = 'Plan Seç →';
   document.getElementById('odeme-iyzico-wrap').style.display = 'none';
   document.getElementById('odeme-sonuc').style.display = 'none';
+}
+
+// ── ÖDEME BAŞARILI MODAL ─────────────────────────────────────────────────────
+function odemeBasariliModalGoster() {
+  // Varsa eski modalı kaldır
+  const eskiModal = document.getElementById('odeme-basarili-modal');
+  if (eskiModal) eskiModal.remove();
+
+  const kafe = window._kafeData;
+  const planIsim = kafe?.plan ? (ODEME_PLANLAR.find(p=>p.id===kafe.plan)?.isim ?? kafe.plan.toUpperCase()) : '';
+  const bitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : null;
+  const tutar = kafe?.son_odeme_tutar ? parseFloat(kafe.son_odeme_tutar).toFixed(2) : '';
+
+  const modal = document.createElement('div');
+  modal.id = 'odeme-basarili-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1.5px solid #22c55e44;border-radius:20px;padding:32px 24px;max-width:360px;width:100%;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+      <div style="font-size:1.2rem;font-weight:900;color:#22c55e;margin-bottom:8px;">Ödeme Başarılı!</div>
+      <div style="font-size:0.85rem;color:var(--text2);margin-bottom:20px;">Paketiniz başarıyla aktive edildi.</div>
+      ${planIsim ? `<div style="background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:20px;text-align:left;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:0.75rem;color:var(--muted);">Paket</span>
+          <span style="font-size:0.82rem;font-weight:800;color:var(--accent2);">${planIsim}</span>
+        </div>
+        ${tutar ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:0.75rem;color:var(--muted);">Tutar</span>
+          <span style="font-size:0.82rem;font-weight:800;">${tutar}₺</span>
+        </div>` : ''}
+        ${bitis ? `<div style="display:flex;justify-content:space-between;">
+          <span style="font-size:0.75rem;color:var(--muted);">Geçerlilik</span>
+          <span style="font-size:0.82rem;font-weight:800;">${bitis.toLocaleDateString('tr-TR')}'e kadar</span>
+        </div>` : ''}
+      </div>` : ''}
+      <button onclick="document.getElementById('odeme-basarili-modal').remove();sayfaGit('masalar');" 
+        style="width:100%;padding:13px;border-radius:12px;border:none;background:#22c55e;color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;">
+        Harika! Masalara Git →
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ── ÖDEME GEÇMİŞİ ────────────────────────────────────────────────────────────
+async function odemeGecmisYukle() {
+  const wrap = document.getElementById('odeme-gecmis-wrap');
+  const liste = document.getElementById('odeme-gecmis-liste');
+  if (!wrap || !liste || !kafeId) return;
+
+  try {
+    const { data } = await sb.from('iyzico_islemler')
+      .select('*').eq('kafe_id', kafeId)
+      .order('created_at', { ascending: false }).limit(10);
+
+    if (!data || data.length === 0) {
+      // iyzico_islemler tablosu yoksa kafeler'den son_odeme göster
+      const kafe = window._kafeData;
+      if (kafe?.son_odeme && kafe?.son_odeme_tutar) {
+        const tarih = new Date(kafe.son_odeme).toLocaleDateString('tr-TR', { day:'2-digit', month:'long', year:'numeric' });
+        const planIsim = ODEME_PLANLAR.find(p=>p.id===kafe.plan)?.isim ?? (kafe.plan||'').toUpperCase();
+        liste.innerHTML = `
+          <div style="background:var(--surface2);border:1px solid #22c55e33;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.82rem;font-weight:800;">${planIsim} Paketi</span>
+                <span style="color:#22c55e;font-size:0.68rem;font-weight:800;">✓ Başarılı</span>
+              </div>
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${tarih} · ${kafe.plan_donem === 'yillik' ? 'Yıllık' : 'Aylık'}</div>
+            </div>
+            <div style="font-size:0.95rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;">${parseFloat(kafe.son_odeme_tutar).toFixed(2)}₺</div>
+          </div>`;
+        wrap.style.display = 'block';
+      }
+      return;
+    }
+
+    wrap.style.display = 'block';
+    liste.innerHTML = data.map(i => {
+      const tarih = new Date(i.created_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'long', year:'numeric' });
+      const basarili = i.durum === 'basarili';
+      const planIsim = ODEME_PLANLAR.find(p=>p.id===i.plan)?.isim ?? (i.plan||'').toUpperCase();
+      return `
+        <div style="background:var(--surface2);border:1px solid ${basarili?'#22c55e33':'#e0404033'};border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:0.82rem;font-weight:800;">${planIsim} Paketi</span>
+              <span style="color:${basarili?'#22c55e':'#e04040'};font-size:0.68rem;font-weight:800;">${basarili?'✓ Başarılı':'✗ Başarısız'}</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${tarih} · ${i.donem === 'yillik' ? 'Yıllık' : 'Aylık'}</div>
+          </div>
+          <div style="font-size:0.95rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;">${parseFloat(i.tutar||0).toFixed(2)}₺</div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    console.log('Geçmiş yüklenemedi:', e.message);
+  }
 }
 
 function odemeDonemSec(d) {
@@ -13000,7 +13132,7 @@ async function odemeSatinAl() {
         aiEklendi:   _odemeAi,
         email:       session.user.email,
         telefon:     window._kafeData.telefon || '+905000000000',
-        callbackUrl: 'https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/iyzico-odeme',
+        callbackUrl: 'https://kolaycafe.com/app/index.html',
       }),
     });
 
