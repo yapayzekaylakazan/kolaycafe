@@ -69,6 +69,7 @@ Deno.serve(async(req)=>{
           son_odeme:        new Date().toISOString(),
           son_odeme_tutar:  parseFloat(d.paidPrice??"0"),
         }).eq("id",kafeId);
+        await sb.from("iyzico_islemler").insert({kafe_id:kafeId,plan:yeniPlan,donem:yeniDonem,tutar:parseFloat(d.paidPrice??"0"),durum:"basarili",odeme_id:d.paymentId?.toString()??"",kart_token:d.token??""});
         console.log("Güncelleme:",error?"HATA:"+error.message:"BAŞARILI");
       }
     }
