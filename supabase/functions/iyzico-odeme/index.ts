@@ -40,26 +40,36 @@ Deno.serve(async(req)=>{
       console.log("basketId:",basketId,"kafeId:",kafeId);
 
       if(kafeId){
-        const{data:kafe}=await sb.from("kafeler").select("odeme_plan,odeme_donem,plan_bitis").eq("id",kafeId).single();
-        const plan=kafe?.odeme_plan??"start";
-        const donem=kafe?.odeme_donem??"aylik";
-        const gun=donem==="yillik"?365:30;
+        // Mevcut kafe bilgilerini çek
+        const{data:kafe}=await sb.from("kafeler")
+          .select("odeme_plan,odeme_donem,plan_bitis,plan_donem")
+          .eq("id",kafeId).single();
 
-        // Mevcut bitiş tarihi geçmemişse üzerine ekle, geçmişse bugünden başlat
-        const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : new Date();
-        const baslangic = mevcutBitis > new Date() ? mevcutBitis : new Date();
+        const yeniPlan  = kafe?.odeme_plan  ?? "start";
+        const yeniDonem = kafe?.odeme_donem ?? "aylik";
+        const gun       = yeniDonem === "yillik" ? 365 : 30;
+        const eskiBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : null;
+        const eskiDonem = kafe?.plan_donem ?? "aylik";
+
+        // Aynı dönemde yenileme → mevcut bitiş üzerine ekle
+        // Dönem değişikliği veya süresi dolmuş → bugünden başlat
+        const baslangic = (eskiBitis && eskiBitis > new Date() && eskiDonem === yeniDonem)
+          ? new Date(eskiBitis)
+          : new Date();
         baslangic.setDate(baslangic.getDate() + gun);
 
+        console.log("Plan:",yeniPlan,"Dönem:",yeniDonem,"Eski dönem:",eskiDonem,"Yeni bitiş:",baslangic.toISOString());
+
         const{error}=await sb.from("kafeler").update({
-          plan,
-          plan_bitis: baslangic.toISOString(),
-          plan_donem: donem,
-          odeme_bekliyor: false,
+          plan:             yeniPlan,
+          plan_bitis:       baslangic.toISOString(),
+          plan_donem:       yeniDonem,
+          odeme_bekliyor:   false,
           odeme_conversation_id: null,
-          son_odeme: new Date().toISOString(),
-          son_odeme_tutar: parseFloat(d.paidPrice??"0"),
+          son_odeme:        new Date().toISOString(),
+          son_odeme_tutar:  parseFloat(d.paidPrice??"0"),
         }).eq("id",kafeId);
-        console.log("Güncelleme:",error?"HATA:"+error.message:"BAŞARILI",plan,donem,"bitis:",baslangic.toISOString());
+        console.log("Güncelleme:",error?"HATA:"+error.message:"BAŞARILI");
       }
     }
     return new Response(null,{status:303,headers:{...corsHeaders,"Location":"https://kolaycafe.com/app/index.html?odeme=basarili"}});
