@@ -12824,23 +12824,15 @@ let aiAylikSohbet = 0;         // bu ay yapılan sohbet sayısı
 
 // Plan bazlı AI limitleri
 function aiLimitleriAl() {
-  const plan = aktifPaket || 'deneme';
   // AI paketi satın almış — tam limit
   if (aiPaketAktif) return { gunlukAnaliz: 20, aylikSohbet: 200, gunlukSohbet: false };
-  // Deneme planı — günde 3 analiz, günde 2 sohbet
-  if (plan === 'deneme') return { gunlukAnaliz: 3, aylikSohbet: 2, gunlukSohbet: true };
-  // Ücretli plan (AI paketi olmadan) — erişim yok
-  return { gunlukAnaliz: 0, aylikSohbet: 0, gunlukSohbet: false };
+  // Herkes (deneme dahil tüm planlar) — günde 3 analiz, günde 2 sohbet
+  return { gunlukAnaliz: 3, aylikSohbet: 2, gunlukSohbet: true };
 }
 
 function aiErisimVarMi() {
-  const plan = aktifPaket || 'deneme';
-  // Deneme planı — limitli erişim
-  if (plan === 'deneme') return true;
-  // AI paketi satın almış
-  if (aiPaketAktif) return true;
-  // Diğerleri erişemez
-  return false;
+  // Herkes girebilir
+  return true;
 }
 
 const AI_GUNLUK_LIMIT = 20;        // geriye dönük uyumluluk için
@@ -13831,6 +13823,23 @@ async function aiOnerilerUret(v) {
       .join('');
     icerik.innerHTML = html;
 
+    // ai_kayitlar tablosuna analiz sonucunu kaydet
+    try {
+      await sb.from('ai_kayitlar').insert({
+        kafe_id: kafeId,
+        kafe_adi: kafeAdi,
+        plan: aktifPaket || 'deneme',
+        tip: 'analiz',
+        donem: v.donemAdi || '',
+        icerik: {
+          rapor: metin,
+          toplamCiro: v.toplamCiro,
+          adisyonSayisi: v.adisyonSayisi,
+          enCokSatanlar: v.urunSirali.slice(0,5).map(u=>({isim:u.isim,adet:u.adet}))
+        }
+      });
+    } catch(e) {}
+
   } catch (e) {
     icerik.innerHTML = `<div style="color:var(--muted);font-size:0.8rem;">⚠️ AI önerileri alınamadı: ${e.message || 'Bağlantı hatası'}.<br><span style="font-size:0.72rem;">Supabase edge function'ın çalıştığından emin olun.</span></div>`;
   }
@@ -13933,6 +13942,19 @@ Cafe satış verileri (${v.donemAdi}):
     aiSohbetGecmisi.push({ role: 'assistant', content: cevap });
     aiAylikSohbet++;
     await aiKullanimKaydet('sohbet');
+
+    // ai_kayitlar tablosuna sohbeti kaydet
+    try {
+      await sb.from('ai_kayitlar').insert({
+        kafe_id: kafeId,
+        kafe_adi: kafeAdi,
+        plan: aktifPaket || 'deneme',
+        tip: 'sohbet',
+        donem: aiAnalizVerisi?.donemAdi || '',
+        icerik: { soru, cevap }
+      });
+    } catch(e) {}
+
     aiLimitGoster();
     // En fazla 10 mesaj tut
     if (aiSohbetGecmisi.length > 10) aiSohbetGecmisi = aiSohbetGecmisi.slice(-10);

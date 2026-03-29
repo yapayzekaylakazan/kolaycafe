@@ -146,6 +146,7 @@
     <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
     <button class="tab-btn" onclick="sayfaGit('test',this)">🧪 Test</button>
     <button class="tab-btn" onclick="sayfaGit('yorumlar',this)">⭐ Yorumlar</button>
+    <button class="tab-btn" onclick="sayfaGit('aikayitlar',this)">🤖 AI Kayıtlar</button>
     <div class="topbar-sag">
       <div class="canli-bar">
         <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
@@ -390,6 +391,26 @@
     <div id="yorum-listesi" style="display:flex;flex-direction:column;gap:10px;padding:12px;"></div>
   </div>
 
+  <!-- AI KAYITLAR SAYFASI -->
+  <div class="sayfa" id="sayfa-aikayitlar">
+    <div class="toolbar">
+      <div class="toolbar-baslik">🤖 AI Kayıtlar</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="aik-tip" class="sel" onchange="aiKayitlariYukle()">
+          <option value="hepsi">Tümü</option>
+          <option value="analiz">Analizler</option>
+          <option value="sohbet">Sohbetler</option>
+        </select>
+        <select id="aik-kafe" class="sel" onchange="aiKayitlariYukle()" style="min-width:160px;">
+          <option value="">Tüm Kafeler</option>
+        </select>
+        <button onclick="aiKayitlariYukle()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🔄 Yenile</button>
+      </div>
+    </div>
+    <div id="aik-istatistik" style="display:flex;gap:10px;flex-wrap:wrap;padding:0 12px 12px;"></div>
+    <div id="aik-liste" style="display:flex;flex-direction:column;gap:10px;padding:0 12px 12px;"></div>
+  </div>
+
 </div>
 
 <!-- DETAY MODAL -->
@@ -498,6 +519,93 @@ const TEST_PAKETLER = [
 
 // ── SAYFA GEZİNME ──
 /* ── YORUMLAR ── */
+/* ── AI KAYITLAR ── */
+async function aiKayitlariYukle() {
+  const tip    = document.getElementById('aik-tip')?.value ?? 'hepsi';
+  const kafeF  = document.getElementById('aik-kafe')?.value ?? '';
+  const liste  = document.getElementById('aik-liste');
+  const istat  = document.getElementById('aik-istatistik');
+  if (!liste) return;
+  liste.innerHTML = '<div style="color:var(--text2);font-size:0.82rem;padding:12px;">⏳ Yükleniyor...</div>';
+
+  let url = SB_REST + '/ai_kayitlar?order=created_at.desc&limit=100';
+  if (tip !== 'hepsi') url += '&tip=eq.' + tip;
+  if (kafeF) url += '&kafe_id=eq.' + kafeF;
+
+  const res  = await fetch(url, { headers: SB_H });
+  const data = await res.json();
+
+  if (!data.length) {
+    liste.innerHTML = '<div style="color:var(--text2);font-size:0.82rem;padding:12px;">Henüz kayıt yok.</div>';
+    istat.innerHTML = '';
+    return;
+  }
+
+  // İstatistik
+  const analizSayisi = data.filter(d => d.tip === 'analiz').length;
+  const sohbetSayisi = data.filter(d => d.tip === 'sohbet').length;
+  const kafeSayisi   = [...new Set(data.map(d => d.kafe_id))].length;
+  istat.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:0.78rem;">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--accent2);">${analizSayisi}</div>
+      <div style="color:var(--text2);">Analiz</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:0.78rem;">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--accent2);">${sohbetSayisi}</div>
+      <div style="color:var(--text2);">Sohbet</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:0.78rem;">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--accent2);">${kafeSayisi}</div>
+      <div style="color:var(--text2);">Farklı Kafe</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:0.78rem;">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--accent2);">${data.length}</div>
+      <div style="color:var(--text2);">Toplam Kayıt</div>
+    </div>
+  `;
+
+  // Kafe filtre dropdown doldur
+  const kafeSelect = document.getElementById('aik-kafe');
+  if (kafeSelect && kafeSelect.options.length <= 1) {
+    const kafeler = [...new Map(data.map(d => [d.kafe_id, d.kafe_adi])).entries()];
+    kafeler.forEach(([id, ad]) => {
+      const opt = document.createElement('option');
+      opt.value = id; opt.textContent = ad || id.substring(0,8);
+      kafeSelect.appendChild(opt);
+    });
+  }
+
+  liste.innerHTML = data.map(k => {
+    const tarih = new Date(k.created_at).toLocaleString('tr-TR');
+    const isAnaliz = k.tip === 'analiz';
+    const icerik = k.icerik || {};
+    let detay = '';
+    if (isAnaliz) {
+      detay = `<div style="font-size:0.78rem;color:var(--text2);margin-top:8px;white-space:pre-wrap;line-height:1.6;max-height:200px;overflow-y:auto;">${(icerik.rapor||'').substring(0,600)}${(icerik.rapor||'').length>600?'...':''}</div>`;
+      if (icerik.toplamCiro) detay += `<div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Ciro: ${icerik.toplamCiro}₺ · ${icerik.adisyonSayisi||0} adisyon · Dönem: ${k.donem||'-'}</div>`;
+    } else {
+      detay = `
+        <div style="margin-top:8px;font-size:0.78rem;">
+          <div style="color:var(--text2);margin-bottom:4px;"><span style="color:var(--accent);">Soru:</span> ${icerik.soru||''}</div>
+          <div style="color:var(--text2);white-space:pre-wrap;line-height:1.5;max-height:120px;overflow-y:auto;"><span style="color:#30d080;">Cevap:</span> ${(icerik.cevap||'').substring(0,400)}${(icerik.cevap||'').length>400?'...':''}</div>
+        </div>`;
+    }
+    return `
+      <div style="background:var(--surface);border:1px solid ${isAnaliz?'rgba(200,133,42,0.3)':'rgba(48,208,128,0.2)'};border-radius:12px;padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1rem;">${isAnaliz?'📊':'💬'}</span>
+            <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;color:var(--text);">${k.kafe_adi||'—'}</span>
+            <span style="background:${isAnaliz?'rgba(200,133,42,0.15)':'rgba(48,208,128,0.12)'};color:${isAnaliz?'var(--accent2)':'#30d080'};font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:6px;">${isAnaliz?'ANALİZ':'SOHBET'}</span>
+            <span style="font-size:0.68rem;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:6px;">${k.plan||'-'}</span>
+          </div>
+          <span style="font-size:0.68rem;color:var(--muted);">${tarih}</span>
+        </div>
+        ${detay}
+      </div>`;
+  }).join('');
+}
+
 async function yorumlariYukle() {
   const filtre = document.getElementById('yorum-filtre')?.value ?? 'hepsi';
   const liste  = document.getElementById('yorum-listesi');
@@ -571,6 +679,7 @@ function sayfaGit(id, btn) {
   if (id === 'finans') finansYukle();
   if (id === 'test') { testPanelRender(); testKafeListesiDoldur(); }
   if (id === 'yorumlar') yorumlariYukle();
+  if (id === 'aikayitlar') aiKayitlariYukle();
 }
 
 // ── YARDIMCI ──
