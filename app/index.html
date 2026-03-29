@@ -194,14 +194,19 @@
   /* ── LAYOUT: PC modu (geniş ekran veya .pc-mod class'ı) ── */
   body.pc-mod .kolaycafen-body { flex-direction: row !important; overflow: hidden !important; }
   @media (min-width: 900px) { .kolaycafen-body { flex-direction: row; overflow: hidden; } }
-  body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; }
-  body.pc-mod .urun-grid { grid-template-columns: repeat(5, 1fr); }
+  body.pc-mod .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; display: flex; flex-direction: column; }
+  body.pc-mod .urun-bolumu .cat-tabs { flex-shrink: 0; }
+  body.pc-mod .urun-bolumu .urun-grid { flex: 1; overflow-y: auto; min-height: 0; align-content: start; grid-template-columns: repeat(5, 1fr); }
   body.pc-mod .urun-kart .uadet { display: block; }
   body.pc-mod .siparis-bolumu { width: 300px; flex-shrink: 0; overflow: hidden; min-height: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
   body.pc-mod .siparis-bolumu .siparis-baslik { flex-shrink: 0; }
   body.pc-mod .siparis-bolumu .siparis-liste { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
   body.pc-mod .kolaycafen-footer { position: sticky; bottom: 0; z-index: 10; flex-shrink: 0; }
   @media (min-width: 900px) {
+    .kolaycafen-body { flex-direction: row; overflow: hidden; }
+    .urun-bolumu { flex: 1; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; min-height: 0; display: flex; flex-direction: column; }
+    .urun-bolumu .cat-tabs { flex-shrink: 0; }
+    .urun-bolumu .urun-grid { flex: 1; overflow-y: auto; min-height: 0; align-content: start; }
     .siparis-bolumu { width: 300px; flex-shrink: 0; overflow: hidden !important; min-height: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
     .siparis-bolumu .siparis-baslik { flex-shrink: 0; }
     .siparis-bolumu .siparis-liste { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
