@@ -389,7 +389,7 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
         <div class="feat-name" style="color:var(--gold2);">Deneyiminizi Paylaşın</div>
         <div class="feat-desc">KolayCafe'yi kullananların görüşleri diğer cafe sahiplerine yol gösteriyor. Siz de deneyiminizi yazın.</div>
       </div>
-      <a href="https://wa.me/905326873195?text=Merhaba%2C%20KolayCafe%20hakk%C4%B1nda%20yorum%20yapmak%20istiyorum." target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:rgba(200,133,42,0.15);border:1.5px solid rgba(200,133,42,0.35);color:var(--gold3);padding:10px 16px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;transition:all 0.2s;width:fit-content;" onmouseover="this.style.background='rgba(200,133,42,0.25)'" onmouseout="this.style.background='rgba(200,133,42,0.15)'">💬 Yorum Bırak →</a>
+      <button onclick="yorumModalAc()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(200,133,42,0.15);border:1.5px solid rgba(200,133,42,0.35);color:var(--gold3);padding:10px 16px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;">⭐ Yorum Bırak 2192</button>
     </div>
   </div>
 </section>
@@ -1009,3 +1009,124 @@ async function payFormSubmit() {
     document.getElementById('result-msg').innerHTML     = 'Planınız aktifleştirildi.<br>Giriş bilgileri e-postanıza gönderildi.';
   } else if (odeme === 'basarisiz') {
     document.getElementById('result-icon').textContent 
+  document.getElementById('result-icon').textContent  = '❌';
+  document.getElementById('result-title').innerHTML   = '<div style="font-family:\'Syne\',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:8px;">Ödeme Başarısız</div>';
+  document.getElementById('result-msg').textContent   = params.get('mesaj') ?? 'Bir sorun oluştu. Lütfen tekrar deneyin.';
+  }
+})();
+</script>
+
+<!-- ── YORUM MODAL ── -->
+<div id="yorum-overlay" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:#1a1510;border:1px solid rgba(200,133,42,0.3);border-radius:20px;width:min(460px,94vw);max-height:90vh;overflow-y:auto;padding:32px 28px;position:relative;">
+    <button onclick="yorumModalKapat()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:#8a7a68;font-size:1.2rem;cursor:pointer;">✕</button>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:1.8rem;margin-bottom:8px;">⭐</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:#f5ede0;">Deneyiminizi Paylaşın</div>
+      <div style="font-size:0.75rem;color:#8a7a68;margin-top:4px;">Yorumunuz incelendikten sonra yayınlanacak</div>
+    </div>
+
+    <!-- YILDIZ SEÇİMİ -->
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:0.75rem;color:#8a7a68;font-weight:600;margin-bottom:10px;letter-spacing:0.05em;">PUANINIZ</div>
+      <div id="yildiz-wrap" style="display:flex;justify-content:center;gap:8px;">
+        <span class="y-star" data-v="1" onclick="yildizSec(1)" style="font-size:2rem;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="y-star" data-v="2" onclick="yildizSec(2)" style="font-size:2rem;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="y-star" data-v="3" onclick="yildizSec(3)" style="font-size:2rem;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="y-star" data-v="4" onclick="yildizSec(4)" style="font-size:2rem;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="y-star" data-v="5" onclick="yildizSec(5)" style="font-size:2rem;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+      <input id="y-isim"  class="pay-input" placeholder="Adınız Soyadınız *">
+      <input id="y-kafe"  class="pay-input" placeholder="Cafe Adı (isteğe bağlı)">
+      <input id="y-sehir" class="pay-input" placeholder="Şehir (isteğe bağlı)">
+      <textarea id="y-yorum" class="pay-input" placeholder="Yorumunuz *" rows="4" style="resize:vertical;font-family:'DM Sans',sans-serif;"></textarea>
+    </div>
+
+    <div id="y-err" style="display:none;color:#f87171;font-size:0.76rem;font-weight:600;padding:8px 12px;background:rgba(248,113,113,0.08);border-radius:8px;border:1px solid rgba(248,113,113,0.25);margin-bottom:10px;"></div>
+    <div id="y-ok"  style="display:none;color:#4ade80;font-size:0.82rem;font-weight:600;padding:10px 14px;background:rgba(74,222,128,0.08);border-radius:8px;border:1px solid rgba(74,222,128,0.2);margin-bottom:10px;text-align:center;">🎉 Yorumunuz alındı, teşekkürler!</div>
+
+    <button id="y-btn" onclick="yorumGonder()" style="width:100%;padding:14px;border-radius:10px;background:linear-gradient(135deg,#c8852a,#e8a040);color:#0c0a08;font-family:'DM Sans',sans-serif;font-weight:800;font-size:0.95rem;border:none;cursor:pointer;transition:all 0.2s;">Yorumu Gönder</button>
+  </div>
+</div>
+
+<script>
+let seciliYildiz = 0;
+
+function yorumModalAc() {
+  seciliYildiz = 0;
+  document.querySelectorAll('.y-star').forEach(s => { s.style.color=''; s.style.opacity='0.3'; });
+  ['y-isim','y-kafe','y-sehir','y-yorum'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('y-err').style.display = 'none';
+  document.getElementById('y-ok').style.display  = 'none';
+  const btn = document.getElementById('y-btn');
+  btn.textContent = 'Yorumu Gönder'; btn.disabled = false;
+  document.getElementById('yorum-overlay').style.display = 'flex';
+}
+
+function yorumModalKapat() {
+  document.getElementById('yorum-overlay').style.display = 'none';
+}
+
+function yildizSec(val) {
+  seciliYildiz = val;
+  document.querySelectorAll('.y-star').forEach(s => {
+    const v = parseInt(s.dataset.v);
+    s.style.color   = v <= val ? '#f5c060' : '';
+    s.style.opacity = v <= val ? '1' : '0.25';
+  });
+}
+
+async function yorumGonder() {
+  const isim  = document.getElementById('y-isim').value.trim();
+  const kafe  = document.getElementById('y-kafe').value.trim();
+  const sehir = document.getElementById('y-sehir').value.trim();
+  const yorum = document.getElementById('y-yorum').value.trim();
+  const errEl = document.getElementById('y-err');
+
+  if (!isim || !yorum) {
+    errEl.textContent = 'Lütfen adınızı ve yorumunuzu girin.';
+    errEl.style.display = 'block'; return;
+  }
+  if (seciliYildiz === 0) {
+    errEl.textContent = 'Lütfen bir puan seçin.';
+    errEl.style.display = 'block'; return;
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('y-btn');
+  btn.disabled = true; btn.textContent = '⏳ Gönderiliyor...';
+
+  try {
+    const res = await fetch('https://sjfcdthwlwmbdmcevobv.supabase.co/rest/v1/yorumlar', {
+      method: 'POST',
+      headers: {
+        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs',
+        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        isim,
+        kafe_adi: kafe || null,
+        yildiz: seciliYildiz,
+        yorum: sehir ? yorum + (sehir ? ' — ' + sehir : '') : yorum,
+        onaylandi: false
+      })
+    });
+
+    if (!res.ok) throw new Error('Sunucu hatası');
+
+    document.getElementById('y-ok').style.display = 'block';
+    btn.style.display = 'none';
+    setTimeout(() => yorumModalKapat(), 2500);
+  } catch(err) {
+    errEl.textContent = '❌ Bir hata oluştu, lütfen tekrar deneyin.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Yorumu Gönder';
+  }
+}
+</script>
+</body>
+</html>
