@@ -9580,7 +9580,177 @@ async function vardiyaToggle() {
   if (aktifVardiyaId) {
     vardiyaKapatModal();
   } else {
-    await vardiyaBaslat();
+    vardiyaAnaSayfaModal();
+  }
+}
+
+function vardiyaAnaSayfaModal() {
+  document.getElementById('vardiya-modal-icerik').innerHTML = `
+    <div style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:1rem;font-weight:900;color:var(--text);">⏱ Vardiya</div>
+        <button onclick="vardiyaModalKapat()" style="background:var(--surface3);border:none;border-radius:50%;width:30px;height:30px;font-size:0.9rem;cursor:pointer;color:var(--muted);">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:16px;">
+        <button id="vtab-yeni" onclick="vardiyaTabSec('yeni')" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">🟢 Yeni Vardiya</button>
+        <button id="vtab-gecmis" onclick="vardiyaTabSec('gecmis')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;">📋 Geçmiş</button>
+      </div>
+      <div id="vtab-icerik"></div>
+    </div>`;
+  document.getElementById('vardiya-modal').style.display = 'flex';
+  vardiyaTabSec('yeni');
+}
+
+function vardiyaTabSec(tab) {
+  const yeniBtn = document.getElementById('vtab-yeni');
+  const gecmisBtn = document.getElementById('vtab-gecmis');
+  if (!yeniBtn || !gecmisBtn) return;
+  if (tab === 'yeni') {
+    yeniBtn.style.background = 'var(--accent)'; yeniBtn.style.color = 'var(--bg)'; yeniBtn.style.border = 'none';
+    gecmisBtn.style.background = 'transparent'; gecmisBtn.style.color = 'var(--muted)'; gecmisBtn.style.border = '1.5px solid var(--border)';
+    document.getElementById('vtab-icerik').innerHTML = `
+      <div style="text-align:center;padding:16px 0;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">☕</div>
+        <div style="font-size:0.85rem;color:var(--muted);font-weight:600;margin-bottom:18px;">Yeni vardiya başlatmak için hazır mısınız?</div>
+        <button onclick="vardiyaBaslat()" style="width:100%;padding:13px;border-radius:12px;border:none;background:#3db85a;color:#fff;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">🟢 Vardiyayı Başlat</button>
+      </div>`;
+  } else {
+    gecmisBtn.style.background = 'var(--accent)'; gecmisBtn.style.color = 'var(--bg)'; gecmisBtn.style.border = 'none';
+    yeniBtn.style.background = 'transparent'; yeniBtn.style.color = 'var(--muted)'; yeniBtn.style.border = '1.5px solid var(--border)';
+    document.getElementById('vtab-icerik').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:0.82rem;">Yükleniyor...</div>`;
+    vardiyaGecmisYukle();
+  }
+}
+
+async function vardiyaGecmisYukle() {
+  const icerik = document.getElementById('vtab-icerik');
+  if (!icerik) return;
+  try {
+    const { data, error } = await sb.from('vardiyalar')
+      .select('*').eq('kafe_id', kafeId).not('bitis', 'is', null)
+      .order('baslangic', { ascending: false }).limit(30);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      icerik.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem;">Henüz kapatılmış vardiya yok.</div>`;
+      return;
+    }
+    icerik.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;">` +
+      data.map(v => {
+        const bas = new Date(v.baslangic);
+        const bit = new Date(v.bitis);
+        const sure = vardiyaSureFmt(bas, bit);
+        const tarih = bas.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        const saatBas = bas.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        const saatBit = bit.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        const ciro = Math.round(v.toplam_ciro || 0).toLocaleString('tr-TR');
+        return `<div style="background:var(--surface2);border-radius:12px;padding:12px 14px;border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div style="font-size:0.82rem;font-weight:800;color:var(--text);">📅 ${tarih} &nbsp; ${saatBas}–${saatBit}</div>
+              <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">⏱ ${sure}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:1rem;font-weight:900;color:#3db85a;font-family:'Space Mono',monospace;">${ciro}₺</div>
+            </div>
+          </div>
+          <button onclick="vardiyaDetayAc('${v.id}')" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;">🔍 Adisyonları Gör & Düzenle</button>
+        </div>`;
+      }).join('') + `</div>`;
+  } catch(e) {
+    icerik.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);font-size:0.82rem;">Yüklenemedi: ${e.message}</div>`;
+  }
+}
+
+async function vardiyaDetayAc(vardiyaId) {
+  const icerik = document.getElementById('vtab-icerik');
+  if (!icerik) return;
+  icerik.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:0.82rem;">Adisyonlar yükleniyor...</div>`;
+  try {
+    const { data, error } = await sb.from('kolaycafenlar')
+      .select('*').eq('kafe_id', kafeId).eq('vardiya_id', vardiyaId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const { data: vData } = await sb.from('vardiyalar').select('*').eq('id', vardiyaId).single();
+    const toplam = (data || []).reduce((t, a) => t + (a.toplam || 0), 0);
+    icerik.innerHTML = `
+      <div style="margin-bottom:10px;">
+        <button onclick="vardiyaTabSec('gecmis')" style="background:none;border:none;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.8rem;cursor:pointer;">← Listeye Dön</button>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:0.75rem;color:var(--muted);font-weight:700;">${(data||[]).length} adisyon</div>
+        <div style="font-size:1rem;font-weight:900;color:#3db85a;font-family:'Space Mono',monospace;" id="vdetay-toplam">${Math.round(toplam).toLocaleString('tr-TR')}₺</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto;" id="vdetay-liste">
+        ${(data || []).map(a => vardiyaAdisyonSatir(a)).join('')}
+      </div>`;
+  } catch(e) {
+    icerik.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);font-size:0.82rem;">Yüklenemedi.</div>`;
+  }
+}
+
+function vardiyaAdisyonSatir(a) {
+  const tarih = new Date(a.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const urunler = (a.siparisler || []).map(s => s.isim + (s.adet > 1 ? ' x' + s.adet : '')).join(', ');
+  return `<div id="vadisyon-${a.id}" style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:0.78rem;font-weight:800;color:var(--text);">${a.masa_ad || 'Masa ' + a.masa_no} · ${tarih}</div>
+      <div style="font-size:0.9rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;" id="vadisyon-tutar-${a.id}">${Math.round(a.toplam).toLocaleString('tr-TR')}₺</div>
+    </div>
+    <div style="font-size:0.68rem;color:var(--muted);font-weight:600;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${urunler}</div>
+    <div style="display:flex;gap:5px;">
+      <button onclick="vardiyaAdisyonDuzenle('${a.id}', ${a.toplam}, '${a.vardiya_id}')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid var(--accent2);background:transparent;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">✏️ Tutar Düzenle</button>
+      <button onclick="vardiyaAdisyonSil('${a.id}', ${a.toplam}, '${a.vardiya_id}')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🗑 Sil</button>
+    </div>
+  </div>`;
+}
+
+async function vardiyaAdisyonSil(adisyonId, eskiToplam, vardiyaId) {
+  if (!confirm('Bu adisyon silinsin mi? İşlem geri alınamaz.')) return;
+  try {
+    await sb.from('kolaycafenlar').delete().eq('id', adisyonId);
+    // Vardiya cirosunu güncelle
+    const { data: vData } = await sb.from('vardiyalar').select('toplam_ciro').eq('id', vardiyaId).single();
+    const yeniCiro = Math.max(0, (vData?.toplam_ciro || 0) - eskiToplam);
+    await sb.from('vardiyalar').update({ toplam_ciro: yeniCiro }).eq('id', vardiyaId);
+    // UI'dan kaldır
+    document.getElementById('vadisyon-' + adisyonId)?.remove();
+    // Genel toplamı güncelle
+    const toplamEl = document.getElementById('vdetay-toplam');
+    if (toplamEl) toplamEl.textContent = Math.round(yeniCiro).toLocaleString('tr-TR') + '₺';
+    toast('🗑 Adisyon silindi · Vardiya cirosu güncellendi');
+  } catch(e) {
+    toast('Hata: ' + e.message);
+  }
+}
+
+async function vardiyaAdisyonDuzenle(adisyonId, eskiToplam, vardiyaId) {
+  const yeniStr = prompt(`Yeni tutar girin (mevcut: ${Math.round(eskiToplam).toLocaleString('tr-TR')}₺):`, Math.round(eskiToplam));
+  if (yeniStr === null) return;
+  const yeniToplam = parseFloat(yeniStr.replace(',', '.'));
+  if (isNaN(yeniToplam) || yeniToplam < 0) { toast('Geçersiz tutar!'); return; }
+  try {
+    await sb.from('kolaycafenlar').update({ toplam: yeniToplam }).eq('id', adisyonId);
+    // Fark hesapla ve vardiya cirosunu güncelle
+    const fark = yeniToplam - eskiToplam;
+    const { data: vData } = await sb.from('vardiyalar').select('toplam_ciro').eq('id', vardiyaId).single();
+    const yeniCiro = Math.max(0, (vData?.toplam_ciro || 0) + fark);
+    await sb.from('vardiyalar').update({ toplam_ciro: yeniCiro }).eq('id', vardiyaId);
+    // UI güncelle
+    const tutarEl = document.getElementById('vadisyon-tutar-' + adisyonId);
+    if (tutarEl) tutarEl.textContent = Math.round(yeniToplam).toLocaleString('tr-TR') + '₺';
+    // Butonun data'sını güncelle — tekrar basınca doğru eskiToplam gitsin
+    const satir = document.getElementById('vadisyon-' + adisyonId);
+    if (satir) {
+      const duzenleBtn = satir.querySelector('button:first-child');
+      if (duzenleBtn) duzenleBtn.setAttribute('onclick', `vardiyaAdisyonDuzenle('${adisyonId}', ${yeniToplam}, '${vardiyaId}')`);
+      const silBtn = satir.querySelector('button:last-child');
+      if (silBtn) silBtn.setAttribute('onclick', `vardiyaAdisyonSil('${adisyonId}', ${yeniToplam}, '${vardiyaId}')`);
+    }
+    const toplamEl = document.getElementById('vdetay-toplam');
+    if (toplamEl) toplamEl.textContent = Math.round(yeniCiro).toLocaleString('tr-TR') + '₺';
+    toast('✅ Tutar güncellendi · Vardiya cirosu düzeltildi');
+  } catch(e) {
+    toast('Hata: ' + e.message);
   }
 }
 
@@ -9609,6 +9779,7 @@ async function vardiyaBaslat() {
     if (vardiyaTab) donemSec('vardiya', vardiyaTab);
   }
   toast('🟢 Vardiya başlatıldı!');
+  vardiyaModalKapat();
 }
 
 function vardiyaKapatModal() {
@@ -9681,6 +9852,12 @@ window.vardiyaToggle = vardiyaToggle;
 window.vardiyaKapat = vardiyaKapat;
 window.vardiyaModalKapat = vardiyaModalKapat;
 window.vardiyaRaporaGit = vardiyaRaporaGit;
+window.vardiyaAnaSayfaModal = vardiyaAnaSayfaModal;
+window.vardiyaTabSec = vardiyaTabSec;
+window.vardiyaGecmisYukle = vardiyaGecmisYukle;
+window.vardiyaDetayAc = vardiyaDetayAc;
+window.vardiyaAdisyonSil = vardiyaAdisyonSil;
+window.vardiyaAdisyonDuzenle = vardiyaAdisyonDuzenle;
 window.yeniKategoriEkle = yeniKategoriEkle;
 window.urunKaydet = urunKaydet;
 window.varyantSecimiOnayla = varyantSecimiOnayla;
