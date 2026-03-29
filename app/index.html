@@ -12793,34 +12793,69 @@ let aiAnalizVerisi = null;
 let aiPaketAktif = false;      // kafeler.ai_paket kolonundan gelir
 let aiGunlukAnaliz = 0;        // bugün yapılan analiz sayısı
 let aiAylikSohbet = 0;         // bu ay yapılan sohbet sayısı
-const AI_GUNLUK_LIMIT = 20;
-const AI_AYLIK_SOHBET_LIMIT = 200;
+
+// Plan bazlı AI limitleri
+function aiLimitleriAl() {
+  const plan = aktifPaket || 'deneme';
+  if (plan === 'deneme') {
+    return { gunlukAnaliz: 3, aylikSohbet: 10 };
+  }
+  if (aiPaketAktif) {
+    return { gunlukAnaliz: 20, aylikSohbet: 200 };
+  }
+  // Ücretli plan ama AI paketi yok — deneme limiti
+  return { gunlukAnaliz: 3, aylikSohbet: 10 };
+}
+
+function aiErisimVarMi() {
+  const plan = aktifPaket || 'deneme';
+  // Deneme planı AI'ya erişebilir (limitli)
+  if (plan === 'deneme') return true;
+  // Ücretli plan + AI paketi
+  if (aiPaketAktif) return true;
+  return false;
+}
+
+const AI_GUNLUK_LIMIT = 20;        // geriye dönük uyumluluk için
+const AI_AYLIK_SOHBET_LIMIT = 200; // geriye dönük uyumluluk için
 
 function aiPaketKartRender() {
   const el = document.getElementById('ayar-ai-paket-icerik');
   if (!el) return;
 
-  if (aiPaketAktif) {
+  const { gunlukAnaliz: GL, aylikSohbet: AL } = aiLimitleriAl();
+  const plan = aktifPaket || 'deneme';
+  const deneme = plan === 'deneme';
+
+  if (aiErisimVarMi()) {
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="background:rgba(61,184,90,0.15);border:1.5px solid rgba(61,184,90,0.4);border-radius:10px;padding:6px 14px;font-size:0.8rem;font-weight:900;color:#3db85a;">✅ Aktif</div>
-        <div style="font-size:0.85rem;font-weight:800;color:var(--accent2);">399₺/ay</div>
+        ${deneme
+          ? `<div style="background:rgba(200,133,42,0.15);border:1.5px solid rgba(200,133,42,0.4);border-radius:10px;padding:6px 14px;font-size:0.8rem;font-weight:900;color:var(--accent2);">🆓 Deneme</div>
+             <div style="font-size:0.78rem;color:var(--muted);font-weight:600;">Deneme süresince limitli kullanım</div>`
+          : `<div style="background:rgba(61,184,90,0.15);border:1.5px solid rgba(61,184,90,0.4);border-radius:10px;padding:6px 14px;font-size:0.8rem;font-weight:900;color:#3db85a;">✅ Aktif</div>
+             <div style="font-size:0.85rem;font-weight:800;color:var(--accent2);">399₺/ay</div>`
+        }
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
         <div style="background:var(--surface3);border-radius:10px;padding:10px;border:1px solid var(--border);">
           <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📊 GÜNLÜK ANALİZ</div>
-          <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">${AI_GUNLUK_LIMIT - aiGunlukAnaliz}<span style="font-size:0.7rem;color:var(--muted);font-weight:600;">/${AI_GUNLUK_LIMIT}</span></div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">${GL - aiGunlukAnaliz}<span style="font-size:0.7rem;color:var(--muted);font-weight:600;">/${GL}</span></div>
           <div style="font-size:0.65rem;color:var(--muted);">kalan hak</div>
         </div>
         <div style="background:var(--surface3);border-radius:10px;padding:10px;border:1px solid var(--border);">
           <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">💬 AYLIK SOHBET</div>
-          <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">${AI_AYLIK_SOHBET_LIMIT - aiAylikSohbet}<span style="font-size:0.7rem;color:var(--muted);font-weight:600;">/${AI_AYLIK_SOHBET_LIMIT}</span></div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--accent2);">${AL - aiAylikSohbet}<span style="font-size:0.7rem;color:var(--muted);font-weight:600;">/${AL}</span></div>
           <div style="font-size:0.65rem;color:var(--muted);">kalan hak</div>
         </div>
       </div>
-      <div style="font-size:0.75rem;color:var(--muted);font-weight:600;">Paket iptali için: <strong>bilgi@kolaycafe.com</strong></div>
+      ${deneme
+        ? `<div style="font-size:0.75rem;color:var(--muted);font-weight:600;background:rgba(200,133,42,0.08);border-radius:8px;padding:8px 10px;">
+             AI paketini satın alarak günlük 20 analiz ve 200 aylık sohbet hakkına geçin.
+           </div>`
+        : `<div style="font-size:0.75rem;color:var(--muted);font-weight:600;">Paket iptali için: <strong>bilgi@kolaycafe.com</strong></div>`
+      }
     `;
-  } else {
     el.innerHTML = `
       <p style="font-size:0.8rem;color:var(--muted);font-weight:600;margin-bottom:14px;line-height:1.5;">
         Satış analizi, gelir trendi ve Claude AI önerileri için AI Paketi'ni aktifleştirin.
@@ -13200,8 +13235,8 @@ async function odemeSatinAl() {
 
 
 function aiSayfaAc() {
-  // Paket kontrolü
-  if (!aiPaketAktif) {
+  // Erişim kontrolü — deneme planı da girebilir (limitli)
+  if (!aiErisimVarMi()) {
     aiKilitEkraniGoster();
     return;
   }
@@ -13298,15 +13333,23 @@ async function aiKullanimYukle() {
 function aiLimitGoster() {
   const analizEl = document.getElementById('ai-limit-analiz');
   const sohbetEl = document.getElementById('ai-limit-sohbet');
+  const { gunlukAnaliz: GL, aylikSohbet: AL } = aiLimitleriAl();
+  const plan = aktifPaket || 'deneme';
+  const deneme = plan === 'deneme';
+
   if (analizEl) {
-    const kalan = AI_GUNLUK_LIMIT - aiGunlukAnaliz;
-    analizEl.textContent = `Bugün ${kalan} analiz hakkın kaldı`;
-    analizEl.style.color = kalan <= 3 ? '#e04040' : 'var(--muted)';
+    const kalan = GL - aiGunlukAnaliz;
+    analizEl.textContent = deneme
+      ? `🆓 Deneme: Bugün ${kalan}/${GL} analiz hakkın kaldı`
+      : `Bugün ${kalan} analiz hakkın kaldı`;
+    analizEl.style.color = kalan <= 1 ? '#e04040' : 'var(--muted)';
   }
   if (sohbetEl) {
-    const kalan = AI_AYLIK_SOHBET_LIMIT - aiAylikSohbet;
-    sohbetEl.textContent = `Bu ay ${kalan} sohbet hakkın kaldı`;
-    sohbetEl.style.color = kalan <= 10 ? '#e04040' : 'var(--muted)';
+    const kalan = AL - aiAylikSohbet;
+    sohbetEl.textContent = deneme
+      ? `🆓 Deneme: Bu ay ${kalan}/${AL} sohbet hakkın kaldı`
+      : `Bu ay ${kalan} sohbet hakkın kaldı`;
+    sohbetEl.style.color = kalan <= 2 ? '#e04040' : 'var(--muted)';
   }
 }
 
@@ -13317,11 +13360,12 @@ async function aiKullanimKaydet(tip) {
 }
 
 async function aiAnalizBaslat() {
-  // Paket kontrolü
-  if (!aiPaketAktif) { aiKilitEkraniGoster(); return; }
+  // Erişim kontrolü
+  if (!aiErisimVarMi()) { aiKilitEkraniGoster(); return; }
   // Günlük limit kontrolü
-  if (aiGunlukAnaliz >= AI_GUNLUK_LIMIT) {
-    toast(`⛔ Bugünkü ${AI_GUNLUK_LIMIT} analiz hakkınız doldu. Yarın yenilenir.`);
+  const { gunlukAnaliz: GL } = aiLimitleriAl();
+  if (aiGunlukAnaliz >= GL) {
+    toast(`⛔ Bugünkü ${GL} analiz hakkınız doldu. Yarın yenilenir.`);
     return;
   }
   const yukleniyor = document.getElementById('ai-yukleniyor');
@@ -13784,9 +13828,13 @@ async function aiSoruGonder() {
   const soru = inp.value.trim();
   if (!soru) return;
 
+  // Erişim kontrolü
+  if (!aiErisimVarMi()) { aiKilitEkraniGoster(); return; }
+
   // Aylık sohbet limiti
-  if (aiAylikSohbet >= AI_AYLIK_SOHBET_LIMIT) {
-    toast(`⛔ Bu ayki ${AI_AYLIK_SOHBET_LIMIT} sohbet hakkınız doldu.`);
+  const { aylikSohbet: AL } = aiLimitleriAl();
+  if (aiAylikSohbet >= AL) {
+    toast(`⛔ Bu ayki ${AL} sohbet hakkınız doldu.`);
     return;
   }
   inp.value = '';
