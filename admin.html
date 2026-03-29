@@ -179,22 +179,24 @@
 
   <!-- ÜYELER -->
   <div class="sayfa" id="sayfa-uyeler">
-    <div class="toolbar">
-      <div class="toolbar-baslik">👥 Üyeler</div>
-      <input class="arama" id="arama" placeholder="🔍 Kafe, mail, telefon, şehir..." oninput="aramaYap()">
+    <div class="toolbar" style="flex-wrap:wrap;">
+      <div class="toolbar-baslik" style="width:100%;">👥 Üyeler</div>
+      <input class="arama" id="arama" placeholder="🔍 Kafe, mail, telefon, şehir..." oninput="aramaYap()" style="flex:1;min-width:180px;">
       <select class="sel" id="fil-il" onchange="aramaYap()"><option value="">Tüm İller</option></select>
       <select class="sel" id="fil-plan" onchange="aramaYap()"><option value="">Tüm Planlar</option><option value="deneme">Deneme</option><option value="start">Start</option><option value="grow">Grow</option><option value="gold">Gold</option><option value="platin">Platin</option><option value="ultra">Ultra</option><option value="elite">Elite</option><option value="pro">Pro</option></select>
-      <button class="fbtn aktif" onclick="filtrele('hepsi',this)">Hepsi</button>
-      <button class="fbtn" onclick="filtrele('aktif',this)">Aktif</button>
-      <button class="fbtn" onclick="filtrele('doldu',this)">Dolmuş</button>
-      <button class="fbtn" onclick="filtrele('pasif30',this)">30g Sessiz</button>
-      <button class="fbtn" onclick="filtrele('crm',this)" style="border-color:#9060f0;color:#9060f0;">🎯 CRM</button>
-      <button class="ebtn" onclick="csvIndir()">📥 CSV</button>
-      <button class="ebtn" onclick="yukle()">🔄</button>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="fbtn aktif" onclick="filtrele('hepsi',this)">Hepsi</button>
+        <button class="fbtn" onclick="filtrele('aktif',this)">Aktif</button>
+        <button class="fbtn" onclick="filtrele('doldu',this)">Dolmuş</button>
+        <button class="fbtn" onclick="filtrele('pasif30',this)">30g Sessiz</button>
+        <button class="fbtn" onclick="filtrele('crm',this)" style="border-color:#9060f0;color:#9060f0;">🎯 CRM</button>
+        <button class="ebtn" onclick="csvIndir()">📥 CSV</button>
+        <button class="ebtn" onclick="yukle()">🔄</button>
+      </div>
       <span id="kayit-sayisi" style="font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;"></span>
     </div>
-    <div class="tw">
-      <table>
+    <div class="tw" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table style="min-width:900px;">
         <thead><tr>
           <th>#</th><th onclick="sirala('kafe_adi')">KAFE ↕</th><th>E-POSTA</th><th>TEL / ŞEHİR</th>
           <th onclick="sirala('plan')">PLAN ↕</th><th onclick="sirala('plan_bitis')">KALAN ↕</th>
