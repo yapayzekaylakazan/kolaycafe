@@ -1264,6 +1264,28 @@
 
 
 
+  <!-- VARDİYA ADİSYON DÜZENLEME MODAL -->
+  <div id="mv-duzenle-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9500;align-items:flex-end;justify-content:center;">
+    <div style="background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2;">
+        <div>
+          <div style="font-size:1rem;font-weight:900;color:var(--text);">✏️ Adisyon Düzenle</div>
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;" id="mv-dm-baslik">Ürün adetlerini düzenle</div>
+        </div>
+        <button onclick="mvDuzenleKapat()" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
+      </div>
+      <div id="mv-dm-liste" style="flex:1;overflow-y:auto;padding:12px 16px;"></div>
+      <div style="padding:14px 16px;border-top:1px solid var(--border);background:var(--surface);position:sticky;bottom:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:0.8rem;font-weight:800;color:var(--muted);">YENİ TOPLAM</span>
+          <span id="mv-dm-toplam" style="font-size:1.3rem;font-weight:900;color:var(--accent2);">0,00 ₺</span>
+        </div>
+        <div style="font-size:0.7rem;color:#f59e0b;font-weight:700;margin-bottom:10px;text-align:center;">⚠️ Stok otomatik düzeltilecek</div>
+        <button onclick="mvDuzenleKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">✅ Kaydet & Stoku Düzelt</button>
+      </div>
+    </div>
+  </div>
+
   <!-- KREDİ KARTI EKLE MODAL -->
   <div class="modal-overlay" id="kredikart-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;justify-content:center;align-items:flex-end;padding-bottom:0;">
     <div style="background:var(--surface2);border-radius:18px 18px 0 0;padding:22px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
@@ -9956,7 +9978,7 @@ function mvAdisyonSatir(a, vardiyaId) {
     </div>
     <div style="font-size:0.68rem;color:var(--muted);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${urunler}</div>
     <div style="display:flex;gap:5px;">
-      <button onclick="mvTutarDuzenle('${a.id}', ${a.toplam}, '${vardiyaId}')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid var(--accent2);background:transparent;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">✏️ Tutar Düzenle</button>
+      <button onclick="mvUrunDuzenleAc('${a.id}', '${vardiyaId}')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid var(--accent2);background:transparent;color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">✏️ Düzenle</button>
       <button onclick="mvAdisyonSil('${a.id}', ${a.toplam}, '${vardiyaId}')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🗑 Sil</button>
     </div>
   </div>`;
@@ -9976,35 +9998,132 @@ async function mvAdisyonSil(adisyonId, eskiToplam, vardiyaId) {
   } catch(e) { toast('Hata: ' + e.message); }
 }
 
-async function mvTutarDuzenle(adisyonId, eskiToplam, vardiyaId) {
-  const yeniStr = prompt(`Yeni tutar (mevcut: ${Math.round(eskiToplam).toLocaleString('tr-TR')}₺):`, Math.round(eskiToplam));
-  if (yeniStr === null) return;
-  const yeniToplam = parseFloat(yeniStr.replace(',', '.'));
-  if (isNaN(yeniToplam) || yeniToplam < 0) { toast('Geçersiz tutar!'); return; }
+// ════════════════════════════════════════
+// VARDİYA ADİSYON ÜRÜN DÜZENLEME
+// ════════════════════════════════════════
+let _mvDmAdisyonId = null;
+let _mvDmVardiyaId = null;
+let _mvDmEskiSiparisler = [];
+let _mvDmEskiToplam = 0;
+
+async function mvUrunDuzenleAc(adisyonId, vardiyaId) {
+  // Adisyon verisini DB'den çek
+  const { data, error } = await sb.from('kolaycafenlar').select('*').eq('id', adisyonId).single();
+  if (error || !data) { toast('Adisyon yüklenemedi'); return; }
+  _mvDmAdisyonId = adisyonId;
+  _mvDmVardiyaId = vardiyaId;
+  _mvDmEskiSiparisler = JSON.parse(JSON.stringify(data.siparisler || []));
+  _mvDmEskiToplam = data.toplam;
+  const saat = new Date(data.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('mv-dm-baslik').textContent = (data.masa_ad || 'Masa ' + data.masa_no) + ' · ' + saat;
+  mvDmListeRender(data.siparisler || []);
+  document.getElementById('mv-duzenle-modal').style.display = 'flex';
+}
+
+function mvDmListeRender(siparisler) {
+  const liste = document.getElementById('mv-dm-liste');
+  if (!siparisler.length) { liste.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Ürün yok</div>'; return; }
+  liste.innerHTML = siparisler.map((s, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:800;color:var(--text);">${s.isim}</div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">${(s.fiyat||0).toLocaleString('tr-TR',{minimumFractionDigits:2})}₺ birim</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button onclick="mvDmAdetDeg(${i},-1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);font-size:1.1rem;font-weight:900;cursor:pointer;color:var(--text);">−</button>
+        <span id="mv-dm-adet-${i}" style="font-size:1rem;font-weight:900;color:var(--accent2);min-width:22px;text-align:center;">${s.adet}</span>
+        <button onclick="mvDmAdetDeg(${i},1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);font-size:1.1rem;font-weight:900;cursor:pointer;color:var(--text);">+</button>
+      </div>
+      <div style="font-size:0.85rem;font-weight:900;color:var(--accent2);min-width:55px;text-align:right;" id="mv-dm-satir-${i}">${((s.fiyat||0)*s.adet).toLocaleString('tr-TR',{minimumFractionDigits:2})}₺</div>
+    </div>`).join('');
+  mvDmToplamGuncelle();
+}
+
+function mvDmAdetDeg(idx, delta) {
+  const adetEl = document.getElementById('mv-dm-adet-' + idx);
+  if (!adetEl) return;
+  let adet = parseInt(adetEl.textContent) + delta;
+  adet = Math.max(0, adet);
+  adetEl.textContent = adet;
+  // Satır fiyatını güncelle
+  const s = _mvDmEskiSiparisler[idx];
+  const satirEl = document.getElementById('mv-dm-satir-' + idx);
+  if (satirEl && s) satirEl.textContent = ((s.fiyat||0)*adet).toLocaleString('tr-TR',{minimumFractionDigits:2}) + '₺';
+  mvDmToplamGuncelle();
+}
+
+function mvDmToplamGuncelle() {
+  let toplam = 0;
+  _mvDmEskiSiparisler.forEach((s, i) => {
+    const adetEl = document.getElementById('mv-dm-adet-' + i);
+    const adet = adetEl ? parseInt(adetEl.textContent) : s.adet;
+    toplam += (s.fiyat||0) * adet;
+  });
+  document.getElementById('mv-dm-toplam').textContent = toplam.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' ₺';
+}
+
+async function mvDuzenleKaydet() {
+  if (!_mvDmAdisyonId) return;
+  // Yeni sipariş listesi oluştur (adet 0 olanlar çıkar)
+  const yeniSiparisler = _mvDmEskiSiparisler.map((s, i) => {
+    const adetEl = document.getElementById('mv-dm-adet-' + i);
+    const yeniAdet = adetEl ? parseInt(adetEl.textContent) : s.adet;
+    return { ...s, adet: yeniAdet };
+  }).filter(s => s.adet > 0);
+  const yeniToplam = yeniSiparisler.reduce((t, s) => t + (s.fiyat||0) * s.adet, 0);
+  if (!confirm(`Adisyon güncellensin mi?\n\nEski: ${Math.round(_mvDmEskiToplam).toLocaleString('tr-TR')}₺\nYeni: ${Math.round(yeniToplam).toLocaleString('tr-TR')}₺\n\nStok farklar düzeltilecek.`)) return;
   try {
-    await sb.from('kolaycafenlar').update({ toplam: yeniToplam }).eq('id', adisyonId);
-    const fark = yeniToplam - eskiToplam;
-    const { data: vData } = await sb.from('vardiyalar').select('toplam_ciro').eq('id', vardiyaId).single();
-    const yeniCiro = Math.max(0, (vData?.toplam_ciro || 0) + fark);
-    await sb.from('vardiyalar').update({ toplam_ciro: yeniCiro }).eq('id', vardiyaId);
-    const tutarEl = document.getElementById('mv-tutar-' + adisyonId);
-    if (tutarEl) tutarEl.textContent = Math.round(yeniToplam).toLocaleString('tr-TR') + '₺';
-    const ciroEl = document.getElementById('mv-ciro-' + vardiyaId);
-    if (ciroEl) ciroEl.textContent = Math.round(yeniCiro).toLocaleString('tr-TR') + '₺';
-    // Butonları güncelle — yeni tutar ile
-    const satir = document.getElementById('mv-adisyon-' + adisyonId);
-    if (satir) {
-      satir.querySelector('button:first-child')?.setAttribute('onclick', `mvTutarDuzenle('${adisyonId}', ${yeniToplam}, '${vardiyaId}')`);
-      satir.querySelector('button:last-child')?.setAttribute('onclick', `mvAdisyonSil('${adisyonId}', ${yeniToplam}, '${vardiyaId}')`);
+    // Stok farkını hesapla ve düzelt
+    const stokFarklari = {};
+    _mvDmEskiSiparisler.forEach(s => { stokFarklari[s.isim] = -(s.adet || 0); }); // eski adetleri geri ekle
+    yeniSiparisler.forEach(s => { stokFarklari[s.isim] = (stokFarklari[s.isim] || 0) + s.adet; }); // yeni adetleri düş
+    // stokFarklari[urun] = pozitif → stoka ekle, negatif → stoktan düş
+    for (const [isim, fark] of Object.entries(stokFarklari)) {
+      if (fark === 0) continue;
+      const { data: stokData } = await sb.from('stoklar').select('miktar').eq('kafe_id', kafeId).eq('urun_adi', isim).single();
+      if (stokData) {
+        const yeniMiktar = Math.max(0, (stokData.miktar || 0) - fark); // fark pozitifse düş, negatifse ekle
+        await sb.from('stoklar').update({ miktar: yeniMiktar }).eq('kafe_id', kafeId).eq('urun_adi', isim);
+      }
     }
-    toast('✅ Tutar güncellendi · Vardiya cirosu düzeltildi');
+    // Adisyonu güncelle
+    await sb.from('kolaycafenlar').update({ siparisler: yeniSiparisler, toplam: yeniToplam }).eq('id', _mvDmAdisyonId);
+    // Vardiya cirosunu güncelle
+    const fark = yeniToplam - _mvDmEskiToplam;
+    const { data: vData } = await sb.from('vardiyalar').select('toplam_ciro').eq('id', _mvDmVardiyaId).single();
+    const yeniCiro = Math.max(0, (vData?.toplam_ciro || 0) + fark);
+    await sb.from('vardiyalar').update({ toplam_ciro: yeniCiro }).eq('id', _mvDmVardiyaId);
+    // UI güncelle
+    const tutarEl = document.getElementById('mv-tutar-' + _mvDmAdisyonId);
+    if (tutarEl) tutarEl.textContent = Math.round(yeniToplam).toLocaleString('tr-TR') + '₺';
+    const ciroEl = document.getElementById('mv-ciro-' + _mvDmVardiyaId);
+    if (ciroEl) ciroEl.textContent = Math.round(yeniCiro).toLocaleString('tr-TR') + '₺';
+    // Adisyon satırındaki ürün özetini güncelle
+    const satir = document.getElementById('mv-adisyon-' + _mvDmAdisyonId);
+    if (satir) {
+      const urunOzet = satir.querySelector('div[style*="0.68rem"]');
+      if (urunOzet) urunOzet.textContent = yeniSiparisler.map(s => s.isim + (s.adet > 1 ? ' ×' + s.adet : '')).join(', ');
+      // Sil butonunun eskiToplam'ını güncelle
+      satir.querySelector('button:last-child')?.setAttribute('onclick', `mvAdisyonSil('${_mvDmAdisyonId}', ${yeniToplam}, '${_mvDmVardiyaId}')`);
+    }
+    mvDuzenleKapat();
+    toast('✅ Adisyon & stok güncellendi');
   } catch(e) { toast('Hata: ' + e.message); }
+}
+
+function mvDuzenleKapat() {
+  document.getElementById('mv-duzenle-modal').style.display = 'none';
+  _mvDmAdisyonId = null; _mvDmVardiyaId = null;
+  _mvDmEskiSiparisler = []; _mvDmEskiToplam = 0;
 }
 
 window.vardiyaGecmisYukleMusahebe = vardiyaGecmisYukleMusahebe;
 window.mvDetayAc = mvDetayAc;
 window.mvAdisyonSil = mvAdisyonSil;
-window.mvTutarDuzenle = mvTutarDuzenle;
+window.mvUrunDuzenleAc = mvUrunDuzenleAc;
+window.mvDmAdetDeg = mvDmAdetDeg;
+window.mvDuzenleKaydet = mvDuzenleKaydet;
+window.mvDuzenleKapat = mvDuzenleKapat;
 window.yeniKategoriEkle = yeniKategoriEkle;
 window.urunKaydet = urunKaydet;
 window.varyantSecimiOnayla = varyantSecimiOnayla;
