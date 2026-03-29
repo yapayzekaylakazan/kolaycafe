@@ -7083,7 +7083,7 @@ function raporRender_legacy(){
   // Garson performansı
   const gr=document.getElementById('garson-rapor');
   const gs={};
-  filtre.forEach(a=>{if(!a.garson) return;if(!gs[a.garson])gs[a.garson]={adet:0,ciro:0};gs[a.garson].adet++;gs[a.garson].ciro+=a.toplam;});
+  filtre.forEach(a=>{const _gad=garsonAdiAl(a.garson);if(!_gad)return;if(!gs[_gad])gs[_gad]={adet:0,ciro:0};gs[_gad].adet++;gs[_gad].ciro+=a.toplam;});
   gr.innerHTML=Object.keys(gs).length===0?'<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>':'';
   Object.entries(gs).sort((a,b)=>b[1].ciro-a[1].ciro).forEach(([g,s])=>{const d=document.createElement('div');d.className='rapor-satir';d.innerHTML=`<span class="rs-isim">👤 ${g}</span><span class="rs-adet">${s.adet} masa</span><span class="rs-tutar">${fmt(s.ciro)}</span>`;gr.appendChild(d);});
   // Kapalı kolaycafenlar
@@ -7111,7 +7111,7 @@ function raporRender_legacy(){
           <span style="font-weight:800;font-size:0.9rem;">${gelal?'👤':'🪑'} ${a.masaAd||'Masa '+a.masa} <span style="font-size:0.7rem;color:var(--muted);">· ${saat}</span></span>
           <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${a.indirim}</span>`:''}</span>
         </div>
-        ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 Garson: ${a.garson}</div>`:''}
+        ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 Garson: ${garsonAdiAl(a.garson)}</div>`:''}
         ${gelal&&a.not?`<div style="font-size:0.68rem;color:var(--muted);margin-bottom:2px;">📝 ${a.not}</div>`:''}
         <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
         ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteriAdi&&!gelal?' — '+a.musteriAdi:''}</div>`:''}
@@ -7660,9 +7660,9 @@ async function raporRenderTam() {
   const gr = document.getElementById('garson-rapor');
   const gs = {};
   tumAdisyonlar.forEach(a => {
-    if(!a.garson) return;
-    if(!gs[a.garson]) gs[a.garson] = {adet:0, ciro:0};
-    gs[a.garson].adet++; gs[a.garson].ciro += a.toplam;
+    const _gad2 = garsonAdiAl(a.garson); if(!_gad2) return;
+    if(!gs[_gad2]) gs[_gad2] = {adet:0, ciro:0};
+    gs[_gad2].adet++; gs[_gad2].ciro += a.toplam;
   });
   if(gr) {
     gr.innerHTML = Object.keys(gs).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
@@ -7703,7 +7703,7 @@ async function raporRenderTam() {
               <span style="font-weight:800;font-size:0.9rem;">${gelal?'👤':'🪑'} ${a.masaAd||'Masa '+a.masa} <span style="font-size:0.7rem;color:var(--muted);">· ${saat}</span></span>
               <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${a.indirim}</span>`:''}</span>
             </div>
-            ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${a.garson}</div>`:''}
+            ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${garsonAdiAl(a.garson)}</div>`:''}
             <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
             ${a.odemeTipi?`<div style="font-size:0.68rem;font-weight:800;margin-bottom:5px;color:${{'salon-kart':'#3b82f6','kapi-nakit':'#f0b830','kapi-kart':'#06b6d4','cari':'#a78bfa','ikram':'#6b7280','online':'#f97316','kart':'#3b82f6','salon-nakit':'#22c55e','nakit':'#22c55e'}[a.odemeTipi]||'var(--text2)'}">${{'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart','kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart','cari':'📋 Cari','ikram':'🎁 İkram','online':'🌐 Online','nakit':'💵 Nakit','kart':'💳 Kart'}[a.odemeTipi]||a.odemeTipi}${a.musteri_adi&&!gelal?' — '+a.musteri_adi:''}</div>`:''}
             <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
@@ -7830,7 +7830,7 @@ function raporGrafikleriCiz() {
 
   // Garson bar
   const gs = {};
-  filtre.forEach(a => { if(!a.garson) return; if(!gs[a.garson]) gs[a.garson]=0; gs[a.garson]+=a.toplam; });
+  filtre.forEach(a => { const _gad3=garsonAdiAl(a.garson); if(!_gad3) return; if(!gs[_gad3]) gs[_gad3]=0; gs[_gad3]+=a.toplam; });
   const garsonlar = Object.entries(gs).sort((a,b)=>b[1]-a[1]);
   const garsonCanvas = document.getElementById('grafik-garson');
   if(garsonCanvas) {
@@ -7902,7 +7902,7 @@ function raporExcelExport() {
   let csv = 'Tarih,Masa,Garson,Toplam,Ödeme Tipi,Ürünler\n';
   filtre.forEach(a => {
     const urunler = (a.siparisler||[]).map(s=>s.isim+'x'+s.adet).join(';');
-    csv += `"${a.tarih}","${a.masaAd||a.masa}","${a.garson||''}","${a.toplam}","${a.odemeTipi||'nakit'}","${urunler}"\n`;
+    csv += `"${a.tarih}","${a.masaAd||a.masa}","${garsonAdiAl(a.garson)}","${a.toplam}","${a.odemeTipi||'nakit'}","${urunler}"\n`;
   });
   
   const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
@@ -9170,6 +9170,15 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{
 });
 
 function fmt(n){ const v=parseFloat(n); return isNaN(v)?'0,00 ₺':v.toFixed(2).replace('.',',')+' ₺'; }
+
+// Garson alanı JSON string olarak kaydedilmişse isim çıkar
+function garsonAdiAl(g) {
+  if (!g) return '';
+  if (typeof g === 'object') return g.isim || '';
+  const s = String(g).trim();
+  if (s.startsWith('{')) { try { return JSON.parse(s).isim || s; } catch { return s; } }
+  return s;
+}
 
 function garsonCagriSesCal() {
   try {
@@ -13518,7 +13527,17 @@ async function aiVeriTopla() {
   // ── Garson performansı ──
   const garsonPerf = {};
   adisyonlar.forEach(a => {
-    const g = (a.garson && typeof a.garson === 'string' && a.garson.trim()) ? a.garson.trim() : 'Belirtilmemiş';
+    let garsonAdi = 'Belirtilmemiş';
+    if (a.garson && typeof a.garson === 'string' && a.garson.trim()) {
+      const raw = a.garson.trim();
+      // JSON string olarak kaydedilmişse parse et
+      if (raw.startsWith('{')) {
+        try { garsonAdi = JSON.parse(raw).isim || 'Belirtilmemiş'; } catch { garsonAdi = raw; }
+      } else {
+        garsonAdi = raw;
+      }
+    }
+    const g = garsonAdi;
     if (!garsonPerf[g]) garsonPerf[g] = { adisyon: 0, ciro: 0, urun: 0 };
     garsonPerf[g].adisyon++;
     garsonPerf[g].ciro += parseFloat(a.toplam || 0);
