@@ -2965,6 +2965,33 @@
 <!-- ═══════════════════════════════════════════ -->
 <!-- SPLIT BILL: ÜRÜN SEÇELİ ÖDE MODALİ        -->
 <!-- ═══════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- SİPARİŞ DETAY MODAL: NOT + FİYAT DÜZENLE  -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="siparis-detay-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:22px;width:100%;max-width:340px;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:1rem;font-weight:900;color:var(--text);">✏️ <span id="sdm-baslik">Ürün Düzenle</span></div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Not ve fiyatı düzenleyebilirsiniz</div>
+      </div>
+      <button onclick="document.getElementById('siparis-detay-modal').style.display='none'" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <div style="padding:18px;">
+      <label style="font-size:0.72rem;font-weight:800;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">📝 Sipariş Notu</label>
+      <input type="text" id="sdm-not" maxlength="60" placeholder="örn: bol malzeme, az şeker..." style="width:100%;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:600;outline:none;margin-bottom:14px;">
+      <label style="font-size:0.72rem;font-weight:800;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">💰 Fiyat Değiştir</label>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
+        <input type="number" id="sdm-fiyat" min="0" step="0.5" placeholder="Boş bırak = değişmesin" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;outline:none;">
+        <span style="font-size:1rem;font-weight:900;color:var(--accent2);">₺</span>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);font-weight:600;margin-top:-12px;margin-bottom:16px;" id="sdm-fiyat-mevcut"></div>
+      <button onclick="siparisDetayKaydet()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:8px;">✓ Kaydet</button>
+      <button onclick="document.getElementById('siparis-detay-modal').style.display='none'" style="width:100%;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:800;cursor:pointer;">İptal</button>
+    </div>
+  </div>
+</div>
+
 <div id="split-urun-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9200;align-items:flex-end;justify-content:center;">
   <div style="background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;">
     <!-- Başlık -->
@@ -5232,7 +5259,7 @@ function siparisListeRender() {
           <span class="si-sayi">${s.adet}</span>
           <button class="si-btn" onclick="mikDeg(${i},1)">+</button>
         </div>
-        <button title="Sipariş notu" onclick="siparisNotDuzenle(${i})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.72rem;padding:2px 5px;cursor:pointer;margin-right:2px;">${s.not?'📝':'✎'}</button>
+        <button title="Sipariş notu / Fiyat düzenle" onclick="siparisDetayDuzenle(${i})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.72rem;padding:2px 5px;cursor:pointer;margin-right:2px;">${s.not?'📝':'✎'}</button>
         <span class="si-fiyat">${fmt(s.fiyat*s.adet)}</span>
         <button class="si-sil" onclick="siparisKaldir(${i})">✕</button>`;
       liste.appendChild(item);
@@ -5257,17 +5284,44 @@ function siparisListeRender() {
   }
 }
 
-function siparisNotDuzenle(idx) {
+let _sdmIdx = null; // aktif düzenlenen sipariş index
+
+function siparisDetayDuzenle(idx) {
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
   const s = m.siparisler[idx]; if(!s) return;
-  const mevcutNot = s.not || '';
-  const yeniNot = prompt('📝 ' + s.isim + ' için sipariş notu:', mevcutNot);
-  if (yeniNot === null) return; // iptal
-  m.siparisler[idx].not = yeniNot.trim().substring(0, 60);
+  _sdmIdx = idx;
+  document.getElementById('sdm-baslik').textContent = s.isim;
+  document.getElementById('sdm-not').value = s.not || '';
+  document.getElementById('sdm-fiyat').value = '';
+  document.getElementById('sdm-fiyat-mevcut').textContent = 'Mevcut birim fiyat: ' + fmt(s.fiyat) + (s.adet > 1 ? ' × ' + s.adet + ' adet' : '');
+  document.getElementById('siparis-detay-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('sdm-not').focus(), 80);
+}
+
+function siparisDetayKaydet() {
+  if(!seciliMasa || _sdmIdx === null) return;
+  const m = getMasa(); if(!m) return;
+  const s = m.siparisler[_sdmIdx]; if(!s) return;
+  // Not kaydet
+  s.not = document.getElementById('sdm-not').value.trim().substring(0, 60);
+  // Fiyat değiştir (boşsa dokunma)
+  const fiyatVal = document.getElementById('sdm-fiyat').value.trim();
+  if (fiyatVal !== '') {
+    const yeniFiyat = parseFloat(fiyatVal);
+    if (!isNaN(yeniFiyat) && yeniFiyat >= 0) {
+      s.fiyat = yeniFiyat;
+    }
+  }
+  document.getElementById('siparis-detay-modal').style.display = 'none';
+  _sdmIdx = null;
   siparisListeRender();
+  masalarRender();
   masaSyncYaz(seciliMasa);
 }
+
+// eski fonksiyon adı - geriye dönük uyumluluk
+function siparisNotDuzenle(idx) { siparisDetayDuzenle(idx); }
 
 function mikDeg(idx,d) {
   if(!seciliMasa) return;
@@ -5500,29 +5554,71 @@ function splitUrunSec() {
   if (!seciliMasa) return;
   const m = getMasa(); if (!m) return;
   if (m.siparisler.length === 0) { toast('Adisyon boş!'); return; }
-  const liste = document.getElementById('split-urun-liste');
-  liste.innerHTML = '';
-  m.siparisler.forEach((s, idx) => {
-    const satir = document.createElement('div');
-    satir.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
-    satir.innerHTML = `
-      <input type="checkbox" id="split-cb-${idx}" data-idx="${idx}" data-fiyat="${s.fiyat * s.adet}"
-        style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
-      <label for="split-cb-${idx}" style="flex:1;cursor:pointer;">
-        <div style="font-weight:800;font-size:0.9rem;color:var(--text);">${s.isim} ${s.adet > 1 ? '<span style="color:var(--muted);font-size:0.78rem;">x'+s.adet+'</span>' : ''}</div>
-        <div style="font-size:0.8rem;font-weight:900;color:var(--accent2);">${fmt(s.fiyat * s.adet)}</div>
-      </label>`;
-    satir.querySelector('input').addEventListener('change', splitUrunToplam);
-    liste.appendChild(satir);
-  });
+  splitUrunListeRender(m);
   document.getElementById('split-urun-toplam').textContent = '0,00 ₺';
   document.getElementById('split-urun-modal').style.display = 'flex';
 }
 
+function splitUrunListeRender(m) {
+  const liste = document.getElementById('split-urun-liste');
+  liste.innerHTML = '';
+  m.siparisler.forEach((s, idx) => {
+    const maxAdet = s.adet;
+    const satir = document.createElement('div');
+    satir.style.cssText = 'display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--border);';
+    satir.innerHTML = `
+      <input type="checkbox" id="split-cb-${idx}" data-idx="${idx}" data-birim="${s.fiyat}" data-max="${maxAdet}"
+        style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+      <label for="split-cb-${idx}" style="flex:1;cursor:pointer;min-width:0;">
+        <div style="font-weight:800;font-size:0.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.isim}</div>
+        <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">Stok: ${maxAdet} adet · ${fmt(s.fiyat)} birim</div>
+      </label>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <button onclick="splitAdetDeg(${idx},-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);font-size:1rem;font-weight:900;cursor:pointer;color:var(--text);line-height:1;">−</button>
+        <span id="split-adet-${idx}" style="font-size:0.95rem;font-weight:900;color:var(--accent2);min-width:18px;text-align:center;">0</span>
+        <button onclick="splitAdetDeg(${idx},1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);font-size:1rem;font-weight:900;cursor:pointer;color:var(--text);line-height:1;">+</button>
+      </div>
+      <span id="split-satir-fiyat-${idx}" style="font-size:0.85rem;font-weight:900;color:var(--accent2);min-width:52px;text-align:right;">${fmt(0)}</span>`;
+    // checkbox toggle: adet 0 ise 1'e çek, >0 ise 0'a sıfırla
+    satir.querySelector('input').addEventListener('change', (e) => {
+      const adetEl = document.getElementById(`split-adet-${idx}`);
+      const cb = e.target;
+      if (cb.checked) {
+        if (parseInt(adetEl.textContent) === 0) adetEl.textContent = '1';
+      } else {
+        adetEl.textContent = '0';
+      }
+      splitUrunToplam();
+    });
+    liste.appendChild(satir);
+  });
+}
+
+function splitAdetDeg(idx, delta) {
+  const m = getMasa(); if(!m) return;
+  const s = m.siparisler[idx]; if(!s) return;
+  const adetEl = document.getElementById(`split-adet-${idx}`);
+  const cb = document.getElementById(`split-cb-${idx}`);
+  let adet = parseInt(adetEl.textContent) + delta;
+  adet = Math.max(0, Math.min(s.adet, adet));
+  adetEl.textContent = adet;
+  cb.checked = adet > 0;
+  splitUrunToplam();
+}
+
 function splitUrunToplam() {
+  const m = getMasa(); if(!m) return;
   const checkboxlar = document.querySelectorAll('#split-urun-liste input[type=checkbox]');
   let toplam = 0;
-  checkboxlar.forEach(cb => { if (cb.checked) toplam += parseFloat(cb.dataset.fiyat); });
+  checkboxlar.forEach(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    const s = m.siparisler[idx]; if(!s) return;
+    const adet = parseInt(document.getElementById(`split-adet-${idx}`)?.textContent || '0');
+    const satirToplam = s.fiyat * adet;
+    if (document.getElementById(`split-satir-fiyat-${idx}`))
+      document.getElementById(`split-satir-fiyat-${idx}`).textContent = adet > 0 ? fmt(satirToplam) : fmt(0);
+    if (cb.checked) toplam += satirToplam;
+  });
   document.getElementById('split-urun-toplam').textContent = fmt(toplam);
 }
 
@@ -5532,15 +5628,27 @@ async function splitUrunOde(odemeTipi) {
   const checkboxlar = document.querySelectorAll('#split-urun-liste input[type=checkbox]:checked');
   if (checkboxlar.length === 0) { toast('Hiç ürün seçilmedi!'); return; }
 
-  // Seçili indeksleri topla (büyükten küçüğe — splice için)
-  const seciliIdx = Array.from(checkboxlar)
-    .map(cb => parseInt(cb.dataset.idx))
-    .sort((a, b) => b - a);
+  // Seçili idx → seçilen adet (büyükten küçüğe splice için)
+  const secimler = Array.from(checkboxlar).map(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    const adet = parseInt(document.getElementById(`split-adet-${idx}`)?.textContent || '1');
+    return { idx, adet };
+  }).sort((a, b) => b.idx - a.idx);
 
-  const seciliSiparisler = seciliIdx.map(i => ({ ...m.siparisler[i] }));
+  // Seçilen adetlere göre sipariş kopyaları oluştur
+  const seciliSiparisler = [];
+  secimler.forEach(({ idx, adet }) => {
+    const s = m.siparisler[idx]; if(!s) return;
+    const gercekAdet = Math.min(adet, s.adet);
+    if (gercekAdet <= 0) return;
+    seciliSiparisler.push({ ...s, adet: gercekAdet });
+  });
+
+  if (seciliSiparisler.length === 0) { toast('Seçilen adet geçersiz!'); return; }
+
   const toplam = seciliSiparisler.reduce((t, s) => t + s.fiyat * s.adet, 0);
 
-  // Kısmi kolaycafen oluştur
+  // Kolaycafen kaydı
   const kolaycafen = {
     masa: seciliMasa, masaAd: m.ad,
     tarih: new Date().toLocaleString('tr-TR'), tarihObj: new Date(),
@@ -5553,42 +5661,32 @@ async function splitUrunOde(odemeTipi) {
   seciliSiparisler.forEach(s => stokDus(s.isim, s.adet));
   gunlukCiro += toplam; if(aktifVardiyaId) vardiyaCiro += toplam; gunlukAdi++;
 
-  // Seçili ürünleri adisyondan kaldır
-  seciliIdx.forEach(i => m.siparisler.splice(i, 1));
+  // Adisyonu güncelle: kısmi adet düş veya satırı kaldır
+  secimler.forEach(({ idx, adet }) => {
+    const s = m.siparisler[idx]; if(!s) return;
+    const gercekAdet = Math.min(adet, s.adet);
+    s.adet -= gercekAdet;
+  });
+  // Adeti 0 kalanları temizle (büyükten küçüğe zaten sıralı)
+  for (let i = m.siparisler.length - 1; i >= 0; i--) {
+    if (m.siparisler[i].adet <= 0) m.siparisler.splice(i, 1);
+  }
 
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
   await kolaycafenKaydet(kolaycafen);
 
   if (m.siparisler.length === 0) {
-    // Masa bitti - modal kapat
     document.getElementById('split-urun-modal').style.display = 'none';
     m.indirim = 0; m.garson = '';
     masalarRender();
     toast('✅ ' + fmt(toplam) + ' ödendi · Masa kapandı');
     await masaSyncYaz(seciliMasa);
   } else {
-    // Kalan ürünler var — modal'ı yeni listeyle güncelle, açık kalsın
     toast('✅ ' + fmt(toplam) + ' ödendi · ' + m.siparisler.length + ' ürün kaldı');
     await masaSyncYaz(seciliMasa);
-
-    // Listeyi yenile, modal açık kalsın
-    const liste = document.getElementById('split-urun-liste');
-    liste.innerHTML = '';
-    m.siparisler.forEach((s, idx) => {
-      const satir = document.createElement('div');
-      satir.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
-      satir.innerHTML = `
-        <input type="checkbox" id="split-cb-${idx}" data-idx="${idx}" data-fiyat="${s.fiyat * s.adet}"
-          style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
-        <label for="split-cb-${idx}" style="flex:1;cursor:pointer;">
-          <div style="font-weight:800;font-size:0.9rem;color:var(--text);">${s.isim} ${s.adet > 1 ? '<span style="color:var(--muted);font-size:0.78rem;">x' + s.adet + '</span>' : ''}</div>
-          <div style="font-size:0.8rem;font-weight:900;color:var(--accent2);">${fmt(s.fiyat * s.adet)}</div>
-        </label>`;
-      satir.querySelector('input').addEventListener('change', splitUrunToplam);
-      liste.appendChild(satir);
-    });
+    // Listeyi sıfırla, modal açık kalsın
+    splitUrunListeRender(m);
     document.getElementById('split-urun-toplam').textContent = '0,00 ₺';
-    // Modal zaten açık — sadece başlığı güncelle
     const baslik = document.querySelector('#split-urun-modal .split-kalan-bilgi');
     if (baslik) baslik.textContent = m.siparisler.length + ' ürün kaldı';
   }
@@ -10007,6 +10105,10 @@ window.gelgidEkleModal = gelgidEkleModal;
 window.gelgidKaydet = gelgidKaydet;
 window.gelgidSil = gelgidSil;
 window.gelgidRender = gelgidRender;
+window.siparisDetayDuzenle = siparisDetayDuzenle;
+window.siparisDetayKaydet = siparisDetayKaydet;
+window.siparisNotDuzenle = siparisNotDuzenle;
+window.splitAdetDeg = splitAdetDeg;
 
 // ════════════════════════════════════════
 // MUHASEBE — SEKME YÖNETİMİ
