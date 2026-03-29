@@ -145,6 +145,7 @@
     <button class="tab-btn" onclick="sayfaGit('adisyonlar',this)" style="border-color:#30d08060;color:#30d080;">🧾 Adisyonlar</button>
     <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
     <button class="tab-btn" onclick="sayfaGit('test',this)">🧪 Test</button>
+    <button class="tab-btn" onclick="sayfaGit('yorumlar',this);yorumlariYukle()">⭐ Yorumlar</button>
     <div class="topbar-sag">
       <div class="canli-bar">
         <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
@@ -369,6 +370,20 @@
       </div>
       <div class="tp-sonuc" id="test-sonuc"></div>
     </div>
+  <!-- YORUMLAR SAYFASI -->
+  <div class="sayfa" id="sayfa-yorumlar">
+    <div class="toolbar">
+      <div class="toolbar-baslik">⭐ Yorumlar</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="yorum-filtre" class="sel" onchange="yorumlariYukle()">
+          <option value="hepsi">Tüm Yorumlar</option>
+          <option value="bekleyen">Onay Bekleyen</option>
+          <option value="onaylandi">Onaylanmış</option>
+        </select>
+        <button onclick="yorumlariYukle()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🔄 Yenile</button>
+      </div>
+    </div>
+    <div id="yorum-listesi" style="display:flex;flex-direction:column;gap:10px;padding:12px;"></div>
   </div>
 
 </div>
@@ -413,6 +428,8 @@
 <script>
 const SUPABASE_URL = 'https://sjfcdthwlwmbdmcevobv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs';
+const SB_REST = SUPABASE_URL + '/rest/v1';
+const SB_H = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
 
@@ -476,6 +493,68 @@ const TEST_PAKETLER = [
 ];
 
 // ── SAYFA GEZİNME ──
+/* ── YORUMLAR ── */
+async function yorumlariYukle() {
+  const filtre = document.getElementById('yorum-filtre')?.value ?? 'hepsi';
+  const liste  = document.getElementById('yorum-listesi');
+  liste.innerHTML = '<div style="color:var(--text2);font-size:0.82rem;padding:12px;">⏳ Yükleniyor...</div>';
+
+  let url = SB_REST + '/yorumlar?order=created_at.desc';
+  if (filtre === 'bekleyen')  url += '&onaylandi=eq.false';
+  if (filtre === 'onaylandi') url += '&onaylandi=eq.true';
+
+  const res  = await fetch(url, { headers: SB_H });
+  const data = await res.json();
+
+  if (!data.length) {
+    liste.innerHTML = '<div style="color:var(--text2);font-size:0.82rem;padding:12px;">Henüz yorum yok.</div>';
+    return;
+  }
+
+  liste.innerHTML = data.map(y => `
+    <div id="yorum-kart-${y.id}" style="background:var(--surface);border:1px solid ${y.onaylandi ? 'rgba(48,208,128,0.25)' : 'var(--border)'};border-radius:12px;padding:14px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div>
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;color:var(--text);">${y.isim}</span>
+          ${y.kafe_adi ? `<span style="font-size:0.75rem;color:var(--text2);margin-left:8px;">— ${y.kafe_adi}</span>` : ''}
+          <div style="color:#f5c060;font-size:0.95rem;margin-top:4px;">${'★'.repeat(y.yildiz)}${'☆'.repeat(5-y.yildiz)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:0.68rem;color:var(--text2);">${new Date(y.created_at).toLocaleDateString('tr-TR')}</span>
+          ${y.onaylandi
+            ? `<span style="background:rgba(48,208,128,0.12);border:1px solid rgba(48,208,128,0.3);color:#30d080;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:6px;">✓ Onaylı</span>`
+            : `<span style="background:rgba(255,180,0,0.1);border:1px solid rgba(255,180,0,0.3);color:#ffb400;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:6px;">⏳ Bekliyor</span>`
+          }
+          ${!y.onaylandi
+            ? `<button onclick="yorumOnayla('${y.id}')" style="padding:4px 12px;border-radius:6px;border:1.5px solid rgba(48,208,128,0.4);background:rgba(48,208,128,0.08);color:#30d080;font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">✓ Onayla</button>`
+            : ''
+          }
+          <button onclick="yorumSil('${y.id}')" style="padding:4px 10px;border-radius:6px;border:1.5px solid rgba(224,80,80,0.3);background:rgba(224,80,80,0.06);color:#e05050;font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">🗑 Sil</button>
+        </div>
+      </div>
+      <div style="font-size:0.83rem;color:var(--text2);line-height:1.7;font-style:italic;">"${y.yorum}"</div>
+    </div>
+  `).join('');
+}
+
+async function yorumOnayla(id) {
+  await fetch(SB_REST + '/yorumlar?id=eq.' + id, {
+    method: 'PATCH',
+    headers: { ...SB_H, Prefer: 'return=minimal' },
+    body: JSON.stringify({ onaylandi: true })
+  });
+  yorumlariYukle();
+}
+
+async function yorumSil(id) {
+  if (!confirm('Bu yorumu silmek istiyor musunuz?')) return;
+  await fetch(SB_REST + '/yorumlar?id=eq.' + id, {
+    method: 'DELETE',
+    headers: SB_H
+  });
+  document.getElementById('yorum-kart-' + id)?.remove();
+}
+
 function sayfaGit(id, btn) {
   document.querySelectorAll('.sayfa').forEach(s => s.classList.remove('aktif'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
