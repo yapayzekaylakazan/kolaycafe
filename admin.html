@@ -145,7 +145,7 @@
     <button class="tab-btn" onclick="sayfaGit('adisyonlar',this)" style="border-color:#30d08060;color:#30d080;">🧾 Adisyonlar</button>
     <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
     <button class="tab-btn" onclick="sayfaGit('test',this)">🧪 Test</button>
-    <button class="tab-btn" onclick="sayfaGit('yorumlar',this);yorumlariYukle()">⭐ Yorumlar</button>
+    <button class="tab-btn" onclick="sayfaGit('yorumlar',this)">⭐ Yorumlar</button>
     <div class="topbar-sag">
       <div class="canli-bar">
         <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
@@ -566,6 +566,7 @@ function sayfaGit(id, btn) {
   if (id === 'adisyonlar') { adisyonlarKafeDoldur(); adisyonlarYukle(); adisOtoAyarla(true); }
   if (id === 'finans') finansYukle();
   if (id === 'test') { testPanelRender(); testKafeListesiDoldur(); }
+  if (id === 'yorumlar') yorumlariYukle();
 }
 
 // ── YARDIMCI ──
