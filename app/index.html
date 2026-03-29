@@ -3968,6 +3968,17 @@ async function kafeVerisiYukle() {
     kafeAdi = data.kafe_adi || 'Kafem';
     garsonlar = data.garsonlar || ['Ali','Ayşe'];
     if (data.urunler) URUNLER = data.urunler;
+    // Ürün yoksa varsayılan şablonu Supabase'den çek ve kaydet
+    if (!data.urunler || Object.keys(data.urunler).length === 0) {
+      try {
+        const {data: sablonData} = await sb.from('varsayilan_urunler').select('urunler').order('id', {ascending:false}).limit(1).single();
+        if (sablonData?.urunler) {
+          URUNLER = sablonData.urunler;
+          await sb.from('kafeler').update({ urunler: URUNLER }).eq('id', data.id);
+          toast('✅ Hazır menü yüklendi! Ürünler → Düzenle bölümünden özelleştirebilirsiniz.');
+        }
+      } catch(e) {}
+    }
     // Kategori sırasını uygula (JSONB sıra kaybını önler)
     if (data.kat_sirasi && Array.isArray(data.kat_sirasi) && data.kat_sirasi.length > 0) {
       _katSirasi = data.kat_sirasi;
@@ -3989,7 +4000,14 @@ async function kafeVerisiYukle() {
       {id: Date.now()+1, isim:'Garson 1', pin:'12345', aktif:true},
       {id: Date.now()+2, isim:'Garson 2', pin:'54321', aktif:true}
     ];
-    const _ornek_urunler = {
+    // Varsayılan ürünleri Supabase'den çek
+    let _ornek_urunler = {};
+    try {
+      const {data: sablonData} = await sb.from('varsayilan_urunler').select('urunler').order('id', {ascending:false}).limit(1).single();
+      if (sablonData?.urunler) _ornek_urunler = sablonData.urunler;
+    } catch(e) {}
+    if (!Object.keys(_ornek_urunler).length) {
+      _ornek_urunler = {
       "☕ Sıcak İçecekler": [
         {isim:"Türk Kahvesi", fiyat:45, emoji:"☕", stok:null},
         {isim:"Sütlü Kahve", fiyat:55, emoji:"☕", stok:null},
@@ -4049,7 +4067,8 @@ async function kafeVerisiYukle() {
           ]}
         ]}
       ]
-    };
+      };
+    }
     const {data:yeni} = await sb.from('kafeler').insert({
       user_id: kullanici.id,
       kafe_adi: 'Kafem',
