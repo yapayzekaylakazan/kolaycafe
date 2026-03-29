@@ -12825,22 +12825,21 @@ let aiAylikSohbet = 0;         // bu ay yapılan sohbet sayısı
 // Plan bazlı AI limitleri
 function aiLimitleriAl() {
   const plan = aktifPaket || 'deneme';
-  if (plan === 'deneme') {
-    return { gunlukAnaliz: 3, aylikSohbet: 10 };
-  }
-  if (aiPaketAktif) {
-    return { gunlukAnaliz: 20, aylikSohbet: 200 };
-  }
-  // Ücretli plan ama AI paketi yok — deneme limiti
-  return { gunlukAnaliz: 3, aylikSohbet: 10 };
+  // AI paketi satın almış — tam limit
+  if (aiPaketAktif) return { gunlukAnaliz: 20, aylikSohbet: 200, gunlukSohbet: false };
+  // Deneme planı — günde 3 analiz, günde 2 sohbet
+  if (plan === 'deneme') return { gunlukAnaliz: 3, aylikSohbet: 2, gunlukSohbet: true };
+  // Ücretli plan (AI paketi olmadan) — erişim yok
+  return { gunlukAnaliz: 0, aylikSohbet: 0, gunlukSohbet: false };
 }
 
 function aiErisimVarMi() {
   const plan = aktifPaket || 'deneme';
-  // Deneme planı AI'ya erişebilir (limitli)
+  // Deneme planı — limitli erişim
   if (plan === 'deneme') return true;
-  // Ücretli plan + AI paketi
+  // AI paketi satın almış
   if (aiPaketAktif) return true;
+  // Diğerleri erişemez
   return false;
 }
 
@@ -13869,11 +13868,19 @@ async function aiSoruGonder() {
   // Erişim kontrolü
   if (!aiErisimVarMi()) { aiKilitEkraniGoster(); return; }
 
-  // Aylık sohbet limiti
-  const { aylikSohbet: AL } = aiLimitleriAl();
-  if (aiAylikSohbet >= AL) {
-    toast(`⛔ Bu ayki ${AL} sohbet hakkınız doldu.`);
-    return;
+  // Sohbet limiti (deneme: günlük, AI paketi: aylık)
+  const { aylikSohbet: AL, gunlukSohbet: GS } = aiLimitleriAl();
+  if (GS) {
+    // Deneme: günlük limit
+    if (aiAylikSohbet >= AL) {
+      toast(`⛔ Bugünkü ${AL} sohbet hakkınız doldu. Yarın yenilenir.`);
+      return;
+    }
+  } else {
+    if (aiAylikSohbet >= AL) {
+      toast(`⛔ Bu ayki ${AL} sohbet hakkınız doldu.`);
+      return;
+    }
   }
   inp.value = '';
 
