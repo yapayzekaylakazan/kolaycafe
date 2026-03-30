@@ -10227,7 +10227,14 @@ async function vardiyaGecmisYukleMusahebe() {
       liste.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:0.85rem;">Henüz kapatılmış vardiya yok.</div>';
       return;
     }
-    liste.innerHTML = data.map(v => {
+
+    // Atamasız adisyonları çek (vardiya_id = NULL)
+    const { data: atamasizlar } = await sb.from('kolaycafenlar')
+      .select('id, toplam, created_at').eq('kafe_id', kafeId)
+      .is('vardiya_id', null).neq('odeme_tipi', 'ikram')
+      .order('created_at', { ascending: true });
+
+    liste.innerHTML = data.map((v, vi) => {
       const bas = new Date(v.baslangic);
       const bit = new Date(v.bitis);
       const sure = vardiyaSureFmt(bas, bit);
@@ -10235,6 +10242,30 @@ async function vardiyaGecmisYukleMusahebe() {
       const saatBas = bas.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       const saatBit = bit.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       const ciro = Math.round(v.toplam_ciro || 0).toLocaleString('tr-TR');
+
+      // Bu vardiyadan önce, bir önceki vardiya bittikten sonra kalan atamasız adisyonları bul
+      const oncekiVardiyaBitis = data[vi + 1]?.bitis ? new Date(data[vi + 1].bitis) : null;
+      const atamasizBuVardiya = (atamasizlar || []).filter(a => {
+        const t = new Date(a.created_at);
+        const sonradan = t < bas; // vardiya başlamadan önce yapılmış
+        const onceki = oncekiVardiyaBitis ? t > oncekiVardiyaBitis : true; // önceki vardiyadan sonra
+        return sonradan && onceki;
+      });
+      const atamasizToplam = atamasizBuVardiya.reduce((t, a) => t + (a.toplam || 0), 0);
+      const atamasizIds = atamasizBuVardiya.map(a => a.id);
+
+      const atamasizHTML = atamasizBuVardiya.length > 0 ? `
+        <div style="background:#f59e0b15;border:1.5px solid #f59e0b40;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div>
+            <div style="font-size:0.75rem;font-weight:900;color:#f59e0b;">⚠️ ${atamasizBuVardiya.length} atamasız adisyon</div>
+            <div style="font-size:0.68rem;color:var(--muted);font-weight:600;">Vardiya açılmadan alınan ${Math.round(atamasizToplam).toLocaleString('tr-TR')}₺</div>
+          </div>
+          <button onclick="atamasizlariVardiyayaEkle('${v.id}', ${JSON.stringify(atamasizIds).replace(/"/g, '&quot;')}, ${atamasizToplam})"
+            style="padding:7px 12px;border-radius:8px;border:none;background:#f59e0b;color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.72rem;cursor:pointer;white-space:nowrap;">
+            + Bu Vardiyaya Ekle
+          </button>
+        </div>` : '';
+
       return `<div style="background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:8px;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <div>
@@ -10245,12 +10276,32 @@ async function vardiyaGecmisYukleMusahebe() {
             <div style="font-size:1.1rem;font-weight:900;color:#3db85a;font-family:'Space Mono',monospace;" id="mv-ciro-${v.id}">${ciro}₺</div>
           </div>
         </div>
+        ${atamasizHTML}
         <div id="mv-detay-${v.id}"></div>
         <button onclick="mvDetayAc('${v.id}', this)" style="width:100%;padding:8px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;">🔍 Adisyonları Gör & Düzenle</button>
       </div>`;
     }).join('');
   } catch(e) {
     liste.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);font-size:0.82rem;">Yüklenemedi: ${e.message}</div>`;
+  }
+}
+
+async function atamasizlariVardiyayaEkle(vardiyaId, atamasizIds, eklenecekToplam) {
+  if (!confirm(`${atamasizIds.length} adisyon bu vardiyaya eklensin mi?\n\nEklenen ciro: ${Math.round(eklenecekToplam).toLocaleString('tr-TR')}₺`)) return;
+  try {
+    // Adisyonları vardiyaya bağla
+    await sb.from('kolaycafenlar')
+      .update({ vardiya_id: vardiyaId })
+      .in('id', atamasizIds);
+    // Vardiya cirosunu güncelle
+    const { data: vData } = await sb.from('vardiyalar').select('toplam_ciro').eq('id', vardiyaId).single();
+    const yeniCiro = (vData?.toplam_ciro || 0) + eklenecekToplam;
+    await sb.from('vardiyalar').update({ toplam_ciro: yeniCiro }).eq('id', vardiyaId);
+    toast('✅ ' + atamasizIds.length + ' adisyon vardiyaya eklendi · Ciro güncellendi');
+    // Listeyi yenile
+    vardiyaGecmisYukleMusahebe();
+  } catch(e) {
+    toast('Hata: ' + e.message);
   }
 }
 
@@ -10443,6 +10494,7 @@ window.mvUrunDuzenleAc = mvUrunDuzenleAc;
 window.mvDmAdetDeg = mvDmAdetDeg;
 window.mvDuzenleKaydet = mvDuzenleKaydet;
 window.mvDuzenleKapat = mvDuzenleKapat;
+window.atamasizlariVardiyayaEkle = atamasizlariVardiyayaEkle;
 window.yeniKategoriEkle = yeniKategoriEkle;
 window.urunKaydet = urunKaydet;
 window.varyantSecimiOnayla = varyantSecimiOnayla;
