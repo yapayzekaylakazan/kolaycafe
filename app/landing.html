@@ -121,7 +121,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 5%;height:64px;dis
 .save-pill{background:rgba(46,184,90,0.15);border:1px solid rgba(46,184,90,0.35);color:#4ade80;padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:700;}
 
 .plan-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;max-width:1200px;margin:0 auto;}
-.plan{background:var(--ink2);border:1px solid var(--border);border-radius:16px;padding:24px 18px;position:relative;transition:transform 0.2s,border-color 0.2s;display:flex;flex-direction:column;}
+.plan{background:var(--ink2);border:1px solid var(--border);border-radius:18px;padding:24px 20px;position:relative;transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;display:flex;flex-direction:column;}.plan:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,0.35);border-color:rgba(200,133,42,0.3);}
 .plan:hover{transform:translateY(-4px);}
 .plan.hot{border-color:var(--gold);background:linear-gradient(160deg,rgba(200,133,42,0.08),var(--ink2));}
 .hot-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--ink);font-size:0.65rem;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;letter-spacing:0.06em;}
@@ -136,9 +136,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 5%;height:64px;dis
 .plan-feat .chk{color:var(--green);flex-shrink:0;margin-top:1px;}
 .plan-feat .xk{color:var(--muted2);flex-shrink:0;margin-top:1px;opacity:0.5;}
 .plan-feat.dim{opacity:0.35;}
-.plan-btn{display:block;width:100%;padding:12px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.2s;margin-top:20px;border:1.5px solid var(--border);}
-.plan-btn:hover{border-color:var(--gold);color:var(--gold3);}
-.plan-btn.featured-btn{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);border-color:transparent;}
+.plan-btn{display:block;width:100%;padding:13px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.2s;margin-top:auto;padding-top:14px;border:1.5px solid rgba(200,133,42,0.25);color:var(--cream2);background:rgba(200,133,42,0.06);letter-spacing:0.02em;}
+.plan-btn:hover{border-color:var(--gold);color:var(--gold3);background:rgba(200,133,42,0.1);}
+.plan-btn.featured-btn{background:linear-gradient(135deg,#f0b830,#c8850a);color:#1a0f00;border-color:transparent;box-shadow:0 4px 16px rgba(200,133,42,0.3);font-weight:900;}
 .plan-btn.featured-btn:hover{box-shadow:0 4px 20px rgba(200,133,42,0.4);}
 
 .free-plan{max-width:1200px;margin:14px auto 0;background:var(--ink2);border:1px dashed rgba(200,133,42,0.25);border-radius:16px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
@@ -640,22 +640,37 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
     <span class="toggle-label dim" id="lbl-yillik">Yıllık <span class="save-pill">%20 İNDİRİM</span></span>
   </div>
 
+  <!-- YENİ PLAN GRID -->
   <div class="plan-grid">
 
     <!-- GOLD -->
     <div class="plan" id="plan-gold">
-      <div class="plan-name" style="color:#b8860b;">🥇 GOLD</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="plan-name" style="color:#b8860b;margin:0;">🥇 GOLD</div>
+        <div style="background:rgba(184,134,11,0.12);border:1px solid rgba(184,134,11,0.25);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:#b8860b;">Başlangıç</div>
+      </div>
       <div class="plan-price"><sup>₺</sup><span class="fp" data-a="499" data-y="399">499</span></div>
       <div class="plan-per donem-str">/ ay</div>
-      <div class="plan-masa">🪑 8 Masa</div>
+      <!-- Masa vurgu -->
+      <div style="background:rgba(184,134,11,0.08);border:1px solid rgba(184,134,11,0.2);border-radius:10px;padding:10px 12px;margin:14px 0;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.4rem;">🪑</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;color:#b8860b;line-height:1;">8</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:600;">MASA ERİŞİMİ</div>
+        </div>
+      </div>
+      <!-- Öne çıkan özellik -->
+      <div style="background:rgba(184,134,11,0.06);border-left:3px solid #b8860b;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:14px;font-size:0.78rem;color:var(--cream2);font-style:italic;">
+        💡 Küçük cafeler için temel her şey tek pakette
+      </div>
       <div class="plan-divider"></div>
       <div class="plan-features">
-        <div class="plan-feat"><span class="chk">✓</span>8 masa erişimi</div>
         <div class="plan-feat"><span class="chk">✓</span>Garson takibi & raporlar</div>
         <div class="plan-feat"><span class="chk">✓</span>Gelir/Gider takibi</div>
         <div class="plan-feat"><span class="chk">✓</span>Stok & Reçete</div>
         <div class="plan-feat"><span class="chk">✓</span>İndirim kuponu</div>
         <div class="plan-feat"><span class="chk">✓</span>Mutfak ekranı</div>
+        <div class="plan-feat"><span class="chk">✓</span>Cari hesaplar</div>
         <div class="plan-feat dim"><span class="xk">✗</span>Bluetooth yazıcı</div>
         <div class="plan-feat dim"><span class="xk">✗</span>Platform entegrasyonu</div>
       </div>
@@ -664,17 +679,29 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
 
     <!-- PLATİN -->
     <div class="plan" id="plan-platin">
-      <div class="plan-name" style="color:#4a9fd4;">💎 PLATİN</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="plan-name" style="color:#4a9fd4;margin:0;">💎 PLATİN</div>
+        <div style="background:rgba(74,159,212,0.12);border:1px solid rgba(74,159,212,0.25);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:#4a9fd4;">Orta Boy</div>
+      </div>
       <div class="plan-price"><sup>₺</sup><span class="fp" data-a="599" data-y="479">599</span></div>
       <div class="plan-per donem-str">/ ay</div>
-      <div class="plan-masa">🪑 10 Masa</div>
+      <div style="background:rgba(74,159,212,0.08);border:1px solid rgba(74,159,212,0.2);border-radius:10px;padding:10px 12px;margin:14px 0;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.4rem;">🪑</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;color:#4a9fd4;line-height:1;">10</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:600;">MASA ERİŞİMİ</div>
+        </div>
+      </div>
+      <div style="background:rgba(74,159,212,0.06);border-left:3px solid #4a9fd4;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:14px;font-size:0.78rem;color:var(--cream2);font-style:italic;">
+        💡 Bluetooth yazıcı + QR menü ile profesyonel hizmet
+      </div>
       <div class="plan-divider"></div>
       <div class="plan-features">
-        <div class="plan-feat"><span class="chk">✓</span>10 masa erişimi</div>
         <div class="plan-feat"><span class="chk">✓</span>Gold'un tüm özellikleri</div>
         <div class="plan-feat"><span class="chk">✓</span>Hesap bölme & masa transfer</div>
         <div class="plan-feat"><span class="chk">✓</span>Bluetooth yazıcı</div>
-        <div class="plan-feat"><span class="chk">✓</span>Müşteri menüsü QR</div>
+        <div class="plan-feat"><span class="chk">✓</span>Müşteri QR menü</div>
+        <div class="plan-feat"><span class="chk">✓</span>Müşteri rehberi</div>
         <div class="plan-feat dim"><span class="xk">✗</span>Platform entegrasyonu</div>
         <div class="plan-feat dim"><span class="xk">✗</span>Çoklu şube</div>
       </div>
@@ -683,17 +710,30 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
 
     <!-- ULTRA -->
     <div class="plan" id="plan-ultra">
-      <div class="plan-name" style="color:#3db85a;">🚀 ULTRA</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="plan-name" style="color:#3db85a;margin:0;">🚀 ULTRA</div>
+        <div style="background:rgba(61,184,90,0.12);border:1px solid rgba(61,184,90,0.25);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:#3db85a;">Platform</div>
+      </div>
       <div class="plan-price"><sup>₺</sup><span class="fp" data-a="699" data-y="559">699</span></div>
       <div class="plan-per donem-str">/ ay</div>
-      <div class="plan-masa">🪑 12 Masa</div>
+      <div style="background:rgba(61,184,90,0.08);border:1px solid rgba(61,184,90,0.2);border-radius:10px;padding:10px 12px;margin:14px 0;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.4rem;">🪑</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;color:#3db85a;line-height:1;">12</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:600;">MASA ERİŞİMİ</div>
+        </div>
+      </div>
+      <div style="background:rgba(61,184,90,0.06);border-left:3px solid #3db85a;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:14px;font-size:0.78rem;color:var(--cream2);font-style:italic;">
+        💡 Paket sipariş platformlarını tek ekranda yönet
+      </div>
       <div class="plan-divider"></div>
       <div class="plan-features">
-        <div class="plan-feat"><span class="chk">✓</span>12 masa erişimi</div>
         <div class="plan-feat"><span class="chk">✓</span>Platin'in tüm özellikleri</div>
-        <div class="plan-feat"><span class="chk">✓</span>🟡 Yemeksepeti entegrasyonu</div>
-        <div class="plan-feat"><span class="chk">✓</span>🔴 Getir entegrasyonu</div>
-        <div class="plan-feat"><span class="chk">✓</span>🟠 Trendyol entegrasyonu</div>
+        <div class="plan-feat"><span class="chk">✓</span>
+          <span>🛵 Platform entegrasyonları<br>
+          <span style="font-size:0.68rem;color:var(--muted);margin-left:2px;">Yemeksepeti · Getir · Trendyol</span></span>
+        </div>
+        <div class="plan-feat"><span class="chk">✓</span>Platform bazlı raporlar</div>
         <div class="plan-feat dim"><span class="xk">✗</span>Çoklu şube</div>
       </div>
       <button class="plan-btn" onclick="sepeteEkle('ultra')">Sepete Ekle →</button>
@@ -701,18 +741,29 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
 
     <!-- ELİTE -->
     <div class="plan" id="plan-elite">
-      <div class="plan-name" style="color:#fb923c;">👑 ELİTE</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="plan-name" style="color:#fb923c;margin:0;">👑 ELİTE</div>
+        <div style="background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.25);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:#fb923c;">Çok Şube</div>
+      </div>
       <div class="plan-price"><sup>₺</sup><span class="fp" data-a="799" data-y="639">799</span></div>
       <div class="plan-per donem-str">/ ay</div>
-      <div class="plan-masa">🪑 15 Masa</div>
+      <div style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);border-radius:10px;padding:10px 12px;margin:14px 0;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.4rem;">🪑</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;color:#fb923c;line-height:1;">15</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:600;">MASA ERİŞİMİ</div>
+        </div>
+      </div>
+      <div style="background:rgba(251,146,60,0.06);border-left:3px solid #fb923c;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:14px;font-size:0.78rem;color:var(--cream2);font-style:italic;">
+        💡 Şube bazlı raporlarla hangi lokasyonun daha kârlı olduğunu gör
+      </div>
       <div class="plan-divider"></div>
       <div class="plan-features">
-        <div class="plan-feat"><span class="chk">✓</span>15 masa erişimi</div>
         <div class="plan-feat"><span class="chk">✓</span>Ultra'nın tüm özellikleri</div>
         <div class="plan-feat"><span class="chk">✓</span>Çoklu şube desteği</div>
         <div class="plan-feat"><span class="chk">✓</span>Şube bazlı raporlama</div>
         <div class="plan-feat"><span class="chk">✓</span>Öncelikli destek hattı</div>
-        <div class="plan-feat dim"><span class="xk">✗</span>İndirimli termal yazıcı</div>
+        <div class="plan-feat"><span class="chk">✓</span>Şube bazlı garson yetkileri</div>
       </div>
       <button class="plan-btn" onclick="sepeteEkle('elite')">Sepete Ekle →</button>
     </div>
@@ -720,18 +771,30 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
     <!-- PRO -->
     <div class="plan hot" id="plan-pro">
       <div class="hot-badge">🔥 EN POPÜLER</div>
-      <div class="plan-name" style="color:#a78bfa;">⭐ PRO</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="plan-name" style="color:#a78bfa;margin:0;">⭐ PRO</div>
+        <div style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:#a78bfa;">Sınırsız</div>
+      </div>
       <div class="plan-price"><sup>₺</sup><span class="fp" data-a="899" data-y="719">899</span></div>
       <div class="plan-per donem-str">/ ay</div>
-      <div class="plan-masa">🪑 Sınırsız Masa</div>
+      <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:10px 12px;margin:14px 0;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.4rem;">🪑</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:900;font-size:1.3rem;color:#a78bfa;line-height:1;">∞</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:600;">SINIRСIZ MASA</div>
+        </div>
+      </div>
+      <div style="background:rgba(167,139,250,0.07);border-left:3px solid #a78bfa;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:14px;font-size:0.78rem;color:var(--cream2);font-style:italic;">
+        💡 Büyüyen işletmeler için hiçbir limit yok
+      </div>
       <div class="plan-divider"></div>
       <div class="plan-features">
-        <div class="plan-feat"><span class="chk">✓</span>Sınırsız masa</div>
         <div class="plan-feat"><span class="chk">✓</span>Elite'in tüm özellikleri</div>
         <div class="plan-feat"><span class="chk">✓</span>Sınırsız garson & kullanıcı</div>
         <div class="plan-feat"><span class="chk">✓</span>🖨️ İndirimli termal yazıcı</div>
         <div class="plan-feat"><span class="chk">✓</span>7/24 öncelikli destek</div>
         <div class="plan-feat"><span class="chk">✓</span>API erişimi</div>
+        <div class="plan-feat"><span class="chk">✓</span>Özel onboarding desteği</div>
       </div>
       <button class="plan-btn featured-btn" onclick="sepeteEkle('pro')">Sepete Ekle →</button>
     </div>
