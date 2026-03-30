@@ -445,6 +445,7 @@
       <input type="number" id="modal-gun" placeholder="Gün (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
     </div>
+    <button onclick="aiPaketToggle()" id="modal-ai-btn" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(167,139,250,0.4);background:rgba(167,139,250,0.08);color:#a78bfa;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🤖 AI Paketi Ekle / Kaldır</button>
     <button class="mkapatbtn" onclick="modalKapat()">✕ Kapat</button>
     <button onclick="planSifirla()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(224,80,80,0.4);background:rgba(224,80,80,0.08);color:#e05050;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🗑️ Planı Sıfırla (Denemeye Al)</button>
   </div>
@@ -1148,6 +1149,12 @@ async function detayAc(id) {
     <button onclick="hizliUzat('${k.id}',14)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+14 gün</button>
     <button onclick="hizliUzat('${k.id}',30)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+30 gün</button>
     <button onclick="manuelToggle('${k.id}',${!k.manuel_pasif});modalKapat()" style="padding:5px 10px;border-radius:7px;border:1.5px solid ${k.manuel_pasif?'var(--green)':'var(--red)'};background:transparent;color:${k.manuel_pasif?'var(--green)':'var(--red)'};font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">${k.manuel_pasif?'✅ Aktif Et':'🔒 Pasife Al'}</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;">
+    <span style="font-size:0.72rem;font-weight:800;color:var(--text2);white-space:nowrap;">Manuel:</span>
+    <input type="number" id="manuel-gun-input" min="1" placeholder="Gün" style="width:70px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+    <button onclick="manuelGunEkle('${k.id}', 1)" style="flex:1;padding:5px 10px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➕ Ekle</button>
+    <button onclick="manuelGunEkle('${k.id}', -1)" style="flex:1;padding:5px 10px;border-radius:7px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➖ Çıkar</button>
   </div>`;
 
   html += bb('⚙️', 'Sistem & Kullanım');
@@ -1365,7 +1372,8 @@ async function planGuncelle() {
     plan: plan,
     plan_bitis: bitis.toISOString(),
     plan_donem: donem,
-    odeme_bekliyor: false
+    odeme_bekliyor: false,
+    odeme_bekliyor_zaman: null
   }).eq('id', seciliKafeId);
 
   if (error) { alert('Hata: ' + error.message); return; }
@@ -1373,6 +1381,54 @@ async function planGuncelle() {
   await yukle();
   const donemStr = donem === 'yillik' ? 'Yıllık (%20 indirimli)' : 'Aylık';
   alert(`✓ Plan güncellendi: ${plan.toUpperCase()} — ${gun} gün (${donemStr})`);
+}
+
+async function manuelGunEkle(kafeId, carpan) {
+  const input = document.getElementById('manuel-gun-input');
+  const gun = parseInt(input?.value);
+  if (!gun || gun <= 0) { alert('Geçerli bir gün sayısı girin!'); return; }
+  const gercekGun = gun * carpan; // +1 ekle, -1 çıkar
+
+  // Mevcut plan_bitis'i oku
+  const { data: kafe } = await sb.from('kafeler').select('plan_bitis, kafe_adi').eq('id', kafeId).single();
+  const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : new Date();
+  
+  // Geçmişse bugünden başlat
+  const simdi = new Date();
+  const baslangic = mevcutBitis > simdi ? mevcutBitis : simdi;
+  baslangic.setDate(baslangic.getDate() + gercekGun);
+
+  // Bitiş tarihinin geçmişe gitmesini engelle
+  if (baslangic < simdi && gercekGun < 0) {
+    if (!confirm('Bitiş tarihi bugünün gerisine geçecek — devam edilsin mi?')) return;
+  }
+
+  const { error } = await sb.from('kafeler').update({
+    plan_bitis: baslangic.toISOString(),
+    odeme_bekliyor: false,
+    odeme_bekliyor_zaman: null
+  }).eq('id', kafeId);
+
+  if (error) { alert('Hata: ' + error.message); return; }
+  
+  const islem = gercekGun > 0 ? '+' + gun + ' gün eklendi' : gun + ' gün çıkarıldı';
+  const yeniBitis = baslangic.toLocaleDateString('tr-TR');
+  alert('✅ ' + (kafe?.kafe_adi || '') + ' — ' + islem + '\nYeni bitiş: ' + yeniBitis);
+  await detayAc(kafeId);
+}
+
+async function aiPaketToggle() {
+  if (!seciliKafeId) return;
+  // Mevcut ai_paket durumunu oku
+  const { data: kafe } = await sb.from('kafeler').select('ai_paket, kafe_adi').eq('id', seciliKafeId).single();
+  const mevcutDurum = kafe?.ai_paket === true;
+  const yeniDurum = !mevcutDurum;
+  const onay = confirm((kafe?.kafe_adi || 'Bu kafe') + ' icin AI paketi ' + (yeniDurum ? 'EKLENSIN' : 'KALDIRILSIN') + ' mi?');
+  if (!onay) return;
+  const { error } = await sb.from('kafeler').update({ ai_paket: yeniDurum }).eq('id', seciliKafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+  alert('AI paketi ' + (yeniDurum ? 'eklendi.' : 'kaldirildi.'));
+  await detayAc(seciliKafeId);
 }
 
 async function planSifirla() {
@@ -1384,7 +1440,8 @@ async function planSifirla() {
     plan_donem: null,
     son_odeme: null,
     son_odeme_tutar: null,
-    odeme_bekliyor: false
+    odeme_bekliyor: false,
+    odeme_bekliyor_zaman: null
   }).eq('id', seciliKafeId);
   if (error) { alert('Hata: ' + error.message); return; }
   modalKapat();
