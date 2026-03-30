@@ -9194,7 +9194,7 @@ let _adminKafeler = [];
 
 async function adminKafeListeYukle() {
   const { data } = await sb.from('kafeler')
-    .select('id, kafe_adi, plan, plan_bitis, plan_donem, ai_paket, aktif')
+    .select('id, kafe_adi, plan, plan_bitis, plan_donem, ai_paket')
     .order('kafe_adi', { ascending: true });
   _adminKafeler = data || [];
   adminKafeRender(_adminKafeler);
