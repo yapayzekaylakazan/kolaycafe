@@ -9846,6 +9846,17 @@ function vardiyaBtnGuncelle() {
     dot.textContent = '🟢';
     txt.textContent = vardiyaSureFmt(aktifVardiyaBaslangic);
     if (hstat) hstat.textContent = Math.round(vardiyaCiro) + '₺';
+    // DB'den güncel ciroyu senkronize et (garson ödemeleri dahil)
+    if (kafeId && aktifVardiyaBaslangic) {
+      sb.from('kolaycafenlar').select('toplam').eq('kafe_id', kafeId)
+        .neq('odeme_tipi','ikram').gte('created_at', aktifVardiyaBaslangic.toISOString())
+        .then(({ data }) => {
+          if (data) {
+            vardiyaCiro = data.reduce((t, a) => t + parseFloat(a.toplam || 0), 0);
+            if (hstat) hstat.textContent = Math.round(vardiyaCiro) + '₺';
+          }
+        }).catch(() => {});
+    }
   } else {
     btn.className = 'vardiya-btn kapali';
     dot.textContent = '⏸';
@@ -10069,10 +10080,23 @@ async function vardiyaBaslat() {
   vardiyaModalKapat();
 }
 
-function vardiyaKapatModal() {
+async function vardiyaKapatModal() {
   const sure = vardiyaSureFmt(aktifVardiyaBaslangic);
   const basTarih = aktifVardiyaBaslangic.toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const bitTarih = new Date().toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  // DB'den güncel ciroyu çek — garson ödemeleri de dahil olsun
+  let gercekCiro = vardiyaCiro;
+  try {
+    const { data: adisyonlar } = await sb.from('kolaycafenlar')
+      .select('toplam').eq('kafe_id', kafeId).neq('odeme_tipi','ikram')
+      .gte('created_at', aktifVardiyaBaslangic.toISOString());
+    if (adisyonlar) {
+      gercekCiro = adisyonlar.reduce((t, a) => t + parseFloat(a.toplam || 0), 0);
+      vardiyaCiro = gercekCiro; // RAM'i de güncelle
+    }
+  } catch(e) {}
+
   document.getElementById('vardiya-modal-icerik').innerHTML = `
     <div style="padding:20px;">
       <div style="text-align:center;margin-bottom:16px;">
@@ -10082,7 +10106,7 @@ function vardiyaKapatModal() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
         <div style="background:var(--surface2);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border);">
-          <div style="font-size:1.4rem;font-weight:900;color:#3db85a;font-family:'Space Mono',monospace;">${Math.round(vardiyaCiro).toLocaleString('tr-TR')}₺</div>
+          <div style="font-size:1.4rem;font-weight:900;color:#3db85a;font-family:'Space Mono',monospace;">${Math.round(gercekCiro).toLocaleString('tr-TR')}₺</div>
           <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-top:3px;">TOPLAM CİRO</div>
         </div>
         <div style="background:var(--surface2);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border);">
