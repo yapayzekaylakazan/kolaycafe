@@ -184,7 +184,7 @@
       <div class="toolbar-baslik" style="width:100%;">👥 Üyeler</div>
       <input class="arama" id="arama" placeholder="🔍 Kafe, mail, telefon, şehir..." oninput="aramaYap()" style="flex:1;min-width:180px;">
       <select class="sel" id="fil-il" onchange="aramaYap()"><option value="">Tüm İller</option></select>
-      <select class="sel" id="fil-plan" onchange="aramaYap()"><option value="">Tüm Planlar</option><option value="deneme">Deneme</option><option value="start">Start</option><option value="grow">Grow</option><option value="gold">Gold</option><option value="platin">Platin</option><option value="ultra">Ultra</option><option value="elite">Elite</option><option value="pro">Pro</option></select>
+      <select class="sel" id="fil-plan" onchange="aramaYap()"><option value="">Tüm Planlar</option><option value="deneme">Deneme</option><option value="gold">Gold</option><option value="platin">Platin</option><option value="ultra">Ultra</option><option value="elite">Elite</option><option value="pro">Pro</option></select>
       <div style="display:flex;gap:5px;flex-wrap:wrap;">
         <button class="fbtn aktif" onclick="filtrele('hepsi',this)">Hepsi</button>
         <button class="fbtn" onclick="filtrele('aktif',this)">Aktif</button>
@@ -421,8 +421,8 @@
     <hr class="maya">
     <div class="modal-tit" style="font-size:0.83rem;margin-bottom:8px;">Plan Güncelle</div>
     <select class="mkat" id="modal-plan-sec" onchange="modalPlanFiyatGoster()">
-      <option value="deneme">🆓 Deneme</option><option value="start">🚀 Start — 299₺/ay</option>
-      <option value="grow">🌱 Grow — 399₺/ay</option><option value="gold">🥇 Gold — 499₺/ay</option>
+      <option value="deneme">🆓 Deneme</option>
+      <option value="gold">🥇 Gold — 499₺/ay</option>
       <option value="platin">💎 Platin — 599₺/ay</option><option value="ultra">🚀 Ultra — 699₺/ay</option>
       <option value="elite">👑 Elite — 799₺/ay</option><option value="pro">⭐ Pro — 899₺/ay</option>
     </select>
@@ -505,16 +505,6 @@ const TEST_PAKETLER = [
     id:'garson_deneme', isim:'👤 Garson Deneme', fiyat:'0₺', sure:'/garson modu', masa:6, renk:'#06b6d4',
     ozellikler: ['Garson girişi ile açılır','Sipariş alma','Masa görüntüleme','Hesap isteme','Kendi masalarını yönetir'],
     yok: ['Admin özellikleri','Raporlar','Ayarlar','AI Asistan']
-  },
-  {
-    id:'start', isim:'🚀 Start', fiyat:'299₺', sure:'/ay', masa:4, renk:'#64748b',
-    ozellikler: ['4 masa','Garson takibi','Raporlar','Nakit/Kart/Cari/İkram','Online sipariş (QR)','WhatsApp fiş'],
-    yok: ['Gelir/Gider takibi','Stok & Reçete','Kupon','Bluetooth yazıcı','Platform siparişi','Mutfak ekranı']
-  },
-  {
-    id:'grow', isim:'🌱 Grow', fiyat:'399₺', sure:'/ay', masa:6, renk:'#22c55e',
-    ozellikler: ['6 masa','Garson takibi','Raporlar','Gelir/Gider takibi','Cari hesap','QR masa kodu','Platform siparişi','Mutfak ekranı'],
-    yok: ['Stok & Reçete','Kupon','Bluetooth yazıcı']
   },
   {
     id:'gold', isim:'🥇 Gold', fiyat:'499₺', sure:'/ay', masa:8, renk:'#b8860b',
