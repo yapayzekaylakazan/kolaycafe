@@ -446,6 +446,24 @@
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
     </div>
     <button onclick="aiPaketToggle()" id="modal-ai-btn" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(167,139,250,0.4);background:rgba(167,139,250,0.08);color:#a78bfa;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🤖 AI Paketi Ekle / Kaldır</button>
+    <div style="margin-top:8px;background:rgba(167,139,250,0.06);border:1.5px solid rgba(167,139,250,0.2);border-radius:10px;padding:10px 12px;">
+      <div style="font-size:0.72rem;font-weight:800;color:#a78bfa;margin-bottom:8px;">🎛️ AI Limit Düzenle</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;color:var(--text2);font-weight:700;width:100px;white-space:nowrap;">📊 Analiz/gün:</span>
+        <input type="number" id="modal-ai-analiz-miktar" min="1" value="5" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+        <button onclick="aiLimitDegistir('analiz',1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
+        <button onclick="aiLimitDegistir('analiz',-1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
+        <button onclick="aiLimitSifirla('analiz')" style="padding:4px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.65rem;font-weight:800;cursor:pointer;">Sıfırla</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.7rem;color:var(--text2);font-weight:700;width:100px;white-space:nowrap;">💬 Sohbet/ay:</span>
+        <input type="number" id="modal-ai-sohbet-miktar" min="1" value="10" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+        <button onclick="aiLimitDegistir('sohbet',1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
+        <button onclick="aiLimitDegistir('sohbet',-1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
+        <button onclick="aiLimitSifirla('sohbet')" style="padding:4px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.65rem;font-weight:800;cursor:pointer;">Sıfırla</button>
+      </div>
+      <div id="modal-ai-limit-goster" style="font-size:0.7rem;color:#a78bfa;font-weight:700;text-align:center;min-height:16px;"></div>
+    </div>
     <button class="mkapatbtn" onclick="modalKapat()">✕ Kapat</button>
     <button onclick="planSifirla()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(224,80,80,0.4);background:rgba(224,80,80,0.08);color:#e05050;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🗑️ Planı Sıfırla (Denemeye Al)</button>
   </div>
@@ -1261,6 +1279,20 @@ async function detayAc(id) {
 
   document.getElementById('modal-icerik').innerHTML = html;
   document.getElementById('detay-modal').classList.add('ac');
+
+  // AI limit göster
+  const gosterEl = document.getElementById('modal-ai-limit-goster');
+  if (gosterEl) {
+    const analizLmt = k.ai_analiz_limit ?? 5;
+    const sohbetLmt = k.ai_sohbet_limit ?? 50;
+    gosterEl.textContent = 'Mevcut: 📊 ' + analizLmt + ' analiz/gün · 💬 ' + sohbetLmt + ' sohbet/ay';
+  }
+
+  // Plan seçiciyi mevcut planla doldur
+  const planEl = document.getElementById('modal-plan-sec');
+  if (planEl && k.plan) planEl.value = k.plan;
+  const donemEl = document.getElementById(k.plan_donem === 'yillik' ? 'modal-donem-yillik' : 'modal-donem-aylik');
+  if (donemEl) donemEl.checked = true;
 }
 
 function modalKapat() {
@@ -1415,6 +1447,61 @@ async function manuelGunEkle(kafeId, carpan) {
   const yeniBitis = baslangic.toLocaleDateString('tr-TR');
   alert('✅ ' + (kafe?.kafe_adi || '') + ' — ' + islem + '\nYeni bitiş: ' + yeniBitis);
   await detayAc(kafeId);
+}
+
+async function aiLimitDegistir(tip, carpan) {
+  if (!seciliKafeId) return;
+  const miktarId = tip === 'analiz' ? 'modal-ai-analiz-miktar' : 'modal-ai-sohbet-miktar';
+  const miktar = parseInt(document.getElementById(miktarId)?.value) || 5;
+  if (miktar < 1) { alert('Geçerli bir miktar girin!'); return; }
+
+  // Mevcut limiti DB'den oku
+  const { data: kafe } = await sb.from('kafeler')
+    .select('ai_analiz_limit, ai_sohbet_limit, kafe_adi')
+    .eq('id', seciliKafeId).single();
+
+  // Varsayılan değerler: analiz=5, sohbet=50
+  const varsayilanAnaliz = 5, varsayilanSohbet = 50;
+  const mevcutAnaliz = kafe?.ai_analiz_limit ?? varsayilanAnaliz;
+  const mevcutSohbet = kafe?.ai_sohbet_limit ?? varsayilanSohbet;
+
+  let yeniDeger;
+  if (tip === 'analiz') {
+    yeniDeger = Math.max(1, mevcutAnaliz + (miktar * carpan));
+  } else {
+    yeniDeger = Math.max(1, mevcutSohbet + (miktar * carpan));
+  }
+
+  const guncelleme = tip === 'analiz' ? { ai_analiz_limit: yeniDeger } : { ai_sohbet_limit: yeniDeger };
+  const { error } = await sb.from('kafeler').update(guncelleme).eq('id', seciliKafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+
+  const islem = carpan > 0 ? '+' + miktar : '-' + miktar;
+  const tipAd = tip === 'analiz' ? 'analiz/gün' : 'sohbet/ay';
+  const gosterEl = document.getElementById('modal-ai-limit-goster');
+  if (gosterEl) gosterEl.textContent = '✅ ' + tipAd + ': ' + islem + ' → yeni limit: ' + yeniDeger;
+
+  // Mevcut kafeyi güncelle
+  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
+  if (kafeLocal) {
+    if (tip === 'analiz') kafeLocal.ai_analiz_limit = yeniDeger;
+    else kafeLocal.ai_sohbet_limit = yeniDeger;
+  }
+}
+
+async function aiLimitSifirla(tip) {
+  if (!seciliKafeId) return;
+  if (!confirm((tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayılana sıfırlansın mı?')) return;
+  const guncelleme = tip === 'analiz' ? { ai_analiz_limit: null } : { ai_sohbet_limit: null };
+  const { error } = await sb.from('kafeler').update(guncelleme).eq('id', seciliKafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
+  if (kafeLocal) {
+    if (tip === 'analiz') kafeLocal.ai_analiz_limit = null;
+    else kafeLocal.ai_sohbet_limit = null;
+  }
+  const gosterEl = document.getElementById('modal-ai-limit-goster');
+  if (gosterEl) gosterEl.textContent = '✅ ' + (tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayılana sıfırlandı';
 }
 
 async function aiPaketToggle() {
