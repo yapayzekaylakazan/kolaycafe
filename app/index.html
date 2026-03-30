@@ -2658,7 +2658,7 @@
         <div style="font-size:0.7rem;color:var(--muted);font-weight:600;">Cafen hakkında akıllı analiz ve öneriler</div>
       </div>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
-        <button onclick="aiGecmisAc()" id="ai-gecmis-btn" style="display:none;background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);border-radius:10px;padding:7px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📋 Geçmiş</button>
+        <button onclick="aiGecmisAc()" id="ai-gecmis-btn" style="display:block;background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);border-radius:10px;padding:7px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📋 Geçmiş</button>
         <button onclick="aiPdfIndir()" id="ai-pdf-btn" style="display:none;background:#1a6fb5;color:#fff;border:none;border-radius:10px;padding:7px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📥 PDF</button>
         <button onclick="aiAnalizBaslat()" id="ai-yenile-btn" style="background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">🔄 Analiz Et</button>
       </div>
@@ -10148,11 +10148,12 @@ async function aiGecmisAc() {
   if (!kart || !liste) return;
   kart.style.display = kart.style.display === 'block' ? 'none' : 'block';
   if (kart.style.display !== 'block') return;
+  if (!kafeId) { liste.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">Önce giriş yapın.</div>'; return; }
   liste.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">Yükleniyor...</div>';
   try {
     const { data } = await sb.from('ai_kayitlar')
       .select('*').eq('kafe_id', kafeId)
-      .order('created_at', { ascending: false }).limit(20);
+      .order('created_at', { ascending: false }).limit(30);
     if (!data || data.length === 0) {
       liste.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">Henüz kayıt yok.</div>';
       return;

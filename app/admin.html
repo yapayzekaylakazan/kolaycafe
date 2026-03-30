@@ -655,11 +655,11 @@ async function aiKayitlariYukle() {
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:0.68rem;color:var(--muted);">Son: ${sonKayit}</span>
-          <span style="color:var(--muted);font-size:0.8rem;" id="aik-kafe-${ki}-chevron">▼</span>
+          <span style="color:var(--muted);font-size:0.8rem;" id="aik-kafe-${ki}-chevron">${ki===0?'▲':'▼'}</span>
         </div>
       </div>
       <!-- Kayıtlar (varsayılan kapalı) -->
-      <div id="aik-kafe-${ki}" style="display:none;padding:0 16px 8px;">
+      <div id="aik-kafe-${ki}" style="display:${ki===0?'block':'none'};padding:0 16px 8px;">
         ${kayitlarHTML}
       </div>
     </div>`;
