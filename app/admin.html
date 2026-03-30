@@ -126,7 +126,7 @@
   <div class="login-box">
     <div class="login-logo">☕</div>
     <div class="login-title">KolayCafe Admin</div>
-    <div class="login-sub">// İŞ ZEKASI PANELİ v3.0</div>
+    <div class="login-sub">Yönetim Paneli v3.1</div>
     <input class="login-inp" id="login-email" type="email" placeholder="E-posta">
     <input class="login-inp" id="login-sifre" type="password" placeholder="Şifre" onkeydown="if(event.key==='Enter')girisYap()">
     <button class="login-btn" onclick="girisYap()">Giriş Yap →</button>
@@ -441,6 +441,13 @@
     </div>
     <!-- Fiyat Özeti -->
     <div id="modal-fiyat-ozet" style="font-size:0.73rem;color:var(--text2);margin-bottom:7px;min-height:18px;"></div>
+    <!-- Manuel gün ekle/çıkar -->
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;">
+      <span style="font-size:0.72rem;font-weight:800;color:var(--text2);white-space:nowrap;">Manuel:</span>
+      <input type="number" id="modal-manuel-gun" min="1" placeholder="Gün" style="width:65px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+      <button onclick="manuelGunEkle(seciliKafeId,1)" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-weight:800;font-size:0.72rem;cursor:pointer;">➕ Ekle</button>
+      <button onclick="manuelGunEkle(seciliKafeId,-1)" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #e05050;background:transparent;color:#e05050;font-weight:800;font-size:0.72rem;cursor:pointer;">➖ Çıkar</button>
+    </div>
     <div style="display:flex;gap:7px;align-items:center;margin-bottom:7px;">
       <input type="number" id="modal-gun" placeholder="Gün (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
@@ -451,15 +458,15 @@
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
         <span style="font-size:0.7rem;color:var(--text2);font-weight:700;width:100px;white-space:nowrap;">📊 Analiz/gün:</span>
         <input type="number" id="modal-ai-analiz-miktar" min="1" value="5" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
-        <button onclick="aiLimitDegistir('analiz',1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
-        <button onclick="aiLimitDegistir('analiz',-1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
+        <button onclick="aiLimitDegistir('analiz',1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
+        <button onclick="aiLimitDegistir('analiz',-1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #e05050;background:transparent;color:#e05050;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
         <button onclick="aiLimitSifirla('analiz')" style="padding:4px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.65rem;font-weight:800;cursor:pointer;">Sıfırla</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
         <span style="font-size:0.7rem;color:var(--text2);font-weight:700;width:100px;white-space:nowrap;">💬 Sohbet/ay:</span>
         <input type="number" id="modal-ai-sohbet-miktar" min="1" value="10" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
-        <button onclick="aiLimitDegistir('sohbet',1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
-        <button onclick="aiLimitDegistir('sohbet',-1)" style="flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
+        <button onclick="aiLimitDegistir('sohbet',1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
+        <button onclick="aiLimitDegistir('sohbet',-1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #e05050;background:transparent;color:#e05050;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
         <button onclick="aiLimitSifirla('sohbet')" style="padding:4px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.65rem;font-weight:800;cursor:pointer;">Sıfırla</button>
       </div>
       <div id="modal-ai-limit-goster" style="font-size:0.7rem;color:#a78bfa;font-weight:700;text-align:center;min-height:16px;"></div>
@@ -1036,7 +1043,6 @@ function tabloRender() {
       <td style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(k.created_at)}</td>
       <td>
         <button class="abtn" onclick="detayAc('${k.id}')">🔍</button>
-        <button class="abtn" onclick="hizliUzat('${k.id}',14)">+14g</button>
         <button class="abtn ${k.manuel_pasif?'':'teh'}" title="${k.manuel_pasif?'Aktif et':'Pasife al'}" onclick="manuelToggle('${k.id}',${!k.manuel_pasif})">${k.manuel_pasif?'✅':'🔒'}</button>
       </td>`;
     tbody.appendChild(tr);
@@ -1167,12 +1173,6 @@ async function detayAc(id) {
     <button onclick="hizliUzat('${k.id}',14)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+14 gün</button>
     <button onclick="hizliUzat('${k.id}',30)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+30 gün</button>
     <button onclick="manuelToggle('${k.id}',${!k.manuel_pasif});modalKapat()" style="padding:5px 10px;border-radius:7px;border:1.5px solid ${k.manuel_pasif?'var(--green)':'var(--red)'};background:transparent;color:${k.manuel_pasif?'var(--green)':'var(--red)'};font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">${k.manuel_pasif?'✅ Aktif Et':'🔒 Pasife Al'}</button>
-  </div>
-  <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;">
-    <span style="font-size:0.72rem;font-weight:800;color:var(--text2);white-space:nowrap;">Manuel:</span>
-    <input type="number" id="manuel-gun-input" min="1" placeholder="Gün" style="width:70px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
-    <button onclick="manuelGunEkle('${k.id}', 1)" style="flex:1;padding:5px 10px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➕ Ekle</button>
-    <button onclick="manuelGunEkle('${k.id}', -1)" style="flex:1;padding:5px 10px;border-radius:7px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">➖ Çıkar</button>
   </div>`;
 
   html += bb('⚙️', 'Sistem & Kullanım');
@@ -1195,15 +1195,13 @@ async function detayAc(id) {
       const toplam = (m.siparisler||[]).reduce((t,s) => t + s.fiyat*s.adet, 0);
       const urunler = (m.siparisler||[]).map(s => `${s.isim||'?'} x${s.adet||1}`).join(', ');
       const garsonAdi = m.garson ? ` · 👤 ${garsonAd(m.garson)}` : '';
-      const _mid = (m.id||'').toString();
-      const _aid = (m.adisyon_id||m.id||'').toString();
-      const _kid = k.id;
+      const masaIdStr = String(m.id||'').replace(/'/g,'');
       html += '<div style="background:var(--surface);border-radius:7px;padding:8px 11px;border-left:3px solid var(--accent);margin-bottom:4px;">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">'
         + '<div style="font-size:0.78rem;font-weight:700;">🪑 ' + (m.ad||'Masa '+m.id) + '<span style="color:var(--blue);font-size:0.68rem;">' + garsonAdi + '</span></div>'
         + '<div style="display:flex;align-items:center;gap:6px;">'
-        + '<div style="font-size:0.75rem;font-weight:800;color:var(--green);">' + fmtTL(toplam) + '₺</div>'
-        + '<button data-kid="' + _kid + '" data-mid="' + _mid + '" data-aid="' + _aid + '" onclick="var b=this;adminMasaKapat(b.dataset.kid,b.dataset.mid,b.dataset.aid)" style="padding:3px 8px;border-radius:6px;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:800;font-size:0.65rem;cursor:pointer;">&#9200; Kapat</button>'
+        + '<div style="font-size:0.75rem;font-weight:800;color:var(--green);">' + fmtTL(toplam) + '&#8378;</div>'
+        + '<button onclick="adminMasaKapat(\'' + k.id + '\',\'' + masaIdStr + '\')" style="padding:3px 8px;border-radius:6px;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:800;font-size:0.65rem;cursor:pointer;">&#9200; Kapat</button>'
         + '</div></div>'
         + '<div style="font-size:0.65rem;color:var(--text2);">' + (urunler||'—') + '</div>'
         + '</div>';
@@ -1284,20 +1282,6 @@ async function detayAc(id) {
 
   document.getElementById('modal-icerik').innerHTML = html;
   document.getElementById('detay-modal').classList.add('ac');
-
-  // Plan seçiciyi doldur
-  const planEl = document.getElementById('modal-plan-sec');
-  if (planEl && k.plan) planEl.value = k.plan;
-  const donemEl = document.getElementById(k.plan_donem === 'yillik' ? 'modal-donem-yillik' : 'modal-donem-aylik');
-  if (donemEl) donemEl.checked = true;
-
-  // AI mevcut limitleri göster
-  const gosterEl = document.getElementById('modal-ai-limit-goster');
-  if (gosterEl) {
-    const analizLmt = k.ai_analiz_limit ?? 5;
-    const sohbetLmt = k.ai_sohbet_limit ?? 50;
-    gosterEl.textContent = 'Mevcut: 📊 ' + analizLmt + ' analiz/gün · 💬 ' + sohbetLmt + ' sohbet/ay';
-  }
 }
 
 function modalKapat() {
@@ -1421,16 +1405,15 @@ async function planGuncelle() {
 }
 
 async function manuelGunEkle(kafeId, carpan) {
-  const input = document.getElementById('manuel-gun-input');
-  const gun = parseInt(input?.value);
-  if (!gun || gun <= 0) { alert('Geçerli bir gün sayısı girin!'); return; }
+  const gun = parseInt(document.getElementById('modal-manuel-gun')?.value);
+  if (!gun || gun <= 0) { alert('Gecerli bir gun sayisi girin!'); return; }
   const { data: kafe } = await sb.from('kafeler').select('plan_bitis, kafe_adi').eq('id', kafeId).single();
   const simdi = new Date();
   const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : simdi;
   const baslangic = mevcutBitis > simdi ? new Date(mevcutBitis) : new Date(simdi);
   baslangic.setDate(baslangic.getDate() + (gun * carpan));
   if (baslangic < simdi && carpan < 0) {
-    if (!confirm('Bitiş tarihi bugünün gerisine geçecek — devam edilsin mi?')) return;
+    if (!confirm('Bitis tarihi bugünün gerisine gececek — devam edilsin mi?')) return;
   }
   const { error } = await sb.from('kafeler').update({
     plan_bitis: baslangic.toISOString(),
@@ -1438,27 +1421,20 @@ async function manuelGunEkle(kafeId, carpan) {
     odeme_bekliyor_zaman: null
   }).eq('id', kafeId);
   if (error) { alert('Hata: ' + error.message); return; }
-  const islem = carpan > 0 ? '+' + gun + ' gün eklendi' : gun + ' gün çıkarıldı';
-  toast('✅ ' + (kafe?.kafe_adi||'') + ' — ' + islem + ' → ' + baslangic.toLocaleDateString('tr-TR'));
-  const kafeLocal = tumKafeler.find(k => k.id === kafeId);
-  if (kafeLocal) kafeLocal.plan_bitis = baslangic.toISOString();
+  const islem = carpan > 0 ? '+' + gun + ' gun eklendi' : gun + ' gun cikarildi';
+  toast('OK ' + (kafe?.kafe_adi||'') + ' — ' + islem + ' | Yeni bitis: ' + baslangic.toLocaleDateString('tr-TR'));
   await detayAc(kafeId);
 }
 
-async function adminMasaKapat(kafeId, masaId, adisyonId) {
-  if (!confirm('Bu masa gecikme nedeniyle kapatılsın mı?\nAdisyon kayıtlarda kalacak.')) return;
-  if (adisyonId && adisyonId !== masaId) {
-    await sb.from('kolaycafenlar').update({
-      odeme_tipi: 'admin_kapatti',
-      notlar: 'Yönetici tarafından kapatıldı — süre gecikmesi'
-    }).eq('id', adisyonId);
-  }
+async function adminMasaKapat(kafeId, masaId) {
+  if (!confirm('Bu masa gecikme nedeniyle kapatilsin mi?')) return;
   const { data: kafe } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-  const aktifMasalar = (kafe?.aktif_masalar || []).filter(m => String(m.id) !== String(masaId));
-  await sb.from('kafeler').update({ aktif_masalar: aktifMasalar }).eq('id', kafeId);
-  const kafeLocal = tumKafeler.find(k => k.id === kafeId);
+  const aktifMasalar = (kafe?.aktif_masalar || []).filter(function(m) { return String(m.id) !== String(masaId); });
+  const { error } = await sb.from('kafeler').update({ aktif_masalar: aktifMasalar }).eq('id', kafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+  const kafeLocal = tumKafeler.find(function(k) { return k.id === kafeId; });
   if (kafeLocal) kafeLocal.aktif_masalar = aktifMasalar;
-  toast('✅ Masa kapatıldı');
+  toast('Masa kapatildi');
   await detayAc(kafeId);
 }
 
@@ -1470,8 +1446,6 @@ async function aiPaketToggle() {
   const { error } = await sb.from('kafeler').update({ ai_paket: yeniDurum }).eq('id', seciliKafeId);
   if (error) { alert('Hata: ' + error.message); return; }
   toast('AI paketi ' + (yeniDurum ? 'eklendi' : 'kaldirildi'));
-  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
-  if (kafeLocal) kafeLocal.ai_paket = yeniDurum;
   await detayAc(seciliKafeId);
 }
 
@@ -1479,8 +1453,8 @@ async function aiLimitDegistir(tip, carpan) {
   if (!seciliKafeId) return;
   const miktarId = tip === 'analiz' ? 'modal-ai-analiz-miktar' : 'modal-ai-sohbet-miktar';
   const miktar = parseInt(document.getElementById(miktarId)?.value) || 5;
-  if (miktar < 1) { alert('Geçerli bir miktar girin!'); return; }
-  const { data: kafe } = await sb.from('kafeler').select('ai_analiz_limit, ai_sohbet_limit, kafe_adi').eq('id', seciliKafeId).single();
+  if (miktar < 1) { alert('Gecerli bir miktar girin!'); return; }
+  const { data: kafe } = await sb.from('kafeler').select('ai_analiz_limit, ai_sohbet_limit').eq('id', seciliKafeId).single();
   const mevcutAnaliz = kafe?.ai_analiz_limit ?? 5;
   const mevcutSohbet = kafe?.ai_sohbet_limit ?? 50;
   const yeniDeger = tip === 'analiz'
@@ -1489,12 +1463,14 @@ async function aiLimitDegistir(tip, carpan) {
   const guncelleme = tip === 'analiz' ? { ai_analiz_limit: yeniDeger } : { ai_sohbet_limit: yeniDeger };
   const { error } = await sb.from('kafeler').update(guncelleme).eq('id', seciliKafeId);
   if (error) { alert('Hata: ' + error.message); return; }
-  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
-  if (kafeLocal) { if (tip === 'analiz') kafeLocal.ai_analiz_limit = yeniDeger; else kafeLocal.ai_sohbet_limit = yeniDeger; }
-  const islem = carpan > 0 ? '+' + miktar : '-' + miktar;
-  const tipAd = tip === 'analiz' ? 'analiz/gün' : 'sohbet/ay';
+  const tipAd = tip === 'analiz' ? 'analiz/gun' : 'sohbet/ay';
   const gosterEl = document.getElementById('modal-ai-limit-goster');
-  if (gosterEl) gosterEl.textContent = '✅ ' + tipAd + ': ' + islem + ' → yeni limit: ' + yeniDeger;
+  if (gosterEl) gosterEl.textContent = 'OK ' + tipAd + ': ' + (carpan > 0 ? '+' : '-') + miktar + ' islem yapildi. Yeni limit: ' + yeniDeger;
+  const kafeLocal = tumKafeler.find(function(k) { return k.id === seciliKafeId; });
+  if (kafeLocal) {
+    if (tip === 'analiz') kafeLocal.ai_analiz_limit = yeniDeger;
+    else kafeLocal.ai_sohbet_limit = yeniDeger;
+  }
 }
 
 async function aiLimitSifirla(tip) {
@@ -1503,11 +1479,13 @@ async function aiLimitSifirla(tip) {
   const guncelleme = tip === 'analiz' ? { ai_analiz_limit: null } : { ai_sohbet_limit: null };
   const { error } = await sb.from('kafeler').update(guncelleme).eq('id', seciliKafeId);
   if (error) { alert('Hata: ' + error.message); return; }
-  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
-  if (kafeLocal) { if (tip === 'analiz') kafeLocal.ai_analiz_limit = null; else kafeLocal.ai_sohbet_limit = null; }
-  const varsayilan = tip === 'analiz' ? 5 : 50;
+  const kafeLocal = tumKafeler.find(function(k) { return k.id === seciliKafeId; });
+  if (kafeLocal) {
+    if (tip === 'analiz') kafeLocal.ai_analiz_limit = null;
+    else kafeLocal.ai_sohbet_limit = null;
+  }
   const gosterEl = document.getElementById('modal-ai-limit-goster');
-  if (gosterEl) gosterEl.textContent = '✅ ' + (tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayilana sifilandi (' + varsayilan + ')';
+  if (gosterEl) gosterEl.textContent = (tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayilana sifirlanidi';
 }
 
 async function planSifirla() {
