@@ -3867,7 +3867,7 @@ async function uygulamaBaslat(user) {
             if (am.not !== undefined) m.not = am.not || '';
             degisti = true;
           }
-        } else if (m.siparisler.length > 0) {
+        } else if (m.siparisler.length > 0 && !_yazimAktif.has(m.id) && !_syncQueue[m.id]) {
           m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
           degisti = true;
         }
@@ -6176,42 +6176,82 @@ function transferGoster(){
 }
 
 async function transferYap(hedefId){
-  const k=masalar.find(m=>m.id===seciliMasa),h=masalar.find(m=>m.id===hedefId);
+  const k=masalar.find(m=>m.id===seciliMasa), h=masalar.find(m=>m.id===hedefId);
   if(!k||!h){toast('Masa bulunamadı!');return;}
+
   _transferYapiliyor = true;
-  _skipSubscriptionCount = 3; // Sonraki 3 subscription event'ini yoksay
-  k.siparisler.forEach(s=>{
-    const v=h.siparisler.find(x=>x.isim===s.isim);
-    if(v) v.adet+=s.adet; else h.siparisler.push({...s});
+  _skipSubscriptionCount = 6;
+
+  // Yazım kilidi — polling ve realtime bu masalara dokunamasın
+  _yazimAktif.add(k.id);
+  _yazimAktif.add(h.id);
+
+  const kid = seciliMasa;
+
+  // Local merge: kaynak siparişleri hedefe aktar
+  k.siparisler.forEach(s => {
+    const v = h.siparisler.find(x => x.isim === s.isim && x.fiyat === s.fiyat);
+    if(v) v.adet += s.adet; else h.siparisler.push({...s});
   });
-  const kid=seciliMasa;
-  if(!h.garson&&k.garson) h.garson=k.garson;
-  if(!h.kisi_sayisi && k.kisi_sayisi) h.kisi_sayisi=k.kisi_sayisi;
-  k.siparisler=[]; k.garson=''; k.not=''; k.indirim=0; k.kisi_sayisi=0; k.hesap_istendi=false;
+  if(!h.garson && k.garson) h.garson = k.garson;
+  if(!h.kisi_sayisi && k.kisi_sayisi) h.kisi_sayisi = k.kisi_sayisi;
+
+  // Snapshot al — async işlem sırasında local değişirse bunu kullan
+  const hedefSnapshot = JSON.parse(JSON.stringify(h.siparisler));
+  const hedefGarson = h.garson || '';
+  const hedefKisi = h.kisi_sayisi || 0;
+
+  k.siparisler = []; k.garson = ''; k.not = ''; k.indirim = 0; k.kisi_sayisi = 0; k.hesap_istendi = false;
   modalKapat('transfer-modal');
-  seciliMasa=hedefId;
+  seciliMasa = hedefId;
   masalarRender();
   kolaycafenGuncelle();
-  try {
-    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
-    let aktif = data?.aktif_masalar || [];
-    // Kaynak masayı kaldır
-    aktif = aktif.filter(x=>x.id!==kid);
-    // Hedef masayı güncelle
-    const hidx = aktif.findIndex(x=>x.id===hedefId);
-    const hData = {id:h.id,ad:h.ad,not:h.not||'',siparisler:[...h.siparisler],garson:h.garson||'',indirim:h.indirim||0,kisi_sayisi:h.kisi_sayisi||0,hesap_istendi:h.hesap_istendi||false};
-    if(hidx>=0) aktif[hidx]=hData; else aktif.push(hData);
-    await sb.from('kafeler').update({aktif_masalar:aktif}).eq('id',kafeId);
-    toast('↔ Masa '+kid+' → Masa '+hedefId+' ✓');
-  } catch(e){ toast('Hata: '+e.message); }
-  finally { 
-    setTimeout(()=>{ 
-      _transferYapiliyor=false;
-      _skipSubscriptionCount=0;
-    }, 8000); 
-  }
-}
 
+  let deneme = 0;
+  while (deneme < 3) {
+    try {
+      const {data, error: re} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+      if (re) throw re;
+
+      let aktif = data?.aktif_masalar || [];
+
+      // Kaynak masayı kaldır
+      aktif = aktif.filter(x => x.id !== kid);
+
+      // Hedef masayı snapshot ile güncelle (DB'deki eski veriyle değil)
+      const hidx = aktif.findIndex(x => x.id === hedefId);
+      const hData = {
+        id: h.id, ad: h.ad, not: h.not||'',
+        siparisler: hedefSnapshot,
+        garson: hedefGarson, indirim: h.indirim||0,
+        kisi_sayisi: hedefKisi, hesap_istendi: h.hesap_istendi||false,
+        garson_cagri: h.garson_cagri||false,
+        garson_cagri_saat: h.garson_cagri_saat||null,
+        mutfak_durum: h.mutfak_durum||null,
+        mutfak_zaman: h.mutfak_zaman||null,
+      };
+      if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
+
+      const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+      if (we) throw we;
+
+      toast('↔ Masa ' + kid + ' → Masa ' + hedefId + ' ✓');
+      break;
+    } catch(e) {
+      deneme++;
+      if (deneme < 3) await new Promise(r => setTimeout(r, 500 * deneme));
+      else toast('⚠️ Transfer kaydedilemedi — ' + e.message);
+    }
+  }
+
+  // Kilitleri kaldır — DB yazımı bittikten sonra
+  _yazimAktif.delete(k.id);
+  _yazimAktif.delete(h.id);
+  setTimeout(() => {
+    _transferYapiliyor = false;
+    _skipSubscriptionCount = 0;
+  }, 3000);
+}
 // ════════════════════════════════════════
 // ADİSYON BİRLEŞTİRME
 // ════════════════════════════════════════
