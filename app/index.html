@@ -974,7 +974,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
             <button class="btn-bol" onclick="splitUrunSec()" style="font-size:0.72rem;padding:9px 6px;">🧾 Ürün Seçerek Öde</button>
             <button class="btn-bol" onclick="splitEsitBol()" style="font-size:0.72rem;padding:9px 6px;">➗ Adisyonu Böl</button>
-            <button class="btn-bol" onclick="tahsilEt('salon-nakit')" style="font-size:0.72rem;padding:9px 6px;background:var(--success);color:#fff;">✅ Tümünü Öde</button>
+            <button class="btn-bol" onclick="karmaOdemeAc()" style="font-size:0.72rem;padding:9px 6px;background:var(--success);color:#fff;">🔀 Farklı Öde</button>
             <button class="btn-bol" id="btn-mutfaga-gonder" onclick="mutfagaGonderMasa()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 3;background:#f97316;color:#fff;border-color:#f97316;">👨‍🍳 Mutfağa Gönder</button>
             <button class="btn-bol" id="btn-hesap-iste" onclick="masaHesapIste()" style="font-size:0.72rem;padding:9px 6px;grid-column:span 3;border-color:#f59e0b;color:#f59e0b;">💳 Hesap İstendi İşaretle</button>
           </div>
@@ -2443,6 +2443,24 @@
       <button class="ayar-btn" style="width:100%;" onclick="menuGorunumKaydet()">✓ Görünümü Kaydet</button>
     </div>
 
+    <!-- Ödeme Tipleri -->
+    <div class="ayar-kart">
+      <h3>💳 Özel Ödeme Tipleri</h3>
+      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:10px;">Multinet, Sodexo, Papara, Garanti EFT gibi özel tipler ekleyin. Karma ödemede otomatik çıkar.</div>
+      <div id="odeme-tipi-liste" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="odeme-tipi-ikon" style="background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:9px 8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;">
+          <option value="🍽">🍽 Yemek Kartı</option>
+          <option value="🏦">🏦 Havale/EFT</option>
+          <option value="📱">📱 Dijital Cüzdan</option>
+          <option value="💳">💳 Kart</option>
+          <option value="💵">💵 Nakit</option>
+        </select>
+        <input type="text" id="yeni-odeme-tipi" placeholder="örn: Multinet, Papara..." maxlength="20" style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;">
+        <button onclick="odemeTipiEkle()" style="padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">+</button>
+      </div>
+    </div>
+
     <div class="ayar-kart">
       <h3>Garsonlar</h3>
       <div id="garson-ayar-liste"></div>
@@ -3005,6 +3023,40 @@
 <!-- ═══════════════════════════════════════════ -->
 <!-- SİPARİŞ DETAY MODAL: NOT + FİYAT DÜZENLE  -->
 <!-- ═══════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- KARMA ÖDEME MODALİ                         -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="karma-odeme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9400;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column;">
+    <!-- Başlık -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2;">
+      <div>
+        <div style="font-size:1rem;font-weight:900;color:var(--text);">🔀 Farklı Öde</div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Toplam: <span id="karma-toplam-goster" style="color:var(--accent2);font-weight:900;">0₺</span></div>
+      </div>
+      <button onclick="karmaKapat()" style="background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <!-- Ödeme alanları -->
+    <div id="karma-alanlar" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px;"></div>
+    <!-- Anlık tip ekle -->
+    <div style="padding:0 16px 10px;">
+      <button onclick="karmaAnlikTipEkle()" style="width:100%;padding:8px;border-radius:10px;border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:700;font-size:0.8rem;cursor:pointer;">+ Özel Tip Ekle</button>
+    </div>
+    <!-- Alt özet + buton -->
+    <div style="padding:14px 16px;border-top:1px solid var(--border);background:var(--surface);position:sticky;bottom:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.8rem;font-weight:800;color:var(--muted);">GİRİLEN TOPLAM</span>
+        <span id="karma-girilen" style="font-size:1.1rem;font-weight:900;color:var(--text);font-family:'Space Mono',monospace;">0₺</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:0.8rem;font-weight:800;color:var(--muted);">KALAN</span>
+        <span id="karma-kalan" style="font-size:1.2rem;font-weight:900;color:var(--danger);font-family:'Space Mono',monospace;">0₺</span>
+      </div>
+      <button id="karma-tamamla-btn" onclick="karmaTamamla()" disabled style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--surface3);color:var(--muted);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:not-allowed;">✅ Ödemeyi Tamamla</button>
+    </div>
+  </div>
+</div>
+
 <div id="siparis-detay-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9300;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:22px;width:100%;max-width:340px;overflow:hidden;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);">
@@ -3194,6 +3246,8 @@ let seciliMasa = null;
 let mevcutKat = Object.keys(URUNLER)[0];
 let kapaliKolayCafenlar = [];
 let gunlukCiro = 0;
+// ── ÖZEL ÖDEME TİPLERİ ──
+let odemeTipleri = []; // [{id, ad, ikon}]
 // ── VARDİYA ──
 let aktifVardiyaId = null;
 let aktifVardiyaBaslangic = null;
@@ -4023,7 +4077,8 @@ async function kafeVerisiYukle() {
   window._kafeData = data; // Global olarak sakla
   if (data) {
     kafeId = data.id;
-    aiPaketAktif = data.ai_paket === true; // AI paket kontrolü
+    aiPaketAktif = data.ai_paket === true;
+    odemeTipleri = data.odeme_tipleri || [];
     // E-posta yoksa auth'tan al ve kaydet
     if (!data.email && kullanici?.email) {
       await sb.from('kafeler').update({ email: kullanici.email }).eq('id', data.id);
@@ -4446,6 +4501,7 @@ async function offlineKuyrukGonder() {
         masa_notu: kolaycafen.not||null, siparisler: kolaycafen.siparisler,
         odeme_tipi: kolaycafen.odeme_tipi||'nakit',
         musteri_adi: kolaycafen.musteri_adi||null, cari_tutar: kolaycafen.cari_tutar||null,
+        odeme_detay: kolaycafen.odeme_detay||null,
         vardiya_id: aktifVardiyaId||null,
       });
       if (kolaycafen.toplam > 0) sb.rpc('increment_ciro', { kafe_id_param: kafeId, miktar: kolaycafen.toplam }).catch(()=>{});
@@ -4493,6 +4549,7 @@ async function kolaycafenKaydet(kolaycafen) {
       odeme_tipi: kolaycafen.odeme_tipi||'nakit',
       musteri_adi: kolaycafen.musteri_adi||null,
       cari_tutar: kolaycafen.cari_tutar||null,
+      odeme_detay: kolaycafen.odeme_detay||null,
       vardiya_id: aktifVardiyaId||null,
     });
     // Toplam ciroyu artır
@@ -5438,7 +5495,187 @@ async function cariKaydet() {
 }
 
 let _tahsilEdiliyor = false;
-async function tahsilEt(odemeTipi) {
+// ════════════════════════════════════════
+// KARMA ÖDEME SİSTEMİ
+// ════════════════════════════════════════
+let _karmaAnlikSayac = 0;
+
+function karmaOdemeAc() {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  if (m.siparisler.length === 0) { toast('KolayCafen boş!'); return; }
+  const ham = masaToplam(m);
+  const son = ham * (1 - (m.indirim || 0) / 100);
+  document.getElementById('karma-toplam-goster').textContent = fmt(son);
+  _karmaAnlikSayac = 0;
+  karmaAlanlariRender(son);
+  document.getElementById('karma-odeme-modal').style.display = 'flex';
+}
+
+function karmaAlanlariRender(toplam) {
+  const alan = document.getElementById('karma-alanlar');
+  // Sabit tipler
+  const sabitTipler = [
+    { id: 'nakit',   ad: 'Nakit',      ikon: '💵' },
+    { id: 'kart',    ad: 'Kart',       ikon: '💳' },
+    { id: 'havale',  ad: 'Havale/EFT', ikon: '🏦' },
+    { id: 'yemek',   ad: 'Yemek Kartı',ikon: '🍽' },
+  ];
+  // Özel tipler (ayarlardan)
+  const ozelTipler = odemeTipleri.map(t => ({ id: 'ozel_' + t.id, ad: t.ad, ikon: t.ikon }));
+  const tumTipler = [...sabitTipler, ...ozelTipler];
+  alan.innerHTML = tumTipler.map(t => karmaAlanHTML(t.id, t.ad, t.ikon)).join('') +
+    `<div id="karma-anlik-alanlar"></div>` +
+    `<div id="karma-cari-alan" style="display:none;margin-top:4px;">
+      <input type="text" id="karma-cari-musteri" placeholder="Müşteri adı (cari hesap için)..."
+        oninput="karmaHesapla()"
+        style="width:100%;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;">
+    </div>`;
+  // Cari alanını cari input varsa göster
+  alan.querySelectorAll('input.karma-input').forEach(inp => {
+    inp.addEventListener('input', karmaHesapla);
+  });
+  karmaHesapla();
+}
+
+function karmaAlanHTML(id, ad, ikon) {
+  return `<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:11px;padding:10px 12px;border:1px solid var(--border);">
+    <span style="font-size:1.2rem;width:28px;text-align:center;">${ikon}</span>
+    <span style="flex:1;font-size:0.88rem;font-weight:800;color:var(--text);">${ad}</span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="number" min="0" step="0.01" placeholder="0"
+        id="karma-inp-${id}" data-tip="${id}" data-ad="${ad}" data-ikon="${ikon}"
+        class="karma-input"
+        style="width:90px;background:var(--surface);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:0.9rem;font-weight:700;outline:none;text-align:right;"
+        oninput="karmaHesapla()">
+      <span style="font-size:0.85rem;font-weight:800;color:var(--muted);">₺</span>
+    </div>
+  </div>`;
+}
+
+function karmaAnlikTipEkle() {
+  const ad = prompt('Ödeme tipi adı (örn: Papara, Garanti EFT):');
+  if (!ad || !ad.trim()) return;
+  _karmaAnlikSayac++;
+  const id = 'anlik_' + _karmaAnlikSayac;
+  const ikon = '💰';
+  const div = document.createElement('div');
+  div.innerHTML = karmaAlanHTML(id, ad.trim(), ikon);
+  div.querySelector('input').addEventListener('input', karmaHesapla);
+  document.getElementById('karma-anlik-alanlar').appendChild(div.firstElementChild);
+  karmaHesapla();
+}
+
+function karmaHesapla() {
+  const toplamEl = document.getElementById('karma-toplam-goster');
+  const toplamStr = toplamEl?.textContent?.replace(/[^0-9,]/g, '').replace(',', '.') || '0';
+  const toplam = parseFloat(toplamStr) || 0;
+  let girilen = 0;
+  let cariVar = false;
+  document.querySelectorAll('.karma-input').forEach(inp => {
+    const val = parseFloat(inp.value) || 0;
+    girilen += val;
+    if (inp.dataset.tip === 'cari' && val > 0) cariVar = true;
+  });
+  // Cari alanı göster/gizle
+  const cariInp = document.getElementById('karma-inp-cari');
+  const cariAlan = document.getElementById('karma-cari-alan');
+  if (cariInp && cariAlan) {
+    cariAlan.style.display = (parseFloat(cariInp.value) || 0) > 0 ? 'block' : 'none';
+  }
+  const kalan = Math.round((toplam - girilen) * 100) / 100;
+  document.getElementById('karma-girilen').textContent = fmt(girilen);
+  const kalanEl = document.getElementById('karma-kalan');
+  kalanEl.textContent = fmt(Math.abs(kalan));
+  kalanEl.style.color = kalan <= 0.01 ? '#22c55e' : 'var(--danger)';
+  const btn = document.getElementById('karma-tamamla-btn');
+  if (kalan <= 0.01 && girilen > 0) {
+    btn.disabled = false;
+    btn.style.background = 'var(--success)';
+    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.background = 'var(--surface3)';
+    btn.style.color = 'var(--muted)';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+async function karmaTamamla() {
+  if (!seciliMasa) return;
+  const m = getMasa(); if (!m) return;
+  // Ödeme detaylarını topla
+  const odemeDetay = {};
+  let musteriAdi = '';
+  document.querySelectorAll('.karma-input').forEach(inp => {
+    const val = parseFloat(inp.value) || 0;
+    if (val > 0) odemeDetay[inp.dataset.ad] = val;
+  });
+  // Cari müşteri adı
+  const cariInp = document.getElementById('karma-inp-cari');
+  if (cariInp && (parseFloat(cariInp.value) || 0) > 0) {
+    musteriAdi = document.getElementById('karma-cari-musteri')?.value?.trim() || '';
+    if (!musteriAdi) { toast('⚠️ Cari için müşteri adı giriniz!'); return; }
+  }
+  karmaKapat();
+  // tahsilEt'i karma modda çağır
+  await tahsilEt('karma', odemeDetay, musteriAdi);
+}
+
+function karmaKapat() {
+  document.getElementById('karma-odeme-modal').style.display = 'none';
+}
+
+// ════════════════════════════════════════
+// ÖZEL ÖDEME TİPLERİ — AYARLAR
+// ════════════════════════════════════════
+async function odemeTipiYukle() {
+  try {
+    const { data } = await sb.from('kafeler').select('odeme_tipleri').eq('id', kafeId).single();
+    odemeTipleri = data?.odeme_tipleri || [];
+  } catch(e) { odemeTipleri = []; }
+  odemeTipiListeRender();
+}
+
+function odemeTipiListeRender() {
+  const liste = document.getElementById('odeme-tipi-liste');
+  if (!liste) return;
+  if (odemeTipleri.length === 0) {
+    liste.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);text-align:center;padding:8px;">Henüz özel tip eklenmedi</div>';
+    return;
+  }
+  liste.innerHTML = odemeTipleri.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:10px;padding:9px 12px;border:1px solid var(--border);">
+      <span style="font-size:1.1rem;">${t.ikon}</span>
+      <span style="flex:1;font-size:0.88rem;font-weight:800;color:var(--text);">${t.ad}</span>
+      <button onclick="odemeTipiSil(${i})" style="background:none;border:none;color:var(--danger);font-size:1rem;cursor:pointer;padding:2px 6px;">✕</button>
+    </div>`).join('');
+}
+
+async function odemeTipiEkle() {
+  const ad = document.getElementById('yeni-odeme-tipi')?.value?.trim();
+  const ikon = document.getElementById('odeme-tipi-ikon')?.value || '💳';
+  if (!ad) { toast('Tip adı giriniz'); return; }
+  if (odemeTipleri.find(t => t.ad.toLowerCase() === ad.toLowerCase())) { toast('Bu tip zaten var!'); return; }
+  odemeTipleri.push({ id: Date.now().toString(), ad, ikon });
+  await odemeTipiKaydet();
+  document.getElementById('yeni-odeme-tipi').value = '';
+  toast('✅ ' + ad + ' eklendi');
+}
+
+async function odemeTipiSil(idx) {
+  if (!confirm(odemeTipleri[idx].ad + ' silinsin mi?')) return;
+  odemeTipleri.splice(idx, 1);
+  await odemeTipiKaydet();
+}
+
+async function odemeTipiKaydet() {
+  await sb.from('kafeler').update({ odeme_tipleri: odemeTipleri }).eq('id', kafeId);
+  odemeTipiListeRender();
+}
+
+async function tahsilEt(odemeTipi, odemeDetay, musteriAdi) {
   if(_tahsilEdiliyor){toast('⚠️ İşlem devam ediyor...');return;}
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
@@ -5458,6 +5695,8 @@ async function tahsilEt(odemeTipi) {
     toplam: tip==='ikram' ? 0 : son,
     indirim:m.indirim||0, garson:m.garson||'',
     odeme_tipi: tip,
+    odeme_detay: odemeDetay || null,
+    musteri_adi: musteriAdi || null,
     siparisler:m.siparisler.map(s=>({...s}))
   };
   // Local'e ekle (realtime gecikmeye karşı)
@@ -5484,9 +5723,12 @@ async function tahsilEt(odemeTipi) {
     'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart',
     'kapi-nakit':'🏠 Kapıda Nakit','kapi-kart':'🏠 Kapıda Kart',
     ikram:'🎁 İkram',cari:'📋 Cari',online:'🌐 Online',
-    nakit:'💵 Nakit',kart:'💳 Kart'
+    nakit:'💵 Nakit',kart:'💳 Kart',karma:'🔀 Karma Ödeme'
   }[tip]||tip;
-  toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket));
+  const karmaOzet = tip === 'karma' && odemeDetay
+    ? ' (' + Object.entries(odemeDetay).map(([k,v]) => k+': '+fmt(v)).join(', ') + ')'
+    : '';
+  toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket+karmaOzet));
   // Önce boş masayı Supabase'e yaz, sonra adisyonu kaydet
   try {
     await _masaSyncYazHemen(tahsilMasaId);
@@ -5690,7 +5932,7 @@ async function splitUrunOde(odemeTipi) {
     masa: seciliMasa, masaAd: m.ad,
     tarih: new Date().toLocaleString('tr-TR'), tarihObj: new Date(),
     toplam, indirim: 0, garson: m.garson || '',
-    odeme_tipi: 'split-' + odemeTipi,
+    odeme_tipi: odemeTipi,
     siparisler: seciliSiparisler,
     dbId: Date.now()
   };
@@ -5792,7 +6034,7 @@ async function splitEsitOde(odemeTipi) {
     masa: seciliMasa, masaAd: m.ad,
     tarih: new Date().toLocaleString('tr-TR'), tarihObj: new Date(),
     toplam: kisiBas, indirim: 0, garson: m.garson || '',
-    odeme_tipi: 'split-' + odemeTipi,
+    odeme_tipi: odemeTipi,
     siparisler: [{ isim: `Hesap Bölme (${kisiNo}/${splitKisiSayisi})`, fiyat: kisiBas, adet: 1 }],
     dbId: Date.now() + kisiNo
   };
@@ -8453,6 +8695,7 @@ function ayarlarRender(){
   document.getElementById('ayar-cafe-adi').textContent=kafeAdi;
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
+  odemeTipiListeRender();
 
   // ── GARSON MODU KISITLAMALARI ──
   if (garsonModu) {
@@ -9535,6 +9778,13 @@ window.birlestirYap = birlestirYap;
 window.fisYazdir = fisYazdir;
 window.masaTemizle = masaTemizle;
 window.tahsilEt = tahsilEt;
+window.karmaOdemeAc = karmaOdemeAc;
+window.karmaKapat = karmaKapat;
+window.karmaHesapla = karmaHesapla;
+window.karmaTamamla = karmaTamamla;
+window.karmaAnlikTipEkle = karmaAnlikTipEkle;
+window.odemeTipiEkle = odemeTipiEkle;
+window.odemeTipiSil = odemeTipiSil;
 
 // ════════════════════════════════════════
 // VARDİYA SİSTEMİ
