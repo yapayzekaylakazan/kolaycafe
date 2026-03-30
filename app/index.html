@@ -1561,10 +1561,25 @@
 
   <!-- ÜRÜNLER SEKMESİ -->
   <div id="rsekme-urun" style="padding:12px;display:none;">
-    <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">🏆 EN ÇOK SATANLAR</div>
-      <canvas id="grafik-urun" height="200"></canvas>
+
+    <!-- Sıralama toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:800;">🏆 EN ÇOK SATANLAR</div>
+      <div style="display:flex;background:var(--surface2);border-radius:8px;padding:3px;gap:2px;">
+        <button id="urun-sort-tutar" onclick="urunRaporSiralaDegis('tutar')"
+          style="padding:5px 10px;border:none;border-radius:6px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">₺ Tutar</button>
+        <button id="urun-sort-adet" onclick="urunRaporSiralaDegis('adet')"
+          style="padding:5px 10px;border:none;border-radius:6px;background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">× Adet</button>
+      </div>
     </div>
+
+    <!-- Kategori filtreleri -->
+    <div id="urun-rapor-kategoriler" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:4px;-webkit-overflow-scrolling:touch;"></div>
+
+    <!-- Podiyum: Top 3 -->
+    <div id="urun-rapor-podiyum" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"></div>
+
+    <!-- Tam liste -->
     <div class="rapor-tablo-baslik"><span>ÜRÜN</span><span>ADET</span><span>TUTAR</span></div>
     <div id="rapor-liste"></div>
   </div>
@@ -7940,6 +7955,109 @@ let aktifRaporSekme = 'ozet';
 let raporGrafikler = {};
 let RECETELER = {}; // {urunAdi: {malzemeler:[{ad,miktar,birim,maliyet}], not}}
 
+
+// ════════════════════════════════════════
+// ÜRÜN RAPORU — KATEGORİ + PODİYUM
+// ════════════════════════════════════════
+let _urunRaporKat = 'Tümü';
+let _urunRaporSiralama = 'tutar'; // 'tutar' | 'adet'
+
+function urunRaporSiralaDegis(tip) {
+  _urunRaporSiralama = tip;
+  const btnTutar = document.getElementById('urun-sort-tutar');
+  const btnAdet  = document.getElementById('urun-sort-adet');
+  if (btnTutar) { btnTutar.style.background = tip === 'tutar' ? 'var(--accent)' : 'transparent'; btnTutar.style.color = tip === 'tutar' ? '#1a0f00' : 'var(--muted)'; }
+  if (btnAdet)  { btnAdet.style.background  = tip === 'adet'  ? 'var(--accent)' : 'transparent'; btnAdet.style.color  = tip === 'adet'  ? '#1a0f00' : 'var(--muted)'; }
+  urunRaporRender();
+}
+
+function urunRaporRender() {
+  const ds = window._urunRaporDs || {};
+
+  // — Kategori listesi —
+  const katDiv = document.getElementById('urun-rapor-kategoriler');
+  if (katDiv) {
+    // URUNLER'den kategorileri al
+    const katlar = Object.keys(URUNLER);
+    // Her ürünün hangi kategoride olduğunu bul
+    const urunKatMap = {};
+    katlar.forEach(kat => {
+      (URUNLER[kat] || []).forEach(u => { urunKatMap[u.isim] = kat; });
+    });
+    window._urunKatMap = urunKatMap;
+
+    // Sadece satışı olan kategorileri göster
+    const satilanKatlar = new Set(Object.keys(ds).map(isim => urunKatMap[isim] || 'Diğer'));
+    const tumKatlar = ['Tümü', ...Array.from(satilanKatlar).sort()];
+
+    katDiv.innerHTML = tumKatlar.map(k =>
+      `<button onclick="urunRaporKatSec('${k.replace(/'/g,"\'")}') "
+        style="flex-shrink:0;padding:6px 12px;border-radius:20px;border:none;
+        background:${_urunRaporKat===k ? 'var(--accent)' : 'var(--surface2)'};
+        color:${_urunRaporKat===k ? '#1a0f00' : 'var(--text2)'};
+        font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;
+        white-space:nowrap;border:1.5px solid ${_urunRaporKat===k ? 'var(--accent)' : 'var(--border)'};"
+      >${k}</button>`
+    ).join('');
+  }
+
+  // — Filtreleme —
+  const urunKatMap = window._urunKatMap || {};
+  let girdi = Object.entries(ds);
+  if (_urunRaporKat !== 'Tümü') {
+    girdi = girdi.filter(([isim]) => (urunKatMap[isim] || 'Diğer') === _urunRaporKat);
+  }
+  // Sırala
+  girdi = girdi.sort((a,b) =>
+    _urunRaporSiralama === 'adet' ? b[1].adet - a[1].adet : b[1].toplam - a[1].toplam
+  );
+
+  // — Podiyum (Top 3) —
+  const podiyumDiv = document.getElementById('urun-rapor-podiyum');
+  if (podiyumDiv) {
+    if (girdi.length === 0) {
+      podiyumDiv.innerHTML = '';
+    } else {
+      // Sıra: [1.] [0.] [2.] — ortada birinci
+      const top3 = girdi.slice(0, 3);
+      const siralama = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3.length === 2 ? [null, top3[0], top3[1]] : [null, top3[0], null];
+      const madalya  = ['🥈', '🥇', '🥉'];
+      const renkler  = ['#94a3b8', '#f0b830', '#b45309'];
+      const yuksek   = ['92px', '110px', '80px'];
+      podiyumDiv.innerHTML = siralama.map((item, i) => {
+        if (!item) return `<div></div>`;
+        const [isim, d] = item;
+        const deger = _urunRaporSiralama === 'adet' ? d.adet + 'x' : fmt(d.toplam);
+        const alt   = _urunRaporSiralama === 'adet' ? fmt(d.toplam) : d.adet + 'x';
+        return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:${yuksek[i]};">
+          <div style="font-size:1.4rem;margin-bottom:2px;">${madalya[i]}</div>
+          <div style="background:var(--surface2);border:2px solid ${renkler[i]}40;border-radius:12px;padding:8px 6px;width:100%;text-align:center;">
+            <div style="font-size:0.65rem;font-weight:900;color:var(--text2);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${isim}">${isim}</div>
+            <div style="font-size:0.95rem;font-weight:900;color:${renkler[i]};font-family:'Space Mono',monospace;">${deger}</div>
+            <div style="font-size:0.62rem;color:var(--muted);font-weight:600;">${alt}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // — Tam liste —
+  const rl = document.getElementById('rapor-liste');
+  if (rl) {
+    rl.innerHTML = girdi.length === 0 ? '<div class="bos-rapor">☕ Bu dönemde satış yok</div>' : '';
+    girdi.forEach(([isim, d]) => {
+      const s = document.createElement('div'); s.className = 'rapor-satir';
+      s.innerHTML = `<span class="rs-isim">${isim}</span><span class="rs-adet">${d.adet}x</span><span class="rs-tutar">${fmt(d.toplam)}</span>`;
+      rl.appendChild(s);
+    });
+  }
+}
+
+function urunRaporKatSec(kat) {
+  _urunRaporKat = kat;
+  urunRaporRender();
+}
+
 function raporSekme(sekme) {
   aktifRaporSekme = sekme;
   ['ozet','grafik','urun','garson','adisyon','recete','online'].forEach(s => {
@@ -7954,6 +8072,7 @@ function raporSekme(sekme) {
   if (sekme === 'grafik') raporGrafikleriCiz();
   if (sekme === 'online') raporOnlineRender();
   if (sekme === 'recete') receteListeRender();
+  if (sekme === 'urun') { _urunRaporKat = 'Tümü'; urunRaporRender(); }
 }
 
 async function raporOnlineRender() {
@@ -8149,17 +8268,9 @@ async function raporRenderTam() {
   Object.values(URUNLER).forEach(urunler => urunler.forEach(u => { if(u.stok===0) tukenmis++; }));
   if(document.getElementById('r-stok-tukenmis')) document.getElementById('r-stok-tukenmis').textContent = tukenmis;
 
-  // Ürün listesi
-  const rl = document.getElementById('rapor-liste');
-  const girdi = Object.entries(ds).sort((a,b) => b[1].toplam - a[1].toplam);
-  if(rl) {
-    rl.innerHTML = girdi.length === 0 ? '<div class="bos-rapor">☕ Bu dönemde satış yok</div>' : '';
-    girdi.forEach(([isim,d]) => {
-      const s = document.createElement('div'); s.className = 'rapor-satir';
-      s.innerHTML = `<span class="rs-isim">${isim}</span><span class="rs-adet">${d.adet}x</span><span class="rs-tutar">${fmt(d.toplam)}</span>`;
-      rl.appendChild(s);
-    });
-  }
+  // Ürün listesi — urunRaporRender ile çiz
+  window._urunRaporDs = ds;
+  urunRaporRender();
 
   // Garson
   const gr = document.getElementById('garson-rapor');
@@ -10001,6 +10112,8 @@ window.karmaHesapla = karmaHesapla;
 window.karmaTamamla = karmaTamamla;
 window.karmaAnlikTipEkle = karmaAnlikTipEkle;
 window.karmaCariAra = karmaCariAra;
+window.urunRaporKatSec = urunRaporKatSec;
+window.urunRaporSiralaDegis = urunRaporSiralaDegis;
 window.karmaCariSec = karmaCariSec;
 window.karmaCariTemizle = karmaCariTemizle;
 window.odemeTipiEkle = odemeTipiEkle;
