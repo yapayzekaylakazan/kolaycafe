@@ -10172,7 +10172,7 @@ async function aiGecmisAc() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
           <span style="font-size:0.75rem;font-weight:800;color:${isAnaliz?'var(--accent2)':'#30d080'};cursor:pointer;" onclick="aiGecmisDetay('gecmis-detay-${i}')">${isAnaliz?'📊 ANALİZ':'💬 SOHBET'} · ${k.donem||'-'} ▾</span>
           <div style="display:flex;align-items:center;gap:6px;">
-            ${isAnaliz ? `<button onclick="aiGecmisPdfB64('${raporB64}','${k.donem||''}',${ic.toplamCiro||0},${ic.adisyonSayisi||0},'${tarih}')" style="background:#1a6fb5;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-family:'Nunito',sans-serif;font-size:0.65rem;font-weight:800;cursor:pointer;">📥 PDF</button>` : ''}
+            <button onclick="aiGecmisPdfB64('${raporB64}','${k.donem||''}',${ic.toplamCiro||0},${ic.adisyonSayisi||0},'${tarih}','${btoa(unescape(encodeURIComponent(ic.soru||'')))}','${btoa(unescape(encodeURIComponent(ic.cevap||'')))}',${isAnaliz})" style="background:#1a6fb5;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-family:'Nunito',sans-serif;font-size:0.65rem;font-weight:800;cursor:pointer;">📥 PDF</button>
             <span style="font-size:0.68rem;color:var(--muted);">${tarih}</span>
           </div>
         </div>
@@ -10199,39 +10199,49 @@ function aiGecmisKapat() {
   if (kart) kart.style.display = 'none';
 }
 
-function aiGecmisPdfB64(raporB64, donem, toplamCiro, adisyonSayisi, tarih) {
-  let metin = '';
-  try { metin = decodeURIComponent(escape(atob(raporB64))); } catch(e) { metin = ''; }
-  if (!metin.trim()) { toast('⚠️ Rapor içeriği bulunamadı'); return; }
+function aiGecmisPdfB64(raporB64, donem, toplamCiro, adisyonSayisi, tarih, soruB64, cevapB64, isAnaliz) {
+  let metin = '', soru = '', cevap = '';
+  try { metin  = decodeURIComponent(escape(atob(raporB64)));  } catch(e) { metin  = ''; }
+  try { soru   = decodeURIComponent(escape(atob(soruB64 ||'')));  } catch(e) { soru = ''; }
+  try { cevap  = decodeURIComponent(escape(atob(cevapB64||'')));  } catch(e) { cevap = ''; }
+  const analizMi = isAnaliz === true || isAnaliz === 'true';
+  if (analizMi && !metin.trim()) { toast('⚠️ Rapor içeriği bulunamadı'); return; }
+  if (!analizMi && !soru.trim() && !cevap.trim()) { toast('⚠️ Sohbet içeriği bulunamadı'); return; }
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const icerikHTML = analizMi
+    ? `<div class="icerik">${esc(metin)}</div>`
+    : `<div class="sohbet-soru"><b>Soru:</b> ${esc(soru)}</div><div class="sohbet-cevap"><b>Cevap:</b><br>${esc(cevap)}</div>`;
   const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
-  <title>AI Satış Analizi — ${kafeAdi}</title>
+  <title>${analizMi ? 'AI Satış Analizi' : 'AI Sohbet'} — ${kafeAdi}</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; }
-    h1 { font-size: 1.4rem; color: #c8850a; border-bottom: 2px solid #c8850a; padding-bottom: 8px; }
+    h1 { font-size: 1.4rem; color: ${analizMi ? '#c8850a' : '#1a6fb5'}; border-bottom: 2px solid ${analizMi ? '#c8850a' : '#1a6fb5'}; padding-bottom: 8px; }
     .meta { font-size: 0.8rem; color: #666; margin-bottom: 24px; }
     .kpi { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
     .kpi-kart { background: #fef9ee; border: 1px solid #f0b830; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
     .kpi-deger { font-size: 1.2rem; font-weight: 800; color: #c8850a; }
     .kpi-etiket { font-size: 0.72rem; color: #888; }
     .icerik { white-space: pre-wrap; line-height: 1.7; font-size: 0.88rem; }
+    .sohbet-soru { background:#f0f7ff;border-left:4px solid #1a6fb5;padding:12px 16px;border-radius:4px;margin-bottom:16px;font-size:0.9rem; }
+    .sohbet-cevap { background:#f9f9f9;border-left:4px solid #22c55e;padding:12px 16px;border-radius:4px;white-space:pre-wrap;line-height:1.7;font-size:0.88rem; }
     .footer { margin-top: 32px; font-size: 0.72rem; color: #aaa; border-top: 1px solid #eee; padding-top: 12px; }
     @media print { body { margin: 0; } }
   </style></head><body>
-  <h1>📊 AI Satış Analizi — ${kafeAdi}</h1>
+  <h1>${analizMi ? '📊 AI Satış Analizi' : '💬 AI Sohbet'} — ${kafeAdi}</h1>
   <div class="meta">Dönem: ${donem||'-'} · Tarih: ${tarih}</div>
-  <div class="kpi">
+  ${analizMi ? `<div class="kpi">
     ${toplamCiro ? `<div class="kpi-kart"><div class="kpi-deger">${fmt(toplamCiro)}</div><div class="kpi-etiket">Toplam Ciro</div></div>` : ''}
     ${adisyonSayisi ? `<div class="kpi-kart"><div class="kpi-deger">${adisyonSayisi}</div><div class="kpi-etiket">Adisyon</div></div>` : ''}
     ${toplamCiro && adisyonSayisi ? `<div class="kpi-kart"><div class="kpi-deger">${fmt(toplamCiro/adisyonSayisi)}</div><div class="kpi-etiket">Ort. Sepet</div></div>` : ''}
-  </div>
-  <div class="icerik">${metin.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+  </div>` : ''}
+  ${icerikHTML}
   <div class="footer">KolayCafe AI Satış Asistanı · kolaycafe.com</div>
   </body></html>`;
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = `ai-analiz-${kafeAdi.replace(/\s+/g,'-')}-${donem||'rapor'}.html`;
+  a.download = `ai-${analizMi?'analiz':'sohbet'}-${kafeAdi.replace(/\s+/g,'-')}-${donem||'rapor'}.html`;
   a.click();
   URL.revokeObjectURL(url);
   toast('📥 Rapor indirildi');
