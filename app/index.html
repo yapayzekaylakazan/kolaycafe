@@ -5535,10 +5535,15 @@ function karmaAlanlariRender(toplam) {
   const tumTipler = [...sabitTipler, ...ozelTipler];
   alan.innerHTML = tumTipler.map(t => karmaAlanHTML(t.id, t.ad, t.ikon)).join('') +
     `<div id="karma-anlik-alanlar"></div>` +
-    `<div id="karma-cari-alan" style="display:none;margin-top:4px;">
-      <input type="text" id="karma-cari-musteri" placeholder="Müşteri adı (cari hesap için)..."
-        oninput="karmaHesapla()"
+    `<div id="karma-cari-alan" style="display:none;margin-top:4px;position:relative;">
+      <input type="text" id="karma-cari-musteri" placeholder="📋 Müşteri ara (cari hesap için)..."
+        oninput="karmaCariAra()" autocomplete="off"
         style="width:100%;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;">
+      <div id="karma-cari-sonuc" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;z-index:9999;max-height:180px;overflow-y:auto;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div>
+      <div id="karma-cari-secili" style="display:none;margin-top:6px;background:var(--surface2);border:1.5px solid #22c55e60;border-radius:10px;padding:8px 12px;">
+        <span id="karma-cari-secili-ad" style="font-size:0.88rem;font-weight:800;color:#22c55e;"></span>
+        <button onclick="karmaCariTemizle()" style="float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:2px 6px;">✕</button>
+      </div>
     </div>`;
   // Cari alanını cari input varsa göster
   alan.querySelectorAll('input.karma-input').forEach(inp => {
@@ -5617,19 +5622,64 @@ async function karmaTamamla() {
   // Ödeme detaylarını topla
   const odemeDetay = {};
   let musteriAdi = '';
+  let musteriId = null;
   document.querySelectorAll('.karma-input').forEach(inp => {
     const val = parseFloat(inp.value) || 0;
     if (val > 0) odemeDetay[inp.dataset.ad] = val;
   });
-  // Cari müşteri adı
+  // Cari müşteri kontrolü
   const cariInp = document.getElementById('karma-inp-cari');
-  if (cariInp && (parseFloat(cariInp.value) || 0) > 0) {
-    musteriAdi = document.getElementById('karma-cari-musteri')?.value?.trim() || '';
-    if (!musteriAdi) { toast('⚠️ Cari için müşteri adı giriniz!'); return; }
+  const cariTutar = parseFloat(cariInp?.value) || 0;
+  if (cariTutar > 0) {
+    musteriAdi = document.getElementById('karma-cari-secili-ad')?.textContent?.trim() || '';
+    musteriId = document.getElementById('karma-cari-secili')?.dataset?.musteriId || null;
+    if (!musteriId) {
+      const seciliMusteri = cariMusteriler.find(mm => mm.ad === musteriAdi);
+      musteriId = seciliMusteri?.id || null;
+    }
+    if (!musteriAdi) { toast('⚠️ Cari için müşteri seçiniz!'); return; }
   }
   karmaKapat();
   // tahsilEt'i karma modda çağır
-  await tahsilEt('karma', odemeDetay, musteriAdi);
+  await tahsilEt('karma', odemeDetay, musteriAdi, musteriId, cariTutar);
+}
+
+
+function karmaCariAra() {
+  const q = document.getElementById('karma-cari-musteri')?.value?.trim().toLowerCase() || '';
+  const sonucDiv = document.getElementById('karma-cari-sonuc');
+  const seciliDiv = document.getElementById('karma-cari-secili');
+  if (!q) { sonucDiv.style.display = 'none'; return; }
+  const eslesen = cariMusteriler.filter(m => m.ad.toLowerCase().includes(q)).slice(0, 8);
+  if (eslesen.length === 0) {
+    sonucDiv.innerHTML = '<div style="padding:10px 14px;font-size:0.82rem;color:var(--muted);font-weight:600;">Müşteri bulunamadı</div>';
+    sonucDiv.style.display = 'block';
+    return;
+  }
+  sonucDiv.innerHTML = eslesen.map(m =>
+    `<div onclick="karmaCariSec('${m.id}','${m.ad.replace(/'/g,"\'")}')" style="padding:10px 14px;cursor:pointer;font-size:0.88rem;font-weight:700;border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">`+
+    `<span>${m.ad}</span>`+
+    (m.bakiye > 0 ? `<span style="float:right;color:#ef4444;font-size:0.78rem;font-family:'Space Mono',monospace;">${fmt(m.bakiye)} borç</span>` : '')+
+    `</div>`
+  ).join('');
+  sonucDiv.style.display = 'block';
+}
+
+function karmaCariSec(id, ad) {
+  document.getElementById('karma-cari-musteri').value = '';
+  document.getElementById('karma-cari-sonuc').style.display = 'none';
+  document.getElementById('karma-cari-secili-ad').textContent = ad;
+  document.getElementById('karma-cari-secili').style.display = 'block';
+  // ID'yi data attribute olarak sakla
+  document.getElementById('karma-cari-secili').dataset.musteriId = id;
+}
+
+function karmaCariTemizle() {
+  document.getElementById('karma-cari-musteri').value = '';
+  document.getElementById('karma-cari-sonuc').style.display = 'none';
+  document.getElementById('karma-cari-secili').style.display = 'none';
+  document.getElementById('karma-cari-secili-ad').textContent = '';
+  delete document.getElementById('karma-cari-secili').dataset.musteriId;
 }
 
 function karmaKapat() {
@@ -5684,7 +5734,7 @@ async function odemeTipiKaydet() {
   odemeTipiListeRender();
 }
 
-async function tahsilEt(odemeTipi, odemeDetay, musteriAdi) {
+async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar) {
   if(_tahsilEdiliyor){toast('⚠️ İşlem devam ediyor...');return;}
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
@@ -5742,6 +5792,10 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi) {
   try {
     await _masaSyncYazHemen(tahsilMasaId);
     await kolaycafenKaydet(kolaycafen);
+    // Karma ödemede cari kısım varsa müşteri bakiyesini güncelle
+    if (tip === 'karma' && musteriAdi && cariTutar > 0) {
+      await cariKaydetMusteri(musteriAdi, tahsilMasaId, m, cariTutar, musteriId);
+    }
   } finally {
     _tahsilEdiliyor = false;
     setTimeout(()=>{ _transferYapiliyor=false; _skipSubscriptionCount=0; }, 6000);
@@ -7483,9 +7537,11 @@ async function cariSiparisKaydet() {
 }
 
 // Masa ödemesinde cari seçimi (eski cariKaydet ile entegrasyon)
-async function cariKaydetMusteri(musteriAdi, masaId, masaVeri, tutar) {
-  // Müşteri var mı bul, yoksa oluştur
-  let musteri = cariMusteriler.find(m => m.ad.toLowerCase() === musteriAdi.toLowerCase());
+async function cariKaydetMusteri(musteriAdi, masaId, masaVeri, tutar, musteriId) {
+  // Müşteri var mı bul — önce ID ile, sonra isimle, yoksa oluştur
+  let musteri = musteriId
+    ? cariMusteriler.find(m => m.id === musteriId)
+    : cariMusteriler.find(m => m.ad.toLowerCase() === musteriAdi.toLowerCase());
   if (!musteri) {
     const { data } = await sb.from('cari_musteriler')
       .insert({ kafe_id: kafeId, ad: musteriAdi, bakiye: 0 }).select().single();
@@ -9944,6 +10000,9 @@ window.karmaKapat = karmaKapat;
 window.karmaHesapla = karmaHesapla;
 window.karmaTamamla = karmaTamamla;
 window.karmaAnlikTipEkle = karmaAnlikTipEkle;
+window.karmaCariAra = karmaCariAra;
+window.karmaCariSec = karmaCariSec;
+window.karmaCariTemizle = karmaCariTemizle;
 window.odemeTipiEkle = odemeTipiEkle;
 window.odemeTipiSil = odemeTipiSil;
 
@@ -13862,10 +13921,21 @@ let aiAylikSohbet = 0;         // bu ay yapılan sohbet sayısı
 
 // Plan bazlı AI limitleri
 function aiLimitleriAl() {
-  // AI paketi satın almış — tam limit
-  if (aiPaketAktif) return { gunlukAnaliz: 20, aylikSohbet: 200, gunlukSohbet: false };
+  // DB'den gelen özel limitler varsa onları kullan (admin tarafından set edilmiş)
+  const ozelAnaliz = window._kafeData?.ai_analiz_limit ?? null;
+  const ozelSohbet = window._kafeData?.ai_sohbet_limit ?? null;
+  // AI paketi satın almış — tam limit (özel limit yoksa)
+  if (aiPaketAktif) return {
+    gunlukAnaliz: ozelAnaliz ?? 20,
+    aylikSohbet:  ozelSohbet ?? 200,
+    gunlukSohbet: false
+  };
   // Herkes (deneme dahil tüm planlar) — günde 5 analiz, aylık 50 sohbet
-  return { gunlukAnaliz: 5, aylikSohbet: 50, gunlukSohbet: false };
+  return {
+    gunlukAnaliz: ozelAnaliz ?? 5,
+    aylikSohbet:  ozelSohbet ?? 50,
+    gunlukSohbet: false
+  };
 }
 
 function aiErisimVarMi() {
