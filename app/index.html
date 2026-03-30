@@ -9214,49 +9214,47 @@ function adminKafeRender(liste) {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:600;padding:8px;">Kafe bulunamadı.</div>';
     return;
   }
-  el.innerHTML = liste.map(k => {
+  el.innerHTML = liste.map(function(k) {
     const bitis = k.plan_bitis ? new Date(k.plan_bitis) : null;
     const kalanGun = bitis ? Math.ceil((bitis - new Date()) / (1000*60*60*24)) : 0;
     const bitisStr = bitis ? bitis.toLocaleDateString('tr-TR') : '—';
     const planRenk = k.plan === 'deneme' ? '#f59e0b' : '#22c55e';
     const aiRenk = k.ai_paket ? '#a78bfa' : 'var(--muted)';
-    return `
-      <div style="background:var(--surface3);border-radius:12px;padding:12px 14px;border:1px solid var(--border);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div>
-            <div style="font-weight:900;font-size:0.92rem;">${k.kafe_adi || '—'}</div>
-            <div style="font-size:0.68rem;color:var(--muted);font-weight:600;">${k.id}</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <span style="background:${planRenk}22;color:${planRenk};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:900;">${k.plan || 'deneme'}</span>
-            <span style="background:${aiRenk}22;color:${aiRenk};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:900;">${k.ai_paket ? '🤖 AI' : 'AI yok'}</span>
-          </div>
-        </div>
-        <div style="font-size:0.75rem;color:var(--muted);font-weight:600;margin-bottom:10px;">
-          📅 Bitiş: ${bitisStr} · ${kalanGun > 0 ? kalanGun + ' gün kaldı' : '<span style="color:#e04040;">Süresi dolmuş</span>'} · ${k.plan_donem === 'yillik' ? 'Yıllık' : 'Aylık'}
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
-          <button onclick="adminPlanDuzenle('${k.id}','${k.kafe_adi || ''}')" style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✏️ Plan</button>
-          <button onclick="adminSureDuzenle('${k.id}','${k.kafe_adi || ''}','${bitisStr}')" style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📅 Süre</button>
-          <button onclick="adminAiToggle('${k.id}','${k.kafe_adi || ''}',${!!k.ai_paket})" style="padding:7px;border-radius:8px;border:1.5px solid ${k.ai_paket ? '#a78bfa44' : 'var(--border)'};background:${k.ai_paket ? '#a78bfa22' : 'var(--surface2)'};color:${k.ai_paket ? '#a78bfa' : 'var(--text)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🤖 ${k.ai_paket ? 'AI Kaldır' : 'AI Ekle'}</button>
-        </div>
-      </div>`;
+    const kalanStr = kalanGun > 0 ? kalanGun + ' gün kaldı' : '<span style="color:#e04040;">Süresi dolmuş</span>';
+    const aiLabel = k.ai_paket ? 'AI Kaldır' : 'AI Ekle';
+    const aiBg = k.ai_paket ? '#a78bfa22' : 'var(--surface2)';
+    const aiBorder = k.ai_paket ? '#a78bfa44' : 'var(--border)';
+    const aiColor = k.ai_paket ? '#a78bfa' : 'var(--text)';
+    const donemStr = k.plan_donem === 'yillik' ? 'Yıllık' : 'Aylık';
+    const kafeAdiSafe = (k.kafe_adi || '').replace(/'/g, "\'");
+    return '<div style="background:var(--surface3);border-radius:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:4px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      + '<div>'
+      + '<div style="font-weight:900;font-size:0.92rem;">' + (k.kafe_adi || '—') + '</div>'
+      + '<div style="font-size:0.68rem;color:var(--muted);font-weight:600;">' + k.id + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center;">'
+      + '<span style="background:' + planRenk + '22;color:' + planRenk + ';border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:900;">' + (k.plan || 'deneme') + '</span>'
+      + '<span style="background:' + aiRenk + '22;color:' + aiRenk + ';border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:900;">' + (k.ai_paket ? '🤖 AI' : 'AI yok') + '</span>'
+      + '</div></div>'
+      + '<div style="font-size:0.75rem;color:var(--muted);font-weight:600;margin-bottom:10px;">'
+      + '📅 Bitiş: ' + bitisStr + ' · ' + kalanStr + ' · ' + donemStr
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">'
+      + '<button onclick="adminPlanDuzenle('' + k.id + '','' + kafeAdiSafe + '')" style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✏️ Plan</button>'
+      + '<button onclick="adminSureDuzenle('' + k.id + '','' + kafeAdiSafe + '','' + bitisStr + '')" style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📅 Süre</button>'
+      + '<button onclick="adminAiToggle('' + k.id + '','' + kafeAdiSafe + '',' + (!!k.ai_paket) + ')" style="padding:7px;border-radius:8px;border:1.5px solid ' + aiBorder + ';background:' + aiBg + ';color:' + aiColor + ';font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🤖 ' + aiLabel + '</button>'
+      + '</div></div>';
   }).join('');
 }
+
 
 async function adminPlanDuzenle(kafeId, kafeAdi) {
   const planlar = ['deneme','gold','platin','ultra','elite','pro'];
   const mevcut = _adminKafeler.find(k => k.id === kafeId);
-  const secim = prompt(
-    `${kafeAdi} — Plan Seç:
-${planlar.map((p,i) => `${i+1}. ${p}`).join('
-')}
-
-Mevcut: ${mevcut?.plan || '?'}
-
-Numara girin:`,
-  );
-  if (!secim) return;
+  const planListesi = planlar.map((p,i) => (i+1)+'. '+p).join('\n');
+  const secim = prompt(kafeAdi + ' — Plan Seç:\n' + planListesi + '\n\nMevcut: ' + (mevcut?.plan || '?') + '\n\nNumara girin:');
+    if (!secim) return;
   const idx = parseInt(secim) - 1;
   if (idx < 0 || idx >= planlar.length) { toast('Geçersiz seçim'); return; }
   const yeniPlan = planlar[idx];
