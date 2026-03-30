@@ -7984,10 +7984,21 @@ function urunRaporRender() {
     katlar.forEach(kat => {
       (URUNLER[kat] || []).forEach(u => { urunKatMap[u.isim] = kat; });
     });
+    // Varyantlı ürünler için base isimle kategori eşleştir
+    // "Dondurma — Kakaolu, Çilekli" → base: "Dondurma" → kategori ne ise onu kullan
+    function urunKatBul(isim) {
+      if (urunKatMap[isim]) return urunKatMap[isim];
+      if (isim.includes(' — ')) {
+        const base = isim.split(' — ')[0].trim();
+        if (urunKatMap[base]) return urunKatMap[base];
+      }
+      return null;
+    }
     window._urunKatMap = urunKatMap;
+    window._urunKatBul = urunKatBul;
 
     // Sadece satışı olan kategorileri göster
-    const satilanKatlar = new Set(Object.keys(ds).map(isim => urunKatMap[isim] || 'Diğer'));
+    const satilanKatlar = new Set(Object.keys(ds).map(isim => urunKatBul(isim)).filter(k => k && k !== 'Diğer'));
     const tumKatlar = ['Tümü', ...Array.from(satilanKatlar).sort()];
 
     katDiv.innerHTML = tumKatlar.map(k =>
@@ -8003,9 +8014,14 @@ function urunRaporRender() {
 
   // — Filtreleme —
   const urunKatMap = window._urunKatMap || {};
+  const urunKatBul = window._urunKatBul || (isim => {
+    if (urunKatMap[isim]) return urunKatMap[isim];
+    if (isim.includes(' — ')) { const base = isim.split(' — ')[0].trim(); if (urunKatMap[base]) return urunKatMap[base]; }
+    return null;
+  });
   let girdi = Object.entries(ds);
   if (_urunRaporKat !== 'Tümü') {
-    girdi = girdi.filter(([isim]) => (urunKatMap[isim] || 'Diğer') === _urunRaporKat);
+    girdi = girdi.filter(([isim]) => urunKatBul(isim) === _urunRaporKat);
   }
   // Sırala
   girdi = girdi.sort((a,b) =>
@@ -8268,6 +8284,8 @@ async function raporRenderTam() {
   Object.values(URUNLER).forEach(urunler => urunler.forEach(u => { if(u.stok===0) tukenmis++; }));
   if(document.getElementById('r-stok-tukenmis')) document.getElementById('r-stok-tukenmis').textContent = tukenmis;
 
+  // Hesap Bölme ve sistem kayıtlarını filtrele
+  Object.keys(ds).forEach(k => { if (k.startsWith('Hesap Bölme') || k.startsWith('hesap') ) delete ds[k]; });
   // Ürün listesi — urunRaporRender ile çiz
   window._urunRaporDs = ds;
   urunRaporRender();
