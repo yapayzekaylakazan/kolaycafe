@@ -445,7 +445,7 @@
       <input type="number" id="modal-gun" placeholder="Gün (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
     </div>
-    <button onclick="aiPaketToggle()" id="modal-ai-btn" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(167,139,250,0.4);background:rgba(167,139,250,0.08);color:#a78bfa;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🤖 AI Paketi Ekle / Kaldır</button>
+    <button onclick="aiPaketToggle()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(167,139,250,0.4);background:rgba(167,139,250,0.08);color:#a78bfa;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🤖 AI Paketi Ekle / Kaldır</button>
     <div style="margin-top:8px;background:rgba(167,139,250,0.06);border:1.5px solid rgba(167,139,250,0.2);border-radius:10px;padding:10px 12px;">
       <div style="font-size:0.72rem;font-weight:800;color:#a78bfa;margin-bottom:8px;">🎛️ AI Limit Düzenle</div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
@@ -1195,13 +1195,18 @@ async function detayAc(id) {
       const toplam = (m.siparisler||[]).reduce((t,s) => t + s.fiyat*s.adet, 0);
       const urunler = (m.siparisler||[]).map(s => `${s.isim||'?'} x${s.adet||1}`).join(', ');
       const garsonAdi = m.garson ? ` · 👤 ${garsonAd(m.garson)}` : '';
-      html += `<div style="background:var(--surface);border-radius:7px;padding:8px 11px;border-left:3px solid var(--accent);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:0.78rem;font-weight:700;">🪑 ${m.ad||'Masa '+m.id}<span style="color:var(--blue);font-size:0.68rem;">${garsonAdi}</span></div>
-          <div style="font-size:0.75rem;font-weight:800;color:var(--green);">${fmtTL(toplam)}₺</div>
-        </div>
-        <div style="font-size:0.65rem;color:var(--text2);">${urunler||'—'}</div>
-      </div>`;
+      const _mid = (m.id||'').toString();
+      const _aid = (m.adisyon_id||m.id||'').toString();
+      const _kid = k.id;
+      html += '<div style="background:var(--surface);border-radius:7px;padding:8px 11px;border-left:3px solid var(--accent);margin-bottom:4px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">'
+        + '<div style="font-size:0.78rem;font-weight:700;">🪑 ' + (m.ad||'Masa '+m.id) + '<span style="color:var(--blue);font-size:0.68rem;">' + garsonAdi + '</span></div>'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
+        + '<div style="font-size:0.75rem;font-weight:800;color:var(--green);">' + fmtTL(toplam) + '₺</div>'
+        + '<button data-kid="' + _kid + '" data-mid="' + _mid + '" data-aid="' + _aid + '" onclick="var b=this;adminMasaKapat(b.dataset.kid,b.dataset.mid,b.dataset.aid)" style="padding:3px 8px;border-radius:6px;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:800;font-size:0.65rem;cursor:pointer;">&#9200; Kapat</button>'
+        + '</div></div>'
+        + '<div style="font-size:0.65rem;color:var(--text2);">' + (urunler||'—') + '</div>'
+        + '</div>';
     });
     html += `</div>`;
   }
@@ -1280,19 +1285,19 @@ async function detayAc(id) {
   document.getElementById('modal-icerik').innerHTML = html;
   document.getElementById('detay-modal').classList.add('ac');
 
-  // AI limit göster
+  // Plan seçiciyi doldur
+  const planEl = document.getElementById('modal-plan-sec');
+  if (planEl && k.plan) planEl.value = k.plan;
+  const donemEl = document.getElementById(k.plan_donem === 'yillik' ? 'modal-donem-yillik' : 'modal-donem-aylik');
+  if (donemEl) donemEl.checked = true;
+
+  // AI mevcut limitleri göster
   const gosterEl = document.getElementById('modal-ai-limit-goster');
   if (gosterEl) {
     const analizLmt = k.ai_analiz_limit ?? 5;
     const sohbetLmt = k.ai_sohbet_limit ?? 50;
     gosterEl.textContent = 'Mevcut: 📊 ' + analizLmt + ' analiz/gün · 💬 ' + sohbetLmt + ' sohbet/ay';
   }
-
-  // Plan seçiciyi mevcut planla doldur
-  const planEl = document.getElementById('modal-plan-sec');
-  if (planEl && k.plan) planEl.value = k.plan;
-  const donemEl = document.getElementById(k.plan_donem === 'yillik' ? 'modal-donem-yillik' : 'modal-donem-aylik');
-  if (donemEl) donemEl.checked = true;
 }
 
 function modalKapat() {
@@ -1419,34 +1424,55 @@ async function manuelGunEkle(kafeId, carpan) {
   const input = document.getElementById('manuel-gun-input');
   const gun = parseInt(input?.value);
   if (!gun || gun <= 0) { alert('Geçerli bir gün sayısı girin!'); return; }
-  const gercekGun = gun * carpan; // +1 ekle, -1 çıkar
-
-  // Mevcut plan_bitis'i oku
   const { data: kafe } = await sb.from('kafeler').select('plan_bitis, kafe_adi').eq('id', kafeId).single();
-  const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : new Date();
-  
-  // Geçmişse bugünden başlat
   const simdi = new Date();
-  const baslangic = mevcutBitis > simdi ? mevcutBitis : simdi;
-  baslangic.setDate(baslangic.getDate() + gercekGun);
-
-  // Bitiş tarihinin geçmişe gitmesini engelle
-  if (baslangic < simdi && gercekGun < 0) {
+  const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : simdi;
+  const baslangic = mevcutBitis > simdi ? new Date(mevcutBitis) : new Date(simdi);
+  baslangic.setDate(baslangic.getDate() + (gun * carpan));
+  if (baslangic < simdi && carpan < 0) {
     if (!confirm('Bitiş tarihi bugünün gerisine geçecek — devam edilsin mi?')) return;
   }
-
   const { error } = await sb.from('kafeler').update({
     plan_bitis: baslangic.toISOString(),
     odeme_bekliyor: false,
     odeme_bekliyor_zaman: null
   }).eq('id', kafeId);
-
   if (error) { alert('Hata: ' + error.message); return; }
-  
-  const islem = gercekGun > 0 ? '+' + gun + ' gün eklendi' : gun + ' gün çıkarıldı';
-  const yeniBitis = baslangic.toLocaleDateString('tr-TR');
-  alert('✅ ' + (kafe?.kafe_adi || '') + ' — ' + islem + '\nYeni bitiş: ' + yeniBitis);
+  const islem = carpan > 0 ? '+' + gun + ' gün eklendi' : gun + ' gün çıkarıldı';
+  toast('✅ ' + (kafe?.kafe_adi||'') + ' — ' + islem + ' → ' + baslangic.toLocaleDateString('tr-TR'));
+  const kafeLocal = tumKafeler.find(k => k.id === kafeId);
+  if (kafeLocal) kafeLocal.plan_bitis = baslangic.toISOString();
   await detayAc(kafeId);
+}
+
+async function adminMasaKapat(kafeId, masaId, adisyonId) {
+  if (!confirm('Bu masa gecikme nedeniyle kapatılsın mı?\nAdisyon kayıtlarda kalacak.')) return;
+  if (adisyonId && adisyonId !== masaId) {
+    await sb.from('kolaycafenlar').update({
+      odeme_tipi: 'admin_kapatti',
+      notlar: 'Yönetici tarafından kapatıldı — süre gecikmesi'
+    }).eq('id', adisyonId);
+  }
+  const { data: kafe } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+  const aktifMasalar = (kafe?.aktif_masalar || []).filter(m => String(m.id) !== String(masaId));
+  await sb.from('kafeler').update({ aktif_masalar: aktifMasalar }).eq('id', kafeId);
+  const kafeLocal = tumKafeler.find(k => k.id === kafeId);
+  if (kafeLocal) kafeLocal.aktif_masalar = aktifMasalar;
+  toast('✅ Masa kapatıldı');
+  await detayAc(kafeId);
+}
+
+async function aiPaketToggle() {
+  if (!seciliKafeId) return;
+  const { data: kafe } = await sb.from('kafeler').select('ai_paket, kafe_adi').eq('id', seciliKafeId).single();
+  const yeniDurum = !(kafe?.ai_paket === true);
+  if (!confirm((kafe?.kafe_adi||'Bu kafe') + ' icin AI paketi ' + (yeniDurum ? 'EKLENSIN' : 'KALDIRILSIN') + ' mi?')) return;
+  const { error } = await sb.from('kafeler').update({ ai_paket: yeniDurum }).eq('id', seciliKafeId);
+  if (error) { alert('Hata: ' + error.message); return; }
+  toast('AI paketi ' + (yeniDurum ? 'eklendi' : 'kaldirildi'));
+  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
+  if (kafeLocal) kafeLocal.ai_paket = yeniDurum;
+  await detayAc(seciliKafeId);
 }
 
 async function aiLimitDegistir(tip, carpan) {
@@ -1454,68 +1480,34 @@ async function aiLimitDegistir(tip, carpan) {
   const miktarId = tip === 'analiz' ? 'modal-ai-analiz-miktar' : 'modal-ai-sohbet-miktar';
   const miktar = parseInt(document.getElementById(miktarId)?.value) || 5;
   if (miktar < 1) { alert('Geçerli bir miktar girin!'); return; }
-
-  // Mevcut limiti DB'den oku
-  const { data: kafe } = await sb.from('kafeler')
-    .select('ai_analiz_limit, ai_sohbet_limit, kafe_adi')
-    .eq('id', seciliKafeId).single();
-
-  // Varsayılan değerler: analiz=5, sohbet=50
-  const varsayilanAnaliz = 5, varsayilanSohbet = 50;
-  const mevcutAnaliz = kafe?.ai_analiz_limit ?? varsayilanAnaliz;
-  const mevcutSohbet = kafe?.ai_sohbet_limit ?? varsayilanSohbet;
-
-  let yeniDeger;
-  if (tip === 'analiz') {
-    yeniDeger = Math.max(1, mevcutAnaliz + (miktar * carpan));
-  } else {
-    yeniDeger = Math.max(1, mevcutSohbet + (miktar * carpan));
-  }
-
+  const { data: kafe } = await sb.from('kafeler').select('ai_analiz_limit, ai_sohbet_limit, kafe_adi').eq('id', seciliKafeId).single();
+  const mevcutAnaliz = kafe?.ai_analiz_limit ?? 5;
+  const mevcutSohbet = kafe?.ai_sohbet_limit ?? 50;
+  const yeniDeger = tip === 'analiz'
+    ? Math.max(1, mevcutAnaliz + (miktar * carpan))
+    : Math.max(1, mevcutSohbet + (miktar * carpan));
   const guncelleme = tip === 'analiz' ? { ai_analiz_limit: yeniDeger } : { ai_sohbet_limit: yeniDeger };
   const { error } = await sb.from('kafeler').update(guncelleme).eq('id', seciliKafeId);
   if (error) { alert('Hata: ' + error.message); return; }
-
+  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
+  if (kafeLocal) { if (tip === 'analiz') kafeLocal.ai_analiz_limit = yeniDeger; else kafeLocal.ai_sohbet_limit = yeniDeger; }
   const islem = carpan > 0 ? '+' + miktar : '-' + miktar;
   const tipAd = tip === 'analiz' ? 'analiz/gün' : 'sohbet/ay';
   const gosterEl = document.getElementById('modal-ai-limit-goster');
   if (gosterEl) gosterEl.textContent = '✅ ' + tipAd + ': ' + islem + ' → yeni limit: ' + yeniDeger;
-
-  // Mevcut kafeyi güncelle
-  const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
-  if (kafeLocal) {
-    if (tip === 'analiz') kafeLocal.ai_analiz_limit = yeniDeger;
-    else kafeLocal.ai_sohbet_limit = yeniDeger;
-  }
 }
 
 async function aiLimitSifirla(tip) {
   if (!seciliKafeId) return;
-  if (!confirm((tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayılana sıfırlansın mı?')) return;
+  if (!confirm((tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayilana sifirlansin mi?')) return;
   const guncelleme = tip === 'analiz' ? { ai_analiz_limit: null } : { ai_sohbet_limit: null };
   const { error } = await sb.from('kafeler').update(guncelleme).eq('id', seciliKafeId);
   if (error) { alert('Hata: ' + error.message); return; }
   const kafeLocal = tumKafeler.find(k => k.id === seciliKafeId);
-  if (kafeLocal) {
-    if (tip === 'analiz') kafeLocal.ai_analiz_limit = null;
-    else kafeLocal.ai_sohbet_limit = null;
-  }
+  if (kafeLocal) { if (tip === 'analiz') kafeLocal.ai_analiz_limit = null; else kafeLocal.ai_sohbet_limit = null; }
+  const varsayilan = tip === 'analiz' ? 5 : 50;
   const gosterEl = document.getElementById('modal-ai-limit-goster');
-  if (gosterEl) gosterEl.textContent = '✅ ' + (tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayılana sıfırlandı';
-}
-
-async function aiPaketToggle() {
-  if (!seciliKafeId) return;
-  // Mevcut ai_paket durumunu oku
-  const { data: kafe } = await sb.from('kafeler').select('ai_paket, kafe_adi').eq('id', seciliKafeId).single();
-  const mevcutDurum = kafe?.ai_paket === true;
-  const yeniDurum = !mevcutDurum;
-  const onay = confirm((kafe?.kafe_adi || 'Bu kafe') + ' icin AI paketi ' + (yeniDurum ? 'EKLENSIN' : 'KALDIRILSIN') + ' mi?');
-  if (!onay) return;
-  const { error } = await sb.from('kafeler').update({ ai_paket: yeniDurum }).eq('id', seciliKafeId);
-  if (error) { alert('Hata: ' + error.message); return; }
-  alert('AI paketi ' + (yeniDurum ? 'eklendi.' : 'kaldirildi.'));
-  await detayAc(seciliKafeId);
+  if (gosterEl) gosterEl.textContent = '✅ ' + (tip === 'analiz' ? 'Analiz' : 'Sohbet') + ' limiti varsayilana sifilandi (' + varsayilan + ')';
 }
 
 async function planSifirla() {
