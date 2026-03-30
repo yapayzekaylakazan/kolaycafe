@@ -19,11 +19,13 @@
   .login-inp{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.95rem;outline:none;margin-bottom:12px;transition:border-color .2s;}
   .login-inp:focus{border-color:var(--accent);}.login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
   .login-err{color:var(--red);font-size:0.82rem;margin-top:10px;display:none;}
-  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:200;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;}
-  .topbar::-webkit-scrollbar{display:none;}
-  .topbar-logo{font-size:0.98rem;font-weight:800;color:var(--accent);white-space:nowrap;margin-right:8px;}
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0;position:sticky;top:0;z-index:200;}
+  .topbar-ust{display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--border);}
+  .topbar-alt{display:flex;align-items:center;gap:4px;padding:5px 16px;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap;}
+  .topbar-alt::-webkit-scrollbar{display:none;}
+  .topbar-logo{font-size:0.98rem;font-weight:800;color:var(--accent);white-space:nowrap;}
   .topbar-logo span{color:var(--text2);font-weight:400;font-size:0.7rem;font-family:'Space Mono',monospace;}
-  .tab-btn{padding:5px 12px;border-radius:7px;border:1.5px solid transparent;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.74rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .tab-btn{padding:4px 10px;border-radius:6px;border:1.5px solid transparent;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
   .tab-btn:hover{color:var(--text);border-color:var(--border);}.tab-btn.aktif{background:var(--accent);color:#1a0f00;border-color:var(--accent);}
   .topbar-sag{display:flex;align-items:center;gap:10px;margin-left:auto;}
   .canli-bar{display:flex;align-items:center;gap:12px;font-family:'Space Mono',monospace;font-size:0.68rem;color:var(--text2);}
@@ -136,25 +138,31 @@
 
 <div id="admin-panel" style="display:none;">
   <div class="topbar">
-    <div class="topbar-logo">☕ KolayCafe <span>v3.1</span></div>
-    <button class="tab-btn aktif" onclick="sayfaGit('genel',this)">📊 Genel</button>
-    <button class="tab-btn" onclick="sayfaGit('uyeler',this)">👥 Üyeler</button>
-    <button class="tab-btn" onclick="sayfaGit('analitik',this)">📈 Analitik</button>
-    <button class="tab-btn" onclick="sayfaGit('canli',this)">🔴 Canlı</button>
-    <button class="tab-btn" onclick="sayfaGit('hatalar',this)">🐛 Hatalar</button>
-    <button class="tab-btn" onclick="sayfaGit('adisyonlar',this)" style="border-color:#30d08060;color:#30d080;">🧾 Adisyonlar</button>
-    <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
-    <button class="tab-btn" onclick="sayfaGit('test',this)">🧪 Test</button>
-    <button class="tab-btn" onclick="sayfaGit('yorumlar',this)">⭐ Yorumlar</button>
-    <button class="tab-btn" onclick="sayfaGit('aikayitlar',this)">🤖 AI Kayıtlar</button>
-    <div class="topbar-sag">
-      <div class="canli-bar">
-        <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
-        <div class="canli-item">🪑<span class="canli-sayi" id="tb-masa">—</span></div>
-        <div class="canli-item">💰<span class="canli-sayi" id="tb-ciro">—</span>₺</div>
+    <!-- Üst satır: logo + canlı bilgi + email + çıkış -->
+    <div class="topbar-ust">
+      <div class="topbar-logo">☕ KolayCafe <span>v3.1</span></div>
+      <div class="topbar-sag">
+        <div class="canli-bar">
+          <div class="canli-item"><div class="online-dot"></div><span class="canli-sayi" id="tb-online">—</span> online</div>
+          <div class="canli-item">🪑<span class="canli-sayi" id="tb-masa">—</span></div>
+          <div class="canli-item">💰<span class="canli-sayi" id="tb-ciro">—</span>₺</div>
+        </div>
+        <span style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;" id="admin-email-goster"></span>
+        <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
       </div>
-      <span style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;" id="admin-email-goster"></span>
-      <button class="cikis-btn" onclick="cikisYap()">Çıkış</button>
+    </div>
+    <!-- Alt satır: tab butonları -->
+    <div class="topbar-alt">
+      <button class="tab-btn aktif" onclick="sayfaGit('genel',this)">📊 Genel</button>
+      <button class="tab-btn" onclick="sayfaGit('uyeler',this)">👥 Üyeler</button>
+      <button class="tab-btn" onclick="sayfaGit('analitik',this)">📈 Analitik</button>
+      <button class="tab-btn" onclick="sayfaGit('canli',this)">🔴 Canlı</button>
+      <button class="tab-btn" onclick="sayfaGit('hatalar',this)">🐛 Hatalar</button>
+      <button class="tab-btn" onclick="sayfaGit('adisyonlar',this)" style="border-color:#30d08060;color:#30d080;">🧾 Adisyonlar</button>
+      <button class="tab-btn" onclick="sayfaGit('finans',this)">💳 Finans</button>
+      <button class="tab-btn" onclick="sayfaGit('test',this)">🧪 Test</button>
+      <button class="tab-btn" onclick="sayfaGit('yorumlar',this)">⭐ Yorumlar</button>
+      <button class="tab-btn" onclick="sayfaGit('aikayitlar',this)">🤖 AI Kayıtlar</button>
     </div>
   </div>
 
