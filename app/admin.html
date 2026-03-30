@@ -544,7 +544,7 @@ async function aiKayitlariYukle() {
   if (!liste) return;
   liste.innerHTML = '<div style="color:var(--text2);font-size:0.82rem;padding:12px;">⏳ Yükleniyor...</div>';
 
-  let url = SB_REST + '/ai_kayitlar?order=created_at.desc&limit=100';
+  let url = SB_REST + '/ai_kayitlar?order=created_at.desc&limit=200';
   if (tip !== 'hepsi') url += '&tip=eq.' + tip;
   if (kafeF) url += '&kafe_id=eq.' + kafeF;
 
@@ -591,35 +591,97 @@ async function aiKayitlariYukle() {
     });
   }
 
-  liste.innerHTML = data.map(k => {
-    const tarih = new Date(k.created_at).toLocaleString('tr-TR');
-    const isAnaliz = k.tip === 'analiz';
-    const icerik = k.icerik || {};
-    let detay = '';
-    if (isAnaliz) {
-      detay = `<div style="font-size:0.78rem;color:var(--text2);margin-top:8px;white-space:pre-wrap;line-height:1.6;max-height:200px;overflow-y:auto;">${(icerik.rapor||'').substring(0,600)}${(icerik.rapor||'').length>600?'...':''}</div>`;
-      if (icerik.toplamCiro) detay += `<div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Ciro: ${icerik.toplamCiro}₺ · ${icerik.adisyonSayisi||0} adisyon · Dönem: ${k.donem||'-'}</div>`;
-    } else {
-      detay = `
-        <div style="margin-top:8px;font-size:0.78rem;">
-          <div style="color:var(--text2);margin-bottom:4px;"><span style="color:var(--accent);">Soru:</span> ${icerik.soru||''}</div>
-          <div style="color:var(--text2);white-space:pre-wrap;line-height:1.5;max-height:120px;overflow-y:auto;"><span style="color:#30d080;">Cevap:</span> ${(icerik.cevap||'').substring(0,400)}${(icerik.cevap||'').length>400?'...':''}</div>
-        </div>`;
-    }
-    return `
-      <div style="background:var(--surface);border:1px solid ${isAnaliz?'rgba(200,133,42,0.3)':'rgba(48,208,128,0.2)'};border-radius:12px;padding:14px 16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:1rem;">${isAnaliz?'📊':'💬'}</span>
-            <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;color:var(--text);">${k.kafe_adi||'—'}</span>
-            <span style="background:${isAnaliz?'rgba(200,133,42,0.15)':'rgba(48,208,128,0.12)'};color:${isAnaliz?'var(--accent2)':'#30d080'};font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:6px;">${isAnaliz?'ANALİZ':'SOHBET'}</span>
-            <span style="font-size:0.68rem;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:6px;">${k.plan||'-'}</span>
+  // Kafe bazlı grupla
+  const kafeBazli = {};
+  data.forEach(k => {
+    const kid = k.kafe_id;
+    if (!kafeBazli[kid]) kafeBazli[kid] = { ad: k.kafe_adi || kid.substring(0,8), plan: k.plan || '-', kayitlar: [] };
+    kafeBazli[kid].kayitlar.push(k);
+  });
+
+  liste.innerHTML = Object.entries(kafeBazli).map(([kid, kafe], ki) => {
+    const analizCount  = kafe.kayitlar.filter(k => k.tip === 'analiz').length;
+    const sohbetCount  = kafe.kayitlar.filter(k => k.tip === 'sohbet').length;
+    const sonKayit     = new Date(kafe.kayitlar[0].created_at).toLocaleDateString('tr-TR');
+
+    const kayitlarHTML = kafe.kayitlar.map((k, i) => {
+      const tarih    = new Date(k.created_at).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const isAnaliz = k.tip === 'analiz';
+      const ic       = k.icerik || {};
+      const detayId  = `aik-detay-${ki}-${i}`;
+
+      let detayHTML = '';
+      if (isAnaliz) {
+        const ciroSatir = ic.toplamCiro
+          ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:6px;">💰 ${ic.toplamCiro}₺ · ${ic.adisyonSayisi||0} adisyon · ${k.donem||'-'}</div>`
+          : '';
+        const enCok = (ic.enCokSatanlar||[]).map(u => u.isim+'×'+u.adet).join(', ');
+        detayHTML = `
+          ${ciroSatir}
+          ${enCok ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px;">🏆 ${enCok}</div>` : ''}
+          <div style="font-size:0.78rem;color:var(--text2);white-space:pre-wrap;line-height:1.6;max-height:360px;overflow-y:auto;">${(ic.rapor||'Rapor yok').replace(/</g,'&lt;')}</div>`;
+      } else {
+        detayHTML = `
+          <div style="margin-bottom:6px;font-size:0.78rem;"><span style="color:var(--accent);font-weight:700;">Soru:</span> ${(ic.soru||'').replace(/</g,'&lt;')}</div>
+          <div style="font-size:0.78rem;color:var(--text2);white-space:pre-wrap;line-height:1.5;max-height:240px;overflow-y:auto;"><span style="color:#30d080;font-weight:700;">Cevap:</span> ${(ic.cevap||'').replace(/</g,'&lt;')}</div>`;
+      }
+
+      return `<div style="border-bottom:1px solid var(--border);padding:10px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="aikToggle('${detayId}')">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:0.85rem;">${isAnaliz?'📊':'💬'}</span>
+            <span style="background:${isAnaliz?'rgba(200,133,42,0.15)':'rgba(48,208,128,0.12)'};color:${isAnaliz?'var(--accent2)':'#30d080'};font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:5px;">${isAnaliz?'ANALİZ':'SOHBET'}</span>
+            <span style="font-size:0.72rem;color:var(--muted);">${k.donem||'-'}</span>
           </div>
-          <span style="font-size:0.68rem;color:var(--muted);">${tarih}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:0.68rem;color:var(--muted);">${tarih}</span>
+            <span style="font-size:0.75rem;color:var(--muted);" id="${detayId}-chevron">▼</span>
+          </div>
         </div>
-        ${detay}
+        <div id="${detayId}" style="display:none;margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;">
+          ${detayHTML}
+        </div>
       </div>`;
+    }).join('');
+
+    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;">
+      <!-- Kafe başlığı -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;background:var(--surface2);" onclick="aikKafeToggle('aik-kafe-${ki}')">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:'Syne',sans-serif;font-weight:900;font-size:0.95rem;color:var(--text);">☕ ${kafe.ad}</span>
+          <span style="font-size:0.68rem;background:var(--surface3);color:var(--muted);padding:2px 8px;border-radius:5px;">${kafe.plan}</span>
+          <span style="font-size:0.72rem;color:var(--accent2);font-weight:700;">📊 ${analizCount} analiz</span>
+          <span style="font-size:0.72rem;color:#30d080;font-weight:700;">💬 ${sohbetCount} sohbet</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;color:var(--muted);">Son: ${sonKayit}</span>
+          <span style="color:var(--muted);font-size:0.8rem;" id="aik-kafe-${ki}-chevron">▼</span>
+        </div>
+      </div>
+      <!-- Kayıtlar (varsayılan kapalı) -->
+      <div id="aik-kafe-${ki}" style="display:none;padding:0 16px 8px;">
+        ${kayitlarHTML}
+      </div>
+    </div>`;
   }).join('');
+}
+
+function aikToggle(id) {
+  const el  = document.getElementById(id);
+  const chv = document.getElementById(id + '-chevron');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display  = open ? 'none' : 'block';
+  if (chv) chv.textContent = open ? '▼' : '▲';
+}
+
+function aikKafeToggle(id) {
+  const el  = document.getElementById(id);
+  const chv = document.getElementById(id + '-chevron');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display  = open ? 'none' : 'block';
+  if (chv) chv.textContent = open ? '▼' : '▲';
 }
 
 async function yorumlariYukle() {
