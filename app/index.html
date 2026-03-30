@@ -2560,6 +2560,15 @@
     </div>
 
     <!-- KUPON YÖNETİMİ - Sadece Pro/Admin -->
+    <!-- ADMIN: KAFE YÖNETİMİ -->
+    <div class="ayar-kart" id="admin-kafe-yonetim-kart" style="display:none;">
+      <h3>⚙️ Kafe Yönetimi</h3>
+      <div style="margin-bottom:10px;">
+        <input type="text" id="admin-kafe-ara" placeholder="Kafe adı veya ID ara..." oninput="adminKafeAra()" style="width:100%;box-sizing:border-box;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;outline:none;">
+      </div>
+      <div id="admin-kafe-liste" style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;"></div>
+    </div>
+
     <div class="ayar-kart" id="kupon-yonetim-kart" style="display:none;">
       <h3>🎟️ İndirim Kuponları</h3>
       <div id="kupon-liste" style="margin-bottom:12px;"></div>
@@ -9123,6 +9132,8 @@ async function kuponYonetimGoster() {
   // Sadece admin görebilir
   if (email === ADMIN_EMAIL) {
     document.getElementById('kupon-yonetim-kart').style.display = 'block';
+    document.getElementById('admin-kafe-yonetim-kart').style.display = 'block';
+    await adminKafeListeYukle();
     await kuponListeRender();
     // Bitis tarihi default 30 gün sonra
     const bitis = new Date();
@@ -9174,6 +9185,110 @@ async function kuponSil(id) {
   await sb.from('kuponlar').delete().eq('id', id);
   toast('Kupon silindi');
   await kuponListeRender();
+}
+
+// ════════════════════════════════════════
+// ADMIN: KAFE YÖNETİMİ
+// ════════════════════════════════════════
+let _adminKafeler = [];
+
+async function adminKafeListeYukle() {
+  const { data } = await sb.from('kafeler')
+    .select('id, kafe_adi, plan, plan_bitis, plan_donem, ai_paket, aktif')
+    .order('kafe_adi', { ascending: true });
+  _adminKafeler = data || [];
+  adminKafeRender(_adminKafeler);
+}
+
+function adminKafeAra() {
+  const q = document.getElementById('admin-kafe-ara').value.toLowerCase();
+  const filtre = _adminKafeler.filter(k =>
+    (k.kafe_adi || '').toLowerCase().includes(q) || (k.id || '').toLowerCase().includes(q)
+  );
+  adminKafeRender(filtre);
+}
+
+function adminKafeRender(liste) {
+  const el = document.getElementById('admin-kafe-liste');
+  if (!liste || liste.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:600;padding:8px;">Kafe bulunamadı.</div>';
+    return;
+  }
+  el.innerHTML = liste.map(k => {
+    const bitis = k.plan_bitis ? new Date(k.plan_bitis) : null;
+    const kalanGun = bitis ? Math.ceil((bitis - new Date()) / (1000*60*60*24)) : 0;
+    const bitisStr = bitis ? bitis.toLocaleDateString('tr-TR') : '—';
+    const planRenk = k.plan === 'deneme' ? '#f59e0b' : '#22c55e';
+    const aiRenk = k.ai_paket ? '#a78bfa' : 'var(--muted)';
+    return `
+      <div style="background:var(--surface3);border-radius:12px;padding:12px 14px;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:900;font-size:0.92rem;">${k.kafe_adi || '—'}</div>
+            <div style="font-size:0.68rem;color:var(--muted);font-weight:600;">${k.id}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="background:${planRenk}22;color:${planRenk};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:900;">${k.plan || 'deneme'}</span>
+            <span style="background:${aiRenk}22;color:${aiRenk};border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:900;">${k.ai_paket ? '🤖 AI' : 'AI yok'}</span>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--muted);font-weight:600;margin-bottom:10px;">
+          📅 Bitiş: ${bitisStr} · ${kalanGun > 0 ? kalanGun + ' gün kaldı' : '<span style="color:#e04040;">Süresi dolmuş</span>'} · ${k.plan_donem === 'yillik' ? 'Yıllık' : 'Aylık'}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <button onclick="adminPlanDuzenle('${k.id}','${k.kafe_adi || ''}')" style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✏️ Plan</button>
+          <button onclick="adminSureDuzenle('${k.id}','${k.kafe_adi || ''}','${bitisStr}')" style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📅 Süre</button>
+          <button onclick="adminAiToggle('${k.id}','${k.kafe_adi || ''}',${!!k.ai_paket})" style="padding:7px;border-radius:8px;border:1.5px solid ${k.ai_paket ? '#a78bfa44' : 'var(--border)'};background:${k.ai_paket ? '#a78bfa22' : 'var(--surface2)'};color:${k.ai_paket ? '#a78bfa' : 'var(--text)'};font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">🤖 ${k.ai_paket ? 'AI Kaldır' : 'AI Ekle'}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function adminPlanDuzenle(kafeId, kafeAdi) {
+  const planlar = ['deneme','gold','platin','ultra','elite','pro'];
+  const mevcut = _adminKafeler.find(k => k.id === kafeId);
+  const secim = prompt(
+    `${kafeAdi} — Plan Seç:
+${planlar.map((p,i) => `${i+1}. ${p}`).join('
+')}
+
+Mevcut: ${mevcut?.plan || '?'}
+
+Numara girin:`,
+  );
+  if (!secim) return;
+  const idx = parseInt(secim) - 1;
+  if (idx < 0 || idx >= planlar.length) { toast('Geçersiz seçim'); return; }
+  const yeniPlan = planlar[idx];
+  const donem = confirm('Yıllık mı? (İptal = Aylık)') ? 'yillik' : 'aylik';
+  const { error } = await sb.from('kafeler').update({ plan: yeniPlan, plan_donem: donem }).eq('id', kafeId);
+  if (error) { toast('Hata: ' + error.message); return; }
+  toast(`✅ ${kafeAdi} → ${yeniPlan} (${donem})`);
+  await adminKafeListeYukle();
+}
+
+async function adminSureDuzenle(kafeId, kafeAdi, mevcutBitis) {
+  const tarih = prompt(`${kafeAdi} — Yeni bitiş tarihi (YYYY-MM-DD):
+Mevcut: ${mevcutBitis}`);
+  if (!tarih) return;
+  const d = new Date(tarih);
+  if (isNaN(d.getTime())) { toast('Geçersiz tarih formatı. Örnek: 2026-05-01'); return; }
+  const { error } = await sb.from('kafeler').update({ plan_bitis: d.toISOString() }).eq('id', kafeId);
+  if (error) { toast('Hata: ' + error.message); return; }
+  toast(`✅ ${kafeAdi} bitiş tarihi → ${d.toLocaleDateString('tr-TR')}`);
+  await adminKafeListeYukle();
+}
+
+async function adminAiToggle(kafeId, kafeAdi, mevcutDurum) {
+  const yeniDurum = !mevcutDurum;
+  const onay = confirm(`${kafeAdi}
+
+AI paketi ${yeniDurum ? 'EKLENSİN' : 'KALDIRILSIN'} mı?`);
+  if (!onay) return;
+  const { error } = await sb.from('kafeler').update({ ai_paket: yeniDurum }).eq('id', kafeId);
+  if (error) { toast('Hata: ' + error.message); return; }
+  toast(`✅ ${kafeAdi} AI paketi ${yeniDurum ? 'eklendi' : 'kaldırıldı'}`);
+  await adminKafeListeYukle();
 }
 
 // Kayıt formunda kupon kontrolü (anlık)
@@ -12855,8 +12970,8 @@ window.masaSilOnay = masaSilOnay;
           await kafeVerisiYukle();
           try {
             if (window._kafeData?.id) {
-              await sb.from('kafeler').update({ odeme_bekliyor: false }).eq('id', window._kafeData.id);
-              if (window._kafeData) window._kafeData.odeme_bekliyor = false;
+              await sb.from('kafeler').update({ odeme_bekliyor: false, odeme_bekliyor_zaman: null }).eq('id', window._kafeData.id);
+              if (window._kafeData) { window._kafeData.odeme_bekliyor = false; window._kafeData.odeme_bekliyor_zaman = null; }
             }
           } catch(e) { console.warn('odeme_bekliyor sıfırlanamadı:', e); }
           odemeBasariliModalGoster();
@@ -12868,8 +12983,8 @@ window.masaSilOnay = masaSilOnay;
           // odeme_bekliyor sıfırla — müşteri tekrar deneyebilsin
           try {
             if (window._kafeData?.id) {
-              await sb.from('kafeler').update({ odeme_bekliyor: false }).eq('id', window._kafeData.id);
-              if (window._kafeData) window._kafeData.odeme_bekliyor = false;
+              await sb.from('kafeler').update({ odeme_bekliyor: false, odeme_bekliyor_zaman: null }).eq('id', window._kafeData.id);
+              if (window._kafeData) { window._kafeData.odeme_bekliyor = false; window._kafeData.odeme_bekliyor_zaman = null; }
             }
           } catch(e) {}
           await kafeVerisiYukle();
@@ -13747,8 +13862,8 @@ let aiAylikSohbet = 0;         // bu ay yapılan sohbet sayısı
 function aiLimitleriAl() {
   // AI paketi satın almış — tam limit
   if (aiPaketAktif) return { gunlukAnaliz: 20, aylikSohbet: 200, gunlukSohbet: false };
-  // Herkes (deneme dahil tüm planlar) — günde 3 analiz, günde 2 sohbet
-  return { gunlukAnaliz: 3, aylikSohbet: 2, gunlukSohbet: true };
+  // Herkes (deneme dahil tüm planlar) — günde 5 analiz, aylık 50 sohbet
+  return { gunlukAnaliz: 5, aylikSohbet: 50, gunlukSohbet: false };
 }
 
 function aiErisimVarMi() {
@@ -13857,7 +13972,7 @@ let _odemePlan    = null;
 let _odemeDonem   = 'aylik';
 let _odemeAi      = false;
 
-function odemeBaslangic() {
+async function odemeBaslangic() {
   // Sayfayı göster
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-odeme').classList.add('active');
@@ -13909,28 +14024,63 @@ function odemeBaslangic() {
   document.getElementById('odeme-sonuc').style.display = 'none';
 
   // ── odeme_bekliyor kontrolü ──────────────────────────────────────────────
-  // Eğer daha önce ödeme başlatıldıysa ve callback henüz gelmemişse
-  // butonu kilitle, kullanıcıya bilgi ver
   if (window._kafeData?.odeme_bekliyor) {
-    const btn = document.getElementById('odeme-satin-al-btn');
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-    btn.textContent = '⏳ Ödeme işleminiz işleniyor...';
-    btn.style.display = 'block';
+    // Timeout kontrolü: odeme_bekliyor_zaman varsa ve 30 dakika geçmişse otomatik sıfırla
+    const bekZaman = window._kafeData?.odeme_bekliyor_zaman
+      ? new Date(window._kafeData.odeme_bekliyor_zaman)
+      : null;
+    const gecenDakika = bekZaman ? (Date.now() - bekZaman.getTime()) / 60000 : 999;
 
-    // Sarı uyarı mesajı göster
-    let uyariEl = document.getElementById('odeme-bekliyor-uyari');
-    if (!uyariEl) {
-      uyariEl = document.createElement('div');
-      uyariEl.id = 'odeme-bekliyor-uyari';
-      btn.parentNode.insertBefore(uyariEl, btn.nextSibling);
+    if (gecenDakika > 10) {
+      // 30 dakika geçmiş → otomatik sıfırla, kilidi kaldır
+      try {
+        await sb.from('kafeler').update({ odeme_bekliyor: false, odeme_bekliyor_zaman: null }).eq('id', window._kafeData.id);
+        if (window._kafeData) { window._kafeData.odeme_bekliyor = false; window._kafeData.odeme_bekliyor_zaman = null; }
+      } catch(e) { console.warn('odeme_bekliyor sıfırlanamadı:', e); }
+      const eskiUyari = document.getElementById('odeme-bekliyor-uyari');
+      if (eskiUyari) eskiUyari.remove();
+    } else {
+      // Kilit geçerli — butonu kilitle ve uyarı + manuel sıfırla butonu göster
+      const btn = document.getElementById('odeme-satin-al-btn');
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.textContent = '⏳ Ödeme işleminiz işleniyor...';
+      btn.style.display = 'block';
+
+      let uyariEl = document.getElementById('odeme-bekliyor-uyari');
+      if (!uyariEl) {
+        uyariEl = document.createElement('div');
+        uyariEl.id = 'odeme-bekliyor-uyari';
+        btn.parentNode.insertBefore(uyariEl, btn.nextSibling);
+      }
+      const gecenStr = bekZaman ? `${Math.floor(gecenDakika)} dk önce başlatıldı` : '';
+      uyariEl.style.cssText = 'margin-top:10px;padding:12px 14px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.35);border-radius:10px;font-size:0.78rem;color:#eab308;font-weight:700;text-align:center;';
+      uyariEl.innerHTML = `
+        <div>⏳ Bir ödeme işlemi zaten başlatıldı. ${gecenStr}</div>
+        <div style="margin-top:4px;font-size:0.72rem;color:var(--muted);font-weight:600;">Ödemeyi tamamladıysanız sayfayı yenileyebilirsiniz.</div>
+        <button onclick="odemeKilidinSifirla()" style="margin-top:10px;padding:7px 16px;border-radius:8px;border:1.5px solid rgba(234,179,8,0.5);background:transparent;color:#eab308;font-weight:800;font-size:0.75rem;cursor:pointer;">
+          🔓 Ödeme Yapılmadı — Kilidi Kaldır
+        </button>`;
     }
-    uyariEl.style.cssText = 'margin-top:10px;padding:12px 14px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.35);border-radius:10px;font-size:0.78rem;color:#eab308;font-weight:700;text-align:center;';
-    uyariEl.textContent = 'Bir ödeme işlemi zaten başlatıldı. Lütfen tamamlanmasını bekleyin veya destek ile iletişime geçin.';
   } else {
     // Eski uyarıyı temizle
     const eskiUyari = document.getElementById('odeme-bekliyor-uyari');
     if (eskiUyari) eskiUyari.remove();
+  }
+}
+
+async function odemeKilidinSifirla() {
+  if (!window._kafeData?.id) return;
+  if (!confirm('Ödeme işlemi tamamlanmadıysa kilidi kaldırabilirsiniz.\n\nDevam etmek istiyor musunuz?')) return;
+  try {
+    await sb.from('kafeler').update({ odeme_bekliyor: false, odeme_bekliyor_zaman: null }).eq('id', window._kafeData.id);
+    if (window._kafeData) { window._kafeData.odeme_bekliyor = false; window._kafeData.odeme_bekliyor_zaman = null; }
+    const uyariEl = document.getElementById('odeme-bekliyor-uyari');
+    if (uyariEl) uyariEl.remove();
+    odemeBaslangic(); // sayfayı yeniden yükle
+    toast('✅ Kilit kaldırıldı. Yeni ödeme yapabilirsiniz.');
+  } catch(e) {
+    alert('Hata: ' + e.message);
   }
 }
 
@@ -14149,8 +14299,9 @@ async function odemeSatinAl() {
     if (data.ok) {
       // Çift ödemeyi önle: odeme_bekliyor = true yaz
       try {
-        await sb.from('kafeler').update({ odeme_bekliyor: true }).eq('id', window._kafeData.id);
-        if (window._kafeData) window._kafeData.odeme_bekliyor = true;
+        const _bekZaman = new Date().toISOString();
+        await sb.from('kafeler').update({ odeme_bekliyor: true, odeme_bekliyor_zaman: _bekZaman }).eq('id', window._kafeData.id);
+        if (window._kafeData) { window._kafeData.odeme_bekliyor = true; window._kafeData.odeme_bekliyor_zaman = _bekZaman; }
       } catch(e) { console.warn('odeme_bekliyor yazılamadı:', e); }
 
       document.getElementById('odeme-iyzico-wrap').style.display = 'block';
@@ -14799,19 +14950,11 @@ async function aiSoruGonder() {
   // Erişim kontrolü
   if (!aiErisimVarMi()) { aiKilitEkraniGoster(); return; }
 
-  // Sohbet limiti (deneme: günlük, AI paketi: aylık)
-  const { aylikSohbet: AL, gunlukSohbet: GS } = aiLimitleriAl();
-  if (GS) {
-    // Deneme: günlük limit
-    if (aiAylikSohbet >= AL) {
-      toast(`⛔ Bugünkü ${AL} sohbet hakkınız doldu. Yarın yenilenir.`);
-      return;
-    }
-  } else {
-    if (aiAylikSohbet >= AL) {
-      toast(`⛔ Bu ayki ${AL} sohbet hakkınız doldu.`);
-      return;
-    }
+  // Sohbet limiti — aylık
+  const { aylikSohbet: AL } = aiLimitleriAl();
+  if (aiAylikSohbet >= AL) {
+    toast(`⛔ Bu ayki ${AL} sohbet hakkınız doldu.`);
+    return;
   }
   inp.value = '';
 
