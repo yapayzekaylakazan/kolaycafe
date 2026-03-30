@@ -7943,9 +7943,13 @@ async function raporRenderTam() {
       .eq('kafe_id', kafeId)
       .neq('odeme_tipi', 'cari_tahsil')
       .order('created_at', {ascending: false});
-    // Vardiya seçiliyse başlangıç zamanına göre filtrele
-    // (vardiya_id=null olan eski kayıtları da kapsaması için created_at kullanıyoruz)
-    if (aktifDonem === 'vardiya' && aktifVardiyaBaslangic) {
+    // Vardiya seçiliyse: o vardiyaya ait VEYA vardiya başlangıcından sonra yapılmış adisyonlar
+    // (vardiya_id ile atananlar + created_at ile yakalanacaklar birleşimi)
+    if (aktifDonem === 'vardiya' && aktifVardiyaBaslangic && aktifVardiyaId) {
+      // vardiya_id eşleşenleri OR created_at >= baslangic olanları almak için
+      // Supabase OR filter: vardiya_id=X ya da (vardiya_id=null AND created_at>=baslangic)
+      q = q.or(`vardiya_id.eq.${aktifVardiyaId},and(vardiya_id.is.null,created_at.gte.${aktifVardiyaBaslangic.toISOString()})`);
+    } else if (aktifDonem === 'vardiya' && aktifVardiyaBaslangic) {
       q = q.gte('created_at', aktifVardiyaBaslangic.toISOString());
     } else {
       if (baslangic) q = q.gte('created_at', baslangic);
@@ -9886,10 +9890,11 @@ function vardiyaBtnGuncelle() {
     dot.textContent = '🟢';
     txt.textContent = vardiyaSureFmt(aktifVardiyaBaslangic);
     if (hstat) hstat.textContent = Math.round(vardiyaCiro) + '₺';
-    // DB'den güncel ciroyu senkronize et (garson ödemeleri dahil)
-    if (kafeId && aktifVardiyaBaslangic) {
+    // DB'den güncel ciroyu senkronize et (garson + atamasız eklenenler dahil)
+    if (kafeId && aktifVardiyaBaslangic && aktifVardiyaId) {
       sb.from('kolaycafenlar').select('toplam').eq('kafe_id', kafeId)
-        .neq('odeme_tipi','ikram').gte('created_at', aktifVardiyaBaslangic.toISOString())
+        .neq('odeme_tipi','ikram')
+        .or(`vardiya_id.eq.${aktifVardiyaId},and(vardiya_id.is.null,created_at.gte.${aktifVardiyaBaslangic.toISOString()})`)
         .then(({ data }) => {
           if (data) {
             vardiyaCiro = data.reduce((t, a) => t + parseFloat(a.toplam || 0), 0);
@@ -10125,12 +10130,12 @@ async function vardiyaKapatModal() {
   const basTarih = aktifVardiyaBaslangic.toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const bitTarih = new Date().toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 
-  // DB'den güncel ciroyu çek — garson ödemeleri de dahil olsun
+  // DB'den güncel ciroyu çek — garson + atamasız eklenenler dahil
   let gercekCiro = vardiyaCiro;
   try {
     const { data: adisyonlar } = await sb.from('kolaycafenlar')
       .select('toplam').eq('kafe_id', kafeId).neq('odeme_tipi','ikram')
-      .gte('created_at', aktifVardiyaBaslangic.toISOString());
+      .or(`vardiya_id.eq.${aktifVardiyaId},and(vardiya_id.is.null,created_at.gte.${aktifVardiyaBaslangic.toISOString()})`);
     if (adisyonlar) {
       gercekCiro = adisyonlar.reduce((t, a) => t + parseFloat(a.toplam || 0), 0);
       vardiyaCiro = gercekCiro; // RAM'i de güncelle
