@@ -5562,6 +5562,7 @@ function karmaAlanlariRender(toplam) {
     { id: 'kart',    ad: 'Kart',       ikon: '💳' },
     { id: 'havale',  ad: 'Havale/EFT', ikon: '🏦' },
     { id: 'yemek',   ad: 'Yemek Kartı',ikon: '🍽' },
+    { id: 'cari',    ad: 'Cari Hesap', ikon: '📋' },
   ];
   // Özel tipler (ayarlardan)
   const ozelTipler = odemeTipleri.map(t => ({ id: 'ozel_' + t.id, ad: t.ad, ikon: t.ikon }));
@@ -5594,7 +5595,6 @@ function karmaAlanHTML(id, ad, ikon) {
         id="karma-inp-${id}" data-tip="${id}" data-ad="${ad}" data-ikon="${ikon}"
         class="karma-input"
         style="width:90px;background:var(--surface);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:0.9rem;font-weight:700;outline:none;text-align:right;"
-        oninput="karmaHesapla()">
       <span style="font-size:0.85rem;font-weight:800;color:var(--muted);">₺</span>
     </div>
   </div>`;
@@ -5809,6 +5809,9 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
     gunlukSatis[s.isim].adet+=s.adet;
     gunlukSatis[s.isim].toplam+=s.fiyat*s.adet;
   });
+  // Bug fix: cari kayıt için sipariş listesini temizlenmeden önce kopyala
+  const siparislerKopya = m.siparisler.map(s=>({...s}));
+  const garsonKopya = m.garson || '';
   m.siparisler=[]; m.indirim=0; m.garson=''; m.kisi_sayisi=0; m.hesap_istendi=false;
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
   const tipEtiket = {
@@ -5827,7 +5830,7 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
     await kolaycafenKaydet(kolaycafen);
     // Karma ödemede cari kısım varsa müşteri bakiyesini güncelle
     if (tip === 'karma' && musteriAdi && cariTutar > 0) {
-      await cariKaydetMusteri(musteriAdi, tahsilMasaId, m, cariTutar, musteriId);
+      await cariKaydetMusteri(musteriAdi, tahsilMasaId, { ad: kolaycafen.masaAd, siparisler: siparislerKopya, garson: garsonKopya }, cariTutar, musteriId);
     }
   } finally {
     _tahsilEdiliyor = false;
