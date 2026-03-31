@@ -91,6 +91,40 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 5%;height:64px;dis
 .sec-title{font-family:'Syne',sans-serif;font-size:clamp(2rem,4.5vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-0.025em;margin-bottom:14px;}
 .sec-sub{color:var(--muted);font-size:1rem;max-width:520px;line-height:1.75;}
 
+/* ── PAIN POINTS ── */
+.pain-sec{background:var(--ink);border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px;max-width:1160px;margin:48px auto 0;background:var(--border2);}
+.pain-item{background:var(--ink);padding:32px 28px;position:relative;overflow:hidden;transition:background 0.2s;}
+.pain-item:hover{background:var(--ink2);}
+.pain-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--gold),transparent);}
+.pain-emoji{font-size:1.8rem;margin-bottom:14px;display:block;opacity:0.9;}
+.pain-q{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--cream);margin-bottom:8px;line-height:1.3;}
+.pain-a{font-size:0.84rem;color:var(--muted);line-height:1.65;}
+.pain-a strong{color:var(--gold2);font-weight:600;}
+
+/* ── HESAPLAYICI ── */
+.calc-sec{background:var(--ink2);border-top:1px solid var(--border);}
+.calc-wrap{max-width:860px;margin:48px auto 0;background:var(--ink);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.calc-head{background:linear-gradient(135deg,rgba(200,133,42,0.15),rgba(200,133,42,0.05));border-bottom:1px solid var(--border);padding:24px 32px;display:flex;align-items:center;gap:14px;}
+.calc-head-icon{width:44px;height:44px;border-radius:12px;background:rgba(200,133,42,0.15);border:1px solid rgba(200,133,42,0.3);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.calc-body{padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+@media(max-width:640px){.calc-body{grid-template-columns:1fr;gap:24px;}.calc-body{padding:20px;}}
+.calc-col-title{font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:20px;}
+.calc-col-title.red{color:#ef4444;}.calc-col-title.green{color:var(--green);}
+.calc-row{margin-bottom:18px;}
+.calc-lbl{font-size:0.78rem;color:var(--muted);font-weight:500;margin-bottom:6px;}
+.calc-inp{width:100%;background:var(--ink2);border:1px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;outline:none;transition:border-color 0.2s;}
+.calc-inp:focus{border-color:var(--gold);}
+.calc-result{background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-top:4px;}
+.calc-result-lbl{font-size:0.72rem;color:var(--muted);font-weight:500;margin-bottom:6px;letter-spacing:0.04em;}
+.calc-result-val{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;}
+.calc-result-val.red{color:#ef4444;}.calc-result-val.green{color:var(--green);}
+.calc-footer{border-top:1px solid var(--border);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:rgba(46,184,90,0.04);}
+.calc-kazanc{font-family:'Syne',sans-serif;}
+.calc-kazanc-lbl{font-size:0.72rem;color:var(--muted);font-weight:500;letter-spacing:0.04em;text-transform:uppercase;}
+.calc-kazanc-val{font-size:2rem;font-weight:800;color:var(--green);letter-spacing:-0.03em;line-height:1.1;}
+.calc-kazanc-sub{font-size:0.76rem;color:var(--muted);margin-top:3px;}
+
 /* ── FEATURES ── */
 .feat-sec{background:var(--ink2);}
 .feat-head{max-width:1160px;margin:0 auto 56px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;}
@@ -322,6 +356,7 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
   <div class="nav-links">
     <a href="#ozellikler">Özellikler</a>
     <a href="#nasil">Nasıl Çalışır</a>
+    <a href="#hesapla">Hesapla</a>
     <a href="#ai-asistan">AI Asistan</a>
     <a href="#fiyatlar">Fiyatlar</a>
     <a href="#sss">SSS</a>
@@ -451,6 +486,47 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
         <div class="feat-desc">KolayCafe'yi kullananların görüşleri diğer cafe sahiplerine yol gösteriyor. Siz de deneyiminizi yazın.</div>
       </div>
       <button onclick="yorumModalAc()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(200,133,42,0.15);border:1.5px solid rgba(200,133,42,0.35);color:var(--gold3);padding:10px 16px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:DM Sans,sans-serif;">⭐ Yorum Bırak →</button>
+    </div>
+  </div>
+</section>
+
+<!-- PAIN POINTS -->
+<section class="sec pain-sec" id="sorunlar">
+  <div style="text-align:center;max-width:1160px;margin:0 auto;">
+    <span class="sec-label">Tanıdık mı geliyor?</span>
+    <h2 class="sec-title">Kafe sahibinin <em style="color:var(--gold3);font-style:normal;">günlük derdi</em></h2>
+    <p class="sec-sub" style="margin:0 auto;">Her gün aynı sorunlar, aynı zaman kayıpları. KolayCafe bunları birer birer çözüyor.</p>
+  </div>
+  <div class="pain-grid">
+    <div class="pain-item">
+      <span class="pain-emoji">📋</span>
+      <div class="pain-q">"Kağıt adisyon kayboluyor, hesap yanlış çıkıyor"</div>
+      <div class="pain-a">Garson yanlış masa numarası yazıyor, müşteri itiraz ediyor. <strong>KolayCafe ile sipariş anında dijital — hata sıfır.</strong></div>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">💸</span>
+      <div class="pain-q">"Aylık ne kazandım, ne gitti bilmiyorum"</div>
+      <div class="pain-a">Kasadan para çıkıyor ama nereye gittiği belirsiz. <strong>Gelir-gider takibi, günlük kasa özeti, net kâr — tek ekranda.</strong></div>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">👨‍🍳</span>
+      <div class="pain-q">"Mutfak siparişleri karıştırıyor"</div>
+      <div class="pain-a">Garson sesleniyor, mutfak duymuyor. Sipariş unutuluyor. <strong>Mutfak ekranı ile anlık sipariş bildirimi — gürültü yok.</strong></div>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">📦</span>
+      <div class="pain-q">"Stok bitti, müşteri var — utanç verici"</div>
+      <div class="pain-a">Popüler ürün bitti ama kimse fark etmedi. <strong>Kritik stok uyarısı, otomatik azalma — sürpriz bitmez.</strong></div>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">🕐</span>
+      <div class="pain-q">"Hesap keserken 10 dakika geçiyor"</div>
+      <div class="pain-a">El hesabı, para üstü, kart farklı — kuyruk oluşuyor. <strong>3 dokunuşta tahsilat, karma ödeme, anında kapanış.</strong></div>
+    </div>
+    <div class="pain-item">
+      <span class="pain-emoji">🤷</span>
+      <div class="pain-q">"En çok satan ürünüm hangisi bilmiyorum"</div>
+      <div class="pain-a">Sezgiyle karar veriyorsun ama veriler farklı söylüyor. <strong>AI asistan satış analizi yapıyor, somut öneri sunuyor.</strong></div>
     </div>
   </div>
 </section>
@@ -866,6 +942,134 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
   <button class="cart-close" onclick="clearCart()">✕</button>
 </div>
 
+<!-- MALİYET HESAPLAYICI -->
+<section class="sec calc-sec" id="hesapla">
+  <div style="text-align:center;max-width:1160px;margin:0 auto;">
+    <span class="sec-label">Maliyet Karşılaştırma</span>
+    <h2 class="sec-title">Şu an ne <em style="color:#ef4444;font-style:normal;">ödüyorsun</em> vs KolayCafe</h2>
+    <p class="sec-sub" style="margin:0 auto;">Rakamları sen gir, farkı sen gör. Çoğu kafe ilk ayda kendini amorti ediyor.</p>
+  </div>
+  <div class="calc-wrap">
+    <div class="calc-head">
+      <div class="calc-head-icon">🧮</div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--cream);">Aylık Maliyet Hesaplayıcı</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Bilgileri gir, anlık hesaplama yap</div>
+      </div>
+    </div>
+    <div class="calc-body">
+      <!-- SOL: Mevcut Durum -->
+      <div>
+        <div class="calc-col-title red">📍 Şu anki sisteminiz</div>
+        <div class="calc-row">
+          <div class="calc-lbl">Aylık yazarkasa / POS ücreti (₺)</div>
+          <input class="calc-inp" type="number" id="c-pos" placeholder="0" oninput="calcUpdate()" min="0">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">Kağıt, karbon kağıdı, form gideri (₺)</div>
+          <input class="calc-inp" type="number" id="c-kagit" placeholder="0" oninput="calcUpdate()" min="0">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">Hatalı hesap / kayıp tahmini (₺)</div>
+          <input class="calc-inp" type="number" id="c-hata" placeholder="0" oninput="calcUpdate()" min="0">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">Muhasebe / rapor hazırlama süresi (saat/ay)</div>
+          <input class="calc-inp" type="number" id="c-sure" placeholder="0" oninput="calcUpdate()" min="0">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">AI / analiz araçları aylık gideri (₺)</div>
+          <input class="calc-inp" type="number" id="c-ai" placeholder="0" oninput="calcUpdate()" min="0">
+        </div>
+        <div class="calc-result">
+          <div class="calc-result-lbl">AYLIK MALİYETİNİZ</div>
+          <div class="calc-result-val red" id="r-toplam">₺0</div>
+        </div>
+      </div>
+      <!-- SAĞ: KolayCafe -->
+      <div>
+        <div class="calc-col-title green">✅ KolayCafe ile</div>
+        <div class="calc-row">
+          <div class="calc-lbl">Seçtiğiniz paket</div>
+          <select class="calc-inp" id="c-paket" onchange="calcUpdate()">
+            <option value="499">🥇 Gold — ₺499/ay</option>
+            <option value="599">💎 Platin — ₺599/ay</option>
+            <option value="699">🚀 Ultra — ₺699/ay</option>
+            <option value="799">👑 Elite — ₺799/ay</option>
+            <option value="899" selected>⭐ Pro — ₺899/ay ★ En Çok Tercih Edilen</option>
+          </select>
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">Kağıt, karbon, form gideri</div>
+          <input class="calc-inp" type="text" value="₺0 — tamamen dijital" disabled style="opacity:0.5;cursor:default;">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">Hata / kayıp maliyeti</div>
+          <input class="calc-inp" type="text" value="₺0 — dijital adisyon" disabled style="opacity:0.5;cursor:default;">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">Raporlar otomatik hazır</div>
+          <input class="calc-inp" type="text" value="0 saat — anında rapor" disabled style="opacity:0.5;cursor:default;">
+        </div>
+        <div class="calc-row">
+          <div class="calc-lbl">AI Asistan modülü (opsiyonel ek)</div>
+          <select class="calc-inp" id="c-ai-kc" onchange="calcUpdate()">
+            <option value="0">AI olmadan — ₺0</option>
+            <option value="399">AI Asistan ekle — +₺399/ay</option>
+          </select>
+        </div>
+        <div class="calc-result">
+          <div class="calc-result-lbl">AYLIK MALİYETİNİZ</div>
+          <div class="calc-result-val green" id="r-kc">₺899</div>
+        </div>
+      </div>
+    </div>
+    <div class="calc-footer">
+      <div class="calc-kazanc">
+        <div class="calc-kazanc-lbl">Aylık tasarrufunuz</div>
+        <div class="calc-kazanc-val" id="r-kazanc">—</div>
+        <div class="calc-kazanc-sub" id="r-kazanc-sub">Bilgileri girerek hesaplayın</div>
+      </div>
+      <a href="https://app.kolaycafe.com" class="btn-gold" style="padding:13px 28px;font-size:0.88rem;">10 Gün Ücretsiz Dene →</a>
+    </div>
+  </div>
+</section>
+<script>
+function calcUpdate() {
+  const pos = parseFloat(document.getElementById('c-pos').value) || 0;
+  const kagit = parseFloat(document.getElementById('c-kagit').value) || 0;
+  const hata = parseFloat(document.getElementById('c-hata').value) || 0;
+  const sure = parseFloat(document.getElementById('c-sure').value) || 0;
+  const ai = parseFloat(document.getElementById('c-ai').value) || 0;
+  const aiKc = parseFloat(document.getElementById('c-ai-kc').value) || 0;
+  const paket = parseFloat(document.getElementById('c-paket').value) || 899;
+  const suanki = pos + kagit + hata + ai + (sure * 150);
+  const kc = paket + aiKc;
+  const fark = suanki - kc;
+  document.getElementById('r-toplam').textContent = '₺' + suanki.toLocaleString('tr-TR');
+  document.getElementById('r-kc').textContent = '₺' + kc.toLocaleString('tr-TR');
+  const kazancEl = document.getElementById('r-kazanc');
+  const subEl = document.getElementById('r-kazanc-sub');
+  if (suanki === 0) {
+    kazancEl.textContent = '—';
+    kazancEl.style.color = 'var(--muted)';
+    subEl.textContent = 'Bilgileri girerek hesaplayın';
+  } else if (fark > 0) {
+    kazancEl.textContent = '₺' + fark.toLocaleString('tr-TR') + ' tasarruf';
+    kazancEl.style.color = 'var(--green)';
+    subEl.textContent = 'Yılda ₺' + (fark * 12).toLocaleString('tr-TR') + ' kazanırsınız';
+  } else if (fark === 0) {
+    kazancEl.textContent = 'Başa baş';
+    kazancEl.style.color = 'var(--gold2)';
+    subEl.textContent = 'Aynı maliyetle AI + mutfak ekranı + stok takibi dahil';
+  } else {
+    kazancEl.textContent = '₺' + Math.abs(fark).toLocaleString('tr-TR') + ' fazla';
+    kazancEl.style.color = '#ef4444';
+    subEl.textContent = 'Ama AI asistan, mutfak ekranı, stok takibi — hepsi dahil';
+  }
+}
+</script>
+
 <!-- TESTIMONIALS -->
 <section class="sec testi-sec">
   <div style="max-width:1160px;margin:0 auto;">
@@ -913,11 +1117,11 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
 <div class="trust">
   <div class="trust-inner">
     <div class="trust-item"><div class="trust-icon">🔒</div><div><div class="trust-label">SSL Şifreli</div><div class="trust-sub">256-bit güvenlik</div></div></div>
-    <div class="trust-item"><div class="trust-icon">☁️</div><div><div class="trust-label">Bulut Yedekleme</div><div class="trust-sub">Verileriniz güvende</div></div></div>
-    <div class="trust-item"><div class="trust-icon">🇹🇷</div><div><div class="trust-label">Yerli Yazılım</div><div class="trust-sub">Türkçe destek</div></div></div>
-    <div class="trust-item"><div class="trust-icon">📱</div><div><div class="trust-label">Tüm Cihazlar</div><div class="trust-sub">Android, iPhone, Tablet</div></div></div>
-    <div class="trust-item"><div class="trust-icon">⚡</div><div><div class="trust-label">Gerçek Zamanlı</div><div class="trust-sub">Anlık senkronizasyon</div></div></div>
+    <div class="trust-item"><div class="trust-icon">💳</div><div><div class="trust-label">iyzico ile Güvenli Ödeme</div><div class="trust-sub">Türkiye'nin en büyük ödeme altyapısı</div></div></div>
+    <div class="trust-item"><div class="trust-icon">🇹🇷</div><div><div class="trust-label">Yerli Yazılım</div><div class="trust-sub">Türkçe destek, yerel ekip</div></div></div>
+    <div class="trust-item"><div class="trust-icon">☕</div><div><div class="trust-label">9+ Aktif Kafe</div><div class="trust-sub">Ege Bölgesi'nde aktif kullanım</div></div></div>
     <div class="trust-item"><div class="trust-icon">🛡️</div><div><div class="trust-label">KVKK Uyumlu</div><div class="trust-sub">Kişisel veri koruması</div></div></div>
+    <div class="trust-item"><div class="trust-icon">⚡</div><div><div class="trust-label">Gerçek Zamanlı</div><div class="trust-sub">Anlık senkronizasyon</div></div></div>
   </div>
 </div>
 
