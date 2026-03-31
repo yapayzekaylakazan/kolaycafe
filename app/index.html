@@ -5211,6 +5211,9 @@ function urunGridRender() {
       URUNLER[mevcutKat].splice(idx,1);
       urunGridRender(); urunListesiRender(); bulutKaydet(); toast('Ürün silindi');
     });
+    // iOS'ta :active çalışmaz — touchstart ile anlık görsel feedback
+    kart.addEventListener('touchstart', () => { kart.style.transform='scale(0.93)'; kart.style.background='var(--surface3)'; }, { passive: true });
+    kart.addEventListener('touchend', () => { setTimeout(()=>{ kart.style.transform=''; kart.style.background=''; }, 150); }, { passive: true });
     kart.addEventListener('click',e=>{
       if(e.target.classList.contains('udel')) return;
       if(tukendi){toast('⛔ ' + u.isim + ' stokta yok!');return;}
@@ -5268,6 +5271,10 @@ function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
     if (_m && !_m.mutfak_durum) { _m.mutfak_durum = 'bekliyor'; _m.mutfak_zaman = new Date().toISOString(); }
     masaSyncYaz(seciliMasa);
   }
+  // Feedback: toast + mobilde kolaycafen'e geç
+  const secimOzetiStr = secimler.length ? ' (' + secimler.join(', ') + ')' : '';
+  toast('✓ ' + u.isim + secimOzetiStr + ' eklendi');
+  if (!document.body.classList.contains('pc-mod')) sayfaGit('kolaycafen');
 }
 
 // ── VARYANT MODALİ (Garson/Admin tarafı) ──
@@ -5354,10 +5361,7 @@ function varyantSecimiOnayla() {
     });
   });
   modalKapat('varyant-modal');
-  _urunAdisyonaEkle(u, secimListesi, fiyatFarki);
-  toast('✓ ' + u.isim + (secimListesi.length ? ' (' + secimListesi.join(', ') + ')' : '') + ' eklendi');
-  // Mobilde kolaycafen sayfasına geç ki sipariş listesi görünsün
-  if (!document.body.classList.contains('pc-mod')) sayfaGit('kolaycafen');
+  _urunAdisyonaEkle(u, secimListesi, fiyatFarki); // toast + mobil geçiş içeride
 }
 
 function varyantModalKapat() {
