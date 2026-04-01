@@ -2801,7 +2801,6 @@
         <div style="font-size:0.7rem;color:var(--muted);font-weight:600;">Cafen hakkında akıllı analiz ve öneriler</div>
       </div>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
-        <button onclick="haftalikRaporUret()" id="ai-haftalik-btn" style="background:var(--surface2);color:#a5b4fc;border:1.5px solid rgba(99,102,241,0.4);border-radius:10px;padding:7px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;white-space:nowrap;">📋 Haftalık Rapor</button>
         <button onclick="aiGecmisAc()" id="ai-gecmis-btn" style="display:block;background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);border-radius:10px;padding:7px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📋 Geçmiş</button>
         <button onclick="aiPdfIndir()" id="ai-pdf-btn" style="display:none;background:#1a6fb5;color:#fff;border:none;border-radius:10px;padding:7px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">📥 PDF</button>
         <button onclick="aiAnalizBaslat()" id="ai-yenile-btn" style="background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:8px 14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.78rem;cursor:pointer;">🔄 Analiz Et</button>
@@ -2908,28 +2907,6 @@
       </div>
       <!-- Kart listesi -->
       <div id="ai-motor-liste" style="display:flex;flex-direction:column;gap:0;"></div>
-    </div>
-
-    <!-- HAFTALIK RAPOR KARTI -->
-    <div id="ai-haftalik-kart" style="display:none;border-radius:14px;overflow:hidden;border:1.5px solid rgba(99,102,241,0.45);">
-      <div style="background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.12));padding:13px 14px;display:flex;align-items:center;gap:8px;">
-        <div style="font-size:1.2rem;">📋</div>
-        <div>
-          <div style="font-weight:900;font-size:0.92rem;color:#a5b4fc;">Haftalık Özet Rapor</div>
-          <div id="ai-haftalik-tarih" style="font-size:0.65rem;color:rgba(165,180,252,0.6);font-weight:700;"></div>
-        </div>
-        <button onclick="document.getElementById('ai-haftalik-kart').style.display='none'" style="margin-left:auto;background:rgba(99,102,241,0.2);border:none;border-radius:50%;width:28px;height:28px;color:#a5b4fc;font-size:0.9rem;cursor:pointer;">✕</button>
-      </div>
-      <!-- Yükleniyor -->
-      <div id="ai-haftalik-yukleniyor" style="display:none;padding:24px;text-align:center;">
-        <div style="font-size:2rem;margin-bottom:8px;">📊</div>
-        <div style="font-weight:800;color:var(--text2);font-size:0.85rem;">Rapor hazırlanıyor...</div>
-        <div style="margin-top:12px;background:var(--surface2);border-radius:10px;height:4px;overflow:hidden;">
-          <div id="ai-haftalik-progress" style="height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);width:0%;transition:width 0.4s;border-radius:10px;"></div>
-        </div>
-      </div>
-      <!-- İçerik -->
-      <div id="ai-haftalik-icerik" style="padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
     </div>
 
     <!-- Geçmiş Analizler Modal -->
@@ -14664,16 +14641,8 @@ async function mmSiparisGonder() {
 
   try {
     const not = document.getElementById('mm-siparis-not').value.trim();
-    const saat = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
 
-    const {data: kafeData} = await sb.from('kafeler')
-      .select('aktif_masalar')
-      .eq('id', mmKafeId)
-      .single();
-
-    let aktifMasalar = kafeData?.aktif_masalar || [];
-
-    // Dijital menü QR: mmMasaNo null olabilir → sanal ID oluştur
+    // Masa ID belirle
     let masaId = mmMasaNo;
     let masaAdi = mmMasaAdi;
     if (masaId === null || masaId === undefined) {
@@ -14681,35 +14650,22 @@ async function mmSiparisGonder() {
       masaAdi = '🍽️ Dijital Menü';
     }
 
-    let masa = aktifMasalar.find(m => String(m.id) === String(masaId));
-    if (!masa) {
-      masa = {id: masaId, ad: masaAdi, siparisler: [], not: '', garson: '', indirim: 0};
-      aktifMasalar.push(masa);
-    }
-    if (!masa.siparisler) masa.siparisler = [];
+    // Siparişleri RPC formatına hazırla
+    const siparislerRpc = mmSepet.map(item => ({
+      isim: item.isim,
+      fiyat: item.fiyat,
+      ikon: item.ikon || '🍽',
+      adet: item.adet
+    }));
 
-    mmSepet.forEach(item => {
-      const mevcut = masa.siparisler.find(s => s.isim === item.isim && s.musteri);
-      if (mevcut) {
-        mevcut.adet = (mevcut.adet || 1) + item.adet;
-      } else {
-        masa.siparisler.push({
-          isim: item.isim,
-          fiyat: item.fiyat,
-          ikon: item.ikon || '🍽',
-          adet: item.adet,
-          ilkSaat: saat,
-          musteri: true,
-          mutfak_teslim: false
-        });
-      }
+    // Güvenli RPC ile kaydet (SECURITY DEFINER — RLS bypass)
+    const { data: rpcData, error } = await sb.rpc('musteri_siparis_ekle', {
+      p_kafe_id: mmKafeId,
+      p_masa_id: String(masaId),
+      p_masa_adi: masaAdi,
+      p_siparisler: siparislerRpc,
+      p_not: not
     });
-
-    if (not) masa.not = (masa.not ? masa.not + ' | ' : '') + '🧾 ' + not;
-    masa.mutfak_durum = 'bekliyor';
-    masa.mutfak_zaman = new Date().toISOString();
-
-    const {error} = await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', mmKafeId);
     if (error) throw error;
 
     mmSepetKapat();
@@ -15960,257 +15916,6 @@ async function aiOneriMotoruCalistir(v) {
   } catch(e) {
     if (yukl) yukl.style.display = 'none';
     liste.innerHTML = `<div style="padding:14px;font-size:0.82rem;color:var(--muted);">⚠️ Öneri motoru hata: ${e.message}</div>`;
-  }
-}
-
-// ── HAFTALIK RAPOR ──
-async function haftalikRaporUret() {
-  if (!aiErisimVarMi()) { aiKilitEkraniGoster(); return; }
-
-  const kart = document.getElementById('ai-haftalik-kart');
-  const yukleniyor = document.getElementById('ai-haftalik-yukleniyor');
-  const icerik = document.getElementById('ai-haftalik-icerik');
-  const tarihEl = document.getElementById('ai-haftalik-tarih');
-  const progress = document.getElementById('ai-haftalik-progress');
-
-  kart.style.display = 'block';
-  yukleniyor.style.display = 'block';
-  icerik.innerHTML = '';
-  kart.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  let pct = 0;
-  const ptimer = setInterval(() => {
-    pct = Math.min(pct + Math.random() * 12, 88);
-    if (progress) progress.style.width = pct + '%';
-  }, 350);
-
-  try {
-    const now = new Date();
-    // Bu hafta Pazartesi 00:00
-    const buHaftaBas = new Date(now);
-    const gun = buHaftaBas.getDay();
-    buHaftaBas.setDate(buHaftaBas.getDate() + (gun === 0 ? -6 : 1 - gun));
-    buHaftaBas.setHours(0,0,0,0);
-    // Geçen hafta
-    const gecenHaftaBas = new Date(buHaftaBas); gecenHaftaBas.setDate(gecenHaftaBas.getDate() - 7);
-    const gecenHaftaBit = new Date(buHaftaBas);
-
-    const fmt2 = (d) => d.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit' });
-    if (tarihEl) tarihEl.textContent = fmt2(buHaftaBas) + ' – ' + fmt2(now) + ' | Geçen hafta karşılaştırmalı';
-
-    // Bu haftanın adisyonları
-    const { data: buData } = await sb.from('kolaycafenlar').select('*')
-      .eq('kafe_id', kafeId)
-      .gte('created_at', buHaftaBas.toISOString())
-      .order('created_at', { ascending: true });
-    const buAdisyonlar = buData || [];
-
-    // Geçen haftanın adisyonları
-    const { data: gecenData } = await sb.from('kolaycafenlar').select('toplam')
-      .eq('kafe_id', kafeId)
-      .gte('created_at', gecenHaftaBas.toISOString())
-      .lt('created_at', gecenHaftaBit.toISOString());
-    const gecenAdisyonlar = gecenData || [];
-    const gecenCiro = gecenAdisyonlar.reduce((s,a) => s + parseFloat(a.toplam||0), 0);
-    const gecenSayi = gecenAdisyonlar.length;
-
-    // Bu hafta metrikleri
-    const buCiro = buAdisyonlar.reduce((s,a) => s + parseFloat(a.toplam||0), 0);
-    const buSayi = buAdisyonlar.length;
-    const buOrt = buSayi > 0 ? buCiro / buSayi : 0;
-
-    // Ürün sayımı
-    const urunler = {};
-    buAdisyonlar.forEach(a => {
-      (a.siparisler||[]).forEach(s => {
-        const k = s.isim||'?';
-        if (!urunler[k]) urunler[k] = { adet:0, gelir:0 };
-        urunler[k].adet += (s.adet||1);
-        urunler[k].gelir += (s.fiyat||0) * (s.adet||1);
-      });
-    });
-    const urunSirali = Object.entries(urunler)
-      .map(([isim,d]) => ({isim,...d}))
-      .sort((a,b) => b.adet - a.adet);
-
-    // Garson performansı
-    const garsonPerf = {};
-    buAdisyonlar.forEach(a => {
-      let g = 'Belirtilmemiş';
-      if (a.garson && typeof a.garson === 'string' && a.garson.trim()) {
-        const raw = a.garson.trim();
-        g = raw.startsWith('{') ? (()=>{ try{ return JSON.parse(raw).isim||raw; }catch{return raw;} })() : raw;
-      }
-      if (!garsonPerf[g]) garsonPerf[g] = { adisyon:0, ciro:0 };
-      garsonPerf[g].adisyon++;
-      garsonPerf[g].ciro += parseFloat(a.toplam||0);
-    });
-    const garsonSirali = Object.entries(garsonPerf)
-      .map(([isim,d]) => ({isim,...d}))
-      .sort((a,b) => b.ciro - a.ciro);
-
-    // SKT uyarıları
-    const sktUyarilar = (SKT_URUNLER||[]).filter(u => {
-      const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
-      const bugun = new Date(); bugun.setHours(0,0,0,0);
-      const esik = new Date(bugun); esik.setDate(esik.getDate() + (SKT_ESIK||7));
-      return t <= esik;
-    });
-
-    const ciroFark = gecenCiro > 0 ? ((buCiro - gecenCiro) / gecenCiro * 100).toFixed(1) : null;
-    const fmtTL = (n) => new Intl.NumberFormat('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:0}).format(n) + ' ₺';
-
-    // KPI grid
-    const ciroRenk = ciroFark === null ? 'var(--text)' : (parseFloat(ciroFark) >= 0 ? '#3db85a' : '#e04040');
-    const ciroIkon = ciroFark === null ? '' : (parseFloat(ciroFark) >= 0 ? '↑' : '↓');
-    icerik.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="background:var(--surface2);border-radius:10px;padding:11px;border:1px solid var(--border);">
-          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">💰 BU HAFTA CİRO</div>
-          <div style="font-size:1.15rem;font-weight:900;">${fmtTL(buCiro)}</div>
-          ${ciroFark !== null ? `<div style="font-size:0.68rem;font-weight:700;color:${ciroRenk};">${ciroIkon} %${Math.abs(ciroFark)} geçen haftaya göre</div>` : ''}
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:11px;border:1px solid var(--border);">
-          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🧾 ADİSYON</div>
-          <div style="font-size:1.15rem;font-weight:900;">${buSayi}</div>
-          ${gecenSayi > 0 ? `<div style="font-size:0.68rem;font-weight:700;color:var(--muted);">Geçen hafta: ${gecenSayi}</div>` : ''}
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:11px;border:1px solid var(--border);">
-          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📊 ORT. HARCAMA</div>
-          <div style="font-size:1.15rem;font-weight:900;">${fmtTL(buOrt)}</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:11px;border:1px solid var(--border);">
-          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📅 GEÇEN HAFTA</div>
-          <div style="font-size:1.15rem;font-weight:900;">${fmtTL(gecenCiro)}</div>
-        </div>
-      </div>
-    `;
-
-    // En çok / az satanlar
-    if (urunSirali.length > 0) {
-      const enCok = urunSirali.slice(0,5);
-      const enAz = urunSirali.length > 5 ? urunSirali.slice(-3).reverse() : [];
-      let urunHTML = '<div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);">';
-      urunHTML += '<div style="font-size:0.72rem;font-weight:800;color:var(--accent2);margin-bottom:8px;">🏆 EN ÇOK SATANLAR</div>';
-      enCok.forEach((u,i) => {
-        urunHTML += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem;"><span>${i+1}. ${u.isim}</span><span style="color:var(--accent2);font-weight:800;">${u.adet} adet</span></div>`;
-      });
-      urunHTML += '</div>';
-      if (enAz.length > 0) {
-        urunHTML += '<div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);margin-top:8px;">';
-        urunHTML += '<div style="font-size:0.72rem;font-weight:800;color:#e04040;margin-bottom:8px;">📉 EN AZ SATANLAR</div>';
-        enAz.forEach(u => {
-          urunHTML += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem;"><span>${u.isim}</span><span style="color:#e04040;font-weight:800;">${u.adet} adet</span></div>`;
-        });
-        urunHTML += '</div>';
-      }
-      icerik.insertAdjacentHTML('beforeend', urunHTML);
-    }
-
-    // Garson performansı
-    const aktifGarsonlar = garsonSirali.filter(g => g.isim !== 'Belirtilmemiş');
-    if (aktifGarsonlar.length > 0) {
-      let garsonHTML = '<div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);">';
-      garsonHTML += '<div style="font-size:0.72rem;font-weight:800;color:#a5b4fc;margin-bottom:8px;">👨‍🍳 GARSON PERFORMANSI</div>';
-      aktifGarsonlar.forEach(g => {
-        garsonHTML += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem;"><span>${g.isim}</span><span style="color:var(--text2);font-weight:700;">${g.adisyon} adisyon · ${fmtTL(g.ciro)}</span></div>`;
-      });
-      garsonHTML += '</div>';
-      icerik.insertAdjacentHTML('beforeend', garsonHTML);
-    }
-
-    // SKT uyarıları
-    if (sktUyarilar.length > 0) {
-      const bugun = new Date(); bugun.setHours(0,0,0,0);
-      let sktHTML = '<div style="background:rgba(224,64,64,0.08);border-radius:10px;padding:12px;border:1px solid rgba(224,64,64,0.3);">';
-      sktHTML += `<div style="font-size:0.72rem;font-weight:800;color:#e04040;margin-bottom:8px;">⚠️ SKT UYARILARI (${sktUyarilar.length})</div>`;
-      sktUyarilar.forEach(u => {
-        const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
-        const fark = Math.round((t - bugun) / 86400000);
-        const etiket = fark < 0 ? '<span style="color:#e04040;font-weight:900;">GEÇMİŞ</span>' : `<span style="color:#f59e0b;font-weight:900;">${fark} gün kaldı</span>`;
-        sktHTML += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(224,64,64,0.1);font-size:0.82rem;"><span>${u.urun_adi}</span>${etiket}</div>`;
-      });
-      sktHTML += '</div>';
-      icerik.insertAdjacentHTML('beforeend', sktHTML);
-    }
-
-    // Claude AI özet
-    const garsonPromptStr = aktifGarsonlar.slice(0,3).map((g,i) => `${i+1}. ${g.isim}: ${g.adisyon} adisyon, ${fmtTL(g.ciro)}`).join('\n') || 'Garson verisi yok';
-    const sktPromptStr = sktUyarilar.length > 0
-      ? sktUyarilar.map(u => { const t=new Date(u.skt_tarihi); const f=Math.round((t-new Date())/86400000); return u.urun_adi+(f<0?' (TARİHİ GEÇMİŞ)':`(${f} gün kaldı)`); }).join(', ')
-      : 'SKT uyarısı yok';
-    const enCokStr = urunSirali.slice(0,5).map((u,i) => `${i+1}. ${u.isim} (${u.adet} adet)`).join(', ') || 'Veri yok';
-    const enAzStr = urunSirali.length > 5 ? urunSirali.slice(-3).reverse().map(u => `${u.isim} (${u.adet} adet)`).join(', ') : 'Yeterli veri yok';
-
-    const prompt = [
-      'Sen bir cafe işletme danışmanısın. Aşağıdaki haftalık verileri analiz et ve Türkçe haftalık rapor yaz.',
-      '',
-      `BU HAFTA: Ciro ${fmtTL(buCiro)} | ${buSayi} adisyon | Ort. ${fmtTL(buOrt)}`,
-      `GEÇEN HAFTA: ${fmtTL(gecenCiro)} | ${gecenSayi} adisyon`,
-      `CİRO DEĞİŞİMİ: ${ciroFark !== null ? (parseFloat(ciroFark)>=0?'+':'')+ciroFark+'%' : 'Karşılaştırma verisi yok'}`,
-      '',
-      `EN ÇOK SATANLAR: ${enCokStr}`,
-      `EN AZ SATANLAR: ${enAzStr}`,
-      '',
-      'GARSON PERFORMANSI:',
-      garsonPromptStr,
-      '',
-      `SKT UYARILARI: ${sktPromptStr}`,
-      '',
-      'Lütfen şunları yaz:',
-      '1. 2-3 cümle genel hafta özeti',
-      '2. En önemli 4-5 öneri, her biri "→" ile başlasın',
-      '3. Varsa SKT için acil aksiyon',
-      '4. Gelecek hafta için 1 somut hedef',
-      'Kısa, doğrudan, Türkçe. Gereksiz giriş cümlesi yok.',
-    ].join('\n');
-
-    icerik.insertAdjacentHTML('beforeend', `
-      <div id="ai-haftalik-ai-yukleniyor" style="background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.06));border-radius:10px;padding:12px;border:1px solid rgba(99,102,241,0.25);text-align:center;">
-        <div style="color:#a5b4fc;font-size:0.82rem;font-weight:700;">🤖 Claude AI haftalık özet yazıyor...</div>
-      </div>
-    `);
-
-    const aiMetin = await claudeAPI(
-      [{ role: 'user', content: prompt }],
-      'Sen KolayCafe için Türkçe konuşan cafe işletme danışmanısın. Kısa, pratik, haftalık raporlar yaz.',
-      1400
-    );
-
-    const aiYukEl = document.getElementById('ai-haftalik-ai-yukleniyor');
-    if (aiYukEl) {
-      const satırlar = aiMetin.split('\n').filter(l=>l.trim()).map(l => {
-        if (l.trim().startsWith('→')) return `<div style="padding:5px 0;border-bottom:1px solid rgba(99,102,241,0.1);font-weight:700;">${l}</div>`;
-        if (/^\d+\./.test(l.trim())) return `<div style="padding:4px 0;color:var(--text2);font-size:0.8rem;">${l}</div>`;
-        return `<div style="padding:4px 0;line-height:1.55;">${l}</div>`;
-      }).join('');
-      aiYukEl.outerHTML = `
-        <div style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.06));border-radius:10px;padding:14px;border:1px solid rgba(99,102,241,0.3);">
-          <div style="font-size:0.72rem;font-weight:800;color:#a5b4fc;margin-bottom:10px;">🤖 AI HAFTALIK ÖZET & ÖNERİLER</div>
-          <div style="font-size:0.85rem;color:var(--text);line-height:1.65;">${satırlar}</div>
-        </div>
-      `;
-    }
-
-    clearInterval(ptimer);
-    if (progress) progress.style.width = '100%';
-    setTimeout(() => { if (yukleniyor) yukleniyor.style.display = 'none'; }, 400);
-
-    // Kaydet
-    try {
-      await sb.from('ai_kayitlar').insert({
-        kafe_id: kafeId, kafe_adi: kafeAdi, plan: aktifPaket||'deneme',
-        tip: 'haftalik_rapor',
-        veri: { buCiro, gecenCiro, ciroFark, buSayi, gecenSayi },
-        sonuc: aiMetin.substring(0, 800),
-        created_at: new Date().toISOString()
-      });
-    } catch(_) {}
-
-  } catch(e) {
-    clearInterval(ptimer);
-    if (yukleniyor) yukleniyor.style.display = 'none';
-    icerik.innerHTML = `<div style="color:#e04040;font-size:0.85rem;font-weight:700;padding:12px;">⚠️ Rapor alınamadı: ${e.message}</div>`;
   }
 }
 
