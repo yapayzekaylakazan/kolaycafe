@@ -10315,6 +10315,8 @@ async function aiGecmisAc() {
   if (!kart || !liste) return;
   kart.style.display = kart.style.display === 'block' ? 'none' : 'block';
   if (kart.style.display !== 'block') return;
+  // Karta scroll et
+  setTimeout(() => kart.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   if (!kafeId) { liste.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">Önce giriş yapın.</div>'; return; }
   liste.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">Yükleniyor...</div>';
   try {
@@ -10455,14 +10457,40 @@ function aiGecmisPdf(detayId, donem, toplamCiro, adisyonSayisi, tarih) {
 function aiPdfIndir() {
   const metin = window._sonAnalizMetin || '';
   const veri  = window._sonAnalizVeri  || {};
-  if (!metin) { toast('⚠️ Önce analiz yapın'); return; }
+  const motor = window._sonMotorOneriler || [];
+  if (!metin && motor.length === 0) { toast('⚠️ Önce analiz yapın'); return; }
 
   const tarih = new Date().toLocaleString('tr-TR');
+
+  // Motor önerileri HTML
+  const oncelikRenkPdf = {
+    kritik: { bg:'#fee2e2', border:'#ef4444', badge:'#ef4444', badgeTxt:'#fff', label:'KRİTİK' },
+    yuksek: { bg:'#fef9c3', border:'#f59e0b', badge:'#f59e0b', badgeTxt:'#1a1a1a', label:'YÜKSEK' },
+    orta:   { bg:'#ede9fe', border:'#8b5cf6', badge:'#8b5cf6', badgeTxt:'#fff', label:'ORTA' },
+    dusuk:  { bg:'#f1f5f9', border:'#cbd5e1', badge:'#94a3b8', badgeTxt:'#fff', label:'BİLGİ' },
+  };
+  const motorHtml = motor.length > 0 ? `
+    <h2>🎯 Akıllı Öneri Motoru</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${motor.map(o => {
+        const r = oncelikRenkPdf[o.oncelik] || oncelikRenkPdf.dusuk;
+        return `<div style="background:${r.bg};border:1px solid ${r.border};border-radius:8px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:1.1rem;">${o.ikon||'💡'}</span>
+            <strong style="font-size:0.9rem;">${o.baslik}</strong>
+            <span style="font-size:0.65rem;font-weight:700;background:${r.badge};color:${r.badgeTxt};padding:2px 7px;border-radius:20px;">${r.label}</span>
+          </div>
+          <div style="font-size:0.82rem;color:#374151;line-height:1.5;">${o.aciklama}</div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
   const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
   <title>AI Satış Analizi — ${kafeAdi}</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; }
     h1 { font-size: 1.4rem; color: #c8850a; border-bottom: 2px solid #c8850a; padding-bottom: 8px; }
+    h2 { font-size: 1.1rem; color: #6366f1; border-bottom: 1px solid #e0e7ff; padding-bottom: 6px; margin-top: 28px; }
     .meta { font-size: 0.8rem; color: #666; margin-bottom: 24px; }
     .kpi { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
     .kpi-kart { background: #fef9ee; border: 1px solid #f0b830; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
@@ -10480,7 +10508,8 @@ function aiPdfIndir() {
     <div class="kpi-kart"><div class="kpi-deger">${veri.adisyonSayisi||0}</div><div class="kpi-etiket">Adisyon</div></div>
     ${veri.adisyonSayisi>0?`<div class="kpi-kart"><div class="kpi-deger">${fmt((veri.toplamCiro||0)/(veri.adisyonSayisi||1))}</div><div class="kpi-etiket">Ort. Sepet</div></div>`:''}
   </div>
-  <div class="icerik">${metin.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+  ${metin ? `<h2>💡 AI Önerileri</h2><div class="icerik">${metin.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
+  ${motorHtml}
   <div class="footer">KolayCafe AI Satış Asistanı · kolaycafe.com</div>
   </body></html>`;
 
@@ -15895,6 +15924,9 @@ async function aiOneriMotoruCalistir(v) {
       `;
       liste.appendChild(div);
     });
+
+    // PDF için motor içeriğini sakla
+    window._sonMotorOneriler = siralanmis;
 
   } catch(e) {
     if (yukl) yukl.style.display = 'none';
