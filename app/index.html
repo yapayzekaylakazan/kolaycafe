@@ -15403,11 +15403,11 @@ async function aiAnalizBaslat() {
     // 6) Garson performansı
     aiGarsonRender(veri);
 
-    // 7) Claude AI öneriler
-    try { await aiOnerilerUret(veri); } catch(e) { console.warn('aiOnerilerUret:', e); }
-
-    // 8) Akıllı Öneri Motoru
-    try { await aiOneriMotoruCalistir(veri); } catch(e) { console.warn('aiOneriMotoruCalistir:', e); }
+    // 7+8) Claude AI öneriler + Akıllı Öneri Motoru (paralel)
+    await Promise.all([
+      aiOnerilerUret(veri).catch(e => console.warn('aiOnerilerUret:', e)),
+      aiOneriMotoruCalistir(veri).catch(e => console.warn('aiOneriMotoruCalistir:', e)),
+    ]);
 
     // 9) Sohbet paneli
     aiSohbetPanelAc(veri);
