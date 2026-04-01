@@ -2032,12 +2032,7 @@
         <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">ÜRÜN ADI *</label>
         <input type="text" id="skt-inp-urun" placeholder="Örn: Süt, Krema, Vanilya..." list="skt-urun-oneriler"
           style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;">
-        <datalist id="skt-urun-oneriler">
-          <option value="Süt"><option value="Krema"><option value="Tereyağı"><option value="Yumurta">
-          <option value="Un"><option value="Şeker"><option value="Tuz"><option value="Maya">
-          <option value="Vanilya"><option value="Çikolata"><option value="Kahve Çekirdeği">
-          <option value="Çay"><option value="Meyve Suyu"><option value="Peynir"><option value="Jambon">
-        </datalist>
+        <datalist id="skt-urun-oneriler"></datalist>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div>
@@ -13568,7 +13563,33 @@ function sktEkleAc() {
   document.getElementById('skt-inp-notlar').value  = '';
   document.getElementById('skt-inp-tarih').min = new Date().toISOString().split('T')[0];
   document.getElementById('skt-sil-btn').style.display = 'none';
+  // Datalist: menüdeki ürünler + sabit kafe malzemeleri
+  sktDatalistDoldur();
   document.getElementById('skt-modal').style.display = 'flex';
+}
+
+function sktDatalistDoldur() {
+  const dl = document.getElementById('skt-urun-oneriler');
+  if (!dl) return;
+  // Menüdeki tüm ürün adları
+  const menuUrunler = [];
+  if (typeof URUNLER === 'object') {
+    Object.values(URUNLER).forEach(list => {
+      list.forEach(u => { if (u.isim) menuUrunler.push(u.isim); });
+    });
+  }
+  // Sabit kafe malzemeleri (menüde olmayabilir)
+  const sabit = [
+    'Süt','Krema','Tereyağı','Yoğurt','Peynir','Labne','Kaymak','Yumurta',
+    'Un','Şeker','Tuz','Maya','Vanilya','Çikolata','Kakao',
+    'Sütlaç','Muhallebi','Kazandibi','Profiterol','Ekler',
+    'Waffle Hamuru','Krep Hamuru','Pasta','Kek','Poğaça',
+    'Meyve Suyu','Limon','Portakal','Çilek','Muz',
+    'Jambon','Sucuk','Salam','Hindi Göğsü'
+  ];
+  // Birleştir, tekrarları at, sırala
+  const tumListe = [...new Set([...menuUrunler, ...sabit])].sort((a,b) => a.localeCompare(b,'tr'));
+  dl.innerHTML = tumListe.map(ad => `<option value="${ad}">`).join('');
 }
 
 function sktDuzenleAc(id) {
