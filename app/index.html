@@ -13580,7 +13580,48 @@ function sktRender() {
   if (el('skt-gecmis-sayi')) el('skt-gecmis-sayi').textContent = gecmis;
   if (el('skt-yakin-sayi'))  el('skt-yakin-sayi').textContent  = yakin;
   if (el('skt-tamam-sayi'))  el('skt-tamam-sayi').textContent  = tamam;
-  
+
+  // Uyarı banner
+  const banner      = el('skt-uyari-banner');
+  const bannerGecmis = el('skt-banner-gecmis');
+  const bannerYakin  = el('skt-banner-yakin');
+
+  if (banner) {
+    const gecmisUrunler = SKT_URUNLER.filter(u => {
+      const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+      return t <= bugun;
+    });
+    const yakinUrunler = SKT_URUNLER.filter(u => {
+      const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+      return t > bugun && t <= esik;
+    });
+
+    if (gecmisUrunler.length > 0 && bannerGecmis) {
+      bannerGecmis.style.display = 'block';
+      el('skt-banner-gecmis-liste').innerHTML = gecmisUrunler.map(u => {
+        const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+        const fark = Math.round((t - bugun) / (1000*60*60*24));
+        const gun = fark === 0 ? 'bugün son gün' : `${Math.abs(fark)} gün önce geçti`;
+        return `<div style="font-size:0.8rem;font-weight:700;color:#fca5a5;">• ${u.urun_adi}${u.miktar ? ' ('+u.miktar+' '+u.birim+')' : ''} — ${gun}</div>`;
+      }).join('');
+    } else if (bannerGecmis) {
+      bannerGecmis.style.display = 'none';
+    }
+
+    if (yakinUrunler.length > 0 && bannerYakin) {
+      bannerYakin.style.display = 'block';
+      el('skt-banner-yakin-liste').innerHTML = yakinUrunler.map(u => {
+        const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+        const fark = Math.round((t - bugun) / (1000*60*60*24));
+        return `<div style="font-size:0.8rem;font-weight:700;color:#fcd34d;">• ${u.urun_adi}${u.miktar ? ' ('+u.miktar+' '+u.birim+')' : ''} — ${fark} gün kaldı</div>`;
+      }).join('');
+    } else if (bannerYakin) {
+      bannerYakin.style.display = 'none';
+    }
+
+    banner.style.display = (gecmisUrunler.length > 0 || yakinUrunler.length > 0) ? 'block' : 'none';
+  }
+
   sktBadgeGuncelle();
 }
 
