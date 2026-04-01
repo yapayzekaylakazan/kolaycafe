@@ -13699,31 +13699,30 @@ async function sktEmailGonder() {
   if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
 
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const token = session?.access_token;
-
     const res = await fetch(
       `https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/skt-email-alert`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_KEY,
         },
         body: JSON.stringify({ kafe_id: kafeId, esik_gun: SKT_ESIK }),
       }
     );
 
-    const data = await res.json();
+    const result = await res.json();
 
-    if (data.error === 'Kafe e-postası kayıtlı değil') {
-      toast('⚠️ Hesabınıza e-posta eklenmemiş. Ayarlar → Profil bölümünden ekleyin.');
-    } else if (data.error) {
-      toast('❌ E-posta gönderilemedi: ' + data.error);
-    } else if (data.gonderildi === false) {
-      toast('✓ Uyarı gerektiren SKT ürünü yok, e-posta gönderilmedi.');
+    if (!res.ok) {
+      if (result.error === 'Kafe e-postası kayıtlı değil') {
+        toast('⚠️ E-posta adresi kayıtlı değil. Ayarlar → hesap e-postanızı güncelleyin.');
+      } else {
+        toast('❌ Hata: ' + (result.error || res.status));
+      }
+    } else if (result.gonderildi === false) {
+      toast(`✓ ${SKT_ESIK} gün içinde SKT uyarısı yok, e-posta gönderilmedi.`);
     } else {
-      toast(`✅ SKT uyarı e-postası ${data.email} adresine gönderildi!`);
+      toast(`✅ SKT uyarısı ${result.email} adresine gönderildi!`);
     }
   } catch (err) {
     toast('❌ Bağlantı hatası: ' + err.message);
