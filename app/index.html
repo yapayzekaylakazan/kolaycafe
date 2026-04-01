@@ -1980,10 +1980,7 @@
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="font-size:1rem;font-weight:900;color:var(--accent2);">📅 Son Kullanma Tarihi</div>
-        <div style="display:flex;gap:6px;">
-          <button onclick="sktEmailGonder()" id="skt-email-btn" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">📧</button>
-          <button onclick="sktEkleAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">+ Ürün Ekle</button>
-        </div>
+        <button onclick="sktEkleAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">+ Ürün Ekle</button>
       </div>
       <!-- Özet kartları -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
@@ -2017,6 +2014,27 @@
     </div>
     <!-- SKT LİSTESİ -->
     <div style="padding:12px;flex:1;overflow-y:auto;">
+      <!-- Uyarı banner - JS tarafından gösterilir/gizlenir -->
+      <div id="skt-uyari-banner" style="display:none;margin-bottom:12px;border-radius:12px;overflow:hidden;">
+        <!-- Geçmiş ürünler -->
+        <div id="skt-banner-gecmis" style="display:none;background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.4);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:1.1rem;">⛔</span>
+            <span style="font-weight:900;font-size:0.88rem;color:#ef4444;">DİKKAT — SKT Geçmiş Ürünler</span>
+          </div>
+          <div id="skt-banner-gecmis-liste" style="display:flex;flex-direction:column;gap:3px;"></div>
+          <div style="margin-top:8px;font-size:0.72rem;color:#ef4444;font-weight:700;">⚡ Bu ürünleri derhal kullanın, imha edin veya menüden kaldırın.</div>
+        </div>
+        <!-- Yakın ürünler -->
+        <div id="skt-banner-yakin" style="display:none;background:rgba(245,158,11,0.1);border:1.5px solid rgba(245,158,11,0.4);border-radius:12px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:1.1rem;">⚠️</span>
+            <span style="font-weight:900;font-size:0.88rem;color:#f59e0b;">DİKKAT — SKT Yaklaşan Ürünler</span>
+          </div>
+          <div id="skt-banner-yakin-liste" style="display:flex;flex-direction:column;gap:3px;"></div>
+          <div style="margin-top:8px;font-size:0.72rem;color:#f59e0b;font-weight:700;">💡 Bu ürünleri öncelikli kullanın veya indirimli satışa çıkarın.</div>
+        </div>
+      </div>
       <div id="skt-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div id="skt-liste-bos" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);">
         <div style="font-size:2rem;margin-bottom:8px;">✅</div>
@@ -13691,47 +13709,6 @@ function sktUyariKontrol() {
   
   sktBadgeGuncelle();
 }
-
-// SKT e-posta bildirimi
-async function sktEmailGonder() {
-  if (!kafeId) return;
-  const btn = document.getElementById('skt-email-btn');
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-
-  try {
-    const res = await fetch(
-      `https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/skt-email-alert`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-        },
-        body: JSON.stringify({ kafe_id: kafeId, esik_gun: SKT_ESIK }),
-      }
-    );
-
-    const result = await res.json();
-
-    if (!res.ok) {
-      if (result.error === 'Kafe e-postası kayıtlı değil') {
-        toast('⚠️ E-posta adresi kayıtlı değil. Ayarlar → hesap e-postanızı güncelleyin.');
-      } else {
-        toast('❌ Hata: ' + (result.error || res.status));
-      }
-    } else if (result.gonderildi === false) {
-      toast(`✓ ${SKT_ESIK} gün içinde SKT uyarısı yok, e-posta gönderilmedi.`);
-    } else {
-      toast(`✅ SKT uyarısı ${result.email} adresine gönderildi!`);
-    }
-  } catch (err) {
-    toast('❌ Bağlantı hatası: ' + err.message);
-  } finally {
-    if (btn) { btn.textContent = '📧'; btn.disabled = false; }
-  }
-}
-
-window.sktEmailGonder = sktEmailGonder;
 
 window.stokTabSec = stokTabSec;
 window.sktEsikSec = sktEsikSec;
