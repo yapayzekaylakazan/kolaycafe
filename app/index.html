@@ -15438,6 +15438,12 @@ async function aiAnalizBaslat() {
       aiOneriMotoruCalistir(veri).catch(e => console.warn('aiOneriMotoruCalistir:', e)),
     ]);
 
+    // Her ikisi tamamlandıktan sonra PDF + geçmiş butonları göster
+    const pdfBtn = document.getElementById('ai-pdf-btn');
+    const gecmisBtn = document.getElementById('ai-gecmis-btn');
+    if (pdfBtn) pdfBtn.style.display = 'block';
+    if (gecmisBtn) gecmisBtn.style.display = 'block';
+
     // 9) Sohbet paneli
     aiSohbetPanelAc(veri);
 
@@ -16012,11 +16018,6 @@ async function aiOnerilerUret(v) {
         }
       });
     } catch(e) {}
-    // PDF ve Geçmiş butonlarını göster
-    const pdfBtn = document.getElementById('ai-pdf-btn');
-    const gecmisBtn = document.getElementById('ai-gecmis-btn');
-    if (pdfBtn) pdfBtn.style.display = 'block';
-    if (gecmisBtn) gecmisBtn.style.display = 'block';
     // Analizi window'a sakla (PDF için)
     window._sonAnalizMetin = metin;
     window._sonAnalizVeri = v;
