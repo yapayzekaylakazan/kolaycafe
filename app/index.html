@@ -2893,6 +2893,22 @@
       <div id="ai-oneriler-icerik" style="font-size:0.85rem;color:var(--text);line-height:1.6;"></div>
     </div>
 
+    <!-- AKILLI ÖNERİ MOTORU -->
+    <div id="ai-oneri-motor-kart" style="display:none;border-radius:14px;overflow:hidden;border:1.5px solid rgba(99,102,241,0.35);">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.10));padding:12px 14px;display:flex;align-items:center;gap:8px;">
+        <div style="font-size:1.2rem;">🎯</div>
+        <div style="font-weight:900;font-size:0.9rem;color:#a5b4fc;">Akıllı Öneri Motoru</div>
+        <div style="margin-left:auto;font-size:0.62rem;background:rgba(99,102,241,0.3);color:#c7d2fe;padding:2px 8px;border-radius:20px;font-weight:900;">AI Analiz</div>
+      </div>
+      <!-- Yükleniyor -->
+      <div id="ai-motor-yukleniyor" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:0.82rem;font-weight:700;">
+        🎯 Öneri motoru çalışıyor...
+      </div>
+      <!-- Kart listesi -->
+      <div id="ai-motor-liste" style="display:flex;flex-direction:column;gap:0;"></div>
+    </div>
+
     <!-- Geçmiş Analizler Modal -->
     <div id="ai-gecmis-kart" style="display:none;background:var(--surface2);border-radius:14px;padding:14px;border:1.5px solid var(--border);">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -15249,6 +15265,7 @@ function aiKilitEkraniGoster() {
   document.getElementById('ai-trend-kart').style.display = 'none';
   document.getElementById('ai-garson-kart').style.display = 'none';
   document.getElementById('ai-oneriler-kart').style.display = 'none';
+  document.getElementById('ai-oneri-motor-kart').style.display = 'none';
   document.getElementById('ai-sohbet-kart').style.display = 'none';
 
   // Kilit ekranı varsa kaldır, yoksa oluştur
@@ -15389,7 +15406,10 @@ async function aiAnalizBaslat() {
     // 7) Claude AI öneriler
     await aiOnerilerUret(veri);
 
-    // 8) Sohbet paneli
+    // 8) Akıllı Öneri Motoru
+    await aiOneriMotoruCalistir(veri);
+
+    // 9) Sohbet paneli
     aiSohbetPanelAc(veri);
 
     // Kullanım kaydet
@@ -15725,6 +15745,161 @@ function aiGarsonRender(v) {
       </div>
     </div>
   `).join('');
+}
+
+async function aiOneriMotoruCalistir(v) {
+  const kart = document.getElementById('ai-oneri-motor-kart');
+  const liste = document.getElementById('ai-motor-liste');
+  const yukl  = document.getElementById('ai-motor-yukleniyor');
+  if (!kart || !liste) return;
+
+  kart.style.display = 'block';
+  if (yukl) yukl.style.display = 'block';
+  liste.innerHTML = '';
+
+  // ── Bağlam verisini hazırla ──
+  const simdi   = new Date();
+  const saat    = simdi.getHours();
+  const ayNo    = simdi.getMonth(); // 0-11
+  const mevsim  = ayNo <= 1 || ayNo === 11 ? 'Kış' : ayNo <= 4 ? 'İlkbahar' : ayNo <= 7 ? 'Yaz' : 'Sonbahar';
+  const gunIsimleri = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  const bugunAdi = gunIsimleri[simdi.getDay()];
+
+  // SKT uyarıları
+  const sktBugun  = new Date(); sktBugun.setHours(0,0,0,0);
+  const sktEsikT  = new Date(sktBugun); sktEsikT.setDate(sktEsikT.getDate() + (SKT_ESIK || 7));
+  const sktUyari  = (typeof SKT_URUNLER !== 'undefined' ? SKT_URUNLER : []).filter(u => {
+    const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+    return t <= sktEsikT;
+  });
+
+  // Kritik stok
+  const kritikStok = [];
+  if (typeof URUNLER === 'object') {
+    Object.entries(URUNLER).forEach(([kat, urunler]) => {
+      urunler.forEach(u => {
+        if (u.stok !== null && u.stok !== undefined && u.stok <= 5) {
+          kritikStok.push({ isim: u.isim, stok: u.stok, kat });
+        }
+      });
+    });
+  }
+
+  // Upsell: birlikte sık sipariş edilenler
+  const beraber = {};
+  (v.adisyonlar || []).forEach(a => {
+    const urunAdlari = (a.siparisler || []).map(s => s.isim).filter(Boolean);
+    for (let i = 0; i < urunAdlari.length; i++) {
+      for (let j = i+1; j < urunAdlari.length; j++) {
+        const cift = [urunAdlari[i], urunAdlari[j]].sort().join(' + ');
+        beraber[cift] = (beraber[cift] || 0) + 1;
+      }
+    }
+  });
+  const upsellSirali = Object.entries(beraber)
+    .map(([cift, sayi]) => ({ cift, sayi }))
+    .sort((a,b) => b.sayi - a.sayi)
+    .slice(0, 5);
+
+  // Az satanlar (potansiyel menü temizliği)
+  const azSatanlar = v.urunSirali ? [...v.urunSirali].reverse().slice(0, 5) : [];
+
+  const prompt = [
+    `Sen bir Türk kafesi için akıllı öneri motoru AI'sın.`,
+    `Aşağıdaki veriyi analiz et ve JSON formatında öneriler üret.`,
+    ``,
+    `## MEVCUT BAĞLAM`,
+    `Şu anki saat: ${saat}:00`,
+    `Bugün: ${bugunAdi}`,
+    `Mevsim: ${mevsim}`,
+    ``,
+    `## SATIŞ VERİSİ (${v.donemAdi})`,
+    `Toplam ciro: ${v.toplamCiro?.toFixed(0)} TL`,
+    `Adisyon sayısı: ${v.adisyonSayisi}`,
+    `En çok satanlar: ${(v.urunSirali||[]).slice(0,5).map(u=>`${u.isim}(${u.adet})`).join(', ')}`,
+    `En yoğun saatler: ${(v.yogunSaatSirali||[]).slice(0,3).map(s=>`${s.saat}:00`).join(', ')}`,
+    `En yoğun günler: ${(v.yogunGunSirali||[]).slice(0,3).map(g=>g.gun).join(', ')}`,
+    `Az satanlar: ${azSatanlar.map(u=>u.isim).join(', ') || 'yok'}`,
+    ``,
+    `## KRİTİK DURUMLAR`,
+    `SKT uyarısı olan ürünler: ${sktUyari.length > 0 ? sktUyari.map(u=>`${u.urun_adi}(${Math.round((new Date(u.skt_tarihi)-sktBugun)/(1000*60*60*24))} gün)`).join(', ') : 'yok'}`,
+    `Kritik stok ürünler: ${kritikStok.length > 0 ? kritikStok.map(u=>`${u.isim}(${u.stok} adet)`).join(', ') : 'yok'}`,
+    ``,
+    `## UPSELL FIRSATLARI`,
+    `Birlikte sipariş edilenler: ${upsellSirali.map(u=>u.cift+'('+u.sayi+'x)').join(', ') || 'veri yok'}`,
+    ``,
+    `Şu kategorilerde TOPLAM 6-8 öneri üret:`,
+    `1. bu_saat: Şu an (saat ${saat}) için anlık aksiyon`,
+    `2. skt_aksiyon: SKT/stok acil önlem (varsa)`,
+    `3. upsell: Birlikte satış fırsatı`,
+    `4. menu: Menü optimizasyonu`,
+    `5. kampanya: Mevsim/güne özel kampanya fikri`,
+    `6. verimlilik: Operasyonel verimlilik`,
+    ``,
+    `SADECE şu JSON formatında yanıt ver, başka hiçbir metin yazma:`,
+    `{"oneriler":[{"kategori":"bu_saat","ikon":"⏰","baslik":"...","aciklama":"...","oncelik":"yuksek"},{"kategori":"skt_aksiyon","ikon":"⛔","baslik":"...","aciklama":"...","oncelik":"kritik"},{"kategori":"upsell","ikon":"🤝","baslik":"...","aciklama":"...","oncelik":"orta"},{"kategori":"menu","ikon":"📋","baslik":"...","aciklama":"...","oncelik":"dusuk"},{"kategori":"kampanya","ikon":"🎯","baslik":"...","aciklama":"...","oncelik":"orta"},{"kategori":"verimlilik","ikon":"⚡","baslik":"...","aciklama":"...","oncelik":"dusuk"}]}`,
+    ``,
+    `oncelik değerleri: "kritik", "yuksek", "orta", "dusuk"`,
+    `SKT/stok sorunu yoksa o kategoriyi çıkar veya başka yararlı öneri yaz.`,
+    `Her aciklama max 2 cümle, Türkçe, somut ve uygulanabilir.`,
+  ].join('\n');
+
+  try {
+    const yanit = await claudeAPI(
+      [{ role: 'user', content: prompt }],
+      'Türkçe konuşan, kafe işletme uzmanı AI asistansın. SADECE geçerli JSON formatında yanıt ver.',
+      1500
+    );
+
+    // JSON parse
+    let data;
+    try {
+      const temiz = yanit.replace(/```json|```/g, '').trim();
+      data = JSON.parse(temiz);
+    } catch(e) {
+      // JSON parse başarısız — fallback
+      liste.innerHTML = `<div style="padding:14px;font-size:0.82rem;color:var(--muted);">${yanit}</div>`;
+      if (yukl) yukl.style.display = 'none';
+      return;
+    }
+
+    if (yukl) yukl.style.display = 'none';
+
+    const oncelikRenk = {
+      kritik: { bg:'rgba(239,68,68,0.12)', border:'rgba(239,68,68,0.4)', badge:'#ef4444', badgeTxt:'#fff', label:'KRİTİK' },
+      yuksek: { bg:'rgba(245,158,11,0.10)', border:'rgba(245,158,11,0.4)', badge:'#f59e0b', badgeTxt:'#1a0f00', label:'YÜKSEK' },
+      orta:   { bg:'rgba(99,102,241,0.08)', border:'rgba(99,102,241,0.25)', badge:'#818cf8', badgeTxt:'#fff', label:'ORTA' },
+      dusuk:  { bg:'var(--surface2)', border:'var(--border)', badge:'var(--muted)', badgeTxt:'#fff', label:'BİLGİ' },
+    };
+
+    // Önceliğe göre sırala
+    const sirala = { kritik:0, yuksek:1, orta:2, dusuk:3 };
+    const siralanmis = (data.oneriler || []).sort((a,b) => (sirala[a.oncelik]||3) - (sirala[b.oncelik]||3));
+
+    siralanmis.forEach((o, idx) => {
+      const r = oncelikRenk[o.oncelik] || oncelikRenk.dusuk;
+      const sinir = idx < siralanmis.length - 1 ? 'border-bottom:1px solid rgba(99,102,241,0.15);' : '';
+      const div = document.createElement('div');
+      div.style.cssText = `background:${r.bg};padding:12px 14px;${sinir}`;
+      div.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="font-size:1.3rem;flex-shrink:0;margin-top:1px;">${o.ikon || '💡'}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">
+              <div style="font-weight:900;font-size:0.88rem;">${o.baslik}</div>
+              <span style="font-size:0.6rem;font-weight:900;background:${r.badge};color:${r.badgeTxt};padding:1px 7px;border-radius:20px;white-space:nowrap;">${r.label}</span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text2);line-height:1.5;">${o.aciklama}</div>
+          </div>
+        </div>
+      `;
+      liste.appendChild(div);
+    });
+
+  } catch(e) {
+    if (yukl) yukl.style.display = 'none';
+    liste.innerHTML = `<div style="padding:14px;font-size:0.82rem;color:var(--muted);">⚠️ Öneri motoru hata: ${e.message}</div>`;
+  }
 }
 
 async function aiOnerilerUret(v) {
