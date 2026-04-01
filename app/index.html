@@ -1928,33 +1928,158 @@
 </div>
 
 <!-- STOK SAYFASI -->
-<div class="page" id="page-stok" style="overflow-y:auto;padding:0;">
-  <!-- ÖZET BAR -->
-  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 14px 10px;position:sticky;top:0;z-index:10;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="font-size:1rem;font-weight:900;color:var(--accent2);">📦 Stok Yönetimi</div>
-      <button onclick="stokHareketGecmisiAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;border:1px solid var(--border);">📋 Hareketler</button>
+<div class="page" id="page-stok" style="overflow-y:auto;padding:0;flex-direction:column;">
+  <!-- TAB SEÇİCİ -->
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 14px 0;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;gap:6px;margin-bottom:0;">
+      <button id="stok-tab-stok" onclick="stokTabSec('stok')"
+        style="padding:8px 16px;border-radius:10px 10px 0 0;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;background:var(--accent);color:#1a0f00;">
+        📦 Stok
+      </button>
+      <button id="stok-tab-skt" onclick="stokTabSec('skt')"
+        style="padding:8px 16px;border-radius:10px 10px 0 0;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;background:var(--surface2);color:var(--muted);">
+        📅 SKT <span id="skt-badge" style="display:none;background:#ef4444;color:#fff;border-radius:20px;padding:1px 6px;font-size:0.65rem;margin-left:4px;">!</span>
+      </button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-      <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TAKİPLİ ÜRÜN</div>
-        <div style="font-size:1rem;font-weight:900;" id="stok-takipli-sayi">0</div>
-      </div>
-      <div style="background:rgba(239,68,68,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(239,68,68,0.3);">
-        <div style="font-size:0.65rem;color:#ef4444;font-weight:700;margin-bottom:3px;">TÜKENMİŞ</div>
-        <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="stok-tukenmis-sayi">0</div>
-      </div>
-      <div style="background:rgba(245,158,11,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(245,158,11,0.3);">
-        <div style="font-size:0.65rem;color:#f59e0b;font-weight:700;margin-bottom:3px;">KRİTİK (≤5)</div>
-        <div style="font-size:1rem;font-weight:900;color:#f59e0b;" id="stok-kritik-sayi">0</div>
-      </div>
-    </div>
-    <!-- Kategori filtre -->
-    <div id="stok-kat-filtre" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;"></div>
   </div>
-  <!-- ÜRÜN LİSTESİ -->
-  <div style="padding:12px;">
-    <div id="stok-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+  <!-- STOK PANELİ -->
+  <div id="stok-panel-stok">
+    <!-- ÖZET BAR -->
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 14px 10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:1rem;font-weight:900;color:var(--accent2);">📦 Stok Yönetimi</div>
+        <button onclick="stokHareketGecmisiAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;border:1px solid var(--border);">📋 Hareketler</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:700;margin-bottom:3px;">TAKİPLİ ÜRÜN</div>
+          <div style="font-size:1rem;font-weight:900;" id="stok-takipli-sayi">0</div>
+        </div>
+        <div style="background:rgba(239,68,68,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(239,68,68,0.3);">
+          <div style="font-size:0.65rem;color:#ef4444;font-weight:700;margin-bottom:3px;">TÜKENMİŞ</div>
+          <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="stok-tukenmis-sayi">0</div>
+        </div>
+        <div style="background:rgba(245,158,11,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(245,158,11,0.3);">
+          <div style="font-size:0.65rem;color:#f59e0b;font-weight:700;margin-bottom:3px;">KRİTİK (≤5)</div>
+          <div style="font-size:1rem;font-weight:900;color:#f59e0b;" id="stok-kritik-sayi">0</div>
+        </div>
+      </div>
+      <!-- Kategori filtre -->
+      <div id="stok-kat-filtre" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;"></div>
+    </div>
+    <!-- ÜRÜN LİSTESİ -->
+    <div style="padding:12px;">
+      <div id="stok-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+
+  <!-- SKT PANELİ -->
+  <div id="stok-panel-skt" style="display:none;flex-direction:column;flex:1;">
+    <!-- SKT ÖZET + EKLE -->
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:1rem;font-weight:900;color:var(--accent2);">📅 Son Kullanma Tarihi</div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="sktEmailGonder()" id="skt-email-btn" style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">📧</button>
+          <button onclick="sktEkleAc()" style="padding:8px 14px;border-radius:10px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">+ Ürün Ekle</button>
+        </div>
+      </div>
+      <!-- Özet kartları -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:rgba(239,68,68,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(239,68,68,0.3);">
+          <div style="font-size:0.6rem;color:#ef4444;font-weight:700;margin-bottom:3px;">GEÇMİŞ/BUGÜN</div>
+          <div style="font-size:1rem;font-weight:900;color:#ef4444;" id="skt-gecmis-sayi">0</div>
+        </div>
+        <div style="background:rgba(245,158,11,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(245,158,11,0.3);">
+          <div style="font-size:0.6rem;color:#f59e0b;font-weight:700;margin-bottom:3px;">YAKIN (<span id="skt-esik-label">7</span> GÜN)</div>
+          <div style="font-size:1rem;font-weight:900;color:#f59e0b;" id="skt-yakin-sayi">0</div>
+        </div>
+        <div style="background:rgba(34,197,94,0.15);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(34,197,94,0.3);">
+          <div style="font-size:0.6rem;color:#22c55e;font-weight:700;margin-bottom:3px;">TAMAM</div>
+          <div style="font-size:1rem;font-weight:900;color:#22c55e;" id="skt-tamam-sayi">0</div>
+        </div>
+      </div>
+    </div>
+    <!-- Eşik ayarı -->
+    <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+      <span style="font-size:0.78rem;font-weight:700;color:var(--muted);">⚠️ Uyarı eşiği:</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="sktEsikSec(3)" id="skt-esik-3" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">3 gün</button>
+        <button onclick="sktEsikSec(7)" id="skt-esik-7" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(240,184,48,0.15);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">7 gün</button>
+        <button onclick="sktEsikSec(14)" id="skt-esik-14" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">14 gün</button>
+      </div>
+    </div>
+    <!-- SKT LİSTESİ -->
+    <div style="padding:12px;flex:1;overflow-y:auto;">
+      <div id="skt-liste" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="skt-liste-bos" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+        <div style="font-weight:700;font-size:0.9rem;">SKT takipli ürün yok</div>
+        <div style="font-size:0.78rem;margin-top:4px;">Ürün eklemek için + butonuna bas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKT EKLE/DÜZENLE MODAL -->
+<div id="skt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:620;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;">
+    <div style="font-weight:900;font-size:1rem;margin-bottom:16px;" id="skt-modal-baslik">📅 SKT Ürün Ekle</div>
+    <input type="hidden" id="skt-modal-id">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">ÜRÜN ADI *</label>
+        <input type="text" id="skt-inp-urun" placeholder="Örn: Süt, Krema, Vanilya..." list="skt-urun-oneriler"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;">
+        <datalist id="skt-urun-oneriler">
+          <option value="Süt"><option value="Krema"><option value="Tereyağı"><option value="Yumurta">
+          <option value="Un"><option value="Şeker"><option value="Tuz"><option value="Maya">
+          <option value="Vanilya"><option value="Çikolata"><option value="Kahve Çekirdeği">
+          <option value="Çay"><option value="Meyve Suyu"><option value="Peynir"><option value="Jambon">
+        </datalist>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">MİKTAR</label>
+          <input type="number" id="skt-inp-miktar" placeholder="0" min="0" step="0.1"
+            style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">BİRİM</label>
+          <select id="skt-inp-birim"
+            style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;">
+            <option value="adet">adet</option>
+            <option value="kg">kg</option>
+            <option value="lt">lt</option>
+            <option value="paket">paket</option>
+            <option value="kutu">kutu</option>
+            <option value="şişe">şişe</option>
+            <option value="torba">torba</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">KATEGORİ</label>
+        <input type="text" id="skt-inp-kategori" placeholder="Örn: Süt Ürünleri, Kuru Gıda..."
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">SON KULLANMA TARİHİ *</label>
+        <input type="date" id="skt-inp-tarih"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:0.75rem;font-weight:800;color:var(--muted);display:block;margin-bottom:5px;">NOTLAR</label>
+        <textarea id="skt-inp-notlar" placeholder="Opsiyonel not..." rows="2"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;resize:none;outline:none;box-sizing:border-box;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="sktKaydet()" style="flex:1;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;">✓ Kaydet</button>
+      <button onclick="document.getElementById('skt-modal').style.display='none'" style="padding:13px 20px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;">İptal</button>
+    </div>
+    <button id="skt-sil-btn" onclick="sktSil()" style="display:none;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(239,68,68,0.4);background:transparent;color:#ef4444;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;margin-top:8px;">🗑️ Kaydı Sil</button>
   </div>
 </div>
 
@@ -4145,6 +4270,7 @@ async function kafeVerisiYukle() {
     }
     // Uygulama teması yükle
     appTemaYukle(data);
+    sktYukle().then(() => sktUyariKontrol());
     if (data.receteler) { RECETELER = data.receteler; console.log("Admin: Reçeteler yüklendi:", Object.keys(RECETELER)); }
     if (data.grup_listesi && Array.isArray(data.grup_listesi) && data.grup_listesi.length > 0) {
       _sabitGruplar = data.grup_listesi;
@@ -13284,6 +13410,302 @@ window.stokToggle = stokToggle;
 window.stokIslemTipSec = stokIslemTipSec;
 window.stokGuncelle = stokGuncelle;
 window.stokHareketGecmisiAc = stokHareketGecmisiAc;
+
+// ════════════════════════════════════════
+// SKT SİSTEMİ (Son Kullanma Tarihi)
+// ════════════════════════════════════════
+let SKT_URUNLER = [];
+let SKT_ESIK = 7; // gün
+let SKT_DUZENLE_ID = null;
+
+function stokTabSec(tab) {
+  const panelStok = document.getElementById('stok-panel-stok');
+  const panelSkt  = document.getElementById('stok-panel-skt');
+  const tabStok   = document.getElementById('stok-tab-stok');
+  const tabSkt    = document.getElementById('stok-tab-skt');
+  if (tab === 'stok') {
+    if (panelStok) panelStok.style.display = 'block';
+    if (panelSkt)  panelSkt.style.display  = 'none';
+    if (tabStok) { tabStok.style.background='var(--accent)'; tabStok.style.color='#1a0f00'; }
+    if (tabSkt)  { tabSkt.style.background='var(--surface2)'; tabSkt.style.color='var(--muted)'; }
+    stokRender();
+  } else {
+    if (panelStok) panelStok.style.display = 'none';
+    if (panelSkt)  { panelSkt.style.display='flex'; }
+    if (tabSkt)  { tabSkt.style.background='var(--accent)'; tabSkt.style.color='#1a0f00'; }
+    if (tabStok) { tabStok.style.background='var(--surface2)'; tabStok.style.color='var(--muted)'; }
+    sktRender();
+  }
+}
+
+function sktEsikSec(gun) {
+  SKT_ESIK = gun;
+  // LocalStorage'a kaydet
+  try { localStorage.setItem('skt_esik_' + kafeId, gun); } catch(e){}
+  // Buton aktiflik
+  [3,7,14].forEach(g => {
+    const btn = document.getElementById('skt-esik-' + g);
+    if (!btn) return;
+    btn.style.borderColor = g === gun ? 'var(--accent)' : 'var(--border)';
+    btn.style.background  = g === gun ? 'rgba(240,184,48,0.15)' : 'var(--surface2)';
+    btn.style.color       = g === gun ? 'var(--accent2)' : 'var(--text2)';
+  });
+  const lbl = document.getElementById('skt-esik-label');
+  if (lbl) lbl.textContent = gun;
+  sktRender();
+}
+
+async function sktYukle() {
+  if (!kafeId) return;
+  // Eşiği localStorage'dan al
+  try {
+    const kaydedilen = localStorage.getItem('skt_esik_' + kafeId);
+    if (kaydedilen) SKT_ESIK = parseInt(kaydedilen) || 7;
+  } catch(e){}
+  
+  const { data, error } = await sb.from('skt_urunler')
+    .select('*')
+    .eq('kafe_id', kafeId)
+    .order('skt_tarihi', { ascending: true });
+  if (!error) SKT_URUNLER = data || [];
+  sktBadgeGuncelle();
+}
+
+function sktBadgeGuncelle() {
+  const bugun = new Date(); bugun.setHours(0,0,0,0);
+  const esik = new Date(bugun); esik.setDate(esik.getDate() + SKT_ESIK);
+  
+  const uyari = SKT_URUNLER.filter(u => {
+    const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+    return t <= esik;
+  });
+  
+  const badge = document.getElementById('skt-badge');
+  if (badge) {
+    if (uyari.length > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = uyari.length;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+function sktRender() {
+  const bugun = new Date(); bugun.setHours(0,0,0,0);
+  const esik  = new Date(bugun); esik.setDate(esik.getDate() + SKT_ESIK);
+  
+  let gecmis = 0, yakin = 0, tamam = 0;
+  
+  const liste = document.getElementById('skt-liste');
+  const bos   = document.getElementById('skt-liste-bos');
+  if (!liste) return;
+  liste.innerHTML = '';
+  
+  sktEsikSec(SKT_ESIK); // buton durumlarını güncelle
+  
+  if (SKT_URUNLER.length === 0) {
+    if (bos) bos.style.display = 'block';
+    return;
+  }
+  if (bos) bos.style.display = 'none';
+  
+  // Tarihe göre sıralı zaten (Supabase ORDER BY)
+  SKT_URUNLER.forEach(u => {
+    const tarih = new Date(u.skt_tarihi); tarih.setHours(0,0,0,0);
+    const fark  = Math.round((tarih - bugun) / (1000*60*60*24)); // gün farkı
+    
+    let renk, durum, bg;
+    if (fark < 0) {
+      renk = '#ef4444'; durum = `⛔ ${Math.abs(fark)} gün önce geçti`; bg = 'rgba(239,68,68,0.1)'; gecmis++;
+    } else if (fark === 0) {
+      renk = '#ef4444'; durum = '⛔ Bugün son gün!'; bg = 'rgba(239,68,68,0.1)'; gecmis++;
+    } else if (fark <= SKT_ESIK) {
+      renk = '#f59e0b'; durum = `⚠️ ${fark} gün kaldı`; bg = 'rgba(245,158,11,0.08)'; yakin++;
+    } else {
+      renk = '#22c55e'; durum = `✓ ${fark} gün`; bg = 'var(--surface2)'; tamam++;
+    }
+    
+    const tarihTR = tarih.toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric'});
+    const miktarText = u.miktar ? `${u.miktar} ${u.birim}` : '';
+    
+    const div = document.createElement('div');
+    div.style.cssText = `background:${bg};border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;border:1.5px solid ${fark <= SKT_ESIK ? renk + '40' : 'var(--border)'};`;
+    div.innerHTML = `
+      <div style="flex:1;">
+        <div style="font-weight:800;font-size:0.9rem;">${u.urun_adi}</div>
+        <div style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-top:2px;">
+          ${u.kategori ? u.kategori + ' · ' : ''}${miktarText}${miktarText ? ' · ' : ''}📅 ${tarihTR}
+        </div>
+        ${u.notlar ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">💬 ${u.notlar}</div>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-weight:900;font-size:0.78rem;color:${renk};text-align:right;white-space:nowrap;">${durum}</div>
+        <button onclick="sktDuzenleAc('${u.id}')"
+          style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface3);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">✏️</button>
+      </div>
+    `;
+    liste.appendChild(div);
+  });
+  
+  // Özet sayıları
+  const el = id => document.getElementById(id);
+  if (el('skt-gecmis-sayi')) el('skt-gecmis-sayi').textContent = gecmis;
+  if (el('skt-yakin-sayi'))  el('skt-yakin-sayi').textContent  = yakin;
+  if (el('skt-tamam-sayi'))  el('skt-tamam-sayi').textContent  = tamam;
+  
+  sktBadgeGuncelle();
+}
+
+function sktEkleAc() {
+  SKT_DUZENLE_ID = null;
+  document.getElementById('skt-modal-baslik').textContent = '📅 SKT Ürün Ekle';
+  document.getElementById('skt-inp-urun').value    = '';
+  document.getElementById('skt-inp-miktar').value  = '';
+  document.getElementById('skt-inp-birim').value   = 'adet';
+  document.getElementById('skt-inp-kategori').value= '';
+  document.getElementById('skt-inp-tarih').value   = '';
+  document.getElementById('skt-inp-notlar').value  = '';
+  document.getElementById('skt-inp-tarih').min = new Date().toISOString().split('T')[0];
+  document.getElementById('skt-sil-btn').style.display = 'none';
+  document.getElementById('skt-modal').style.display = 'flex';
+}
+
+function sktDuzenleAc(id) {
+  const u = SKT_URUNLER.find(x => x.id === id);
+  if (!u) return;
+  SKT_DUZENLE_ID = id;
+  document.getElementById('skt-modal-baslik').textContent = '✏️ SKT Düzenle';
+  document.getElementById('skt-inp-urun').value    = u.urun_adi;
+  document.getElementById('skt-inp-miktar').value  = u.miktar || '';
+  document.getElementById('skt-inp-birim').value   = u.birim || 'adet';
+  document.getElementById('skt-inp-kategori').value= u.kategori || '';
+  document.getElementById('skt-inp-tarih').value   = u.skt_tarihi;
+  document.getElementById('skt-inp-notlar').value  = u.notlar || '';
+  document.getElementById('skt-sil-btn').style.display = 'block';
+  document.getElementById('skt-modal').style.display = 'flex';
+}
+
+async function sktKaydet() {
+  const urunAdi = document.getElementById('skt-inp-urun').value.trim();
+  const tarih   = document.getElementById('skt-inp-tarih').value;
+  if (!urunAdi) { toast('Ürün adı zorunlu!'); return; }
+  if (!tarih)   { toast('SKT tarihi zorunlu!'); return; }
+  
+  const kayit = {
+    kafe_id:   kafeId,
+    urun_adi:  urunAdi,
+    miktar:    parseFloat(document.getElementById('skt-inp-miktar').value) || null,
+    birim:     document.getElementById('skt-inp-birim').value,
+    kategori:  document.getElementById('skt-inp-kategori').value.trim() || null,
+    skt_tarihi: tarih,
+    notlar:    document.getElementById('skt-inp-notlar').value.trim() || null
+  };
+  
+  if (SKT_DUZENLE_ID) {
+    const { error } = await sb.from('skt_urunler').update(kayit).eq('id', SKT_DUZENLE_ID);
+    if (error) { toast('❌ Kayıt hatası!'); return; }
+    const idx = SKT_URUNLER.findIndex(x => x.id === SKT_DUZENLE_ID);
+    if (idx !== -1) SKT_URUNLER[idx] = { ...SKT_URUNLER[idx], ...kayit };
+    toast('✓ SKT güncellendi');
+  } else {
+    const { data, error } = await sb.from('skt_urunler').insert(kayit).select().single();
+    if (error) { toast('❌ Kayıt hatası!'); return; }
+    SKT_URUNLER.push(data);
+    SKT_URUNLER.sort((a,b) => a.skt_tarihi.localeCompare(b.skt_tarihi));
+    toast('✓ SKT ürün eklendi');
+  }
+  
+  document.getElementById('skt-modal').style.display = 'none';
+  sktRender();
+  
+  // Açılışta uyarı kontrolü
+  sktUyariKontrol();
+}
+
+async function sktSil() {
+  if (!SKT_DUZENLE_ID) return;
+  if (!confirm('Bu SKT kaydı silinsin mi?')) return;
+  const { error } = await sb.from('skt_urunler').delete().eq('id', SKT_DUZENLE_ID);
+  if (error) { toast('❌ Silme hatası!'); return; }
+  SKT_URUNLER = SKT_URUNLER.filter(x => x.id !== SKT_DUZENLE_ID);
+  document.getElementById('skt-modal').style.display = 'none';
+  sktRender();
+  toast('🗑️ Kayıt silindi');
+}
+
+// Uygulama açılışında SKT uyarısı (toast)
+function sktUyariKontrol() {
+  const bugun = new Date(); bugun.setHours(0,0,0,0);
+  const esik  = new Date(bugun); esik.setDate(esik.getDate() + SKT_ESIK);
+  
+  const gecmis = SKT_URUNLER.filter(u => {
+    const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+    return t <= bugun;
+  });
+  const yakin = SKT_URUNLER.filter(u => {
+    const t = new Date(u.skt_tarihi); t.setHours(0,0,0,0);
+    return t > bugun && t <= esik;
+  });
+  
+  if (gecmis.length > 0) {
+    setTimeout(() => toast(`⛔ ${gecmis.length} ürünün SKT geçmiş! Stok sayfasını kontrol et.`), 2000);
+  } else if (yakin.length > 0) {
+    setTimeout(() => toast(`⚠️ ${yakin.length} ürünün SKT yaklaşıyor (${SKT_ESIK} gün içinde)`), 2000);
+  }
+  
+  sktBadgeGuncelle();
+}
+
+// SKT e-posta bildirimi
+async function sktEmailGonder() {
+  if (!kafeId) return;
+  const btn = document.getElementById('skt-email-btn');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+
+    const res = await fetch(
+      `https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/skt-email-alert`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ kafe_id: kafeId, esik_gun: SKT_ESIK }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.error === 'Kafe e-postası kayıtlı değil') {
+      toast('⚠️ Hesabınıza e-posta eklenmemiş. Ayarlar → Profil bölümünden ekleyin.');
+    } else if (data.error) {
+      toast('❌ E-posta gönderilemedi: ' + data.error);
+    } else if (data.gonderildi === false) {
+      toast('✓ Uyarı gerektiren SKT ürünü yok, e-posta gönderilmedi.');
+    } else {
+      toast(`✅ SKT uyarı e-postası ${data.email} adresine gönderildi!`);
+    }
+  } catch (err) {
+    toast('❌ Bağlantı hatası: ' + err.message);
+  } finally {
+    if (btn) { btn.textContent = '📧'; btn.disabled = false; }
+  }
+}
+
+window.sktEmailGonder = sktEmailGonder;
+
+window.stokTabSec = stokTabSec;
+window.sktEsikSec = sktEsikSec;
+window.sktEkleAc  = sktEkleAc;
+window.sktDuzenleAc = sktDuzenleAc;
+window.sktKaydet  = sktKaydet;
+window.sktSil     = sktSil;
+
 window.raporSekme = raporSekme;
 window.raporPDFExport = raporPDFExport;
 window.raporExcelExport = raporExcelExport;
