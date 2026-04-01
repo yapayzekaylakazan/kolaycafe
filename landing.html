@@ -94,7 +94,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 5%;height:64px;dis
 
 /* ── PAIN POINTS ── */
 .pain-sec{background:var(--ink);border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);}
-.pain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px;max-width:1160px;margin:48px auto 0;background:var(--border2);}
+.pain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;max-width:1160px;margin:48px auto 0;background:var(--border2);}
 .pain-item{background:var(--ink);padding:32px 28px;position:relative;overflow:hidden;transition:background 0.2s;}
 .pain-item:hover{background:var(--ink2);}
 .pain-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--gold),transparent);}
@@ -129,7 +129,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 5%;height:64px;dis
 /* ── FEATURES ── */
 .feat-sec{background:var(--ink2);}
 .feat-head{max-width:1160px;margin:0 auto 56px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;}
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;max-width:1160px;margin:0 auto;background:var(--border);}
+.feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;max-width:1160px;margin:0 auto;background:var(--border);}
 .feat-item{background:var(--ink2);padding:28px 24px;transition:background 0.2s;}
 .feat-item:hover{background:var(--ink3);}
 .feat-icon{font-size:1.5rem;margin-bottom:14px;display:block;}
@@ -301,7 +301,7 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){.plan-grid{grid-template-columns:repeat(3,1fr);}.footer-top{grid-template-columns:1fr 1fr;}}
 @media(max-width:900px){.how-wrap{grid-template-columns:repeat(2,1fr);}.how-wrap::before{display:none;}.addon{grid-template-columns:1fr;}}
-@media(max-width:700px){.nav-links{display:none;}.plan-grid{grid-template-columns:1fr 1fr;}.testi-grid{grid-template-columns:1fr;}.footer-top{grid-template-columns:1fr 1fr;}.masa-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:700px){.nav-links{display:none;}.plan-grid{grid-template-columns:1fr 1fr;}.testi-grid{grid-template-columns:1fr;}.footer-top{grid-template-columns:1fr 1fr;}.masa-grid{grid-template-columns:repeat(4,1fr);}.pain-grid{grid-template-columns:1fr;}.feat-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:480px){.plan-grid{grid-template-columns:1fr;}.footer-top{grid-template-columns:1fr;}.hero-proof{gap:20px;}.proof-div{display:none;}}
 
   /* ── AI SEKSİYON ── */
@@ -480,13 +480,15 @@ footer{background:var(--ink2);border-top:1px solid var(--border);padding:64px 5%
     <div class="feat-item"><span class="feat-icon">☁️</span><div class="feat-name">Gerçek Zamanlı Bulut</div><div class="feat-desc">Tüm garsonlar aynı anda farklı cihazlardan girebilir. Siparişler anlık senkronize olur.</div></div>
     <div class="feat-item"><span class="feat-icon">📱</span><div class="feat-name">Tüm Cihazlarda</div><div class="feat-desc">Android, iPhone, tablet — tüm cihazlarda kusursuz çalışır. Uygulama indirmeye gerek yok.</div></div>
     <div class="feat-item"><span class="feat-icon">🔔</span><div class="feat-name">Anlık Bildirimler</div><div class="feat-desc">Yeni sipariş, masa çağrısı veya ödeme geldiğinde sesli ve görsel bildirim alın. Hiçbir siparişi kaçırmayın.</div></div>
-    <div class="feat-item feat-item-review" style="background:linear-gradient(135deg,rgba(200,133,42,0.08),rgba(200,133,42,0.03));border-left:3px solid var(--gold);display:flex;flex-direction:column;justify-content:space-between;gap:16px;">
-      <div>
-        <span class="feat-icon">⭐</span>
-        <div class="feat-name" style="color:var(--gold2);">Deneyiminizi Paylaşın</div>
-        <div class="feat-desc">KolayCafe'yi kullananların görüşleri diğer cafe sahiplerine yol gösteriyor. Siz de deneyiminizi yazın.</div>
-      </div>
-      <button onclick="yorumModalAc()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(200,133,42,0.15);border:1.5px solid rgba(200,133,42,0.35);color:var(--gold3);padding:10px 16px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:DM Sans,sans-serif;">⭐ Yorum Bırak →</button>
+    <div class="feat-item" style="background:linear-gradient(135deg,rgba(200,133,42,0.08),rgba(200,133,42,0.03));border-left:3px solid var(--gold);">
+      <span class="feat-icon">🤖</span>
+      <div class="feat-name" style="color:var(--gold2);">AI Satış Asistanı</div>
+      <div class="feat-desc">Haftalık ciro analizi, en çok satan ürünler, garson performansı. Claude AI ile somut öneri ve strateji — tek tıkla.</div>
+    </div>
+    <div class="feat-item" style="background:linear-gradient(135deg,rgba(200,133,42,0.06),rgba(200,133,42,0.02));border-left:3px solid var(--gold);">
+      <span class="feat-icon">⭐</span>
+      <div class="feat-name" style="color:var(--gold2);">Deneyiminizi Paylaşın</div>
+      <div class="feat-desc">KolayCafe kullananların görüşleri yol gösteriyor. <span style="cursor:pointer;text-decoration:underline;color:var(--gold3);" onclick="yorumModalAc()">Siz de deneyiminizi yazın →</span></div>
     </div>
   </div>
 </section>
