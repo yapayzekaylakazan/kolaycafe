@@ -4,20 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KolayCafe — Yönetim Paneli v3.1</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root{--bg:#0a0a0f;--bg2:#111118;--surface:#1a1a24;--surface2:#222230;--border:#2a2a3a;--text:#e8e8f0;--text2:#9090b0;--accent:#f0b940;--accent2:#e07840;--green:#30d080;--red:#e04050;--blue:#4080f0;--purple:#9060f0;--cyan:#20c0d0;--pink:#e060a0;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;font-size:14px;line-height:1.6;}
   ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
   #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,#1a1000 0%,var(--bg) 60%);}
   .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:420px;text-align:center;}
   .login-logo{font-size:2.5rem;margin-bottom:8px;}.login-title{font-size:1.5rem;font-weight:800;color:var(--accent);margin-bottom:4px;}
-  .login-sub{font-size:0.8rem;color:var(--text2);margin-bottom:32px;font-family:'Space Mono',monospace;}
-  .login-inp{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.95rem;outline:none;margin-bottom:12px;transition:border-color .2s;}
-  .login-inp:focus{border-color:var(--accent);}.login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
+  .login-sub{font-size:0.82rem;color:var(--text2);margin-bottom:32px;font-family:'Inter',sans-serif;letter-spacing:0.01em;}
+  .login-inp{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.95rem;font-weight:500;outline:none;margin-bottom:12px;transition:border-color .2s;}
+  .login-inp:focus{border-color:var(--accent);}.login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#1a0f00;font-family:'Inter',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
   .login-err{color:var(--red);font-size:0.82rem;margin-top:10px;display:none;}
   .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0;position:sticky;top:0;z-index:200;}
   .topbar-ust{display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--border);}
@@ -25,13 +25,13 @@
   .topbar-alt::-webkit-scrollbar{display:none;}
   .topbar-logo{font-size:0.98rem;font-weight:800;color:var(--accent);white-space:nowrap;}
   .topbar-logo span{color:var(--text2);font-weight:400;font-size:0.7rem;font-family:'Space Mono',monospace;}
-  .tab-btn{padding:4px 10px;border-radius:6px;border:1.5px solid transparent;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .tab-btn{padding:4px 10px;border-radius:6px;border:1.5px solid transparent;background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
   .tab-btn:hover{color:var(--text);border-color:var(--border);}.tab-btn.aktif{background:var(--accent);color:#1a0f00;border-color:var(--accent);}
   .topbar-sag{display:flex;align-items:center;gap:10px;margin-left:auto;}
   .canli-bar{display:flex;align-items:center;gap:12px;font-family:'Space Mono',monospace;font-size:0.68rem;color:var(--text2);}
   .canli-item{display:flex;align-items:center;gap:4px;}.canli-sayi{font-weight:700;color:var(--green);}
   .online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
-  .cikis-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.73rem;font-weight:700;cursor:pointer;}
+  .cikis-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-size:0.73rem;font-weight:700;cursor:pointer;}
   .cikis-btn:hover{border-color:var(--red);color:var(--red);}
   .sayfa{display:none;padding:20px;max-width:1600px;margin:0 auto;}.sayfa.aktif{display:block;}
   .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin-bottom:20px;}
@@ -43,13 +43,13 @@
   .kpi-etiket{font-size:0.62rem;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:.4px;}
   .toolbar{display:flex;align-items:center;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
   .toolbar-baslik{font-size:0.92rem;font-weight:800;flex:1;min-width:80px;}
-  .arama{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;width:190px;}
+  .arama{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.8rem;outline:none;width:190px;}
   .arama:focus{border-color:var(--accent);}
-  .sel{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.74rem;outline:none;cursor:pointer;}
+  .sel{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.76rem;outline:none;cursor:pointer;}
   .sel:focus{border-color:var(--accent);}
-  .fbtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .fbtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
   .fbtn.aktif{border-color:var(--accent);color:var(--accent);background:#f0b94015;}
-  .ebtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .ebtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Inter',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;}
   .ebtn:hover{background:var(--surface);}
   .tw{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:9px;}
   .tw table{width:100%;border-collapse:collapse;}
@@ -72,7 +72,7 @@
   @keyframes pls{0%,100%{opacity:1}50%{opacity:.6}}
   .sure-wrap{width:88px;}.sure-bg{background:var(--surface2);border-radius:3px;height:4px;overflow:hidden;}
   .sure-bar{height:100%;border-radius:3px;transition:width .3s;}.sure-lbl{font-size:0.58rem;color:var(--text2);margin-top:2px;font-family:'Space Mono',monospace;}
-  .abtn{padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:0.68rem;font-weight:700;cursor:pointer;margin-right:3px;transition:all .15s;}
+  .abtn{padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-size:0.68rem;font-weight:700;cursor:pointer;margin-right:3px;transition:all .15s;}
   .abtn:hover{border-color:var(--accent);color:var(--accent);}.abtn.teh:hover{border-color:var(--red);color:var(--red);}
   .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:999;align-items:center;justify-content:center;padding:14px;}
   .overlay.ac{display:flex;}
@@ -83,9 +83,9 @@
   .mk{font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:128px;padding-top:2px;}
   .mv{font-size:0.8rem;color:var(--text);font-weight:600;flex:1;word-break:break-all;}
   .maya{border:none;border-top:1px solid var(--border);margin:12px 0;}
-  .mkat{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;margin-bottom:7px;cursor:pointer;}
-  .mkaydet{padding:7px 13px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;}
-  .mkapatbtn{margin-top:15px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;}
+  .mkat{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.85rem;outline:none;margin-bottom:7px;cursor:pointer;}
+  .mkaydet{padding:7px 13px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Inter',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;}
+  .mkapatbtn{margin-top:15px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-weight:700;cursor:pointer;}
   .mkapatbtn:hover{border-color:var(--accent);color:var(--accent);}
   .bb{font-size:0.65rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin:11px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border);}
   .pk{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;}
@@ -105,9 +105,9 @@
   .tpk:hover{transform:translateY(-2px);}.tpk.aktif-test{box-shadow:0 0 0 2px var(--accent);}
   .tpk-ad{font-size:0.76rem;font-weight:800;margin-bottom:2px;}.tpk-fiy{font-size:1.05rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;line-height:1;}
   .tpk-sure{font-size:0.58rem;color:var(--text2);margin-bottom:5px;}
-  .tp-uygula{padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;}
+  .tp-uygula{padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#1a0f00;font-family:'Inter',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;}
   .tp-uygula:disabled{opacity:.4;cursor:not-allowed;}
-  .tp-gun{background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;width:75px;}
+  .tp-gun{background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.78rem;outline:none;width:75px;}
   .tp-sonuc{margin-top:9px;font-size:0.73rem;font-family:'Space Mono',monospace;padding:7px 11px;border-radius:7px;display:none;}
   .tp-sonuc.ok{background:#30d08015;color:var(--green);border:1px solid #30d08040;}
   .tp-sonuc.err{background:#e0405015;color:var(--red);border:1px solid #e0405040;}
@@ -326,8 +326,8 @@
         <div class="pk-ust"><span>📢 TOPLU BİLDİRİM</span></div>
         <div style="display:flex;flex-direction:column;gap:7px;">
           <select class="sel" style="width:100%;" id="toplu-hedef"><option value="doldu">Süresi dolmuş</option><option value="7gun">7 günde bitecek</option><option value="30sessiz">30 gün sessiz</option><option value="deneme">Deneme kullanıcılar</option><option value="hepsi">Tüm aktif kullanıcılar</option></select>
-          <textarea id="toplu-mesaj" placeholder="Banner mesajı..." style="background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;resize:none;height:66px;outline:none;width:100%;"></textarea>
-          <button onclick="topluBannerGonder()" style="padding:8px;border-radius:7px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;cursor:pointer;">📢 Toplu Gönder</button>
+          <textarea id="toplu-mesaj" placeholder="Banner mesajı..." style="background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.78rem;resize:none;height:66px;outline:none;width:100%;"></textarea>
+          <button onclick="topluBannerGonder()" style="padding:8px;border-radius:7px;border:none;background:var(--accent);color:#1a0f00;font-family:'Inter',sans-serif;font-weight:800;cursor:pointer;">📢 Toplu Gönder</button>
           <div id="toplu-sonuc" style="font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;"></div>
         </div>
       </div>
@@ -368,8 +368,8 @@
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-size:0.68rem;color:var(--text2);font-family:'Space Mono',monospace;">TEST KAFESİ:</span>
           <select id="test-kafe-sec" class="sel" style="min-width:180px;"><option value="">— Kafe seçin —</option></select>
-          <button id="btn-test-kafe-olustur" onclick="genelTestCafesiOlustur()" style="padding:5px 10px;border-radius:7px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">+ Test Cafesi</button>
-          <a href="app/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;text-decoration:none;">🚀 Uygulamayı Aç</a>
+          <button id="btn-test-kafe-olustur" onclick="genelTestCafesiOlustur()" style="padding:5px 10px;border-radius:7px;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);font-family:'Inter',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">+ Test Cafesi</button>
+          <a href="app/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);color:var(--text2);font-family:'Inter',sans-serif;font-weight:700;font-size:0.7rem;text-decoration:none;">🚀 Uygulamayı Aç</a>
         </div>
       </div>
       <div style="font-size:0.7rem;color:var(--text2);margin-bottom:11px;">Pakete tıkla → otomatik uygulanır. Her paketi sırayla test edin.</div>
@@ -393,7 +393,7 @@
           <option value="bekleyen">Onay Bekleyen</option>
           <option value="onaylandi">Onaylanmış</option>
         </select>
-        <button onclick="yorumlariYukle()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🔄 Yenile</button>
+        <button onclick="yorumlariYukle()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🔄 Yenile</button>
       </div>
     </div>
     <div id="yorum-listesi" style="display:flex;flex-direction:column;gap:10px;padding:12px;"></div>
@@ -414,7 +414,7 @@
         <select id="aik-kafe" class="sel" onchange="aiKayitlariYukle()" style="min-width:160px;">
           <option value="">Tüm Kafeler</option>
         </select>
-        <button onclick="aiKayitlariYukle()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🔄 Yenile</button>
+        <button onclick="aiKayitlariYukle()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">🔄 Yenile</button>
       </div>
     </div>
     <div id="aik-istatistik" style="display:flex;gap:10px;flex-wrap:wrap;padding:0 12px 12px;"></div>
@@ -454,27 +454,27 @@
     <!-- Manuel gün ekle/çıkar -->
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;">
       <span style="font-size:0.72rem;font-weight:800;color:var(--text2);white-space:nowrap;">Manuel:</span>
-      <input type="number" id="modal-manuel-gun" min="1" placeholder="Gün" style="width:65px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+      <input type="number" id="modal-manuel-gun" min="1" placeholder="Gün" style="width:65px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
       <button onclick="manuelGunEkle(seciliKafeId,1)" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-weight:800;font-size:0.72rem;cursor:pointer;">➕ Ekle</button>
       <button onclick="manuelGunEkle(seciliKafeId,-1)" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #e05050;background:transparent;color:#e05050;font-weight:800;font-size:0.72rem;cursor:pointer;">➖ Çıkar</button>
     </div>
     <div style="display:flex;gap:7px;align-items:center;margin-bottom:7px;">
-      <input type="number" id="modal-gun" placeholder="Gün (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
+      <input type="number" id="modal-gun" placeholder="Gün (örn: 30)" style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.78rem;outline:none;">
       <button class="mkaydet" onclick="planGuncelle()">✓ Güncelle</button>
     </div>
-    <button onclick="aiPaketToggle()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(167,139,250,0.4);background:rgba(167,139,250,0.08);color:#a78bfa;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🤖 AI Paketi Ekle / Kaldır</button>
+    <button onclick="aiPaketToggle()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(167,139,250,0.4);background:rgba(167,139,250,0.08);color:#a78bfa;font-family:'Inter',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🤖 AI Paketi Ekle / Kaldır</button>
     <div style="margin-top:8px;background:rgba(167,139,250,0.06);border:1.5px solid rgba(167,139,250,0.2);border-radius:10px;padding:10px 12px;">
       <div style="font-size:0.72rem;font-weight:800;color:#a78bfa;margin-bottom:8px;">🎛️ AI Limit Düzenle</div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
         <span style="font-size:0.7rem;color:var(--text2);font-weight:700;width:100px;white-space:nowrap;">📊 Analiz/gün:</span>
-        <input type="number" id="modal-ai-analiz-miktar" min="1" value="5" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+        <input type="number" id="modal-ai-analiz-miktar" min="1" value="5" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
         <button onclick="aiLimitDegistir('analiz',1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
         <button onclick="aiLimitDegistir('analiz',-1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #e05050;background:transparent;color:#e05050;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
         <button onclick="aiLimitSifirla('analiz')" style="padding:4px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.65rem;font-weight:800;cursor:pointer;">Sıfırla</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
         <span style="font-size:0.7rem;color:var(--text2);font-weight:700;width:100px;white-space:nowrap;">💬 Sohbet/ay:</span>
-        <input type="number" id="modal-ai-sohbet-miktar" min="1" value="10" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
+        <input type="number" id="modal-ai-sohbet-miktar" min="1" value="10" style="width:55px;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:800;outline:none;text-align:center;">
         <button onclick="aiLimitDegistir('sohbet',1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #22c55e;background:transparent;color:#22c55e;font-weight:800;font-size:0.72rem;cursor:pointer;">➕</button>
         <button onclick="aiLimitDegistir('sohbet',-1)" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #e05050;background:transparent;color:#e05050;font-weight:800;font-size:0.72rem;cursor:pointer;">➖</button>
         <button onclick="aiLimitSifirla('sohbet')" style="padding:4px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.65rem;font-weight:800;cursor:pointer;">Sıfırla</button>
@@ -482,7 +482,7 @@
       <div id="modal-ai-limit-goster" style="font-size:0.7rem;color:#a78bfa;font-weight:700;text-align:center;min-height:16px;"></div>
     </div>
     <button class="mkapatbtn" onclick="modalKapat()">✕ Kapat</button>
-    <button onclick="planSifirla()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(224,80,80,0.4);background:rgba(224,80,80,0.08);color:#e05050;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🗑️ Planı Sıfırla (Denemeye Al)</button>
+    <button onclick="planSifirla()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid rgba(224,80,80,0.4);background:rgba(224,80,80,0.08);color:#e05050;font-family:'Inter',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">🗑️ Planı Sıfırla (Denemeye Al)</button>
   </div>
 </div>
 
@@ -677,7 +677,7 @@ async function aiKayitlariYukle() {
       <!-- Kafe başlığı -->
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;background:var(--surface2);" onclick="aikKafeToggle('aik-kafe-${ki}')">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="font-family:'Syne',sans-serif;font-weight:900;font-size:0.95rem;color:var(--text);">☕ ${kafe.ad}</span>
+          <span style="font-family:'Inter',sans-serif;font-weight:900;font-size:0.95rem;color:var(--text);">☕ ${kafe.ad}</span>
           <span style="font-size:0.68rem;background:var(--surface3);color:var(--muted);padding:2px 8px;border-radius:5px;">${kafe.plan}</span>
           <span style="font-size:0.72rem;color:var(--accent2);font-weight:700;">📊 ${analizCount} analiz</span>
           <span style="font-size:0.72rem;color:#30d080;font-weight:700;">💬 ${sohbetCount} sohbet</span>
@@ -736,7 +736,7 @@ async function yorumlariYukle() {
     <div id="yorum-kart-${y.id}" style="background:var(--surface);border:1px solid ${y.onaylandi ? 'rgba(48,208,128,0.25)' : 'var(--border)'};border-radius:12px;padding:14px 16px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
         <div>
-          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;color:var(--text);">${y.isim}</span>
+          <span style="font-family:'Inter',sans-serif;font-weight:800;font-size:0.9rem;color:var(--text);">${y.isim}</span>
           ${y.kafe_adi ? `<span style="font-size:0.75rem;color:var(--text2);margin-left:8px;">— ${y.kafe_adi}</span>` : ''}
           <div style="color:#f5c060;font-size:0.95rem;margin-top:4px;">${'★'.repeat(y.yildiz)}${'☆'.repeat(5-y.yildiz)}</div>
         </div>
@@ -747,10 +747,10 @@ async function yorumlariYukle() {
             : `<span style="background:rgba(255,180,0,0.1);border:1px solid rgba(255,180,0,0.3);color:#ffb400;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:6px;">⏳ Bekliyor</span>`
           }
           ${!y.onaylandi
-            ? `<button onclick="yorumOnayla('${y.id}')" style="padding:4px 12px;border-radius:6px;border:1.5px solid rgba(48,208,128,0.4);background:rgba(48,208,128,0.08);color:#30d080;font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">✓ Onayla</button>`
+            ? `<button onclick="yorumOnayla('${y.id}')" style="padding:4px 12px;border-radius:6px;border:1.5px solid rgba(48,208,128,0.4);background:rgba(48,208,128,0.08);color:#30d080;font-family:'Inter',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">✓ Onayla</button>`
             : ''
           }
-          <button onclick="yorumSil('${y.id}')" style="padding:4px 10px;border-radius:6px;border:1.5px solid rgba(224,80,80,0.3);background:rgba(224,80,80,0.06);color:#e05050;font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">🗑 Sil</button>
+          <button onclick="yorumSil('${y.id}')" style="padding:4px 10px;border-radius:6px;border:1.5px solid rgba(224,80,80,0.3);background:rgba(224,80,80,0.06);color:#e05050;font-family:'Inter',sans-serif;font-weight:700;font-size:0.7rem;cursor:pointer;">🗑 Sil</button>
         </div>
       </div>
       <div style="font-size:0.83rem;color:var(--text2);line-height:1.7;font-style:italic;">"${y.yorum}"</div>
@@ -1232,8 +1232,8 @@ async function detayAc(id) {
   html += bb('📞', 'İletişim Bilgileri');
   if (k.email) html += satirHtml('E-Posta', k.email, true);
   else html += `<div class="ms"><div class="mk">E-Posta</div><div class="mv" style="display:flex;gap:7px;flex:1;">
-    <input id="modal-email-inp" type="email" placeholder="ornek@mail.com" style="flex:1;background:var(--surface);border:1.5px solid var(--accent);border-radius:7px;padding:6px 9px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;">
-    <button onclick="emailKaydet()" style="padding:5px 10px;border-radius:7px;border:none;background:var(--accent);color:#1a0f00;font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✓</button>
+    <input id="modal-email-inp" type="email" placeholder="ornek@mail.com" style="flex:1;background:var(--surface);border:1.5px solid var(--accent);border-radius:7px;padding:6px 9px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.78rem;outline:none;">
+    <button onclick="emailKaydet()" style="padding:5px 10px;border-radius:7px;border:none;background:var(--accent);color:#1a0f00;font-family:'Inter',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">✓</button>
   </div></div>`;
   html += satirHtml('Telefon', k.telefon||'—', true);
   html += satirHtml('Adres', k.adres||'—', false);
@@ -1252,10 +1252,10 @@ async function detayAc(id) {
   html += satirHtml('Bitiş', tarihFmt(k.plan_bitis), false);
   html += satirHtml('Kalan', sure.doldu ? '<span style="color:var(--red)">❌ Süresi dolmuş</span>' : sure.html.replace(/<[^>]+>/g,'').trim()+' gün', false);
   html += `<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
-    <button onclick="hizliUzat('${k.id}',7)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+7 gün</button>
-    <button onclick="hizliUzat('${k.id}',14)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+14 gün</button>
-    <button onclick="hizliUzat('${k.id}',30)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+30 gün</button>
-    <button onclick="manuelToggle('${k.id}',${!k.manuel_pasif});modalKapat()" style="padding:5px 10px;border-radius:7px;border:1.5px solid ${k.manuel_pasif?'var(--green)':'var(--red)'};background:transparent;color:${k.manuel_pasif?'var(--green)':'var(--red)'};font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">${k.manuel_pasif?'✅ Aktif Et':'🔒 Pasife Al'}</button>
+    <button onclick="hizliUzat('${k.id}',7)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Inter',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+7 gün</button>
+    <button onclick="hizliUzat('${k.id}',14)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Inter',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+14 gün</button>
+    <button onclick="hizliUzat('${k.id}',30)" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:'Inter',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">+30 gün</button>
+    <button onclick="manuelToggle('${k.id}',${!k.manuel_pasif});modalKapat()" style="padding:5px 10px;border-radius:7px;border:1.5px solid ${k.manuel_pasif?'var(--green)':'var(--red)'};background:transparent;color:${k.manuel_pasif?'var(--green)':'var(--red)'};font-family:'Inter',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">${k.manuel_pasif?'✅ Aktif Et':'🔒 Pasife Al'}</button>
   </div>`;
 
   html += bb('⚙️', 'Sistem & Kullanım');
@@ -1321,7 +1321,7 @@ async function detayAc(id) {
 
   html += bb('📈', 'Ciro Raporu');
   html += `<div id="ciro-rapor-alani">
-    <button onclick="ciroRaporYukle('${k.id}')" style="width:100%;padding:9px;border-radius:9px;border:1.5px solid #30d08040;background:#30d08010;color:#30d080;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">📊 Ciro Raporunu Yükle</button>
+    <button onclick="ciroRaporYukle('${k.id}')" style="width:100%;padding:9px;border-radius:9px;border:1.5px solid #30d08040;background:#30d08010;color:#30d080;font-family:'Inter',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;">📊 Ciro Raporunu Yükle</button>
   </div>`;
 
   html += bb('🎯', 'Satışa Dönüştür');
@@ -1332,7 +1332,7 @@ async function detayAc(id) {
     ${tel ? `<a href="https://wa.me/${waTel}?text=${waMsg}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:8px;background:#25D36615;border:1.5px solid #25D36640;color:#25D366;font-size:0.78rem;font-weight:800;text-decoration:none;">💬 WhatsApp</a>` : `<div style="padding:9px;border-radius:8px;background:var(--surface);text-align:center;font-size:0.72rem;color:var(--text2);">📵 Tel yok</div>`}
     ${k.email ? `<a href="mailto:${k.email}?subject=KolayCafe%20Paket%20Teklifiniz" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:8px;background:#4080f015;border:1.5px solid #4080f040;color:#4080f0;font-size:0.78rem;font-weight:800;text-decoration:none;">📧 E-posta</a>` : `<div style="padding:9px;border-radius:8px;background:var(--surface);text-align:center;font-size:0.72rem;color:var(--text2);">📭 Mail yok</div>`}
   </div>`;
-  html += `<button onclick="bannerGonder('${k.id}')" style="width:100%;padding:9px;border-radius:8px;border:1.5px solid #f0b94040;background:#f0b94010;color:var(--accent);font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;margin-bottom:8px;">📢 Uygulama İçi Banner Gönder</button>`;
+  html += `<button onclick="bannerGonder('${k.id}')" style="width:100%;padding:9px;border-radius:8px;border:1.5px solid #f0b94040;background:#f0b94010;color:var(--accent);font-family:'Inter',sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;margin-bottom:8px;">📢 Uygulama İçi Banner Gönder</button>`;
 
   html += bb('📝', 'CRM Notları');
   const notlar = k.crm_notlar || [];
@@ -1353,13 +1353,13 @@ async function detayAc(id) {
 
   html += `<div style="display:flex;flex-direction:column;gap:7px;">
     <div style="display:flex;gap:5px;">
-      <select id="crm-not-tip" style="background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.75rem;outline:none;">
+      <select id="crm-not-tip" style="background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.75rem;outline:none;">
         <option value="normal">💬 Normal</option><option value="pozitif">✅ Pozitif</option><option value="onemli">🔴 Önemli</option>
       </select>
     </div>
     <div style="display:flex;gap:7px;">
-      <textarea id="crm-not-inp" placeholder="Not ekle..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.78rem;outline:none;resize:none;height:64px;"></textarea>
-      <button onclick="crmNotKaydet('${k.id}')" style="padding:9px 12px;border-radius:7px;border:none;background:#9060f0;color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;white-space:nowrap;">✓ Ekle</button>
+      <textarea id="crm-not-inp" placeholder="Not ekle..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.78rem;outline:none;resize:none;height:64px;"></textarea>
+      <button onclick="crmNotKaydet('${k.id}')" style="padding:9px 12px;border-radius:7px;border:none;background:#9060f0;color:#fff;font-family:'Inter',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;white-space:nowrap;">✓ Ekle</button>
     </div>
   </div>`;
 
@@ -1620,7 +1620,7 @@ async function ciroRaporYukle(kafeId, gun=30) {
   for (const [, v] of urunlerdeSirali) { birikimli += v.ciro; pareto80Urun++; if (birikimli >= topCiro80) break; }
 
   let html = `<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
-    ${[7,30,90].map(g => `<button onclick="ciroRaporYukle('${kafeId}',${g})" style="padding:4px 10px;border-radius:7px;border:1.5px solid ${g===gun?'#30d080':'var(--border)'};background:${g===gun?'#30d08020':'transparent'};color:${g===gun?'#30d080':'var(--text2)'};font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;cursor:pointer;">Son ${g} gün</button>`).join('')}
+    ${[7,30,90].map(g => `<button onclick="ciroRaporYukle('${kafeId}',${g})" style="padding:4px 10px;border-radius:7px;border:1.5px solid ${g===gun?'#30d080':'var(--border)'};background:${g===gun?'#30d08020':'transparent'};color:${g===gun?'#30d080':'var(--text2)'};font-family:'Inter',sans-serif;font-size:0.7rem;font-weight:700;cursor:pointer;">Son ${g} gün</button>`).join('')}
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;">
     <div style="background:var(--surface);border-radius:8px;padding:9px 11px;border:1px solid var(--border);">
