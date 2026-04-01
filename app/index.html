@@ -2002,13 +2002,18 @@
       </div>
     </div>
     <!-- Eşik ayarı -->
-    <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+    <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <span style="font-size:0.78rem;font-weight:700;color:var(--muted);">⚠️ Uyarı eşiği:</span>
-      <div style="display:flex;gap:6px;">
-        <button onclick="sktEsikSec(3)" id="skt-esik-3" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">3 gün</button>
-        <button onclick="sktEsikSec(7)" id="skt-esik-7" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(240,184,48,0.15);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">7 gün</button>
-        <button onclick="sktEsikSec(14)" id="skt-esik-14" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">14 gün</button>
+      <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--accent);border-radius:10px;overflow:hidden;">
+        <button onclick="sktEsikDegistir(-1)"
+          style="padding:5px 12px;border:none;background:var(--surface2);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;line-height:1;">−</button>
+        <input type="number" id="skt-esik-inp" value="7" min="1" max="90"
+          onchange="sktEsikSec(parseInt(this.value)||7)"
+          style="width:42px;border:none;background:rgba(240,184,48,0.12);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;text-align:center;padding:5px 0;outline:none;-moz-appearance:textfield;">
+        <button onclick="sktEsikDegistir(1)"
+          style="padding:5px 12px;border:none;background:var(--surface2);color:var(--accent2);font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;line-height:1;">+</button>
       </div>
+      <span style="font-size:0.78rem;font-weight:700;color:var(--accent2);">gün</span>
     </div>
     <!-- SKT LİSTESİ -->
     <div style="padding:12px;flex:1;overflow-y:auto;">
@@ -13434,28 +13439,35 @@ function stokTabSec(tab) {
 }
 
 function sktEsikSec(gun) {
+  gun = Math.max(1, Math.min(90, parseInt(gun) || 7));
   SKT_ESIK = gun;
-  // LocalStorage'a kaydet
   try { localStorage.setItem('skt_esik_' + kafeId, gun); } catch(e){}
-  // Buton aktiflik
-  [3,7,14].forEach(g => {
-    const btn = document.getElementById('skt-esik-' + g);
-    if (!btn) return;
-    btn.style.borderColor = g === gun ? 'var(--accent)' : 'var(--border)';
-    btn.style.background  = g === gun ? 'rgba(240,184,48,0.15)' : 'var(--surface2)';
-    btn.style.color       = g === gun ? 'var(--accent2)' : 'var(--text2)';
-  });
+  const inp = document.getElementById('skt-esik-inp');
+  if (inp) inp.value = gun;
   const lbl = document.getElementById('skt-esik-label');
   if (lbl) lbl.textContent = gun;
   sktRender();
 }
+
+function sktEsikDegistir(delta) {
+  const inp = document.getElementById('skt-esik-inp');
+  const yeni = Math.max(1, Math.min(90, (parseInt(inp?.value) || SKT_ESIK) + delta));
+  if (inp) inp.value = yeni;
+  sktEsikSec(yeni);
+}
+
+window.sktEsikDegistir = sktEsikDegistir;
 
 async function sktYukle() {
   if (!kafeId) return;
   // Eşiği localStorage'dan al
   try {
     const kaydedilen = localStorage.getItem('skt_esik_' + kafeId);
-    if (kaydedilen) SKT_ESIK = parseInt(kaydedilen) || 7;
+    if (kaydedilen) {
+      SKT_ESIK = parseInt(kaydedilen) || 7;
+      const inp = document.getElementById('skt-esik-inp');
+      if (inp) inp.value = SKT_ESIK;
+    }
   } catch(e){}
   
   const { data, error } = await sb.from('skt_urunler')
@@ -13497,7 +13509,9 @@ function sktRender() {
   if (!liste) return;
   liste.innerHTML = '';
   
-  sktEsikSec(SKT_ESIK); // buton durumlarını güncelle
+  // Input'u güncelle
+  const inp = document.getElementById('skt-esik-inp');
+  if (inp && inp.value != SKT_ESIK) inp.value = SKT_ESIK;
   
   if (SKT_URUNLER.length === 0) {
     if (bos) bos.style.display = 'block';
