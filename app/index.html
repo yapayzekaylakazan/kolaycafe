@@ -294,7 +294,7 @@
   .plan-pro { background: var(--accent); color: var(--bg); }
 
   /* ── MODAL ── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: flex-end; justify-content: center; z-index: 200; touch-action: none; }
   .modal-overlay.ac { display: flex; }
   .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 18px 16px 28px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.22s ease; }
   @keyframes slideUp { from { transform: translateY(36px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -5431,13 +5431,21 @@ function urunGridRender() {
       URUNLER[mevcutKat].splice(idx,1);
       urunGridRender(); urunListesiRender(); bulutKaydet(); toast('Ürün silindi');
     });
-    // iOS'ta :active çalışmaz — touchstart ile anlık görsel feedback
-    // _touched flag ile touchend sonrası gelen sentetik click'i engelle (double-fire)
+    // Scroll tespiti: touchstart koordinatını kaydet, touchend'de fark > 10px ise scroll sayılır
     let _touched = false;
-    kart.addEventListener('touchstart', () => { kart.style.transform='scale(0.93)'; kart.style.background='var(--surface3)'; }, { passive: true });
+    let _touchStartX = 0, _touchStartY = 0;
+    kart.addEventListener('touchstart', e => {
+      kart.style.transform='scale(0.93)'; kart.style.background='var(--surface3)';
+      _touchStartX = e.touches[0].clientX;
+      _touchStartY = e.touches[0].clientY;
+    }, { passive: true });
     kart.addEventListener('touchend', e => {
       setTimeout(()=>{ kart.style.transform=''; kart.style.background=''; }, 150);
       if(e.target.classList.contains('udel')) return;
+      // Parmak 10px'den fazla hareket ettiyse scroll — ürün ekleme
+      const dx = Math.abs((e.changedTouches[0]?.clientX||0) - _touchStartX);
+      const dy = Math.abs((e.changedTouches[0]?.clientY||0) - _touchStartY);
+      if(dx > 10 || dy > 10) return;
       if(tukendi){toast('⛔ ' + u.isim + ' stokta yok!');return;}
       _touched = true;
       urunEkle(u);
@@ -5453,11 +5461,8 @@ function urunGridRender() {
   });
 }
 
-let _urunEklemeKilidi = false;
-
 function urunEkle(u) {
   if(!seciliMasa) return;
-  if(_urunEklemeKilidi) return;
   const m = getMasa(); if(!m) return;
   const takipli = u.stok !== null && u.stok !== undefined;
   if (takipli && u.stok <= 0) { toast('⛔ ' + u.isim + ' stokta yok!'); return; }
@@ -5466,9 +5471,7 @@ function urunEkle(u) {
     varyantModalAc(u);
     return;
   }
-  _urunEklemeKilidi = true;
   _urunAdisyonaEkle(u, [], 0);
-  setTimeout(() => { _urunEklemeKilidi = false; }, 1000);
 }
 
 function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
