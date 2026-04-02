@@ -3923,7 +3923,7 @@ async function garsonGiris(isim, kafeData) {
 
     } catch(e) { console.log('Garson sync hatası:', e); }
     finally { _garsonPolling = false; }
-  }, 3000); // 2000ms → 3000ms: daha seyrek polling = daha az çakışma
+  }, 5000); // 5000ms: daha seyrek polling = race condition azaltılır
 
   // Garson için realtime subscription — polling'e ek olarak anlık güncelleme
   if (window._garsonRealtimeChannel) {
@@ -4631,22 +4631,27 @@ async function _masaSyncYazHemen(masaId) {
       const m = masalar.find(x=>x.id===masaId);
       if (!m) break;
 
-      // KRITIK: READ başlamadan önce anlık snapshot al
-      // async await sırasında garson başka ürün ekleyebilir — o an lokalde doğru veri var
-      // DB'den eski veri gelip snapshot'ı ezmesini engelle
+      // READ başlamadan önce snapshot al
       const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
       const {data, error: re} = await sb.from('kafeler')
         .select('aktif_masalar').eq('id', kafeId).single();
       if (re) throw re;
 
+      // KRITIK: READ async sürerken garson yeni ürün eklemiş olabilir
+      // Lokal snapshot'tan daha yeniyse — en güncel lokal veriyi kullan
+      const sonrakiSnapshot = JSON.parse(JSON.stringify(m.siparisler));
+      const kullanilacakSnapshot = sonrakiSnapshot.length >= siparislerSnapshot.length
+        ? sonrakiSnapshot
+        : siparislerSnapshot;
+
       let aktif = data?.aktif_masalar || [];
 
-      if (siparislerSnapshot.length > 0) {
+      if (kullanilacakSnapshot.length > 0) {
         const idx = aktif.findIndex(x=>x.id===masaId);
         const masaData = {
           id: m.id, ad: m.ad, not: m.not||'',
-          siparisler: siparislerSnapshot,
+          siparisler: kullanilacakSnapshot,
           garson: m.garson||'', indirim: m.indirim||0,
           kisi_sayisi: m.kisi_sayisi||0,
           hesap_istendi: m.hesap_istendi||false,
