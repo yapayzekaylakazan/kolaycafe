@@ -5436,29 +5436,33 @@ function urunGridRender() {
       URUNLER[mevcutKat].splice(idx,1);
       urunGridRender(); urunListesiRender(); bulutKaydet(); toast('Ürün silindi');
     });
-    // Scroll tespiti: touchstart koordinatını kaydet, touchend'de fark > 10px ise scroll sayılır
-    let _touched = false;
-    let _touchStartX = 0, _touchStartY = 0;
+    // Touch: scroll tespiti ile ürün ekleme
+    // click eventi KULLANILMIYOR — grid rebuild sonrası Samsung Chrome'da çift tetikliyor
+    let _touchStartX = 0, _touchStartY = 0, _touchHareket = false;
     kart.addEventListener('touchstart', e => {
+      if(e.target.classList.contains('udel')) return;
       kart.style.transform='scale(0.93)'; kart.style.background='var(--surface3)';
       _touchStartX = e.touches[0].clientX;
       _touchStartY = e.touches[0].clientY;
+      _touchHareket = false;
+    }, { passive: true });
+    kart.addEventListener('touchmove', e => {
+      const dx = Math.abs(e.touches[0].clientX - _touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - _touchStartY);
+      if(dx > 8 || dy > 8) _touchHareket = true;
     }, { passive: true });
     kart.addEventListener('touchend', e => {
-      setTimeout(()=>{ kart.style.transform=''; kart.style.background=''; }, 150);
+      kart.style.transform=''; kart.style.background='';
       if(e.target.classList.contains('udel')) return;
-      // Parmak 10px'den fazla hareket ettiyse scroll — ürün ekleme
-      const dx = Math.abs((e.changedTouches[0]?.clientX||0) - _touchStartX);
-      const dy = Math.abs((e.changedTouches[0]?.clientY||0) - _touchStartY);
-      if(dx > 10 || dy > 10) return;
+      if(_touchHareket) return; // scroll hareketi — ürün ekleme
       if(tukendi){toast('⛔ ' + u.isim + ' stokta yok!');return;}
-      _touched = true;
+      e.preventDefault(); // click eventini engelle
       urunEkle(u);
-      setTimeout(()=>{ _touched = false; }, 500);
-    }, { passive: true });
-    kart.addEventListener('click',e=>{
+    }, { passive: false }); // passive:false — preventDefault çalışsın
+    // Mouse (masaüstü/laptop) için click — touch cihazlarda touchend zaten halleder
+    kart.addEventListener('click', e => {
       if(e.target.classList.contains('udel')) return;
-      if(_touched) return; // touchend zaten işledi
+      if(e.pointerType === 'touch') return; // touch'tan gelen click'i engelle
       if(tukendi){toast('⛔ ' + u.isim + ' stokta yok!');return;}
       urunEkle(u);
     });
