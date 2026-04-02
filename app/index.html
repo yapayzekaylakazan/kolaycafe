@@ -16,7 +16,7 @@
 <link rel="apple-touch-icon" href="../icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<script src="https://js.hcaptcha.com/1/api.js?onload=_hcaptchaOnload&render=explicit" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -806,6 +806,7 @@
     <div id="auth-giris">
       <input class="auth-inp" id="giris-email" type="email" placeholder="E-posta" autocomplete="email">
       <input class="auth-inp" id="giris-sifre" type="password" placeholder="Şifre" autocomplete="current-password">
+      <div id="hcaptcha-giris" style="margin-bottom:10px;"></div>
       <button class="auth-btn" id="btn-giris-yap">Giriş Yap</button>
       <button type="button" id="btn-sifre-unut" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
@@ -870,7 +871,7 @@
       <!-- Honeypot: botlar doldurur, insanlar görmez -->
       <input type="text" id="kayit-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true">
       <!-- hCaptcha widget -->
-      <div id="hcaptcha-widget" class="h-captcha" data-sitekey="dd22c300-011e-426a-af1a-1790ba5cabfa" style="margin-bottom:10px;"></div>
+      <div id="hcaptcha-widget" style="margin-bottom:10px;"></div>
       <button class="auth-btn" id="btn-kayit-ol">Hesap Oluştur</button>
       <button type="button" id="btn-sifre-unut-kayit" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
@@ -3546,9 +3547,21 @@ async function girisYap() {
   if (!email||!sifre) { authHata('E-posta ve şifre girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
-  const {data, error} = await sb.auth.signInWithPassword({email, password: sifre});
-  if (error) { authHata(error.message==='Invalid login credentials'?'E-posta veya şifre hatalı!':error.message); return; }
+  const captchaToken = hcaptcha.getResponse(window._hcGirisId);
+  if (!captchaToken) { authHata('Lütfen robot doğrulamasını tamamlayın!'); return; }
+  const {data, error} = await sb.auth.signInWithPassword({email, password: sifre, options: { captchaToken }});
+  if (error) { hcaptcha.reset(window._hcGirisId); authHata(error.message==='Invalid login credentials'?'E-posta veya şifre hatalı!':error.message); return; }
   await uygulamaBaslat(data.user);
+}
+
+// hCaptcha widget ID'lerini kaydet — token almak için gerekli
+window._hcGirisId = null;
+window._hcKayitId = null;
+function _hcaptchaOnload() {
+  try {
+    window._hcGirisId = hcaptcha.render('hcaptcha-giris', { sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa' });
+    window._hcKayitId = hcaptcha.render('hcaptcha-widget', { sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa' });
+  } catch(e) {}
 }
 
 // ── BOT KORUMASI: Kayıt rate limit (localStorage ile) ──
@@ -3601,7 +3614,7 @@ async function kayitOl() {
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
   // hCaptcha token al
-  const captchaToken = hcaptcha.getResponse();
+  const captchaToken = hcaptcha.getResponse(window._hcKayitId);
   if (!captchaToken) { authHata('Lütfen robot doğrulamasını tamamlayın!'); return; }
 
   const {data, error} = await sb.auth.signUp({
@@ -3609,7 +3622,7 @@ async function kayitOl() {
     password: sifre,
     options: { captchaToken }
   });
-  if (error) { hcaptcha.reset(); authHata(error.message); return; }
+  if (error) { hcaptcha.reset(window._hcKayitId); authHata(error.message); return; }
   
   // Kupon kodu kontrolü
   const kuponKodu = document.getElementById('kayit-kupon').value.trim().toUpperCase();
