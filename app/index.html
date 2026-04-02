@@ -788,6 +788,11 @@
   <div class="auth-logo">☕</div>
   <div class="auth-title">KolayCafe</div>
   <div class="auth-sub">Cafe Adisyon Sistemi</div>
+  <div id="odeme-basarili-banner" style="display:none;background:linear-gradient(135deg,#166534,#15803d);border:1.5px solid #22c55e66;border-radius:14px;padding:14px 16px;margin-bottom:14px;text-align:center;">
+    <div style="font-size:1.6rem;margin-bottom:4px;">🎉</div>
+    <div style="font-size:0.95rem;font-weight:900;color:#4ade80;margin-bottom:4px;">Ödeme Başarılı!</div>
+    <div style="font-size:0.78rem;color:#bbf7d0;font-weight:600;">Paketiniz aktive edildi. Sisteme giriş yapın.</div>
+  </div>
   <div class="auth-card">
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-giris">🔑 Sahibi</button>
@@ -13872,6 +13877,13 @@ window.masaSilOnay = masaSilOnay;
     document.getElementById('auth-screen').style.display = 'none';
     await musteriMenuAc(_qrKafe, null, true);
     return;
+  }
+
+  // Ödeme başarılı callback'ten gelindiyse banner göster
+  if (_params.get('odeme') === 'basarili') {
+    const banner = document.getElementById('odeme-basarili-banner');
+    if (banner) banner.style.display = 'block';
+    setTimeout(() => { document.getElementById('giris-email')?.focus(); }, 300);
   }
 
   // Admin test panelinden gelen e-posta → giriş alanını doldur
