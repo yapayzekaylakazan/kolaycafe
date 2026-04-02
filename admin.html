@@ -199,6 +199,8 @@
         <button class="fbtn" onclick="filtrele('doldu',this)">Dolmuş</button>
         <button class="fbtn" onclick="filtrele('pasif30',this)">30g Sessiz</button>
         <button class="fbtn" onclick="filtrele('crm',this)" style="border-color:#9060f0;color:#9060f0;">🎯 CRM</button>
+        <button class="fbtn" onclick="filtrele('bot',this)" style="border-color:#e04040;color:#e04040;">🤖 Bot Şüpheli</button>
+        <button class="ebtn" onclick="topluBotTemizle()" style="background:#e0404020;border-color:#e04040;color:#e04040;">🗑 Bot Temizle</button>
         <button class="ebtn" onclick="csvIndir()">📥 CSV</button>
         <button class="ebtn" onclick="yukle()">🔄</button>
       </div>
@@ -1046,6 +1048,16 @@ function filtreliKafeler() {
     if (aktifFiltre === 'pasif30') {
       if (!k.son_giris) return true;
       return (simdi - new Date(k.son_giris)) > 30*24*60*60*1000;
+    }
+    if (aktifFiltre === 'bot') {
+      // Bot şüpheli: kafe adı "kafem" veya boş, telefon yok, email eksik, bugün kayıt
+      const bugunBas = new Date(); bugunBas.setHours(0,0,0,0);
+      return (
+        (!k.telefon || k.telefon.trim() === '') ||
+        (k.kafe_adi||'').toLowerCase() === 'kafem' ||
+        ((k.kafe_adi||'').toLowerCase() === 'kafem' && !k.email) ||
+        ((!k.telefon || !k.email) && new Date(k.created_at) >= bugunBas)
+      );
     }
     if (aktifFiltre === 'crm') {
       const odemeliPlanlar = ['start','grow','gold','platin','ultra','elite','pro'];
@@ -2248,6 +2260,30 @@ async function finansYukle() {
 
   // Ödeme geçmişini de yükle
   odemeGecmisiYukle();
+}
+
+async function topluBotTemizle() {
+  // Bot şüphelileri bul: kafe adı "kafem" VE telefon/email eksik VE bugün kayıt
+  const bugunBas = new Date(); bugunBas.setHours(0,0,0,0);
+  const botlar = tumKafeler.filter(k => {
+    const adBot = (k.kafe_adi||'').toLowerCase() === 'kafem';
+    const eksikBilgi = !k.telefon || k.telefon.trim() === '' || !k.email || k.email.trim() === '';
+    const bugunKayit = new Date(k.created_at) >= bugunBas;
+    return adBot && eksikBilgi && bugunKayit;
+  });
+  if (botlar.length === 0) { toast('✅ Bot şüphelisi bulunamadı.'); return; }
+  const onay = confirm(`⚠️ ${botlar.length} bot şüphelisi pasife alınacak:\n\n` +
+    botlar.slice(0,5).map(k=>`• ${k.kafe_adi} (${k.kafe_kodu}) — ${k.created_at?.slice(0,10)}`).join('\n') +
+    (botlar.length > 5 ? `\n... ve ${botlar.length-5} tane daha` : '') +
+    '\n\nDevam edilsin mi?');
+  if (!onay) return;
+  let basarili = 0, hata = 0;
+  for (const k of botlar) {
+    const { error } = await sb.from('kafeler').update({ manuel_pasif: true }).eq('id', k.id);
+    if (error) hata++; else { k.manuel_pasif = true; basarili++; }
+  }
+  toast(`🤖 ${basarili} bot pasife alındı${hata > 0 ? ', ' + hata + ' hata' : ''}.`);
+  tabloRender();
 }
 
 async function topluBannerGonder() {

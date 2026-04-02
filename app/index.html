@@ -866,6 +866,8 @@
         <input class="auth-inp" id="kayit-garson-kodu" type="text" placeholder="Garson giriş kodu belirle (örn: 1234)" autocomplete="off" inputmode="numeric">
         <p style="font-size:0.7rem;color:var(--muted);font-weight:600;margin-top:4px;">Boş bırakırsanız otomatik kod oluşturulur</p>
       </div>
+      <!-- Honeypot: botlar doldurur, insanlar görmez -->
+      <input type="text" id="kayit-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true">
       <button class="auth-btn" id="btn-kayit-ol">Hesap Oluştur</button>
       <button type="button" id="btn-sifre-unut-kayit" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
@@ -3546,7 +3548,31 @@ async function girisYap() {
   await uygulamaBaslat(data.user);
 }
 
+// ── BOT KORUMASI: Kayıt rate limit (localStorage ile) ──
+function _kayitRateLimitKontrol() {
+  const simdi = Date.now();
+  const pencere = 60 * 60 * 1000; // 1 saat
+  const maxDeneme = 3;
+  const kayitlar = JSON.parse(localStorage.getItem('_kc_rl') || '[]')
+    .filter(t => simdi - t < pencere);
+  if (kayitlar.length >= maxDeneme) {
+    const kalanMs = pencere - (simdi - kayitlar[0]);
+    const kalanDk = Math.ceil(kalanMs / 60000);
+    authHata(`Çok fazla kayıt denemesi. ${kalanDk} dakika sonra tekrar deneyin.`);
+    return false;
+  }
+  kayitlar.push(simdi);
+  localStorage.setItem('_kc_rl', JSON.stringify(kayitlar));
+  return true;
+}
+
 async function kayitOl() {
+  // 1. Honeypot kontrolü — bot doldurmuşsa sessizce dur
+  if (document.getElementById('kayit-website')?.value) return;
+
+  // 2. Rate limit
+  if (!_kayitRateLimitKontrol()) return;
+
   const kafe = document.getElementById('kayit-kafe').value.trim();
   const email = document.getElementById('kayit-email').value.trim();
   const tel = document.getElementById('kayit-tel').value.trim();
@@ -3557,9 +3583,17 @@ async function kayitOl() {
   const il = document.getElementById('kayit-il').value.trim();
   const ilce = document.getElementById('kayit-ilce').value.trim();
   const garsonKoduGiris = document.getElementById('kayit-garson-kodu').value.trim();
+
+  // 3. Validasyon — "Kafem" / "test" gibi placeholder değerleri reddet
   if (!kafe) { authHata('Cafe adı girin!'); return; }
+  if (kafe.toLowerCase() === 'kafem' || kafe.toLowerCase() === 'kafe' || kafe.length < 3) {
+    authHata('Geçerli bir cafe adı girin (en az 3 karakter).'); return;
+  }
   if (!email) { authHata('E-posta girin!'); return; }
+  // Basit email regex
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { authHata('Geçerli bir e-posta girin!'); return; }
   if (!tel) { authHata('Telefon numarası girin!'); return; }
+  if (tel.replace(/\D/g,'').length < 10) { authHata('Geçerli bir telefon numarası girin!'); return; }
   if (sifre.length<6) { authHata('Şifre en az 6 karakter olmalı!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
