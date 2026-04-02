@@ -1252,7 +1252,7 @@ function calcUpdate() {
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 /* ── CONFIG ── */
-const SB_FUNC   = 'https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/iyzico-odeme';
+const SB_FUNC   = 'https://sjfcdthwlwmbdmcevobv.supabase.co/functions/v1/kayit-ve-odeme';
 const SB_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqZmNkdGh3bHdtYmRtY2V2b2J2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MDA3OTYsImV4cCI6MjA4NzM3Njc5Nn0.B--4Quy58qdU1IK48U-pr25hKoesqViMR0QvxNBiRbs';
 const SB_REST   = 'https://sjfcdthwlwmbdmcevobv.supabase.co/rest/v1';
 
@@ -1389,8 +1389,9 @@ async function payFormSubmit() {
   const kafe  = document.getElementById('py-kafe').value.trim();
   const errEl = document.getElementById('pay-err');
 
-  const ids=['py-ad','py-email','py-tel','py-kafe'];
-  ids.forEach(id=>{ if(!document.getElementById(id).value.trim()) document.getElementById(id).style.borderColor='#f87171'; });
+  ['py-ad','py-email','py-tel','py-kafe'].forEach(id=>{
+    if(!document.getElementById(id).value.trim()) document.getElementById(id).style.borderColor='#f87171';
+  });
 
   if (!ad||!email||!tel||!kafe) {
     errEl.textContent='Lütfen tüm alanları doldurun.'; errEl.style.display='block'; return;
@@ -1405,41 +1406,22 @@ async function payFormSubmit() {
   btn.disabled=true; btn.textContent='⏳ Hazırlanıyor...';
 
   try {
-    // Mevcut kafe kaydı ara
-    const mevcutRes = await fetch(`${SB_REST}/kafeler?email=eq.${encodeURIComponent(email)}&select=id`,{
-      headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON}
-    });
-    const mevcutData = await mevcutRes.json();
-    let kafeId = mevcutData?.[0]?.id;
-
-    if (!kafeId) {
-      const bitis = new Date(Date.now()+10*24*60*60*1000).toISOString();
-      const yeniRes = await fetch(`${SB_REST}/kafeler`,{
-        method:'POST',
-        headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json',Prefer:'return=representation'},
-        body:JSON.stringify({kafe_adi:kafe,email,telefon:tel,plan:'deneme',plan_bitis:bitis,created_at:new Date().toISOString()})
-      });
-      const yeniData = await yeniRes.json();
-      kafeId = yeniData?.[0]?.id;
-    }
-    if (!kafeId) throw new Error('Kayıt oluşturulamadı.');
-
-    // Edge Function — callbackUrl Edge Function'a gidiyor
-    const res = await fetch(SB_FUNC,{
-      method:'POST',
-      headers:{'Content-Type':'application/json',Authorization:'Bearer '+SB_ANON},
-      body:JSON.stringify({
-        action:'baslat',
-        kafeId, kafeAdi:kafe, email,
+    // Tek çağrı: kayıt + ödeme — service_role ile, RLS yok
+    const res = await fetch(SB_FUNC, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        ad,
+        email,
         telefon: tel.startsWith('+')?tel:'+90'+tel.replace(/^0/,''),
-        plan: seciliPlan,
-        donem: donemYillik?'yillik':'aylik',
+        kafeAdi: kafe,
+        plan:    seciliPlan ?? 'pro',
+        donem:   donemYillik ? 'yillik' : 'aylik',
         aiEklendi,
-        callbackUrl: SB_FUNC + '?source=callback'
       })
     });
     const data = await res.json();
-    if (!data.ok) throw new Error((data.hata??'Ödeme başlatılamadı.')+(data.detay?' | '+JSON.stringify(data.detay).substring(0,200):''));
+    if (!data.ok) throw new Error(data.hata ?? 'Kayıt veya ödeme başlatılamadı.');
 
     // İyzico checkout form render
     document.getElementById('pay-form').style.display='none';
