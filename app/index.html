@@ -5453,19 +5453,22 @@ function urunGridRender() {
   });
 }
 
+let _urunEklemeKilidi = false;
+
 function urunEkle(u) {
   if(!seciliMasa) return;
+  if(_urunEklemeKilidi) return;
   const m = getMasa(); if(!m) return;
-  // Stok kontrolü
   const takipli = u.stok !== null && u.stok !== undefined;
   if (takipli && u.stok <= 0) { toast('⛔ ' + u.isim + ' stokta yok!'); return; }
-  // Varyant varsa modal aç
   const varyantlar = u.varyantlar || [];
   if (varyantlar.length > 0) {
     varyantModalAc(u);
     return;
   }
+  _urunEklemeKilidi = true;
   _urunAdisyonaEkle(u, [], 0);
+  setTimeout(() => { _urunEklemeKilidi = false; }, 1000);
 }
 
 function _urunAdisyonaEkle(u, secimler, fiyatFarki) {
