@@ -3408,7 +3408,8 @@
   <div style="font-size:3rem;margin-bottom:12px;">🔒</div>
   <div style="font-size:1.4rem;font-weight:900;color:var(--accent2);margin-bottom:8px;">Erişim Kısıtlandı</div>
   <div id="kilit-mesaj" style="font-size:0.9rem;color:var(--text2);font-weight:600;max-width:320px;line-height:1.6;margin-bottom:24px;"></div>
-  <a href="/cdn-cgi/l/email-protection#73111a1f141a33181c1f120a101215165d101c1e" style="padding:13px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;text-decoration:none;display:inline-block;margin-bottom:12px;">📧 İletişime Geç</a>
+  <button id="btn-kilit-paket" onclick="kilittenPaketeGec()" style="padding:13px 28px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;display:none;margin-bottom:10px;">🛒 Paket Satın Al</button>
+  <a href="mailto:bilgi@kolaycafe.com" id="btn-kilit-iletisim" style="padding:13px 28px;border-radius:12px;border:none;background:var(--surface2);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:800;text-decoration:none;display:inline-block;margin-bottom:12px;">📧 İletişime Geç</a>
   <button id="btn-kilit-cikis" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;display:block;margin:0 auto;">Çıkış Yap</button>
 </div>
 
@@ -4929,9 +4930,26 @@ function kilitEkraniGoster(mesaj) {
   const msg = el.querySelector('#kilit-mesaj');
   if(msg) msg.textContent = mesaj;
   el.style.display = 'flex';
+  // Paket satın al butonu: kilitli hesaplarda gizle, diğerlerinde göster
+  const paketBtn = document.getElementById('btn-kilit-paket');
+  if(paketBtn) {
+    const kilitli = mesaj.includes('kilitlen');
+    paketBtn.style.display = kilitli ? 'none' : 'block';
+  }
   // App ve auth gizle
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'none';
+}
+
+function kilittenPaketeGec() {
+  // Kilit ekranını gizle, app'i göster, ödeme sayfasına git
+  document.getElementById('kilit-ekrani').style.display = 'none';
+  const appEl = document.getElementById('app');
+  appEl.style.display = 'flex';
+  appEl.style.flexDirection = 'column';
+  // Ödeme sayfasını aç
+  if(typeof odemeBaslangic === 'function') odemeBaslangic();
+  else sayfaGit('ayarlar');
 }
 
 function paketYetkiUygula(plan) {
