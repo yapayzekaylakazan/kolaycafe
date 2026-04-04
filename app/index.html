@@ -4549,8 +4549,16 @@ async function kafeVerisiYukle() {
     document.getElementById('ayar-plan').className = 'plan-badge ' + (['pro','elite','ultra','platin','gold'].includes(plan)?'plan-pro':'plan-ucretsiz');
     document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':(_planRenkMap[plan]||'');
 
+    if (data.manuel_pasif) {
+      kilitEkraniGoster('Hesabınız askıya alınmıştır.\n\nBilgi için: bilgi@kolaycafe.com');
+      return;
+    }
     if (plan==='kilitli') {
       kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');
+      return;
+    }
+    if (plan !== 'deneme' && bitis && simdi > bitis) {
+      kilitEkraniGoster('Paket süreniz dolmuştur.\n\nDevam etmek için paketinizi yenileyin:\n📧 bilgi@kolaycafe.com');
       return;
     }
     if (plan==='deneme' && bitis && simdi > bitis) {
@@ -9324,8 +9332,16 @@ function ayarlarRender(){
     document.getElementById('ayar-plan').className = 'plan-badge ' + (['pro','elite','ultra','platin','gold'].includes(plan)?'plan-pro':'plan-ucretsiz');
     document.getElementById('ayar-plan').style.background = plan==='kilitli'?'var(--danger)':({pro:'#7c3aed',elite:'#f97316',ultra:'#2d7a3a',platin:'#1a6fb5',gold:'#b8860b'}[plan]||'');
 
+    if (data.manuel_pasif) {
+      kilitEkraniGoster('Hesabınız askıya alınmıştır.\n\nBilgi için: bilgi@kolaycafe.com');
+      return;
+    }
     if (plan==='kilitli') {
       kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');
+      return;
+    }
+    if (plan !== 'deneme' && bitis && simdi > bitis) {
+      kilitEkraniGoster('Paket süreniz dolmuştur.\n\nDevam etmek için paketinizi yenileyin:\n📧 bilgi@kolaycafe.com');
       return;
     }
     if (plan==='deneme' && bitis && simdi > bitis) {
