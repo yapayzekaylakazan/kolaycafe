@@ -213,7 +213,7 @@
         <thead><tr>
           <th>#</th><th onclick="sirala('kafe_adi')">KAFE ↕</th><th>E-POSTA</th><th>TEL / ŞEHİR</th>
           <th onclick="sirala('plan')">PLAN ↕</th><th onclick="sirala('plan_bitis')">KALAN ↕</th>
-          <th onclick="sirala('son_giris')">SON GİRİŞ ↕</th><th onclick="sirala('toplam_ciro')">CİRO ↕</th>
+          <th onclick="sirala('son_giris')">SON GİRİŞ / ÇIKIŞ ↕</th><th onclick="sirala('toplam_ciro')">CİRO ↕</th>
           <th>DURUM</th><th>KAYIT</th><th>İŞLEM</th>
         </tr></thead>
         <tbody id="tablo-body"><tr><td colspan="11" class="yukl">⏳ Yükleniyor...</td></tr></tbody>
@@ -1113,9 +1113,21 @@ function tabloRender() {
         ? '<span class="badge bsd">SÜRESİ DOLDU</span>'
         : '<span class="badge bak">AKTİF</span>';
     const sg = k.son_giris ? (() => {
-      const fark = Math.floor((simdi - new Date(k.son_giris)) / (1000*60*60*24));
+      const girisDate = new Date(k.son_giris);
+      const fark = Math.floor((simdi - girisDate) / (1000*60*60*24));
       const r = fark === 0 ? '#30d080' : fark <= 3 ? '#f0b940' : fark <= 7 ? '#e07840' : '#e04050';
-      return `<span style="color:${r};font-size:0.72rem;font-family:'Space Mono',monospace;">${fark===0?'Bugün':fark===1?'Dün':fark+'g önce'}</span>`;
+      const girisStr = fark === 0
+        ? 'Bugün ' + girisDate.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})
+        : fark === 1 ? 'Dün ' + girisDate.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})
+        : fark + 'g önce';
+      const cikisStr = k.son_cikis ? (() => {
+        const cikisDate = new Date(k.son_cikis);
+        const cikisFark = Math.floor((simdi - cikisDate) / (1000*60*60*24));
+        return (cikisFark === 0 ? '' : (cikisFark === 1 ? 'Dün ' : cikisFark + 'g önce ')) +
+          cikisDate.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+      })() : null;
+      return `<div style="color:${r};font-size:0.7rem;font-family:'Space Mono',monospace;">▶ ${girisStr}</div>` +
+        (cikisStr ? `<div style="color:var(--text2);font-size:0.68rem;font-family:'Space Mono',monospace;">◀ ${cikisStr}</div>` : '');
     })() : '<span style="color:var(--text2);font-size:0.68rem;">—</span>';
     const ciro = k.toplam_ciro > 0 ? `<span style="color:#30d080;font-weight:700;font-size:0.75rem;">${fmtTL(k.toplam_ciro)}₺</span>` : '<span style="color:var(--text2);">—</span>';
     const notSayisi = (k.crm_notlar||[]).length;

@@ -3692,6 +3692,10 @@ async function sifreSifirla() {
 }
 
 async function cikisYap() {
+  // Çıkış saatini kaydet
+  if (kafeId) {
+    try { await sb.from('kafeler').update({ son_cikis: new Date().toISOString() }).eq('id', kafeId); } catch(e) {}
+  }
   await sb.auth.signOut();
   location.reload();
 }
