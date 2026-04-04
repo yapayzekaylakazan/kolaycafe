@@ -1484,7 +1484,9 @@ async function planGuncelle() {
   if (!seciliKafeId) return;
   const plan = document.getElementById('modal-plan-sec').value;
   const donem = document.querySelector('input[name="modal-donem"]:checked')?.value || 'aylik';
-  const gun = parseInt(document.getElementById('modal-gun').value) || (donem === 'yillik' ? 365 : 30);
+  const gunVal = document.getElementById('modal-gun').value.trim();
+  const gun = gunVal ? parseInt(gunVal) : (donem === 'yillik' ? 365 : 30);
+  if (!gun || gun <= 0) { alert('Geçerli bir gün sayısı girin!'); return; }
   const bitis = new Date();
   bitis.setDate(bitis.getDate() + gun);
 
@@ -1505,23 +1507,34 @@ async function planGuncelle() {
 
 async function manuelGunEkle(kafeId, carpan) {
   const gun = parseInt(document.getElementById('modal-manuel-gun')?.value);
-  if (!gun || gun <= 0) { alert('Gecerli bir gun sayisi girin!'); return; }
+  if (!gun || gun <= 0) { alert('Geçerli bir gün sayısı girin!'); return; }
   const { data: kafe } = await sb.from('kafeler').select('plan_bitis, kafe_adi').eq('id', kafeId).single();
   const simdi = new Date();
+  // Süresi dolmuşsa: eklemede bugünden, çıkarmada mevcut bitişten başla
   const mevcutBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : simdi;
-  const baslangic = mevcutBitis > simdi ? new Date(mevcutBitis) : new Date(simdi);
-  baslangic.setDate(baslangic.getDate() + (gun * carpan));
-  if (baslangic < simdi && carpan < 0) {
-    if (!confirm('Bitis tarihi bugünün gerisine gececek — devam edilsin mi?')) return;
+  let yeniBitis;
+  if (carpan > 0) {
+    // Ekleme: süresi dolmuşsa bugünden başla, dolmamışsa mevcut bitişten ekle
+    const base = mevcutBitis > simdi ? new Date(mevcutBitis) : new Date(simdi);
+    base.setDate(base.getDate() + gun);
+    yeniBitis = base;
+  } else {
+    // Çıkarma: her zaman mevcut bitişten çıkar
+    const base = new Date(mevcutBitis);
+    base.setDate(base.getDate() - gun);
+    if (base < simdi) {
+      if (!confirm('Bitiş tarihi geçmişe gidecek (' + base.toLocaleDateString('tr-TR') + ') — devam edilsin mi?')) return;
+    }
+    yeniBitis = base;
   }
   const { error } = await sb.from('kafeler').update({
-    plan_bitis: baslangic.toISOString(),
+    plan_bitis: yeniBitis.toISOString(),
     odeme_bekliyor: false,
     odeme_bekliyor_zaman: null
   }).eq('id', kafeId);
   if (error) { alert('Hata: ' + error.message); return; }
-  const islem = carpan > 0 ? '+' + gun + ' gun eklendi' : gun + ' gun cikarildi';
-  toast('OK ' + (kafe?.kafe_adi||'') + ' — ' + islem + ' | Yeni bitis: ' + baslangic.toLocaleDateString('tr-TR'));
+  const islem = carpan > 0 ? '+' + gun + ' gün eklendi' : '-' + gun + ' gün çıkarıldı';
+  toast('✓ ' + (kafe?.kafe_adi||'') + ' — ' + islem + ' | Yeni bitiş: ' + yeniBitis.toLocaleDateString('tr-TR'));
   await detayAc(kafeId);
 }
 
