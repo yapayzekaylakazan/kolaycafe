@@ -4357,6 +4357,33 @@ async function kafeVerisiYukle() {
   const {data} = await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
   window._kafeData = data; // Global olarak sakla
   if (data) {
+    // KRITIK: Pasif/kilitli kontrolü — sisteme girmeden önce yap
+    const _simdi = new Date();
+    const _bitis = data.plan_bitis ? new Date(data.plan_bitis) : null;
+    if (data.manuel_pasif) {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      kilitEkraniGoster('Hesabınız askıya alınmıştır.\n\nBilgi için: bilgi@kolaycafe.com');
+      return;
+    }
+    if (data.plan === 'kilitli') {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');
+      return;
+    }
+    if (data.plan !== 'deneme' && _bitis && _simdi > _bitis) {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      kilitEkraniGoster('Paket süreniz dolmuştur.\n\nDevam etmek için paketinizi yenileyin:\n📧 bilgi@kolaycafe.com');
+      return;
+    }
+    if (data.plan === 'deneme' && _bitis && _simdi > _bitis) {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      kilitEkraniGoster('10 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');
+      return;
+    }
     kafeId = data.id;
     aiPaketAktif = data.ai_paket === true;
     odemeTipleri = data.odeme_tipleri || [];
