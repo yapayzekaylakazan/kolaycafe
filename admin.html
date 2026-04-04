@@ -121,7 +121,7 @@
   .tw td { font-family: 'Space Mono', monospace !important; }
   .tw td:nth-child(6), .tw td:nth-child(7) { letter-spacing: -0.5px; }
 </style>
-<script src="https://js.hcaptcha.com/1/api.js?onload=_hcAdminOnload&render=explicit" async defer></script>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
 
@@ -132,7 +132,7 @@
     <div class="login-sub">Yönetim Paneli v3.1</div>
     <input class="login-inp" id="login-email" type="email" placeholder="E-posta">
     <input class="login-inp" id="login-sifre" type="password" placeholder="Şifre" onkeydown="if(event.key==='Enter')girisYap()">
-    <div id="hcaptcha-admin" style="margin-bottom:10px;"></div>
+    <div id="hcaptcha-admin" class="h-captcha" data-sitekey="dd22c300-011e-426a-af1a-1790ba5cabfa" style="margin-bottom:10px;"></div>
     <button class="login-btn" onclick="girisYap()">Giriş Yap →</button>
     <div class="login-err" id="login-err"></div>
   </div>
@@ -848,22 +848,16 @@ async function girisYap() {
   const err = document.getElementById('login-err');
   err.style.display = 'none';
 
-// hCaptcha admin widget
-window._hcAdminId = null;
-function _hcAdminOnload() {
-  try { window._hcAdminId = hcaptcha.render('hcaptcha-admin', { sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa' }); } catch(e) {}
-}
-
   if (email !== ADMIN_EMAIL) {
     err.textContent = '⛔ Bu panele erişim yetkiniz yok.';
     err.style.display = 'block';
     return;
   }
 
-  const captchaToken = hcaptcha.getResponse(window._hcAdminId);
+  const captchaToken = hcaptcha.getResponse();
   if (!captchaToken) { err.textContent = '❌ Lütfen robot doğrulamasını tamamlayın!'; err.style.display = 'block'; return; }
   const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre, options: { captchaToken } });
-  if (error) { hcaptcha.reset(window._hcAdminId); err.textContent = '❌ ' + error.message; err.style.display = 'block'; return; }
+  if (error) { hcaptcha.reset(); err.textContent = '❌ ' + error.message; err.style.display = 'block'; return; }
 
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-panel').style.display = 'block';
