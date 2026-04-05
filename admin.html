@@ -495,6 +495,8 @@ const SB_REST = SUPABASE_URL + '/rest/v1';
 const SB_H = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
+const ADMIN_SIFRE_HASH = '6c2720e66100ef5d'; // Değiştirmek için yeni hash gir
+const ADMIN_SESSION_KEY = 'kc_admin_v2';
 
 let tumKafeler = [];
 let aktifFiltre = 'hepsi';
@@ -852,8 +854,17 @@ async function girisYap() {
     return;
   }
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
-  if (error) { err.textContent = '❌ ' + error.message; err.style.display = 'block'; return; }
+  // Supabase Auth yerine basit hash kontrolü
+  const sifreHash = await _hashSifre(sifre);
+  if (sifreHash !== ADMIN_SIFRE_HASH) {
+    err.textContent = '❌ Şifre hatalı!';
+    err.style.display = 'block';
+    return;
+  }
+
+  // Session'ı localStorage'a kaydet
+  const token = btoa(email + ':' + Date.now());
+  localStorage.setItem(ADMIN_SESSION_KEY, token);
 
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-panel').style.display = 'block';
@@ -861,8 +872,16 @@ async function girisYap() {
   await yukle();
 }
 
-async function cikisYap() {
-  await sb.auth.signOut();
+async function _hashSifre(sifre) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(sifre + 'kc_salt_2026');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function cikisYap() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
   location.reload();
 }
 
@@ -2534,17 +2553,22 @@ function csvIndir() {
 
 // ── INIT ──
 (async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session && session.user.email === ADMIN_EMAIL) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    document.getElementById('admin-email-goster').textContent = session.user.email;
-    await yukle();
-    // Topbar: 30sn de bir tumKafeler yeniden çek → online/açık masa güncel kalsın
-    setInterval(async () => {
-      const { data } = await sb.from('kafeler').select('*').order('created_at', { ascending: false });
-      if (data) { tumKafeler = data; topbarCanliBilgi(); kpiGuncelle(); }
-    }, 30000);
+  const token = localStorage.getItem(ADMIN_SESSION_KEY);
+  if (token) {
+    try {
+      const decoded = atob(token);
+      const [email] = decoded.split(':');
+      if (email === ADMIN_EMAIL) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'block';
+        document.getElementById('admin-email-goster').textContent = email;
+        await yukle();
+        setInterval(async () => {
+          const { data } = await sb.from('kafeler').select('*').order('created_at', { ascending: false });
+          if (data) { tumKafeler = data; topbarCanliBilgi(); kpiGuncelle(); }
+        }, 30000);
+      }
+    } catch(e) { localStorage.removeItem(ADMIN_SESSION_KEY); }
   }
 })();
 
