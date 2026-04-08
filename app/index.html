@@ -4778,7 +4778,38 @@ function bulutKaydet() {
   }, 1200);
 }
 
-const _kayitEdildi = new Set(); // Aynı dbId ile çift kayıt önle
+// _kayitEdildi: localStorage'da sakla — sayfa yenilemede de duplicate önlenir
+const _KAYIT_EDILDI_KEY = 'kc_kayit_edildi';
+const _kayitEdildiSure = 30 * 60 * 1000; // 30 dakika
+
+function _kayitEdildiMi(key) {
+  try {
+    const kayitlar = JSON.parse(localStorage.getItem(_KAYIT_EDILDI_KEY) || '{}');
+    const zaman = kayitlar[key];
+    if (!zaman) return false;
+    if (Date.now() - zaman > _kayitEdildiSure) {
+      delete kayitlar[key];
+      localStorage.setItem(_KAYIT_EDILDI_KEY, JSON.stringify(kayitlar));
+      return false;
+    }
+    return true;
+  } catch(e) { return false; }
+}
+
+function _kayitEdildiEkle(key) {
+  try {
+    const kayitlar = JSON.parse(localStorage.getItem(_KAYIT_EDILDI_KEY) || '{}');
+    kayitlar[key] = Date.now();
+    // 30'dan fazla kayıt varsa en eskiyi temizle
+    const anahtarlar = Object.keys(kayitlar);
+    if (anahtarlar.length > 50) {
+      anahtarlar.sort((a,b) => kayitlar[a] - kayitlar[b]).slice(0, 20).forEach(k => delete kayitlar[k]);
+    }
+    localStorage.setItem(_KAYIT_EDILDI_KEY, JSON.stringify(kayitlar));
+  } catch(e) {}
+}
+
+const _kayitEdildi = new Set(); // Bellek içi yedek
 
 // ════════════════════════════════════════
 // OFFLİNE KUYRUK — İnternet kesilse adisyon kaybolmaz
@@ -4820,6 +4851,11 @@ async function offlineKuyrukGonder() {
   const basarili = [];
   for (const kolaycafen of kuyruk) {
     try {
+      // Zaten normal akışta kaydedildiyse kuyruğu atla
+      if (_kayitEdildiMi(kolaycafen._kayitKey)) {
+        basarili.push(kolaycafen._kayitKey);
+        continue;
+      }
       await sb.from('kolaycafenlar').insert({
         kafe_id: kafeId,
         masa_no: isNaN(parseInt(kolaycafen.masa)) ? 0 : parseInt(kolaycafen.masa),
@@ -4832,6 +4868,7 @@ async function offlineKuyrukGonder() {
         vardiya_id: aktifVardiyaId||null,
       });
       if (kolaycafen.toplam > 0) sb.rpc('increment_ciro', { kafe_id_param: kafeId, miktar: kolaycafen.toplam }).catch(()=>{});
+      _kayitEdildiEkle(kolaycafen._kayitKey);
       basarili.push(kolaycafen._kayitKey);
     } catch(e) {}
   }
@@ -4851,9 +4888,11 @@ setInterval(() => { if (navigator.onLine && kafeId && offlineKuyrukSayisi() > 0)
 async function kolaycafenKaydet(kolaycafen) {
   if (!kafeId) return;
   const kayitKey = kolaycafen.dbId || (kolaycafen.masa + '_' + kolaycafen.tarih);
-  if (_kayitEdildi.has(kayitKey)) return;
+  // Çift kayıt kontrolü: hem bellek hem localStorage'da kontrol et
+  if (_kayitEdildi.has(kayitKey) || _kayitEdildiMi(kayitKey)) return;
   _kayitEdildi.add(kayitKey);
-  setTimeout(() => _kayitEdildi.delete(kayitKey), 10000);
+  _kayitEdildiEkle(kayitKey);
+  setTimeout(() => _kayitEdildi.delete(kayitKey), 30 * 60 * 1000);
 
   // İnternet yoksa kuyruğa ekle
   if (!navigator.onLine) {
