@@ -4159,6 +4159,11 @@ async function uygulamaBaslat(user) {
         }
       });
       if (degisti) { masalarRender(); if(seciliMasa) siparisListeRender(); }
+      // Banner mesajı realtime kontrolü — admin gönderince anında göster
+      if (payload.new.banner_mesaj) {
+        bannerGoster(payload.new.banner_mesaj);
+        sb.from('kafeler').update({ banner_mesaj: null }).eq('id', kafeId).catch(()=>{});
+      }
       setSyncOnline(true);
     })
     .subscribe();
