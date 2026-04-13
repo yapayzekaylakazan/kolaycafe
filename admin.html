@@ -1560,6 +1560,9 @@ async function manuelGunEkle(kafeId, carpan) {
     odeme_bekliyor_zaman: null
   }).eq('id', kafeId);
   if (error) { alert('Hata: ' + error.message); return; }
+  // Lokal cache'i güncelle
+  const lokal = tumKafeler.find(k => k.id === kafeId);
+  if (lokal) lokal.plan_bitis = yeniBitis.toISOString();
   const islem = carpan > 0 ? '+' + gun + ' gün eklendi' : '-' + gun + ' gün çıkarıldı';
   toast('✓ ' + (kafe?.kafe_adi||'') + ' — ' + islem + ' | Yeni bitiş: ' + yeniBitis.toLocaleDateString('tr-TR'));
   await detayAc(kafeId);
