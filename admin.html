@@ -662,7 +662,7 @@ async function aiKayitlariYukle() {
       return `<div style="border-bottom:1px solid var(--border);padding:10px 0;">
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="aikToggle('${detayId}')">
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:0.85rem;">${isAnaliz?'📊':'💬'}</span>
+            <span style="font-size:0.85rem;">${k.tip==='analiz'?'📊':'💬'}</span>
             <span style="background:${tr.bg};color:${tr.color};font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:5px;">${tr.ikon} ${tr.label}</span>
             <span style="font-size:0.72rem;color:var(--muted);">${k.donem||'-'}</span>
           </div>
