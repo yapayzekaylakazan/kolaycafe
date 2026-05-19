@@ -2778,6 +2778,46 @@
       </div>
     </div>
 
+
+    <div class="ayar-kart" id="rezervasyon-kart">
+      <h3>📅 Rezervasyonlar</h3>
+
+      <!-- Yeni Rezervasyon Formu -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="rez-ad" placeholder="Müşteri adı *" maxlength="60"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+          <input type="tel" id="rez-tel" placeholder="Telefon" maxlength="15"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="date" id="rez-tarih"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+          <input type="time" id="rez-saat"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <select id="rez-masa"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+            <option value="">Masa seç (opsiyonel)</option>
+          </select>
+          <input type="number" id="rez-kisi" placeholder="Kişi" min="1" max="99" value="2"
+            style="width:80px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+        </div>
+        <input type="text" id="rez-notlar" placeholder="Not (opsiyonel)" maxlength="200"
+          style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;outline:none;">
+        <button onclick="rezervasyonEkle()"
+          style="background:var(--accent);color:#1a0f00;border:none;border-radius:10px;padding:11px;font-family:'Nunito',sans-serif;font-weight:900;font-size:0.88rem;cursor:pointer;">
+          ＋ Rezervasyon Ekle
+        </button>
+      </div>
+
+      <!-- Rezervasyon Listesi -->
+      <div id="rez-liste" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="color:var(--muted);font-size:0.8rem;font-weight:600;text-align:center;padding:8px;">Yükleniyor...</div>
+      </div>
+    </div>
+
     <div style="text-align:center;margin-top:16px;">
       <button onclick="cikisYap()" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;">Çıkış Yap</button>
     </div>
@@ -3689,6 +3729,103 @@ async function sifreSifirla() {
   _srEl.innerHTML = '<div style="text-align:center;padding:16px;"><div style="font-size:2rem;margin-bottom:8px;">\u{1F4E7}</div><div style="font-size:0.9rem;font-weight:700;">S\u0131f\u0131rlama ba\u011flant\u0131s\u0131 g\u00f6nderildi!</div><button id="btn-sifirla-geri2" style="background:none;border:none;color:#f0b830;font-size:0.85rem;font-weight:800;cursor:pointer;margin-top:12px;">&larr; Giri\u015f Yap</button></div>';
   const _srBtn2 = document.getElementById('btn-sifirla-geri2');
   if(_srBtn2) _srBtn2.addEventListener('click', ()=>authTab('giris'));
+}
+
+
+// ── REZERVASYON SİSTEMİ ──
+async function rezervasyonlariYukle() {
+  if (!kafeId) return;
+  const bugun = new Date().toISOString().split('T')[0];
+  const { data, error } = await sb.from('rezervasyonlar')
+    .select('*')
+    .eq('kafe_id', kafeId)
+    .eq('durum', 'aktif')
+    .gte('tarih', bugun)
+    .order('tarih').order('saat');
+  
+  const el = document.getElementById('rez-liste');
+  if (!el) return;
+  
+  // Masa select'ini doldur
+  const masaSel = document.getElementById('rez-masa');
+  if (masaSel && window._kafeData?.masalar) {
+    masaSel.innerHTML = '<option value="">Masa seç (opsiyonel)</option>';
+    window._kafeData.masalar.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.ad || ('Masa ' + m.id);
+      masaSel.appendChild(opt);
+    });
+  }
+
+  if (error || !data || data.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-weight:600;text-align:center;padding:8px;">Yaklaşan rezervasyon yok</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(r => {
+    const tarih = new Date(r.tarih + 'T00:00:00').toLocaleDateString('tr-TR', {day:'numeric',month:'short',weekday:'short'});
+    const saat = r.saat?.slice(0,5) || '';
+    return `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;">
+        <div style="font-weight:800;font-size:0.88rem;">${r.ad} <span style="color:var(--muted);font-size:0.75rem;font-weight:600;">${r.kisi_sayisi} kişi</span></div>
+        <div style="font-size:0.78rem;color:var(--accent2);font-weight:700;">📅 ${tarih} • ⏰ ${saat}${r.masa_adi ? ' • 🪑 ' + r.masa_adi : ''}${r.telefon ? ' • 📞 ' + r.telefon : ''}</div>
+        ${r.notlar ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">📝 ${r.notlar}</div>` : ''}
+      </div>
+      <button onclick="rezervasyonIptal('${r.id}')"
+        style="background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:8px;padding:5px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;">
+        İptal
+      </button>
+    </div>`;
+  }).join('');
+}
+
+async function rezervasyonEkle() {
+  const ad = document.getElementById('rez-ad')?.value.trim();
+  const tel = document.getElementById('rez-tel')?.value.trim();
+  const tarih = document.getElementById('rez-tarih')?.value;
+  const saat = document.getElementById('rez-saat')?.value;
+  const masaSel = document.getElementById('rez-masa');
+  const masaNo = masaSel?.value ? parseInt(masaSel.value) : null;
+  const masaAdi = masaSel?.value ? (masaSel.options[masaSel.selectedIndex]?.text || null) : null;
+  const kisi = parseInt(document.getElementById('rez-kisi')?.value) || 2;
+  const notlar = document.getElementById('rez-notlar')?.value.trim();
+
+  if (!ad) { toast('⚠️ Müşteri adı gerekli'); return; }
+  if (!tarih) { toast('⚠️ Tarih seçin'); return; }
+  if (!saat) { toast('⚠️ Saat seçin'); return; }
+
+  const { error } = await sb.from('rezervasyonlar').insert({
+    kafe_id: kafeId,
+    masa_no: masaNo,
+    masa_adi: masaAdi,
+    tarih, saat, ad,
+    telefon: tel || null,
+    kisi_sayisi: kisi,
+    notlar: notlar || null,
+    durum: 'aktif'
+  });
+
+  if (error) { toast('⚠️ Hata: ' + error.message); return; }
+
+  toast('✓ Rezervasyon eklendi');
+  document.getElementById('rez-ad').value = '';
+  document.getElementById('rez-tel').value = '';
+  document.getElementById('rez-tarih').value = '';
+  document.getElementById('rez-saat').value = '';
+  document.getElementById('rez-kisi').value = '2';
+  document.getElementById('rez-notlar').value = '';
+  if (masaSel) masaSel.value = '';
+  rezervasyonlariYukle();
+}
+
+async function rezervasyonIptal(id) {
+  if (!confirm('Rezervasyonu iptal etmek istiyor musunuz?')) return;
+  const { error } = await sb.from('rezervasyonlar').update({ durum: 'iptal' }).eq('id', id);
+  if (error) { toast('⚠️ Hata: ' + error.message); return; }
+  toast('✓ Rezervasyon iptal edildi');
+  rezervasyonlariYukle();
 }
 
 async function cikisYap() {
@@ -4960,7 +5097,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='recete') { if(typeof receteListeRender==='function') receteListeRender(); }
   if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
-  if (sayfa==='ayarlar') { ayarlarRender(); masaGrupListeRender(); }
+  if (sayfa==='ayarlar') { ayarlarRender(); masaGrupListeRender(); rezervasyonlariYukle(); }
   if (sayfa==='ai') aiSayfaAc();
   if (sayfa==='odeme') { odemeBaslangic(); return; }
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
@@ -9321,6 +9458,8 @@ async function receteKaydet() {
 // AYARLAR
 // ════════════════════════════════════════
 function ayarlarRender(){
+  const rezTarih = document.getElementById('rez-tarih');
+  if (rezTarih && !rezTarih.value) rezTarih.value = new Date().toISOString().split('T')[0];
   document.getElementById('ayar-cafe-adi').textContent=kafeAdi;
   document.getElementById('yeni-cafe-adi').value=kafeAdi;
   garsonAyarListeRender();
