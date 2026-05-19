@@ -3733,6 +3733,8 @@ async function sifreSifirla() {
 
 
 // ── REZERVASYON SİSTEMİ ──
+let _rezervasyonluMasalar = new Set(); // bugün rezervasyonu olan masa no'ları
+
 async function rezervasyonlariYukle() {
   if (!kafeId) return;
   const bugun = new Date().toISOString().split('T')[0];
@@ -3756,6 +3758,14 @@ async function rezervasyonlariYukle() {
       opt.textContent = m.ad || ('Masa ' + m.id);
       masaSel.appendChild(opt);
     });
+  }
+
+  // Bugün rezervasyonu olan masaları işaretle
+  _rezervasyonluMasalar = new Set();
+  if (data) {
+    const bugunStr = new Date().toISOString().split('T')[0];
+    data.filter(r => r.tarih === bugunStr && r.masa_no).forEach(r => _rezervasyonluMasalar.add(r.masa_no));
+    if (typeof masaGoster === 'function') masaGoster();
   }
 
   if (error || !data || data.length === 0) {
@@ -5470,6 +5480,7 @@ function masalarRender() {
           <div class="mk-tutar">${fmt(toplam)}</div>
           <div class="mk-adet">${adetToplam}</div>
         </div>` : `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">${m.not ? `<div style="font-size:0.6rem;color:var(--accent2);font-weight:800;text-align:center;padding:0 4px;word-break:break-word;line-height:1.3;">📝 ${m.not}</div>` : `<div style="font-size:0.6rem;color:var(--muted);font-weight:700;">Boş</div>`}</div>`}
+        ${_rezervasyonluMasalar && _rezervasyonluMasalar.has(m.id) ? `<div style="position:absolute;bottom:4px;left:4px;background:#6366f1;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;">📅</div>` : ''}
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
 
