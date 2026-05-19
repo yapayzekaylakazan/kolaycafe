@@ -3789,6 +3789,13 @@ async function rezervasyonlariYukle() {
     .gte('tarih', bugun)
     .order('tarih').order('saat');
   
+  // İkon için tüm aktif rezervasyonları al (tarihsiz)
+  const { data: ikonData } = await sb.from('rezervasyonlar')
+    .select('masa_no')
+    .eq('kafe_id', kafeId)
+    .eq('durum', 'aktif')
+    .filter('masa_no', 'not.is', null);
+  
   const el = document.getElementById('rez-liste');
   if (!el) return;
   
@@ -3804,12 +3811,10 @@ async function rezervasyonlariYukle() {
     });
   }
 
-  // Bugün rezervasyonu olan masaları işaretle
+  // Rezervasyonu olan masaları işaretle (tüm aktif rezervasyonlar)
   _rezervasyonluMasalar = new Set();
-  if (data) {
-    const bugunStr = new Date().toISOString().split('T')[0];
-    data.filter(r => r.tarih === bugunStr && r.masa_no).forEach(r => { _rezervasyonluMasalar.add(r.masa_no); _rezervasyonluMasalar.add(String(r.masa_no)); });
-    if (typeof masaGoster === 'function') masaGoster();
+  if (ikonData) {
+    ikonData.forEach(r => { _rezervasyonluMasalar.add(r.masa_no); _rezervasyonluMasalar.add(String(r.masa_no)); });
   }
 
   if (error || !data || data.length === 0) {
@@ -3864,6 +3869,8 @@ async function rezervasyonEkle() {
   if (error) { toast('⚠️ Hata: ' + error.message); return; }
 
   toast('✓ Rezervasyon eklendi');
+  await rezervasyonlariYukle();
+  masalarRender();
   document.getElementById('rez-ad').value = '';
   document.getElementById('rez-tel').value = '';
   document.getElementById('rez-tarih').value = '';
@@ -3879,7 +3886,8 @@ async function rezervasyonIptal(id) {
   const { error } = await sb.from('rezervasyonlar').update({ durum: 'iptal' }).eq('id', id);
   if (error) { toast('⚠️ Hata: ' + error.message); return; }
   toast('✓ Rezervasyon iptal edildi');
-  rezervasyonlariYukle();
+  await rezervasyonlariYukle();
+  masalarRender();
 }
 
 async function cikisYap() {
