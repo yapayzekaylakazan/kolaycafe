@@ -2789,7 +2789,7 @@
   <div class="modal-kart" style="max-width:340px;width:90%;text-align:center;">
     <div class="modal-baslik" id="qr-modal-baslik">📷 QR Kod</div>
     <div style="background:#fff;border-radius:16px;padding:16px;margin:12px 0;display:inline-block;">
-      <canvas id="qr-canvas"></canvas>
+      <div id="qr-canvas"></div>
     </div>
     <div id="qr-masa-adi" style="font-size:1rem;font-weight:800;margin-bottom:4px;"></div>
     <div id="qr-aciklama" style="font-size:0.75rem;color:var(--muted);font-weight:600;margin-bottom:14px;"></div>
@@ -14253,19 +14253,11 @@ window.qrGoster = async function(masaNo, masaAd) {
   modal.style.display = 'flex';
   modal.classList.add('ac');
 
-  // Önceki QR container'ı tamamen kaldır, yenisini oluştur (QRCode instance temizliği için)
-  const eskiContainer = document.getElementById('qr-render-container');
-  if (eskiContainer) eskiContainer.remove();
-  const container = document.createElement('div');
-  container.id = 'qr-render-container';
-  container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-  document.body.appendChild(container);
-
-  canvas.width = 0;
-  canvas.height = 0;
+  // Doğrudan modal içindeki div'e render et (Samsung/fold ekran uyumluluğu için)
+  canvas.innerHTML = '';
 
   try {
-    new QRCode(container, {
+    new QRCode(canvas, {
       text: qrUrl,
       width: 220,
       height: 220,
@@ -14273,34 +14265,14 @@ window.qrGoster = async function(masaNo, masaAd) {
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
-
-    // img yüklenince canvas'a çiz
-    const tryDraw = (attempts) => {
-      const img = container.querySelector('img');
-      if (img && img.complete && img.naturalWidth > 0) {
-        canvas.width = 220;
-        canvas.height = 220;
-        canvas.getContext('2d').drawImage(img, 0, 0, 220, 220);
-      } else if (img) {
-        img.onload = () => {
-          canvas.width = 220;
-          canvas.height = 220;
-          canvas.getContext('2d').drawImage(img, 0, 0, 220, 220);
-        };
-      } else if (attempts > 0) {
-        setTimeout(() => tryDraw(attempts - 1), 80);
-      } else {
-        toast('⚠️ QR oluşturulamadı, tekrar deneyin');
-      }
-    };
-    setTimeout(() => tryDraw(15), 100);
-
   } catch(e) {
     toast('QR oluşturulamadı: ' + e.message);
   }
 
   document.getElementById('btn-qr-indir').onclick = function() {
-    qrPdfIndir(masaNo, adStr, canvas);
+    const cvs = canvas.querySelector('canvas');
+    if (cvs) qrPdfIndir(masaNo, adStr, cvs);
+    else toast('⚠️ QR henüz hazır değil');
   };
 };
 
@@ -14320,43 +14292,24 @@ function menuQrGoster() {
   modal.style.display = 'flex';
   modal.classList.add('ac');
 
-  // Container'ı temizle ve yeniden oluştur
-  const eskiContainer = document.getElementById('qr-render-container');
-  if (eskiContainer) eskiContainer.remove();
-  const container = document.createElement('div');
-  container.id = 'qr-render-container';
-  container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-  document.body.appendChild(container);
-
-  canvas.width = 0;
-  canvas.height = 0;
+  // Doğrudan div'e render et (Samsung/fold uyumluluğu için)
+  canvas.innerHTML = '';
 
   try {
-    new QRCode(container, {
+    new QRCode(canvas, {
       text: qrUrl, width: 220, height: 220,
       colorDark: '#1a1200', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
-
-    const tryDraw = (n) => {
-      const img = container.querySelector('img');
-      if (img && img.complete && img.naturalWidth > 0) {
-        canvas.width = 220; canvas.height = 220;
-        canvas.getContext('2d').drawImage(img, 0, 0, 220, 220);
-      } else if (img) {
-        img.onload = () => { canvas.width=220; canvas.height=220; canvas.getContext('2d').drawImage(img,0,0,220,220); };
-      } else if (n > 0) {
-        setTimeout(() => tryDraw(n-1), 80);
-      } else {
-        toast('⚠️ QR oluşturulamadı, tekrar deneyin');
-      }
-    };
-    setTimeout(() => tryDraw(15), 100);
   } catch(e) {
     toast('QR oluşturulamadı: ' + e.message);
   }
 
-  document.getElementById('btn-qr-indir').onclick = () => qrPdfIndir('menu', 'Dijital Menü', canvas);
+  document.getElementById('btn-qr-indir').onclick = () => {
+    const cvs = canvas.querySelector('canvas');
+    if (cvs) qrPdfIndir('menu', 'Dijital Menü', cvs);
+    else toast('⚠️ QR henüz hazır değil');
+  };
 }
 
 function menuLinkKopyala() {
