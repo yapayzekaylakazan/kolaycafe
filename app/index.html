@@ -2825,6 +2825,19 @@
 </div>
 
 <!-- QR KOD MODAL -->
+
+<!-- REZERVASYON POPUP -->
+<div id="rez-popup" style="display:none;position:fixed;inset:0;z-index:9998;align-items:center;justify-content:center;" onclick="this.style.display='none'">
+  <div onclick="event.stopPropagation()" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:18px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <div id="rez-popup-baslik" style="font-weight:900;font-size:0.95rem;margin-bottom:12px;color:var(--accent);">📅 Masa Rezervasyonları</div>
+    <div id="rez-popup-icerik" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <button onclick="document.getElementById('rez-popup').style.display='none'"
+      style="margin-top:14px;width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;">
+      Kapat
+    </button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="qr-modal" style="display:none;z-index:9999;">
   <div class="modal-kart" style="max-width:340px;width:90%;text-align:center;">
     <div class="modal-baslik" id="qr-modal-baslik">📷 QR Kod</div>
@@ -3731,6 +3744,37 @@ async function sifreSifirla() {
   if(_srBtn2) _srBtn2.addEventListener('click', ()=>authTab('giris'));
 }
 
+
+
+async function rezervasyonPopupGoster(masaNo, masaAdi) {
+  const bugun = new Date().toISOString().split('T')[0];
+  const { data } = await sb.from('rezervasyonlar')
+    .select('*')
+    .eq('kafe_id', kafeId)
+    .eq('masa_no', masaNo)
+    .eq('tarih', bugun)
+    .eq('durum', 'aktif')
+    .order('saat');
+
+  const popup = document.getElementById('rez-popup');
+  const baslik = document.getElementById('rez-popup-baslik');
+  const icerik = document.getElementById('rez-popup-icerik');
+
+  baslik.textContent = '📅 ' + masaAdi + ' — Bugünkü Rezervasyonlar';
+
+  if (!data || data.length === 0) {
+    icerik.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;">Bugün rezervasyon yok</div>';
+  } else {
+    icerik.innerHTML = data.map(r => `
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+        <div style="font-weight:800;font-size:0.88rem;">${r.ad} <span style="color:var(--muted);font-size:0.75rem;">${r.kisi_sayisi} kişi</span></div>
+        <div style="font-size:0.78rem;color:var(--accent2);font-weight:700;margin-top:2px;">⏰ ${r.saat?.slice(0,5) || ''}${r.telefon ? ' • 📞 ' + r.telefon : ''}</div>
+        ${r.notlar ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">📝 ${r.notlar}</div>` : ''}
+      </div>`).join('');
+  }
+
+  popup.style.display = 'flex';
+}
 
 // ── REZERVASYON SİSTEMİ ──
 let _rezervasyonluMasalar = new Set(); // bugün rezervasyonu olan masa no'ları
@@ -5482,7 +5526,7 @@ function masalarRender() {
           <div class="mk-tutar">${fmt(toplam)}</div>
           <div class="mk-adet">${adetToplam}</div>
         </div>` : `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">${m.not ? `<div style="font-size:0.6rem;color:var(--accent2);font-weight:800;text-align:center;padding:0 4px;word-break:break-word;line-height:1.3;">📝 ${m.not}</div>` : `<div style="font-size:0.6rem;color:var(--muted);font-weight:700;">Boş</div>`}</div>`}
-        ${_rezervasyonluMasalar && (_rezervasyonluMasalar.has(m.id) || _rezervasyonluMasalar.has(Number(m.id))) ? `<div style="position:absolute;bottom:4px;left:4px;background:#6366f1;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;">📅</div>` : ''}
+        ${_rezervasyonluMasalar && (_rezervasyonluMasalar.has(m.id) || _rezervasyonluMasalar.has(Number(m.id))) ? `<div onclick="event.stopPropagation();rezervasyonPopupGoster(${m.id},'${masaAdi}')" style="position:absolute;bottom:4px;left:4px;background:#6366f1;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;cursor:pointer;">📅</div>` : ''}
         ${garsonCagri ? `<div style="position:absolute;top:4px;left:4px;background:#ef4444;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">🔔</div>` : ''}
         ${musteriSipVar ? `<div style="position:absolute;top:4px;left:4px;background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:0.5rem;font-weight:900;animation:pulse 1s infinite;">${mutfakDurum==='hazir'?'✅':'👨‍🍳'}</div>` : ''}
 
