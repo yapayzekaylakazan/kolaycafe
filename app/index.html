@@ -4057,7 +4057,8 @@ async function garsonGiris(isim, kafeData) {
   // Garson modunda da aktif vardiyayı yükle — adisyonlar vardiya_id ile kayıtlansın
   await vardiyayukle();
   // Rezervasyonlu masaları yükle, sonra render et
-  rezervasyonlariYukle().catch(()=>{}).finally(()=>{ masalarRender(); });
+  await rezervasyonlariYukle().catch(()=>{});
+  masalarRender();
   urunListesiRender();
   setSyncOnline(true);
   toast('Hoş geldin, ' + isim + '! ☕');
