@@ -371,6 +371,7 @@
     <div class="toolbar" style="flex-wrap:wrap;gap:7px;">
       <div class="toolbar-baslik">💰 Kafe Ciro Özeti</div>
       <select class="sel" id="ciro-donem" onchange="ciroOzetYukle()">
+        <option value="0">⭐ Tüm Zamanlar</option>
         <option value="7">Son 7 gün</option>
         <option value="30" selected>Son 30 gün</option>
         <option value="90">Son 90 gün</option>
@@ -1891,59 +1892,93 @@ let _ciroOzetData = []; // [{kafe_id, kafe_adi, plan, toplam_ciro, adisyon_sayis
 
 async function ciroOzetYukle() {
   const gun = parseInt(document.getElementById('ciro-donem')?.value || '30');
+  const tumZamanlar = gun === 0;
   const statusEl = document.getElementById('ciro-ozet-durum');
   const tbody = document.getElementById('ciro-ozet-body');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="9" class="yukl">⏳ Yükleniyor...</td></tr>';
   if (statusEl) statusEl.textContent = '⏳ Veriler çekiliyor...';
 
-  const baslangic = new Date();
-  baslangic.setDate(baslangic.getDate() - gun);
+  if (tumZamanlar) {
+    // ── TÜM ZAMANLAR: kafeler.toplam_ciro'dan al ──
+    _ciroOzetData = tumKafeler
+      .filter(k => k.toplam_ciro > 0)
+      .map(k => ({
+        kafe_id: k.id,
+        kafe_adi: k.kafe_adi || '?',
+        plan: k.plan || '?',
+        toplam_ciro: parseFloat(k.toplam_ciro || 0),
+        adisyon_sayisi: null, // bilinmiyor
+        ort_adisyon: null,
+        son_islem: k.son_giris || null,
+        kaynak: 'kafeler'
+      }));
 
-  const { data, error } = await sb.from('kolaycafenlar')
-    .select('kafe_id, toplam, created_at')
-    .gte('created_at', baslangic.toISOString())
-    .order('created_at', { ascending: false });
+    const genelToplam = _ciroOzetData.reduce((t, k) => t + k.toplam_ciro, 0);
+    document.getElementById('cozet-toplam').textContent = fmt(genelToplam) + '₺';
+    document.getElementById('cozet-adisyon').textContent = '—';
+    document.getElementById('cozet-ort').textContent = '—';
+    document.getElementById('cozet-aktif-kafe').textContent = _ciroOzetData.length;
+    if (statusEl) statusEl.textContent = `Tüm zamanlar • kafeler tablosundan`;
 
-  if (error) {
-    tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);padding:20px;text-align:center;">❌ ${error.message}</td></tr>`;
-    return;
-  }
+  } else {
+    // ── DÖNEM: kolaycafenlar'dan hesapla ──
+    const baslangic = new Date();
+    baslangic.setDate(baslangic.getDate() - gun);
 
-  // Kafe bazlı grupla
-  const kafeMap = {};
-  (data || []).forEach(a => {
-    const kid = a.kafe_id;
-    if (!kafeMap[kid]) {
-      const kafe = tumKafeler.find(k => k.id === kid);
-      kafeMap[kid] = {
-        kafe_id: kid,
-        kafe_adi: kafe?.kafe_adi || '?',
-        plan: kafe?.plan || '?',
-        toplam_ciro: 0,
-        adisyon_sayisi: 0,
-        son_islem: null
-      };
+    // Limit yok — chunk ile çek
+    let tumData = [];
+    let from = 0;
+    const chunk = 1000;
+    while (true) {
+      const { data, error } = await sb.from('kolaycafenlar')
+        .select('kafe_id, toplam, created_at')
+        .gte('created_at', baslangic.toISOString())
+        .order('created_at', { ascending: false })
+        .range(from, from + chunk - 1);
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);padding:20px;text-align:center;">❌ ${error.message}</td></tr>`;
+        return;
+      }
+      tumData = tumData.concat(data || []);
+      if (!data || data.length < chunk) break;
+      from += chunk;
     }
-    kafeMap[kid].toplam_ciro += parseFloat(a.toplam || 0);
-    kafeMap[kid].adisyon_sayisi++;
-    if (!kafeMap[kid].son_islem || a.created_at > kafeMap[kid].son_islem)
-      kafeMap[kid].son_islem = a.created_at;
-  });
 
-  _ciroOzetData = Object.values(kafeMap).map(k => ({
-    ...k,
-    ort_adisyon: k.adisyon_sayisi > 0 ? k.toplam_ciro / k.adisyon_sayisi : 0
-  }));
+    const kafeMap = {};
+    tumData.forEach(a => {
+      const kid = a.kafe_id;
+      if (!kafeMap[kid]) {
+        const kafe = tumKafeler.find(k => k.id === kid);
+        kafeMap[kid] = {
+          kafe_id: kid,
+          kafe_adi: kafe?.kafe_adi || '?',
+          plan: kafe?.plan || '?',
+          toplam_ciro: 0,
+          adisyon_sayisi: 0,
+          son_islem: null,
+          kaynak: 'kolaycafenlar'
+        };
+      }
+      kafeMap[kid].toplam_ciro += parseFloat(a.toplam || 0);
+      kafeMap[kid].adisyon_sayisi++;
+      if (!kafeMap[kid].son_islem || a.created_at > kafeMap[kid].son_islem)
+        kafeMap[kid].son_islem = a.created_at;
+    });
 
-  // KPI
-  const genelToplam = _ciroOzetData.reduce((t, k) => t + k.toplam_ciro, 0);
-  const genelAdisyon = _ciroOzetData.reduce((t, k) => t + k.adisyon_sayisi, 0);
-  document.getElementById('cozet-toplam').textContent = fmt(genelToplam) + '₺';
-  document.getElementById('cozet-adisyon').textContent = genelAdisyon;
-  document.getElementById('cozet-ort').textContent = genelAdisyon > 0 ? fmt(genelToplam / genelAdisyon) + '₺' : '—';
-  document.getElementById('cozet-aktif-kafe').textContent = _ciroOzetData.length;
-  if (statusEl) statusEl.textContent = `${gun} günlük • ${(data||[]).length} adisyon`;
+    _ciroOzetData = Object.values(kafeMap).map(k => ({
+      ...k,
+      ort_adisyon: k.adisyon_sayisi > 0 ? k.toplam_ciro / k.adisyon_sayisi : 0
+    }));
+
+    const genelToplam = _ciroOzetData.reduce((t, k) => t + k.toplam_ciro, 0);
+    const genelAdisyon = _ciroOzetData.reduce((t, k) => t + k.adisyon_sayisi, 0);
+    document.getElementById('cozet-toplam').textContent = fmt(genelToplam) + '₺';
+    document.getElementById('cozet-adisyon').textContent = genelAdisyon;
+    document.getElementById('cozet-ort').textContent = genelAdisyon > 0 ? fmt(genelToplam / genelAdisyon) + '₺' : '—';
+    document.getElementById('cozet-aktif-kafe').textContent = _ciroOzetData.length;
+    if (statusEl) statusEl.textContent = `Son ${gun} gün • ${tumData.length} adisyon`;
+  }
 
   ciroOzetRender();
 }
@@ -1953,9 +1988,12 @@ function ciroOzetRender() {
   const tbody = document.getElementById('ciro-ozet-body');
   if (!tbody || _ciroOzetData.length === 0) return;
 
+  const tumZamanlar = _ciroOzetData[0]?.kaynak === 'kafeler';
+
   const sirali = [..._ciroOzetData].sort((a, b) => {
     if (sirala === 'son_islem') return (b.son_islem||'') > (a.son_islem||'') ? 1 : -1;
-    return b[sirala] - a[sirala];
+    if ((sirala === 'adisyon_sayisi' || sirala === 'ort_adisyon') && tumZamanlar) return b.toplam_ciro - a.toplam_ciro;
+    return (b[sirala]||0) - (a[sirala]||0);
   });
 
   const maxCiro = Math.max(...sirali.map(k => k.toplam_ciro), 1);
@@ -1970,26 +2008,26 @@ function ciroOzetRender() {
       return `<span style="color:${renk};font-size:0.7rem;">${fark===0?'Bugün':fark===1?'Dün':fark+'g önce'}</span>`;
     })() : '<span style="color:var(--text2);">—</span>';
 
+    const adisyonHtml = k.adisyon_sayisi != null
+      ? `<span style="font-family:'Space Mono',monospace;font-weight:700;">${k.adisyon_sayisi}</span>`
+      : `<span style="color:var(--text2);font-size:0.7rem;" title="Dönem seçince hesaplanır">—</span>`;
+    const ortHtml = k.ort_adisyon != null
+      ? `<span style="font-family:'Space Mono',monospace;font-weight:700;color:var(--purple);">${fmtTL(k.ort_adisyon)}₺</span>`
+      : `<span style="color:var(--text2);font-size:0.7rem;" title="Dönem seçince hesaplanır">—</span>`;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="color:var(--text2);font-family:'Space Mono',monospace;font-size:0.7rem;">${i+1}</td>
-      <td>
-        <div style="font-weight:800;font-size:0.82rem;">${k.kafe_adi}</div>
-      </td>
+      <td><div style="font-weight:800;font-size:0.82rem;">${k.kafe_adi}</div></td>
       <td>${planBadge(k.plan)}</td>
       <td>
-        <button onclick="adisyonDrillAc('${k.kafe_id}','${k.kafe_adi.replace(/'/g,'')}')" style="background:transparent;border:none;color:#30d080;font-weight:900;font-size:0.82rem;cursor:pointer;font-family:'Space Mono',monospace;padding:0;text-decoration:underline dotted;">
-          ${fmtTL(k.toplam_ciro)}₺
-        </button>
+        <button onclick="adisyonDrillAc('${k.kafe_id}','${k.kafe_adi.replace(/'/g,'')}')" style="background:transparent;border:none;color:#30d080;font-weight:900;font-size:0.82rem;cursor:pointer;font-family:'Space Mono',monospace;padding:0;text-decoration:underline dotted;">${fmtTL(k.toplam_ciro)}₺</button>
+        ${tumZamanlar ? '<div style="font-size:0.58rem;color:var(--text2);margin-top:1px;">tüm zamanlar</div>' : ''}
       </td>
-      <td style="font-family:'Space Mono',monospace;font-weight:700;">${k.adisyon_sayisi}</td>
-      <td style="font-family:'Space Mono',monospace;font-weight:700;color:var(--purple);">${fmtTL(k.ort_adisyon)}₺</td>
+      <td>${adisyonHtml}</td>
+      <td>${ortHtml}</td>
       <td>${sonIslem}</td>
-      <td>
-        <div style="background:var(--surface2);border-radius:3px;height:10px;overflow:hidden;min-width:80px;">
-          <div style="width:${bar}%;height:100%;background:linear-gradient(90deg,#20c0d0,#20c0d070);border-radius:3px;"></div>
-        </div>
-      </td>
+      <td><div style="background:var(--surface2);border-radius:3px;height:10px;overflow:hidden;min-width:80px;"><div style="width:${bar}%;height:100%;background:linear-gradient(90deg,#20c0d0,#20c0d070);border-radius:3px;"></div></div></td>
       <td>
         <button class="abtn" onclick="adisyonDrillAc('${k.kafe_id}','${k.kafe_adi.replace(/'/g,'')}')">🧾</button>
         <button class="abtn" onclick="detayAc('${k.kafe_id}')">🔍</button>
@@ -1997,6 +2035,7 @@ function ciroOzetRender() {
     tbody.appendChild(tr);
   });
 }
+
 
 // ── ADİSYON DRILL-DOWN ──
 let _drillKafeId = null;
