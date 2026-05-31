@@ -112,6 +112,9 @@
   .tp-sonuc.ok{background:#30d08015;color:var(--green);border:1px solid #30d08040;}
   .tp-sonuc.err{background:#e0405015;color:var(--red);border:1px solid #e0405040;}
   .heatmap{overflow-x:auto;padding-bottom:4px;}
+  .drill-donem-btn{padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .drill-donem-btn:hover{color:var(--text);border-color:var(--cyan);}
+  .drill-donem-btn.aktif{background:rgba(32,192,208,0.15);border-color:var(--cyan);color:var(--cyan);}
   .hm-grid{display:grid;gap:2px;font-size:0.54rem;}
   .hm-cell{border-radius:2px;height:15px;min-width:15px;}
   .hm-lbl{color:var(--text2);display:flex;align-items:center;font-family:'Space Mono',monospace;padding-right:4px;white-space:nowrap;font-size:0.52rem;}
@@ -412,43 +415,64 @@
 
   <!-- ADİSYON DRILL-DOWN OVERLAY -->
   <div class="overlay" id="adisyon-overlay">
-    <div class="modal" style="max-width:780px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div>
-          <div class="modal-tit" id="adisyon-overlay-baslik" style="margin-bottom:2px;">Adisyonlar</div>
-          <div id="adisyon-overlay-alt" style="font-size:0.72rem;color:var(--text2);"></div>
+    <div class="modal" style="max-width:860px;width:100%;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:93vh;">
+
+      <!-- Başlık -->
+      <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
+          <div>
+            <div class="modal-tit" id="adisyon-overlay-baslik" style="margin-bottom:3px;">Adisyonlar</div>
+            <div id="adisyon-overlay-alt" style="font-size:0.72rem;color:var(--text2);font-family:'Space Mono',monospace;"></div>
+          </div>
+          <button onclick="document.getElementById('adisyon-overlay').classList.remove('ac')" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Inter',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;white-space:nowrap;">✕ Kapat</button>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <select class="sel" id="adisyon-overlay-donem" onchange="adisyonDrillYukle()">
-            <option value="7">Son 7 gün</option>
-            <option value="30" selected>Son 30 gün</option>
-            <option value="90">Son 90 gün</option>
-          </select>
-          <button class="ebtn" onclick="document.getElementById('adisyon-overlay').classList.remove('ac')">✕ Kapat</button>
-        </div>
-      </div>
-      <!-- KPI -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
-        <div style="background:var(--surface);border-radius:9px;padding:11px;text-align:center;border:1px solid var(--border);">
-          <div style="font-size:1.3rem;font-weight:900;color:#30d080;" id="drill-kpi-ciro">—</div>
-          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;">TOPLAM CİRO</div>
-        </div>
-        <div style="background:var(--surface);border-radius:9px;padding:11px;text-align:center;border:1px solid var(--border);">
-          <div style="font-size:1.3rem;font-weight:900;color:var(--accent);" id="drill-kpi-adet">—</div>
-          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;">ADİSYON</div>
-        </div>
-        <div style="background:var(--surface);border-radius:9px;padding:11px;text-align:center;border:1px solid var(--border);">
-          <div style="font-size:1.3rem;font-weight:900;color:var(--purple);" id="drill-kpi-ort">—</div>
-          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;">ORT. ADİSYON</div>
+
+        <!-- Hızlı dönem butonları + Tarih aralığı -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <button class="drill-donem-btn aktif" onclick="drillHizliDonem(this,'bugun')">Bugün</button>
+          <button class="drill-donem-btn" onclick="drillHizliDonem(this,'dun')">Dün</button>
+          <button class="drill-donem-btn" onclick="drillHizliDonem(this,'bu_hafta')">Bu Hafta</button>
+          <button class="drill-donem-btn" onclick="drillHizliDonem(this,'bu_ay')">Bu Ay</button>
+          <button class="drill-donem-btn" onclick="drillHizliDonem(this,'son30')">Son 30 Gün</button>
+          <button class="drill-donem-btn" onclick="drillHizliDonem(this,'son90')">Son 90 Gün</button>
+          <div style="display:flex;align-items:center;gap:5px;margin-left:4px;">
+            <input type="date" id="drill-tarih-bas" class="arama" style="width:130px;padding:5px 8px;font-size:0.75rem;" onchange="drillTarihAralik()">
+            <span style="color:var(--text2);font-size:0.72rem;">—</span>
+            <input type="date" id="drill-tarih-bitis" class="arama" style="width:130px;padding:5px 8px;font-size:0.75rem;" onchange="drillTarihAralik()">
+          </div>
+          <button class="ebtn" onclick="adisyonDrillYukle()" style="margin-left:auto;">🔄</button>
         </div>
       </div>
-      <!-- Gün bazlı bar grafik -->
-      <div id="drill-gun-grafik" style="margin-bottom:14px;"></div>
-      <!-- Adisyon listesi -->
-      <div style="font-size:0.65rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border);">🧾 ADİSYON LİSTESİ</div>
-      <div id="drill-adisyon-liste" style="display:flex;flex-direction:column;gap:4px;max-height:340px;overflow-y:auto;">
-        <div class="yukl">⏳</div>
+
+      <!-- KPI satırı -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="padding:12px 14px;text-align:center;border-right:1px solid var(--border);">
+          <div style="font-size:1.15rem;font-weight:900;color:#30d080;font-family:'Space Mono',monospace;" id="drill-kpi-ciro">—</div>
+          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:2px;">TOPLAM CİRO</div>
+        </div>
+        <div style="padding:12px 14px;text-align:center;border-right:1px solid var(--border);">
+          <div style="font-size:1.15rem;font-weight:900;color:var(--accent);font-family:'Space Mono',monospace;" id="drill-kpi-adet">—</div>
+          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:2px;">ADİSYON</div>
+        </div>
+        <div style="padding:12px 14px;text-align:center;border-right:1px solid var(--border);">
+          <div style="font-size:1.15rem;font-weight:900;color:var(--purple);font-family:'Space Mono',monospace;" id="drill-kpi-ort">—</div>
+          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:2px;">ORT. ADİSYON</div>
+        </div>
+        <div style="padding:12px 14px;text-align:center;border-right:1px solid var(--border);">
+          <div style="font-size:1.15rem;font-weight:900;color:var(--cyan);font-family:'Space Mono',monospace;" id="drill-kpi-gun">—</div>
+          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:2px;">GÜNLÜ GÜN</div>
+        </div>
+        <div style="padding:12px 14px;text-align:center;">
+          <div style="font-size:1.15rem;font-weight:900;color:var(--blue);font-family:'Space Mono',monospace;" id="drill-kpi-en-yuksek">—</div>
+          <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;margin-top:2px;">EN YÜKSEK GÜN</div>
+        </div>
       </div>
+
+      <!-- İçerik scroll alanı -->
+      <div style="overflow-y:auto;flex:1;padding:16px 20px;" id="drill-scroll-alan">
+        <div class="yukl">⏳ Yükleniyor...</div>
+      </div>
+
     </div>
   </div>
 
@@ -1976,93 +2000,181 @@ function ciroOzetRender() {
 
 // ── ADİSYON DRILL-DOWN ──
 let _drillKafeId = null;
+let _drillBas = null;   // ISO string
+let _drillBitis = null; // ISO string
+
+function drillHizliDonem(btn, kod) {
+  document.querySelectorAll('.drill-donem-btn').forEach(b => b.classList.remove('aktif'));
+  btn.classList.add('aktif');
+  const simdi = new Date();
+  const bugun = new Date(simdi); bugun.setHours(0,0,0,0);
+  let bas, bitis;
+  if (kod === 'bugun') {
+    bas = new Date(bugun); bitis = new Date();
+  } else if (kod === 'dun') {
+    bas = new Date(bugun); bas.setDate(bas.getDate()-1);
+    bitis = new Date(bugun); bitis.setMilliseconds(-1);
+  } else if (kod === 'bu_hafta') {
+    bas = new Date(bugun); bas.setDate(bas.getDate() - bas.getDay() + (bas.getDay()===0?-6:1));
+    bitis = new Date();
+  } else if (kod === 'bu_ay') {
+    bas = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
+    bitis = new Date();
+  } else if (kod === 'son30') {
+    bas = new Date(bugun); bas.setDate(bas.getDate()-29);
+    bitis = new Date();
+  } else if (kod === 'son90') {
+    bas = new Date(bugun); bas.setDate(bas.getDate()-89);
+    bitis = new Date();
+  }
+  _drillBas = bas.toISOString();
+  _drillBitis = bitis.toISOString();
+  // tarih inputlarını güncelle
+  document.getElementById('drill-tarih-bas').value = bas.toISOString().slice(0,10);
+  document.getElementById('drill-tarih-bitis').value = bitis.toISOString().slice(0,10);
+  adisyonDrillYukle();
+}
+
+function drillTarihAralik() {
+  document.querySelectorAll('.drill-donem-btn').forEach(b => b.classList.remove('aktif'));
+  const bas = document.getElementById('drill-tarih-bas').value;
+  const bitis = document.getElementById('drill-tarih-bitis').value;
+  if (!bas || !bitis) return;
+  _drillBas = new Date(bas + 'T00:00:00').toISOString();
+  _drillBitis = new Date(bitis + 'T23:59:59').toISOString();
+  adisyonDrillYukle();
+}
 
 async function adisyonDrillAc(kafeId, kafeAdi) {
   _drillKafeId = kafeId;
   document.getElementById('adisyon-overlay-baslik').textContent = '🧾 ' + kafeAdi;
   document.getElementById('adisyon-overlay').classList.add('ac');
+  // Varsayılan: bu ay
+  const simdi = new Date();
+  const ayBas = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
+  _drillBas = ayBas.toISOString();
+  _drillBitis = simdi.toISOString();
+  document.getElementById('drill-tarih-bas').value = ayBas.toISOString().slice(0,10);
+  document.getElementById('drill-tarih-bitis').value = simdi.toISOString().slice(0,10);
+  // Bu ay butonunu aktif et
+  document.querySelectorAll('.drill-donem-btn').forEach(b => b.classList.remove('aktif'));
+  document.querySelectorAll('.drill-donem-btn')[3]?.classList.add('aktif'); // "Bu Ay" = index 3
   await adisyonDrillYukle();
 }
 
 async function adisyonDrillYukle() {
-  if (!_drillKafeId) return;
-  const gun = parseInt(document.getElementById('adisyon-overlay-donem')?.value || '30');
-  const listEl = document.getElementById('drill-adisyon-liste');
-  const grafEl = document.getElementById('drill-gun-grafik');
-  listEl.innerHTML = '<div class="yukl">⏳ Yükleniyor...</div>';
+  if (!_drillKafeId || !_drillBas || !_drillBitis) return;
+  const alan = document.getElementById('drill-scroll-alan');
+  alan.innerHTML = '<div class="yukl">⏳ Yükleniyor...</div>';
 
-  const baslangic = new Date();
-  baslangic.setDate(baslangic.getDate() - gun);
+  // Limit yok — tüm kayıtları çek
+  let tumData = [];
+  let from = 0;
+  const chunk = 1000;
+  while (true) {
+    const { data, error } = await sb.from('kolaycafenlar')
+      .select('masa_ad, masa_no, toplam, siparisler, garson, created_at, odeme_tipi')
+      .eq('kafe_id', _drillKafeId)
+      .gte('created_at', _drillBas)
+      .lte('created_at', _drillBitis)
+      .order('created_at', { ascending: false })
+      .range(from, from + chunk - 1);
+    if (error) { alan.innerHTML = `<div style="color:var(--red);padding:20px;">❌ ${error.message}</div>`; return; }
+    tumData = tumData.concat(data || []);
+    if (!data || data.length < chunk) break;
+    from += chunk;
+  }
 
-  const { data, error } = await sb.from('kolaycafenlar')
-    .select('masa_ad, toplam, siparisler, garson, created_at, odeme_tipi')
-    .eq('kafe_id', _drillKafeId)
-    .gte('created_at', baslangic.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(200);
-
-  if (error || !data || data.length === 0) {
-    listEl.innerHTML = '<div style="color:var(--text2);font-size:0.78rem;padding:12px;">Bu dönemde adisyon bulunamadı.</div>';
-    document.getElementById('drill-kpi-ciro').textContent = '—';
-    document.getElementById('drill-kpi-adet').textContent = '0';
-    document.getElementById('drill-kpi-ort').textContent = '—';
-    document.getElementById('adisyon-overlay-alt').textContent = `Son ${gun} gün`;
-    grafEl.innerHTML = '';
+  if (tumData.length === 0) {
+    alan.innerHTML = '<div style="color:var(--text2);padding:32px;text-align:center;font-size:0.82rem;">Bu tarih aralığında adisyon bulunamadı.</div>';
+    ['drill-kpi-ciro','drill-kpi-adet','drill-kpi-ort','drill-kpi-gun','drill-kpi-en-yuksek'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('adisyon-overlay-alt').textContent = '';
     return;
   }
 
-  const toplamCiro = data.reduce((t, a) => t + parseFloat(a.toplam||0), 0);
-  const ortAdisyon = toplamCiro / data.length;
+  // KPI hesapla
+  const toplamCiro = tumData.reduce((t,a) => t + parseFloat(a.toplam||0), 0);
+  const ortAdisyon = toplamCiro / tumData.length;
 
+  // Gün bazlı gruplama
+  const gunMap = {}; // { '2026-05-30': { ciro, adisyonlar:[] } }
+  tumData.forEach(a => {
+    const g = a.created_at.slice(0,10);
+    if (!gunMap[g]) gunMap[g] = { ciro: 0, adisyonlar: [] };
+    gunMap[g].ciro += parseFloat(a.toplam||0);
+    gunMap[g].adisyonlar.push(a);
+  });
+  const gunler = Object.keys(gunMap).sort().reverse(); // yeniden eskiye
+  const maxGunCiro = Math.max(...gunler.map(g => gunMap[g].ciro), 1);
+  const enYuksekGun = gunler.reduce((en, g) => gunMap[g].ciro > (gunMap[en]?.ciro||0) ? g : en, gunler[0]);
+
+  // KPI güncelle
   document.getElementById('drill-kpi-ciro').textContent = fmt(toplamCiro) + '₺';
-  document.getElementById('drill-kpi-adet').textContent = data.length;
+  document.getElementById('drill-kpi-adet').textContent = tumData.length;
   document.getElementById('drill-kpi-ort').textContent = fmt(ortAdisyon) + '₺';
-  document.getElementById('adisyon-overlay-alt').textContent = `Son ${gun} gün • ${data.length} adisyon`;
+  document.getElementById('drill-kpi-gun').textContent = gunler.length;
+  document.getElementById('drill-kpi-en-yuksek').textContent = fmt(gunMap[enYuksekGun]?.ciro||0) + '₺';
+  const basTR = new Date(_drillBas).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const bitisTR = new Date(_drillBitis).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('adisyon-overlay-alt').textContent = `${basTR} — ${bitisTR}  •  ${tumData.length} adisyon  •  ${gunler.length} gün`;
 
-  // Gün bazlı bar grafik
-  const gunCiro = {};
-  data.forEach(a => {
-    const g = a.created_at.slice(0, 10);
-    gunCiro[g] = (gunCiro[g] || 0) + parseFloat(a.toplam || 0);
-  });
-  const gunler = Object.keys(gunCiro).sort();
-  const maxGunCiro = Math.max(...Object.values(gunCiro), 1);
-  let grafHtml = `<div style="font-size:0.62rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">GÜN BAZLI CİRO</div><div style="display:flex;flex-direction:column;gap:3px;">`;
-  gunler.slice(-14).forEach(g => {
-    const c = gunCiro[g];
-    const yuzde = Math.round(c / maxGunCiro * 100);
-    const tarih = new Date(g).toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'});
-    grafHtml += `<div style="display:flex;align-items:center;gap:6px;">
-      <div style="font-size:0.58rem;color:var(--text2);font-family:'Space Mono',monospace;min-width:34px;">${tarih}</div>
-      <div style="flex:1;background:var(--surface2);border-radius:3px;height:14px;overflow:hidden;">
-        <div style="width:${yuzde}%;height:100%;background:linear-gradient(90deg,#20c0d0,#20c0d060);border-radius:3px;"></div>
+  // Bar grafik (tüm günler, soldan sağa eskiden yeniye)
+  const grafGunler = [...gunler].reverse();
+  const odemeRenkler = {nakit:'#30d080',kart:'#4080f0',cari:'#9060f0',ikram:'#f0b940','split-nakit':'#20c0d0','split-kart':'#e060a0'};
+
+  let html = '';
+
+  // Özet bar grafik
+  html += `<div style="margin-bottom:18px;">
+    <div style="font-size:0.62rem;font-weight:800;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">📊 GÜN BAZLI CİRO ÖZET</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">`;
+  grafGunler.forEach(g => {
+    const d = gunMap[g];
+    const yuzde = Math.round(d.ciro / maxGunCiro * 100);
+    const tarih = new Date(g + 'T12:00:00').toLocaleDateString('tr-TR', {weekday:'short', day:'2-digit', month:'2-digit'});
+    const bugun = g === new Date().toISOString().slice(0,10);
+    html += `<div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:0.62rem;color:${bugun?'var(--cyan)':'var(--text2)'};font-family:'Space Mono',monospace;min-width:80px;font-weight:${bugun?'800':'400'};">${tarih}</div>
+      <div style="flex:1;background:var(--surface2);border-radius:3px;height:18px;overflow:hidden;position:relative;cursor:pointer;" onclick="drillGunToggle('${g}')">
+        <div style="width:${yuzde}%;height:100%;background:linear-gradient(90deg,#20c0d0cc,#20c0d040);border-radius:3px;transition:width .3s;"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 6px;font-size:0.6rem;color:var(--text2);font-family:'Space Mono',monospace;">${d.adisyonlar.length} adisyon</div>
       </div>
-      <div style="font-size:0.62rem;font-weight:800;color:#20c0d0;min-width:56px;text-align:right;">${fmtTL(c)}₺</div>
+      <div style="font-size:0.68rem;font-weight:900;color:#20c0d0;min-width:64px;text-align:right;font-family:'Space Mono',monospace;">${fmtTL(d.ciro)}₺</div>
+      <button onclick="drillGunToggle('${g}')" style="background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:2px 7px;font-size:0.62rem;cursor:pointer;white-space:nowrap;">▼ Detay</button>
+    </div>
+    <div id="drill-gun-${g}" style="display:none;margin:4px 0 6px 90px;">
+      ${d.adisyonlar.map(a => {
+        const saat = new Date(a.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+        const urunler = (a.siparisler||[]).map(s=>`${s.isim||'?'} x${s.adet||1}`).join(' · ');
+        const oRenk = odemeRenkler[a.odeme_tipi||'nakit'] || '#555';
+        const garsonStr = a.garson ? ` · 👤 ${garsonAd(a.garson)}` : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border-radius:7px;padding:8px 12px;margin-bottom:3px;border-left:3px solid ${oRenk}40;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
+              <span style="font-size:0.75rem;font-weight:800;">🪑 ${a.masa_ad||'Masa '+(a.masa_no||'?')}</span>
+              <span style="font-size:0.62rem;color:var(--text2);font-family:'Space Mono',monospace;">${saat}${garsonStr}</span>
+              <span style="font-size:0.6rem;padding:1px 6px;border-radius:4px;background:${oRenk}20;color:${oRenk};border:1px solid ${oRenk}40;font-weight:700;">${a.odeme_tipi||'nakit'}</span>
+            </div>
+            <div style="font-size:0.63rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:480px;">${urunler||'—'}</div>
+          </div>
+          <div style="font-size:0.85rem;font-weight:900;color:#30d080;white-space:nowrap;font-family:'Space Mono',monospace;">${fmtTL(parseFloat(a.toplam||0))}₺</div>
+        </div>`;
+      }).join('')}
     </div>`;
   });
-  grafHtml += `</div>`;
-  grafEl.innerHTML = grafHtml;
+  html += `</div></div>`;
 
-  // Adisyon listesi
-  listEl.innerHTML = data.map(a => {
-    const saat = new Date(a.created_at).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-    const urunler = (a.siparisler||[]).slice(0, 5).map(s => `${s.isim||'?'} x${s.adet||1}`).join(', ');
-    const artik = (a.siparisler||[]).length > 5 ? ` +${(a.siparisler||[]).length - 5}` : '';
-    const odemeRenk = {nakit:'#30d080',kart:'#4080f0',cari:'#9060f0',ikram:'#f0b940'};
-    const oRenk = odemeRenk[a.odeme_tipi] || '#555';
-    const garsonStr = a.garson ? ` · 👤 ${garsonAd(a.garson)}` : '';
-    return `<div style="background:var(--surface);border-radius:8px;padding:9px 12px;border-left:3px solid #20c0d040;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-          <span style="font-size:0.75rem;font-weight:800;">🪑 ${a.masa_ad||'?'}</span>
-          <span style="font-size:0.62rem;color:var(--text2);">${saat}${garsonStr}</span>
-          <span style="font-size:0.6rem;font-weight:700;padding:1px 6px;border-radius:4px;background:${oRenk}20;color:${oRenk};border:1px solid ${oRenk}40;">${a.odeme_tipi||'nakit'}</span>
-        </div>
-        <div style="font-size:0.63rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${urunler}${artik ? `<b>${artik} daha</b>` : ''}</div>
-      </div>
-      <div style="font-size:0.82rem;font-weight:900;color:#30d080;white-space:nowrap;font-family:'Space Mono',monospace;">${fmtTL(parseFloat(a.toplam||0))}₺</div>
-    </div>`;
-  }).join('');
+  alan.innerHTML = html;
+}
+
+function drillGunToggle(gun) {
+  const el = document.getElementById('drill-gun-' + gun);
+  if (!el) return;
+  const acik = el.style.display !== 'none';
+  el.style.display = acik ? 'none' : 'block';
+  // Buton metnini güncelle
+  const btn = el.previousElementSibling?.querySelector('button');
+  if (btn) btn.textContent = acik ? '▼ Detay' : '▲ Gizle';
 }
 
 // ── ANALİTİK ──
