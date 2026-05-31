@@ -1926,23 +1926,26 @@ async function ciroOzetYukle() {
     const baslangic = new Date();
     baslangic.setDate(baslangic.getDate() - gun);
 
-    // Limit yok — chunk ile çek
+    // Limit yok — cursor tabanlı pagination
     let tumData = [];
-    let from = 0;
+    let cursor = new Date().toISOString(); // en yeniden başla
     const chunk = 1000;
-    while (true) {
+    let guvenlik = 0;
+    while (guvenlik++ < 50) {
       const { data, error } = await sb.from('kolaycafenlar')
         .select('kafe_id, toplam, created_at')
         .gte('created_at', baslangic.toISOString())
+        .lt('created_at', cursor)
         .order('created_at', { ascending: false })
-        .range(from, from + chunk - 1);
+        .limit(chunk);
       if (error) {
         tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);padding:20px;text-align:center;">❌ ${error.message}</td></tr>`;
         return;
       }
-      tumData = tumData.concat(data || []);
-      if (!data || data.length < chunk) break;
-      from += chunk;
+      if (!data || data.length === 0) break;
+      tumData = tumData.concat(data);
+      if (data.length < chunk) break;
+      cursor = data[data.length - 1].created_at; // en eski kaydın tarihi
     }
 
     const kafeMap = {};
@@ -2106,22 +2109,24 @@ async function adisyonDrillYukle() {
   const alan = document.getElementById('drill-scroll-alan');
   alan.innerHTML = '<div class="yukl">⏳ Yükleniyor...</div>';
 
-  // Limit yok — tüm kayıtları çek
+  // Limit yok — cursor tabanlı pagination
   let tumData = [];
-  let from = 0;
+  let cursor = _drillBitis;
   const chunk = 1000;
-  while (true) {
+  let guvenlik = 0;
+  while (guvenlik++ < 50) {
     const { data, error } = await sb.from('kolaycafenlar')
       .select('masa_ad, masa_no, toplam, siparisler, garson, created_at, odeme_tipi')
       .eq('kafe_id', _drillKafeId)
       .gte('created_at', _drillBas)
-      .lte('created_at', _drillBitis)
+      .lte('created_at', cursor)
       .order('created_at', { ascending: false })
-      .range(from, from + chunk - 1);
+      .limit(chunk);
     if (error) { alan.innerHTML = `<div style="color:var(--red);padding:20px;">❌ ${error.message}</div>`; return; }
-    tumData = tumData.concat(data || []);
-    if (!data || data.length < chunk) break;
-    from += chunk;
+    if (!data || data.length === 0) break;
+    tumData = tumData.concat(data);
+    if (data.length < chunk) break;
+    cursor = data[data.length - 1].created_at;
   }
 
   if (tumData.length === 0) {
