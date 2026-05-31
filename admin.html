@@ -2568,7 +2568,7 @@ function csvIndir() {
         await yukle();
         setInterval(async () => {
           const { data } = await sb.from('kafeler').select('*').order('created_at', { ascending: false });
-          if (data) { tumKafeler = data; topbarCanliBilgi(); kpiGuncelle(); }
+          if (data) { tumKafeler = data; topbarCanliBilgi(); kpiGuncelle(); tabloRender(); }
         }, 30000);
       }
     } catch(e) { localStorage.removeItem(ADMIN_SESSION_KEY); }
