@@ -3113,6 +3113,30 @@
   </div>
 </div>
 
+<!-- GARSON PERFORMANS SAYFASI -->
+<div class="page" id="page-garsonperf" style="overflow-y:auto;padding:0;flex-direction:column;">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 14px 10px;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <button onclick="sayfaGit('masalar')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:0;line-height:1;">←</button>
+      <div style="font-weight:900;font-size:1rem;">👥 Garson Performansı</div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="gp-donem-tab" data-donem="gun" onclick="gpDonemSec('gun')" style="flex:1;padding:7px 4px;border:1.5px solid var(--accent);border-radius:20px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Bugün</button>
+      <button class="gp-donem-tab" data-donem="hafta" onclick="gpDonemSec('hafta')" style="flex:1;padding:7px 4px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Bu Hafta</button>
+      <button class="gp-donem-tab" data-donem="ay" onclick="gpDonemSec('ay')" style="flex:1;padding:7px 4px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Bu Ay</button>
+    </div>
+  </div>
+  <div style="padding:12px;">
+    <div id="gp-yukleniyor" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:0.85rem;font-weight:700;">⏳ Yükleniyor...</div>
+    <div id="gp-bos" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);">
+      <div style="font-size:2.5rem;margin-bottom:10px;">👤</div>
+      <div style="font-weight:800;font-size:0.9rem;">Bu dönemde garson kaydı yok</div>
+      <div style="font-size:0.75rem;margin-top:4px;">Masalara garson ataması yapıldıkça burada görünür</div>
+    </div>
+    <div id="gp-liste"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <button class="bnav-btn active" id="nav-masalar" data-yetki="masalar"><div class="nav-icon">🪑</div>Masalar</button>
@@ -3128,6 +3152,7 @@
   <button class="bnav-btn" id="nav-mutfak" onclick="window.open('mutfak.html','_blank')" data-yetki="mutfak"><div class="nav-icon">🍳</div>Mutfak</button>
   <button class="bnav-btn" id="nav-gelal" onclick="sayfaGit('gelal')" data-yetki="gelal"><div class="nav-icon">🛍️</div>Gel-Al</button>
   <button class="bnav-btn" id="nav-online" onclick="sayfaGit('online')" data-yetki="online"><div class="nav-icon">🌐</div>Online<span id="online-badge" style="display:none;position:absolute;top:6px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:900;display:flex;align-items:center;justify-content:center;">0</span></button>
+  <button class="bnav-btn" id="nav-garsonperf" data-yetki="garsonperf"><div class="nav-icon">👥</div>Garsonlar</button>
   <button class="bnav-btn" id="nav-garson-cikis" style="display:none;"><div class="nav-icon">🚪</div>Çıkış</button>
 </div>
 
@@ -5096,6 +5121,140 @@ window.addEventListener('offline', () => { toast('🔴 İnternet kesildi — adi
 setInterval(() => { if (navigator.onLine && kafeId && offlineKuyrukSayisi() > 0) offlineKuyrukGonder(); }, 30000);
 
 // ════════════════════════════════════════
+// GARSON PERFORMANS SAYFASI
+// ════════════════════════════════════════
+let _gpDonem = 'gun';
+
+function garsonPerfHesapla(adisyonlar) {
+  const perf = {};
+  adisyonlar.forEach(a => {
+    const isim = garsonAdiAl(a.garson);
+    if (!isim) return;
+    if (!perf[isim]) perf[isim] = { adisyon: 0, ciro: 0, urunler: {} };
+    perf[isim].adisyon++;
+    perf[isim].ciro += parseFloat(a.toplam || 0);
+    (a.siparisler || []).forEach(s => {
+      if (s.isim) perf[isim].urunler[s.isim] = (perf[isim].urunler[s.isim] || 0) + (s.adet || 1);
+    });
+  });
+  return Object.entries(perf)
+    .map(([isim, d]) => ({
+      isim,
+      adisyon: d.adisyon,
+      ciro: d.ciro,
+      ortHesap: d.adisyon > 0 ? d.ciro / d.adisyon : 0,
+      topUrunler: Object.entries(d.urunler)
+        .sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([isim, adet]) => ({ isim, adet }))
+    }))
+    .sort((a, b) => b.ciro - a.ciro);
+}
+
+function garsonPerfRender(stats) {
+  const liste = document.getElementById('gp-liste');
+  const bos = document.getElementById('gp-bos');
+  const yukl = document.getElementById('gp-yukleniyor');
+  if (!liste) return;
+  if (yukl) yukl.style.display = 'none';
+  liste.innerHTML = '';
+  if (stats.length === 0) {
+    if (bos) bos.style.display = 'block';
+    return;
+  }
+  if (bos) bos.style.display = 'none';
+  const madalyalar = ['🥇', '🥈', '🥉'];
+  const renkler = ['#f0b830', '#c0c0c0', '#cd7f32'];
+  stats.forEach((g, i) => {
+    const kart = document.createElement('div');
+    kart.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid var(--border);';
+    kart.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="font-size:1.5rem;">${madalyalar[i] || '👤'}</span>
+          <div>
+            <div style="font-weight:900;font-size:0.95rem;">${g.isim}</div>
+            <div style="font-size:0.68rem;color:var(--muted);font-weight:700;">${g.adisyon} masa kapattı</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:900;font-size:1.05rem;font-family:'Space Mono',monospace;color:${renkler[i] || 'var(--accent2)'};">${fmt(g.ciro)}</div>
+          <div style="font-size:0.65rem;color:var(--muted);">toplam ciro</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${g.topUrunler.length ? '10px' : '0'};">
+        <div style="background:var(--surface3);border-radius:10px;padding:9px 10px;text-align:center;">
+          <div style="font-size:0.8rem;font-weight:900;color:var(--accent);">${fmt(g.ortHesap)}</div>
+          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-top:2px;">ORTALAMA HESAP</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:10px;padding:9px 10px;text-align:center;">
+          <div style="font-size:0.8rem;font-weight:900;color:var(--accent);">${g.topUrunler.length > 0 ? g.topUrunler.reduce((s,u)=>s+u.adet,0)+' ürün' : '—'}</div>
+          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-top:2px;">TOPLAM ÜRETİM</div>
+        </div>
+      </div>
+      ${g.topUrunler.length > 0 ? `
+        <div style="border-top:1px solid var(--border);padding-top:9px;">
+          <div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:7px;">EN ÇOK SATTIĞI ÜRÜNLER</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">
+            ${g.topUrunler.map((u, j) => `<span style="background:var(--surface3);border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:var(--text2);">${j===0?'⭐ ':''}${u.isim} <strong style="color:var(--accent);">${u.adet}x</strong></span>`).join('')}
+          </div>
+        </div>` : ''}
+    `;
+    liste.appendChild(kart);
+  });
+}
+
+async function garsonPerfYukle() {
+  const yukl = document.getElementById('gp-yukleniyor');
+  const bos = document.getElementById('gp-bos');
+  const liste = document.getElementById('gp-liste');
+  if (yukl) yukl.style.display = 'block';
+  if (bos) bos.style.display = 'none';
+  if (liste) liste.innerHTML = '';
+  try {
+    let adisyonlar = [];
+    if (_gpDonem === 'gun') {
+      adisyonlar = kapaliKolayCafenlar || [];
+    } else {
+      const bas = new Date();
+      bas.setDate(bas.getDate() - (_gpDonem === 'hafta' ? 7 : 30));
+      bas.setHours(0, 0, 0, 0);
+      const { data } = await sb.from('kolaycafenlar')
+        .select('garson, siparisler, toplam')
+        .eq('kafe_id', kafeId)
+        .neq('odeme_tipi', 'cari_tahsil')
+        .gte('created_at', bas.toISOString());
+      adisyonlar = data || [];
+    }
+    garsonPerfRender(garsonPerfHesapla(adisyonlar));
+  } catch (e) {
+    if (liste) liste.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:0.85rem;font-weight:700;">Veri yüklenirken hata oluştu</div>';
+    if (yukl) yukl.style.display = 'none';
+  }
+}
+
+function gpDonemSec(donem) {
+  _gpDonem = donem;
+  document.querySelectorAll('.gp-donem-tab').forEach(b => {
+    const aktif = b.dataset.donem === donem;
+    b.style.background = aktif ? 'var(--accent)' : 'none';
+    b.style.color = aktif ? '#1a0f00' : 'var(--muted)';
+    b.style.borderColor = aktif ? 'var(--accent)' : 'var(--border)';
+  });
+  garsonPerfYukle();
+}
+
+function garsonPerfSayfaAc() {
+  _gpDonem = 'gun';
+  document.querySelectorAll('.gp-donem-tab').forEach(b => {
+    const aktif = b.dataset.donem === 'gun';
+    b.style.background = aktif ? 'var(--accent)' : 'none';
+    b.style.color = aktif ? '#1a0f00' : 'var(--muted)';
+    b.style.borderColor = aktif ? 'var(--accent)' : 'var(--border)';
+  });
+  garsonPerfYukle();
+}
+
+// ════════════════════════════════════════
 // MOBİL BAĞLANTI KOPMA KORUMASI
 // iOS Safari + iOS Chrome (ikisi de WKWebView): arka planda WebSocket kesilir
 // Android Chrome + Desktop: uzun arka plan sonrası throttle / bağlantı kopması
@@ -5261,6 +5420,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='ai') aiSayfaAc();
   if (sayfa==='odeme') { odemeBaslangic(); return; }
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
+  if (sayfa==='garsonperf') garsonPerfSayfaAc();
   // PC/Mobil toggle butonu - sadece kolaycafen sayfasında görünür
   const pcBtn = document.getElementById('pc-mobil-toggle');
   if (pcBtn) pcBtn.className = sayfa === 'kolaycafen' ? 'goster' : '';
@@ -8360,9 +8520,27 @@ function raporRender_legacy(){
   // Garson performansı
   const gr=document.getElementById('garson-rapor');
   const gs={};
-  filtre.forEach(a=>{const _gad=garsonAdiAl(a.garson);if(!_gad)return;if(!gs[_gad])gs[_gad]={adet:0,ciro:0};gs[_gad].adet++;gs[_gad].ciro+=a.toplam;});
-  gr.innerHTML=Object.keys(gs).length===0?'<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>':'';
-  Object.entries(gs).sort((a,b)=>b[1].ciro-a[1].ciro).forEach(([g,s])=>{const d=document.createElement('div');d.className='rapor-satir';d.innerHTML=`<span class="rs-isim">👤 ${g}</span><span class="rs-adet">${s.adet} masa</span><span class="rs-tutar">${fmt(s.ciro)}</span>`;gr.appendChild(d);});
+  filtre.forEach(a => {
+    const _gad = garsonAdiAl(a.garson); if (!_gad) return;
+    if (!gs[_gad]) gs[_gad] = { adet: 0, ciro: 0, urunler: {} };
+    gs[_gad].adet++; gs[_gad].ciro += a.toplam;
+    (a.siparisler || []).forEach(s => { if (s.isim) gs[_gad].urunler[s.isim] = (gs[_gad].urunler[s.isim] || 0) + (s.adet || 1); });
+  });
+  gr.innerHTML = Object.keys(gs).length === 0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
+  Object.entries(gs).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s]) => {
+    const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const d = document.createElement('div');
+    d.style.cssText = 'background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:6px;';
+    d.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-weight:800;">👤 ${g}</span>
+        <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
+      </div>
+      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adet} masa · Ort: ${fmt(s.ciro/s.adet)}</div>
+      ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+    `;
+    gr.appendChild(d);
+  });
   // Kapalı kolaycafenlar
   const kl=document.getElementById('kapali-liste');
   if(filtre.length===0){kl.innerHTML='<div class="bos-rapor">Bu dönemde kolaycafen yok</div>';return;}
@@ -9056,14 +9234,24 @@ async function raporRenderTam() {
   const gs = {};
   tumAdisyonlar.forEach(a => {
     const _gad2 = garsonAdiAl(a.garson); if(!_gad2) return;
-    if(!gs[_gad2]) gs[_gad2] = {adet:0, ciro:0};
+    if(!gs[_gad2]) gs[_gad2] = { adet:0, ciro:0, urunler:{} };
     gs[_gad2].adet++; gs[_gad2].ciro += a.toplam;
+    (a.siparisler || []).forEach(s => { if (s.isim) gs[_gad2].urunler[s.isim] = (gs[_gad2].urunler[s.isim] || 0) + (s.adet || 1); });
   });
   if(gr) {
     gr.innerHTML = Object.keys(gs).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
     Object.entries(gs).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
-      const d = document.createElement('div'); d.className = 'rapor-satir';
-      d.innerHTML = `<span class="rs-isim">👤 ${g}</span><span class="rs-adet">${s.adet} masa</span><span class="rs-tutar">${fmt(s.ciro)}</span>`;
+      const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const d = document.createElement('div');
+      d.style.cssText = 'background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:6px;';
+      d.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-weight:800;">👤 ${g}</span>
+          <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adet} masa · Ort: ${fmt(s.ciro/s.adet)}</div>
+        ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+      `;
       gr.appendChild(d);
     });
   }
@@ -16098,13 +16286,18 @@ async function aiVeriTopla() {
       }
     }
     const g = garsonAdi;
-    if (!garsonPerf[g]) garsonPerf[g] = { adisyon: 0, ciro: 0, urun: 0 };
+    if (!garsonPerf[g]) garsonPerf[g] = { adisyon: 0, ciro: 0, urun: 0, urunler: {} };
     garsonPerf[g].adisyon++;
     garsonPerf[g].ciro += parseFloat(a.toplam || 0);
     garsonPerf[g].urun += (a.siparisler || []).reduce((s, x) => s + (x.adet || 1), 0);
+    (a.siparisler || []).forEach(s => { if (s.isim) garsonPerf[g].urunler[s.isim] = (garsonPerf[g].urunler[s.isim] || 0) + (s.adet || 1); });
   });
   const garsonSirali = Object.entries(garsonPerf)
-    .map(([isim, d]) => ({ isim, ...d, ortAdisyon: d.adisyon > 0 ? d.ciro / d.adisyon : 0 }))
+    .map(([isim, d]) => ({
+      isim, ...d,
+      ortAdisyon: d.adisyon > 0 ? d.ciro / d.adisyon : 0,
+      topUrunler: Object.entries(d.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([isim,adet])=>({isim,adet}))
+    }))
     .sort((a, b) => b.ciro - a.ciro);
 
   // ── Gelir/Gider özeti — seçili dönemin adisyon toplamı + manuel gider girişleri ──
@@ -16295,18 +16488,21 @@ function aiGarsonRender(v) {
   const renkler = ['#f0b830', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c'];
 
   icerik.innerHTML = gosterListe.map((g, i) => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-      <div style="width:28px;height:28px;border-radius:50%;background:${renkler[i%renkler.length]}22;color:${renkler[i%renkler.length]};display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;flex-shrink:0;">${i+1}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:800;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.isim}</div>
-        <div style="height:5px;background:var(--surface3);border-radius:4px;margin-top:4px;">
-          <div style="height:100%;width:${(g.ciro/maxCiro*100).toFixed(0)}%;background:${renkler[i%renkler.length]};border-radius:4px;"></div>
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:${(g.topUrunler||[]).length?'8px':'0'};">
+        <div style="width:28px;height:28px;border-radius:50%;background:${renkler[i%renkler.length]}22;color:${renkler[i%renkler.length]};display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:800;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.isim}</div>
+          <div style="height:5px;background:var(--surface3);border-radius:4px;margin-top:4px;">
+            <div style="height:100%;width:${(g.ciro/maxCiro*100).toFixed(0)}%;background:${renkler[i%renkler.length]};border-radius:4px;"></div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:0.8rem;font-weight:900;font-family:'Space Mono',monospace;">${fmt(g.ciro)}</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:700;">${g.adisyon} adisyon · ort ${fmt(g.ortAdisyon)}</div>
         </div>
       </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:0.8rem;font-weight:900;font-family:'Space Mono',monospace;">${fmt(g.ciro)}</div>
-        <div style="font-size:0.65rem;color:var(--muted);font-weight:700;">${g.adisyon} adisyon · ort ${fmt(g.ortAdisyon)}</div>
-      </div>
+      ${(g.topUrunler||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;padding-left:38px;">${(g.topUrunler||[]).map(u=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.62rem;font-weight:700;color:var(--text2);">${u.isim} <strong style="color:${renkler[i%renkler.length]};">${u.adet}x</strong></span>`).join('')}</div>` : ''}
     </div>
   `).join('');
 }
