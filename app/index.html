@@ -8612,7 +8612,7 @@ function raporRender_legacy(){
   const _gpR1 = _garsonKatkiDagit(filtre);
   gr.innerHTML = Object.keys(_gpR1).length === 0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
   Object.entries(_gpR1).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s]) => {
-    const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const tumUrunler = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]);
     const d = document.createElement('div');
     d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
     d.innerHTML = `
@@ -8620,8 +8620,8 @@ function raporRender_legacy(){
         <span style="font-weight:800;">👤 ${g}</span>
         <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
       </div>
-      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
-      ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${tumUrunler.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
+      ${tumUrunler.length ? `<div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:5px;">SATTIĞI ÜRÜNLER</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tumUrunler.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
     `;
     gr.appendChild(d);
   });
@@ -9319,7 +9319,7 @@ async function raporRenderTam() {
   if(gr) {
     gr.innerHTML = Object.keys(_gpR2).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
     Object.entries(_gpR2).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
-      const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const tumUrunler = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]);
       const d = document.createElement('div');
       d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
       d.innerHTML = `
@@ -9327,8 +9327,8 @@ async function raporRenderTam() {
           <span style="font-weight:800;">👤 ${g}</span>
           <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
         </div>
-        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
-        ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${tumUrunler.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
+        ${tumUrunler.length ? `<div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:5px;">SATTIĞI ÜRÜNLER</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tumUrunler.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
       `;
       gr.appendChild(d);
     });
