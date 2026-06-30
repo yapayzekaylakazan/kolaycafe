@@ -3120,10 +3120,11 @@
       <button onclick="sayfaGit('masalar')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:0;line-height:1;">←</button>
       <div style="font-weight:900;font-size:1rem;">👥 Garson Performansı</div>
     </div>
-    <div style="display:flex;gap:6px;">
-      <button class="gp-donem-tab" data-donem="gun" onclick="gpDonemSec('gun')" style="flex:1;padding:7px 4px;border:1.5px solid var(--accent);border-radius:20px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Bugün</button>
-      <button class="gp-donem-tab" data-donem="hafta" onclick="gpDonemSec('hafta')" style="flex:1;padding:7px 4px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Bu Hafta</button>
-      <button class="gp-donem-tab" data-donem="ay" onclick="gpDonemSec('ay')" style="flex:1;padding:7px 4px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;cursor:pointer;">Bu Ay</button>
+    <div style="display:flex;gap:5px;">
+      <button class="gp-donem-tab" data-donem="gun" onclick="gpDonemSec('gun')" style="flex:1;padding:7px 3px;border:1.5px solid var(--accent);border-radius:20px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Bugün</button>
+      <button class="gp-donem-tab" data-donem="hafta" onclick="gpDonemSec('hafta')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Hafta</button>
+      <button class="gp-donem-tab" data-donem="ay" onclick="gpDonemSec('ay')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Ay</button>
+      <button class="gp-donem-tab" data-donem="tum" onclick="gpDonemSec('tum')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Tümü</button>
     </div>
   </div>
   <div style="padding:12px;">
@@ -5130,11 +5131,23 @@ function garsonPerfHesapla(adisyonlar) {
   adisyonlar.forEach(a => {
     const isim = garsonAdiAl(a.garson);
     if (!isim) return;
-    if (!perf[isim]) perf[isim] = { adisyon: 0, ciro: 0, urunler: {} };
+    if (!perf[isim]) perf[isim] = { adisyon: 0, ciro: 0, urunler: {}, adisyonListesi: [] };
     perf[isim].adisyon++;
     perf[isim].ciro += parseFloat(a.toplam || 0);
     (a.siparisler || []).forEach(s => {
       if (s.isim) perf[isim].urunler[s.isim] = (perf[isim].urunler[s.isim] || 0) + (s.adet || 1);
+    });
+    const masaAd = a.masaAd || a.masa_ad || ('Masa ' + (a.masa || a.masa_no || '?'));
+    const tarihRaw = a.tarih || a.created_at;
+    const tarihObj = tarihRaw ? new Date(tarihRaw) : null;
+    const gecerli = tarihObj && !isNaN(tarihObj);
+    perf[isim].adisyonListesi.push({
+      masaAd,
+      saat: gecerli ? tarihObj.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}) : '',
+      gun: gecerli ? tarihObj.toLocaleDateString('tr-TR', {day:'2-digit', month:'short'}) : '',
+      ts: gecerli ? tarihObj.getTime() : 0,
+      toplam: parseFloat(a.toplam || 0),
+      siparisler: a.siparisler || []
     });
   });
   return Object.entries(perf)
@@ -5143,9 +5156,10 @@ function garsonPerfHesapla(adisyonlar) {
       adisyon: d.adisyon,
       ciro: d.ciro,
       ortHesap: d.adisyon > 0 ? d.ciro / d.adisyon : 0,
-      topUrunler: Object.entries(d.urunler)
-        .sort((a, b) => b[1] - a[1]).slice(0, 5)
-        .map(([isim, adet]) => ({ isim, adet }))
+      tumUrunler: Object.entries(d.urunler)
+        .sort((a, b) => b[1] - a[1])
+        .map(([isim, adet]) => ({ isim, adet })),
+      adisyonListesi: d.adisyonListesi.sort((a, b) => b.ts - a.ts)
     }))
     .sort((a, b) => b.ciro - a.ciro);
 }
@@ -5157,14 +5171,25 @@ function garsonPerfRender(stats) {
   if (!liste) return;
   if (yukl) yukl.style.display = 'none';
   liste.innerHTML = '';
-  if (stats.length === 0) {
-    if (bos) bos.style.display = 'block';
-    return;
-  }
+  if (stats.length === 0) { if (bos) bos.style.display = 'block'; return; }
   if (bos) bos.style.display = 'none';
   const madalyalar = ['🥇', '🥈', '🥉'];
   const renkler = ['#f0b830', '#c0c0c0', '#cd7f32'];
   stats.forEach((g, i) => {
+    const kartId = 'gp-adis-' + i;
+    const urunChips = g.tumUrunler.map((u, j) =>
+      `<span style="background:var(--surface3);border-radius:14px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:var(--text2);">${j===0?'⭐ ':''}${u.isim} <strong style="color:var(--accent);">${u.adet}x</strong></span>`
+    ).join('');
+    const adisyonHtml = g.adisyonListesi.map(a => {
+      const urunOzet = a.siparisler.slice(0, 3).map(s => `${s.isim} ${s.adet}x`).join(', ') + (a.siparisler.length > 3 ? ' …' : '');
+      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:0.78rem;font-weight:800;">🪑 ${a.masaAd}${a.gun||a.saat ? ` <span style="color:var(--muted);font-weight:600;font-size:0.67rem;">· ${a.gun} ${a.saat}</span>` : ''}</div>
+          ${urunOzet ? `<div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${urunOzet}</div>` : ''}
+        </div>
+        <div style="font-weight:900;font-size:0.82rem;font-family:'Space Mono',monospace;color:var(--accent2);white-space:nowrap;margin-left:10px;">${fmt(a.toplam)}</div>
+      </div>`;
+    }).join('');
     const kart = document.createElement('div');
     kart.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid var(--border);';
     kart.innerHTML = `
@@ -5173,34 +5198,35 @@ function garsonPerfRender(stats) {
           <span style="font-size:1.5rem;">${madalyalar[i] || '👤'}</span>
           <div>
             <div style="font-weight:900;font-size:0.95rem;">${g.isim}</div>
-            <div style="font-size:0.68rem;color:var(--muted);font-weight:700;">${g.adisyon} masa kapattı</div>
+            <div style="font-size:0.68rem;color:var(--muted);font-weight:700;">${g.adisyon} masa · Ort: ${fmt(g.ortHesap)}</div>
           </div>
         </div>
         <div style="text-align:right;">
-          <div style="font-weight:900;font-size:1.05rem;font-family:'Space Mono',monospace;color:${renkler[i] || 'var(--accent2)'};">${fmt(g.ciro)}</div>
+          <div style="font-weight:900;font-size:1.05rem;font-family:'Space Mono',monospace;color:${renkler[i]||'var(--accent2)'};">${fmt(g.ciro)}</div>
           <div style="font-size:0.65rem;color:var(--muted);">toplam ciro</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${g.topUrunler.length ? '10px' : '0'};">
-        <div style="background:var(--surface3);border-radius:10px;padding:9px 10px;text-align:center;">
-          <div style="font-size:0.8rem;font-weight:900;color:var(--accent);">${fmt(g.ortHesap)}</div>
-          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-top:2px;">ORTALAMA HESAP</div>
-        </div>
-        <div style="background:var(--surface3);border-radius:10px;padding:9px 10px;text-align:center;">
-          <div style="font-size:0.8rem;font-weight:900;color:var(--accent);">${g.topUrunler.length > 0 ? g.topUrunler.reduce((s,u)=>s+u.adet,0)+' ürün' : '—'}</div>
-          <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-top:2px;">TOPLAM ÜRETİM</div>
-        </div>
-      </div>
-      ${g.topUrunler.length > 0 ? `
-        <div style="border-top:1px solid var(--border);padding-top:9px;">
-          <div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:7px;">EN ÇOK SATTIĞI ÜRÜNLER</div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px;">
-            ${g.topUrunler.map((u, j) => `<span style="background:var(--surface3);border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:var(--text2);">${j===0?'⭐ ':''}${u.isim} <strong style="color:var(--accent);">${u.adet}x</strong></span>`).join('')}
-          </div>
+      ${g.tumUrunler.length > 0 ? `
+        <div style="margin-bottom:10px;border-top:1px solid var(--border);padding-top:10px;">
+          <div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:7px;">SATTIĞI TÜM ÜRÜNLER — ${g.tumUrunler.length} çeşit</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${urunChips}</div>
+        </div>` : ''}
+      ${g.adisyonListesi.length > 0 ? `
+        <div style="border-top:1px solid var(--border);padding-top:8px;">
+          <button onclick="gpAdisyonToggle('${kartId}', this)" data-sayi="${g.adisyonListesi.length}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.73rem;font-weight:800;cursor:pointer;">🧾 ${g.adisyonListesi.length} Adisyonu Gör ▼</button>
+          <div id="${kartId}" style="display:none;margin-top:6px;">${adisyonHtml}</div>
         </div>` : ''}
     `;
     liste.appendChild(kart);
   });
+}
+
+function gpAdisyonToggle(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const acik = el.style.display !== 'none';
+  el.style.display = acik ? 'none' : 'block';
+  if (btn) btn.textContent = acik ? `🧾 ${btn.dataset.sayi} Adisyonu Gör ▼` : '🧾 Adisyonları Gizle ▲';
 }
 
 async function garsonPerfYukle() {
@@ -5215,14 +5241,18 @@ async function garsonPerfYukle() {
     if (_gpDonem === 'gun') {
       adisyonlar = kapaliKolayCafenlar || [];
     } else {
-      const bas = new Date();
-      bas.setDate(bas.getDate() - (_gpDonem === 'hafta' ? 7 : 30));
-      bas.setHours(0, 0, 0, 0);
-      const { data } = await sb.from('kolaycafenlar')
-        .select('garson, siparisler, toplam')
+      let sorgu = sb.from('kolaycafenlar')
+        .select('garson, siparisler, toplam, masa_ad, masa_no, created_at')
         .eq('kafe_id', kafeId)
         .neq('odeme_tipi', 'cari_tahsil')
-        .gte('created_at', bas.toISOString());
+        .order('created_at', { ascending: false });
+      if (_gpDonem !== 'tum') {
+        const bas = new Date();
+        bas.setDate(bas.getDate() - (_gpDonem === 'hafta' ? 7 : 30));
+        bas.setHours(0, 0, 0, 0);
+        sorgu = sorgu.gte('created_at', bas.toISOString());
+      }
+      const { data } = await sorgu;
       adisyonlar = data || [];
     }
     garsonPerfRender(garsonPerfHesapla(adisyonlar));
