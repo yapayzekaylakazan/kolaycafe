@@ -1599,8 +1599,7 @@
   <div id="rsekme-garson" style="padding:12px;display:none;">
     <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
       <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">👥 GARSON PERFORMANSI</div>
-      <div id="garson-rapor" style="margin-bottom:12px;"></div>
-      <canvas id="grafik-garson" height="160"></canvas>
+      <div id="garson-rapor"></div>
     </div>
   </div>
 
@@ -8134,6 +8133,74 @@ function donemBaslangic() {
   return null; // tümü
 }
 
+function oncekiDonemAraligi() {
+  const s = new Date();
+  if (aktifDonem === 'gun') {
+    const bas = new Date(s); bas.setDate(bas.getDate()-1); bas.setHours(0,0,0,0);
+    const bit = new Date(s); bit.setHours(0,0,0,0);
+    return [bas.toISOString(), bit.toISOString()];
+  }
+  if (aktifDonem === 'hafta') {
+    const hb = new Date(s); hb.setDate(s.getDate()-((s.getDay()+6)%7)); hb.setHours(0,0,0,0);
+    const bit = hb.toISOString();
+    const bas = new Date(hb); bas.setDate(bas.getDate()-7);
+    return [bas.toISOString(), bit];
+  }
+  if (aktifDonem === 'ay') {
+    const bas = new Date(s.getFullYear(), s.getMonth()-1, 1);
+    const bit = new Date(s.getFullYear(), s.getMonth(), 1);
+    return [bas.toISOString(), bit.toISOString()];
+  }
+  if (aktifDonem === 'yil') {
+    return [new Date(s.getFullYear()-1, 0, 1).toISOString(), new Date(s.getFullYear(), 0, 1).toISOString()];
+  }
+  return [null, null];
+}
+
+function _garsonRaporRenderFn(gr, adisyonlar, oncekiPerf) {
+  if (!gr) return;
+  const perf = _garsonKatkiDagit(adisyonlar);
+  if (Object.keys(perf).length === 0) { gr.innerHTML = '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>'; return; }
+  // Saat dağılımı
+  const saatler = {};
+  adisyonlar.forEach(a => {
+    const g = garsonAdiAl(a.garson); if (!g) return;
+    const t = a.tarihObj ? new Date(a.tarihObj) : null; if (!t || isNaN(t)) return;
+    const h = t.getHours();
+    if (!saatler[g]) saatler[g] = {};
+    saatler[g][h] = (saatler[g][h] || 0) + 1;
+  });
+  const madalya = ['🥇','🥈','🥉'];
+  const mRenk   = ['#f0b830','#c0c0c0','#cd7f32'];
+  gr.innerHTML = '';
+  Object.entries(perf).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s], i) => {
+    const tumUrunler = Object.entries(s.urunler).sort((a,b) => b[1]-a[1]);
+    // Dönem karşılaştırması
+    let karsStr = '';
+    if (oncekiPerf && oncekiPerf[g] && oncekiPerf[g].ciro > 0) {
+      const fark = s.ciro - oncekiPerf[g].ciro;
+      const yuzde = Math.round(Math.abs(fark) / oncekiPerf[g].ciro * 100);
+      const renk = fark >= 0 ? '#22c55e' : '#ef4444';
+      karsStr = ` <span style="font-size:0.63rem;font-weight:800;color:${renk};">${fark>=0?'▲':'▼'} ${yuzde}%</span>`;
+    }
+    // En yoğun saatler
+    const topSaatler = Object.entries(saatler[g] || {}).sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .map(([h,c]) => `${h}:00 (${c} adisyon)`);
+    const d = document.createElement('div');
+    d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
+    d.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-weight:800;">${madalya[i]||'👤'} ${g}</span>
+        <span style="font-weight:900;font-family:'Space Mono',monospace;color:${mRenk[i]||'var(--accent2)'};">${fmt(s.ciro)}${karsStr}</span>
+      </div>
+      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:7px;">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
+      ${topSaatler.length ? `<div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:3px;">⏰ EN YOĞUN SAATLER</div><div style="font-size:0.68rem;color:var(--text2);margin-bottom:7px;">${topSaatler.join(' · ')}</div>` : ''}
+      ${tumUrunler.length ? `<div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:5px;">SATTIĞI ÜRÜNLER</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tumUrunler.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+    `;
+    gr.appendChild(d);
+  });
+}
+
 function donemFiltrele(kolaycafenlar){
   const simdi=new Date();
   return kolaycafenlar.filter(a=>{
@@ -8609,22 +8676,7 @@ function raporRender_legacy(){
   girdi.forEach(([isim,d])=>{const s=document.createElement('div');s.className='rapor-satir';s.innerHTML=`<span class="rs-isim">${isim}</span><span class="rs-adet">${d.adet}x</span><span class="rs-tutar">${fmt(d.toplam)}</span>`;rl.appendChild(s);});
   // Garson performansı
   const gr=document.getElementById('garson-rapor');
-  const _gpR1 = _garsonKatkiDagit(filtre);
-  gr.innerHTML = Object.keys(_gpR1).length === 0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
-  Object.entries(_gpR1).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s]) => {
-    const tumUrunler = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]);
-    const d = document.createElement('div');
-    d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
-    d.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-        <span style="font-weight:800;">👤 ${g}</span>
-        <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
-      </div>
-      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${tumUrunler.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
-      ${tumUrunler.length ? `<div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:5px;">SATTIĞI ÜRÜNLER</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tumUrunler.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
-    `;
-    gr.appendChild(d);
-  });
+  _garsonRaporRenderFn(gr, filtre, null);
   // Kapalı kolaycafenlar
   const kl=document.getElementById('kapali-liste');
   if(filtre.length===0){kl.innerHTML='<div class="bos-rapor">Bu dönemde kolaycafen yok</div>';return;}
@@ -9313,26 +9365,23 @@ async function raporRenderTam() {
   window._urunRaporDs = ds;
   urunRaporRender();
 
-  // Garson
+  // Garson — önceki dönem verisi çekilerek karşılaştırma yapılır
   const gr = document.getElementById('garson-rapor');
-  const _gpR2 = _garsonKatkiDagit(tumAdisyonlar);
-  if(gr) {
-    gr.innerHTML = Object.keys(_gpR2).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
-    Object.entries(_gpR2).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
-      const tumUrunler = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]);
-      const d = document.createElement('div');
-      d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
-      d.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <span style="font-weight:800;">👤 ${g}</span>
-          <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
-        </div>
-        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${tumUrunler.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
-        ${tumUrunler.length ? `<div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:5px;">SATTIĞI ÜRÜNLER</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tumUrunler.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
-      `;
-      gr.appendChild(d);
-    });
-  }
+  let oncekiPerfR2 = null;
+  try {
+    const [prevBas, prevBit] = oncekiDonemAraligi();
+    if (prevBas && prevBit) {
+      const { data: pd } = await sb.from('kolaycafenlar')
+        .select('garson, siparisler, toplam, created_at')
+        .eq('kafe_id', kafeId).neq('odeme_tipi','cari_tahsil')
+        .gte('created_at', prevBas).lt('created_at', prevBit);
+      if (pd && pd.length > 0) {
+        const donusturulmus = pd.map(a => ({ garson: a.garson||'', siparisler: a.siparisler||[], toplam: a.toplam||0, tarihObj: new Date(a.created_at) }));
+        oncekiPerfR2 = _garsonKatkiDagit(donusturulmus);
+      }
+    }
+  } catch(e) {}
+  _garsonRaporRenderFn(gr, tumAdisyonlar, oncekiPerfR2);
 
   // Adisyon listesi
   const kl = document.getElementById('kapali-liste');
