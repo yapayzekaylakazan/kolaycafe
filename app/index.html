@@ -3581,6 +3581,12 @@ let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
 let _transferYapiliyor = false; // transfer/split işlemleri
 let _skipSubscriptionCount = 0; // transfer/split sonrası kaç event yoksayılacak
+let _globalYazmaSirasi = Promise.resolve(); // DB yazma kuyruğu — race condition önleyici
+function _yazmaSirasindaCalistir(fn) {
+  const siradaki = _globalYazmaSirasi.then(fn, fn);
+  _globalYazmaSirasi = siradaki.then(() => {}, () => {});
+  return siradaki;
+}
 window._sadeceMenuModu = false; // başlangıçta false — QR ile açılınca set edilir
 let aktifDonem = 'gun';
 let btYazici = null;
@@ -4916,6 +4922,12 @@ function masaSyncYaz(masaId) {
 async function _masaSyncYazHemen(masaId) {
   if (!kafeId) return;
 
+  // Transfer devam ediyorsa bekle ve tekrar dene
+  if (_transferYapiliyor) {
+    _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 1000);
+    return;
+  }
+
   // Bu masa zaten yazılıyorsa bekle ve tekrar dene
   if (_yazimAktif.has(masaId)) {
     _syncQueue[masaId] = setTimeout(() => _masaSyncYazHemen(masaId), 900);
@@ -4925,59 +4937,61 @@ async function _masaSyncYazHemen(masaId) {
   _yazimAktif.add(masaId);
   _syncYaziliyor = true;
 
-  let deneme = 0;
-  while (deneme < 3) {
-    try {
-      const m = masalar.find(x=>x.id===masaId);
-      if (!m) break;
+  await _yazmaSirasindaCalistir(async () => {
+    let deneme = 0;
+    while (deneme < 3) {
+      try {
+        const m = masalar.find(x=>x.id===masaId);
+        if (!m) break;
 
-      // READ başlamadan önce snapshot al
-      const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
+        // READ başlamadan önce snapshot al
+        const siparislerSnapshot = JSON.parse(JSON.stringify(m.siparisler));
 
-      const {data, error: re} = await sb.from('kafeler')
-        .select('aktif_masalar').eq('id', kafeId).single();
-      if (re) throw re;
+        const {data, error: re} = await sb.from('kafeler')
+          .select('aktif_masalar').eq('id', kafeId).single();
+        if (re) throw re;
 
-      // KRITIK: READ async sürerken garson yeni ürün eklemiş olabilir
-      // Lokal snapshot'tan daha yeniyse — en güncel lokal veriyi kullan
-      const sonrakiSnapshot = JSON.parse(JSON.stringify(m.siparisler));
-      const kullanilacakSnapshot = sonrakiSnapshot.length >= siparislerSnapshot.length
-        ? sonrakiSnapshot
-        : siparislerSnapshot;
+        // KRITIK: READ async sürerken garson yeni ürün eklemiş olabilir
+        // Lokal snapshot'tan daha yeniyse — en güncel lokal veriyi kullan
+        const sonrakiSnapshot = JSON.parse(JSON.stringify(m.siparisler));
+        const kullanilacakSnapshot = sonrakiSnapshot.length >= siparislerSnapshot.length
+          ? sonrakiSnapshot
+          : siparislerSnapshot;
 
-      let aktif = data?.aktif_masalar || [];
+        let aktif = data?.aktif_masalar || [];
 
-      if (kullanilacakSnapshot.length > 0) {
-        const idx = aktif.findIndex(x=>x.id===masaId);
-        const masaData = {
-          id: m.id, ad: m.ad, not: m.not||'',
-          siparisler: kullanilacakSnapshot,
-          garson: m.garson||'', indirim: m.indirim||0,
-          kisi_sayisi: m.kisi_sayisi||0,
-          hesap_istendi: m.hesap_istendi||false,
-          garson_cagri: m.garson_cagri||false,
-          garson_cagri_saat: m.garson_cagri_saat||null,
-          mutfak_durum: m.mutfak_durum||null,
-          mutfak_zaman: m.mutfak_zaman||null,
-        };
-        if (idx >= 0) aktif[idx] = masaData;
-        else aktif.push(masaData);
-      } else {
-        aktif = aktif.filter(x=>x.id!==masaId);
+        if (kullanilacakSnapshot.length > 0) {
+          const idx = aktif.findIndex(x=>x.id===masaId);
+          const masaData = {
+            id: m.id, ad: m.ad, not: m.not||'',
+            siparisler: kullanilacakSnapshot,
+            garson: m.garson||'', indirim: m.indirim||0,
+            kisi_sayisi: m.kisi_sayisi||0,
+            hesap_istendi: m.hesap_istendi||false,
+            garson_cagri: m.garson_cagri||false,
+            garson_cagri_saat: m.garson_cagri_saat||null,
+            mutfak_durum: m.mutfak_durum||null,
+            mutfak_zaman: m.mutfak_zaman||null,
+          };
+          if (idx >= 0) aktif[idx] = masaData;
+          else aktif.push(masaData);
+        } else {
+          aktif = aktif.filter(x=>x.id!==masaId);
+        }
+
+        const {error: we} = await sb.from('kafeler')
+          .update({aktif_masalar: aktif}).eq('id', kafeId);
+        if (we) throw we;
+
+        break; // başarılı
+
+      } catch(e) {
+        deneme++;
+        console.log('Sync hata deneme ' + deneme + ':', e?.message||e);
+        if (deneme < 3) await new Promise(r => setTimeout(r, 400 * deneme));
       }
-
-      const {error: we} = await sb.from('kafeler')
-        .update({aktif_masalar: aktif}).eq('id', kafeId);
-      if (we) throw we;
-
-      break; // başarılı
-
-    } catch(e) {
-      deneme++;
-      console.log('Sync hata deneme ' + deneme + ':', e?.message||e);
-      if (deneme < 3) await new Promise(r => setTimeout(r, 400 * deneme));
     }
-  }
+  });
 
   _yazimAktif.delete(masaId);
   setTimeout(() => { if (_yazimAktif.size === 0) _syncYaziliyor = false; }, 1500);
@@ -7280,42 +7294,44 @@ async function transferYap(hedefId){
   masalarRender();
   kolaycafenGuncelle();
 
-  let deneme = 0;
-  while (deneme < 3) {
-    try {
-      const {data, error: re} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-      if (re) throw re;
+  await _yazmaSirasindaCalistir(async () => {
+    let deneme = 0;
+    while (deneme < 3) {
+      try {
+        const {data, error: re} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+        if (re) throw re;
 
-      let aktif = data?.aktif_masalar || [];
+        let aktif = data?.aktif_masalar || [];
 
-      // Kaynak masayı kaldır
-      aktif = aktif.filter(x => x.id !== kid);
+        // Kaynak masayı kaldır
+        aktif = aktif.filter(x => x.id !== kid);
 
-      // Hedef masayı snapshot ile güncelle (DB'deki eski veriyle değil)
-      const hidx = aktif.findIndex(x => x.id === hedefId);
-      const hData = {
-        id: h.id, ad: h.ad, not: h.not||'',
-        siparisler: hedefSnapshot,
-        garson: hedefGarson, indirim: h.indirim||0,
-        kisi_sayisi: hedefKisi, hesap_istendi: h.hesap_istendi||false,
-        garson_cagri: h.garson_cagri||false,
-        garson_cagri_saat: h.garson_cagri_saat||null,
-        mutfak_durum: h.mutfak_durum||null,
-        mutfak_zaman: h.mutfak_zaman||null,
-      };
-      if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
+        // Hedef masayı snapshot ile güncelle (DB'deki eski veriyle değil)
+        const hidx = aktif.findIndex(x => x.id === hedefId);
+        const hData = {
+          id: h.id, ad: h.ad, not: h.not||'',
+          siparisler: hedefSnapshot,
+          garson: hedefGarson, indirim: h.indirim||0,
+          kisi_sayisi: hedefKisi, hesap_istendi: h.hesap_istendi||false,
+          garson_cagri: h.garson_cagri||false,
+          garson_cagri_saat: h.garson_cagri_saat||null,
+          mutfak_durum: h.mutfak_durum||null,
+          mutfak_zaman: h.mutfak_zaman||null,
+        };
+        if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
 
-      const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-      if (we) throw we;
+        const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+        if (we) throw we;
 
-      toast('↔ Masa ' + kid + ' → Masa ' + hedefId + ' ✓');
-      break;
-    } catch(e) {
-      deneme++;
-      if (deneme < 3) await new Promise(r => setTimeout(r, 500 * deneme));
-      else toast('⚠️ Transfer kaydedilemedi — ' + e.message);
+        toast('↔ Masa ' + kid + ' → Masa ' + hedefId + ' ✓');
+        break;
+      } catch(e) {
+        deneme++;
+        if (deneme < 3) await new Promise(r => setTimeout(r, 500 * deneme));
+        else toast('⚠️ Transfer kaydedilemedi — ' + e.message);
+      }
     }
-  }
+  });
 
   // Kilitleri kaldır — DB yazımı bittikten sonra
   _yazimAktif.delete(k.id);
