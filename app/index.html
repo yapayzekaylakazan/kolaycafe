@@ -5124,30 +5124,74 @@ setInterval(() => { if (navigator.onLine && kafeId && offlineKuyrukSayisi() > 0)
 // ════════════════════════════════════════
 // GARSON PERFORMANS SAYFASI
 // ════════════════════════════════════════
+
+// Merkezi helper: eklemeler varsa ürün bazında garson dağıtımı yapar,
+// yoksa adisyon.garson'a fallback eder (geriye dönük uyumlu).
+function _garsonKatkiDagit(adisyonlar) {
+  const perf = {};
+  adisyonlar.forEach(a => {
+    const adisyonGarson = garsonAdiAl(a.garson);
+    const katkilar = {};
+    (a.siparisler || []).forEach(s => {
+      const varEk = s.eklemeler && s.eklemeler.length > 0;
+      const items = varEk ? s.eklemeler : [{ garson: adisyonGarson, adet: s.adet || 1 }];
+      items.forEach(e => {
+        const g = (varEk ? garsonAdiAl(e.garson) : '') || adisyonGarson;
+        if (!g) return;
+        const adet = e.adet || 1;
+        if (!katkilar[g]) katkilar[g] = { ciro: 0, urunler: {} };
+        katkilar[g].ciro += adet * (s.fiyat || 0);
+        if (s.isim) katkilar[g].urunler[s.isim] = (katkilar[g].urunler[s.isim] || 0) + adet;
+      });
+    });
+    Object.entries(katkilar).forEach(([g, k]) => {
+      if (!perf[g]) perf[g] = { adisyon: 0, ciro: 0, urunler: {} };
+      perf[g].adisyon++;
+      perf[g].ciro += k.ciro;
+      Object.entries(k.urunler).forEach(([isim, adet]) => {
+        perf[g].urunler[isim] = (perf[g].urunler[isim] || 0) + adet;
+      });
+    });
+  });
+  return perf;
+}
+
 let _gpDonem = 'gun';
 
 function garsonPerfHesapla(adisyonlar) {
-  const perf = {};
+  const perf = _garsonKatkiDagit(adisyonlar);
+  // Adisyon başına her garsonun katkısını ayrı takip et
+  const adisyonListe = {};
   adisyonlar.forEach(a => {
-    const isim = garsonAdiAl(a.garson);
-    if (!isim) return;
-    if (!perf[isim]) perf[isim] = { adisyon: 0, ciro: 0, urunler: {}, adisyonListesi: [] };
-    perf[isim].adisyon++;
-    perf[isim].ciro += parseFloat(a.toplam || 0);
-    (a.siparisler || []).forEach(s => {
-      if (s.isim) perf[isim].urunler[s.isim] = (perf[isim].urunler[s.isim] || 0) + (s.adet || 1);
-    });
+    const adisyonGarson = garsonAdiAl(a.garson);
     const masaAd = a.masaAd || a.masa_ad || ('Masa ' + (a.masa || a.masa_no || '?'));
     const tarihRaw = a.tarih || a.created_at;
     const tarihObj = tarihRaw ? new Date(tarihRaw) : null;
     const gecerli = tarihObj && !isNaN(tarihObj);
-    perf[isim].adisyonListesi.push({
-      masaAd,
-      saat: gecerli ? tarihObj.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}) : '',
-      gun: gecerli ? tarihObj.toLocaleDateString('tr-TR', {day:'2-digit', month:'short'}) : '',
-      ts: gecerli ? tarihObj.getTime() : 0,
-      toplam: parseFloat(a.toplam || 0),
-      siparisler: a.siparisler || []
+    const saat = gecerli ? tarihObj.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}) : '';
+    const gun = gecerli ? tarihObj.toLocaleDateString('tr-TR', {day:'2-digit', month:'short'}) : '';
+    const ts = gecerli ? tarihObj.getTime() : 0;
+    const katkilar = {};
+    (a.siparisler || []).forEach(s => {
+      const varEk = s.eklemeler && s.eklemeler.length > 0;
+      const items = varEk ? s.eklemeler : [{ garson: adisyonGarson, adet: s.adet || 1 }];
+      items.forEach(e => {
+        const g = (varEk ? garsonAdiAl(e.garson) : '') || adisyonGarson;
+        if (!g) return;
+        const adet = e.adet || 1;
+        if (!katkilar[g]) katkilar[g] = { ciro: 0, urunler: {} };
+        katkilar[g].ciro += adet * (s.fiyat || 0);
+        if (s.isim) katkilar[g].urunler[s.isim] = (katkilar[g].urunler[s.isim] || 0) + adet;
+      });
+    });
+    Object.entries(katkilar).forEach(([g, k]) => {
+      if (!adisyonListe[g]) adisyonListe[g] = [];
+      adisyonListe[g].push({
+        masaAd, saat, gun, ts,
+        katkiCiro: k.ciro,
+        toplamCiro: parseFloat(a.toplam || 0),
+        siparisler: Object.entries(k.urunler).map(([isim, adet]) => ({ isim, adet }))
+      });
     });
   });
   return Object.entries(perf)
@@ -5156,10 +5200,8 @@ function garsonPerfHesapla(adisyonlar) {
       adisyon: d.adisyon,
       ciro: d.ciro,
       ortHesap: d.adisyon > 0 ? d.ciro / d.adisyon : 0,
-      tumUrunler: Object.entries(d.urunler)
-        .sort((a, b) => b[1] - a[1])
-        .map(([isim, adet]) => ({ isim, adet })),
-      adisyonListesi: d.adisyonListesi.sort((a, b) => b.ts - a.ts)
+      tumUrunler: Object.entries(d.urunler).sort((a, b) => b[1] - a[1]).map(([isim, adet]) => ({ isim, adet })),
+      adisyonListesi: (adisyonListe[isim] || []).sort((a, b) => b.ts - a.ts)
     }))
     .sort((a, b) => b.ciro - a.ciro);
 }
@@ -5181,13 +5223,15 @@ function garsonPerfRender(stats) {
       `<span style="background:var(--surface3);border-radius:14px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:var(--text2);">${j===0?'⭐ ':''}${u.isim} <strong style="color:var(--accent);">${u.adet}x</strong></span>`
     ).join('');
     const adisyonHtml = g.adisyonListesi.map(a => {
-      const urunOzet = a.siparisler.slice(0, 3).map(s => `${s.isim} ${s.adet}x`).join(', ') + (a.siparisler.length > 3 ? ' …' : '');
+      const urunOzet = (a.siparisler || []).map(s => `${s.isim} ${s.adet}x`).join(', ');
+      const kismiMi = a.katkiCiro < a.toplamCiro * 0.99;
       return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
         <div style="min-width:0;flex:1;">
           <div style="font-size:0.78rem;font-weight:800;">🪑 ${a.masaAd}${a.gun||a.saat ? ` <span style="color:var(--muted);font-weight:600;font-size:0.67rem;">· ${a.gun} ${a.saat}</span>` : ''}</div>
           ${urunOzet ? `<div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${urunOzet}</div>` : ''}
+          ${kismiMi ? `<div style="font-size:0.62rem;color:var(--accent);margin-top:1px;">Masa toplamı: ${fmt(a.toplamCiro)}</div>` : ''}
         </div>
-        <div style="font-weight:900;font-size:0.82rem;font-family:'Space Mono',monospace;color:var(--accent2);white-space:nowrap;margin-left:10px;">${fmt(a.toplam)}</div>
+        <div style="font-weight:900;font-size:0.82rem;font-family:'Space Mono',monospace;color:var(--accent2);white-space:nowrap;margin-left:10px;">${fmt(a.katkiCiro)}</div>
       </div>`;
     }).join('');
     const kart = document.createElement('div');
@@ -8549,15 +8593,9 @@ function raporRender_legacy(){
   girdi.forEach(([isim,d])=>{const s=document.createElement('div');s.className='rapor-satir';s.innerHTML=`<span class="rs-isim">${isim}</span><span class="rs-adet">${d.adet}x</span><span class="rs-tutar">${fmt(d.toplam)}</span>`;rl.appendChild(s);});
   // Garson performansı
   const gr=document.getElementById('garson-rapor');
-  const gs={};
-  filtre.forEach(a => {
-    const _gad = garsonAdiAl(a.garson); if (!_gad) return;
-    if (!gs[_gad]) gs[_gad] = { adet: 0, ciro: 0, urunler: {} };
-    gs[_gad].adet++; gs[_gad].ciro += a.toplam;
-    (a.siparisler || []).forEach(s => { if (s.isim) gs[_gad].urunler[s.isim] = (gs[_gad].urunler[s.isim] || 0) + (s.adet || 1); });
-  });
-  gr.innerHTML = Object.keys(gs).length === 0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
-  Object.entries(gs).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s]) => {
+  const _gpR1 = _garsonKatkiDagit(filtre);
+  gr.innerHTML = Object.keys(_gpR1).length === 0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
+  Object.entries(_gpR1).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s]) => {
     const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
     const d = document.createElement('div');
     d.style.cssText = 'background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:6px;';
@@ -8566,7 +8604,7 @@ function raporRender_legacy(){
         <span style="font-weight:800;">👤 ${g}</span>
         <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
       </div>
-      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adet} masa · Ort: ${fmt(s.ciro/s.adet)}</div>
+      <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
       ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
     `;
     gr.appendChild(d);
@@ -9261,16 +9299,10 @@ async function raporRenderTam() {
 
   // Garson
   const gr = document.getElementById('garson-rapor');
-  const gs = {};
-  tumAdisyonlar.forEach(a => {
-    const _gad2 = garsonAdiAl(a.garson); if(!_gad2) return;
-    if(!gs[_gad2]) gs[_gad2] = { adet:0, ciro:0, urunler:{} };
-    gs[_gad2].adet++; gs[_gad2].ciro += a.toplam;
-    (a.siparisler || []).forEach(s => { if (s.isim) gs[_gad2].urunler[s.isim] = (gs[_gad2].urunler[s.isim] || 0) + (s.adet || 1); });
-  });
+  const _gpR2 = _garsonKatkiDagit(tumAdisyonlar);
   if(gr) {
-    gr.innerHTML = Object.keys(gs).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
-    Object.entries(gs).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
+    gr.innerHTML = Object.keys(_gpR2).length===0 ? '<div class="bos-rapor" style="padding:10px;">Garson kaydı yok</div>' : '';
+    Object.entries(_gpR2).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
       const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
       const d = document.createElement('div');
       d.style.cssText = 'background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:6px;';
@@ -9279,7 +9311,7 @@ async function raporRenderTam() {
           <span style="font-weight:800;">👤 ${g}</span>
           <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
         </div>
-        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adet} masa · Ort: ${fmt(s.ciro/s.adet)}</div>
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
         ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
       `;
       gr.appendChild(d);
@@ -16302,29 +16334,14 @@ async function aiVeriTopla() {
 
   const trenYuzde = oncekiCiro > 0 ? ((toplamCiro - oncekiCiro) / oncekiCiro * 100).toFixed(1) : null;
 
-  // ── Garson performansı ──
-  const garsonPerf = {};
-  adisyonlar.forEach(a => {
-    let garsonAdi = 'Belirtilmemiş';
-    if (a.garson && typeof a.garson === 'string' && a.garson.trim()) {
-      const raw = a.garson.trim();
-      // JSON string olarak kaydedilmişse parse et
-      if (raw.startsWith('{')) {
-        try { garsonAdi = JSON.parse(raw).isim || 'Belirtilmemiş'; } catch { garsonAdi = raw; }
-      } else {
-        garsonAdi = raw;
-      }
-    }
-    const g = garsonAdi;
-    if (!garsonPerf[g]) garsonPerf[g] = { adisyon: 0, ciro: 0, urun: 0, urunler: {} };
-    garsonPerf[g].adisyon++;
-    garsonPerf[g].ciro += parseFloat(a.toplam || 0);
-    garsonPerf[g].urun += (a.siparisler || []).reduce((s, x) => s + (x.adet || 1), 0);
-    (a.siparisler || []).forEach(s => { if (s.isim) garsonPerf[g].urunler[s.isim] = (garsonPerf[g].urunler[s.isim] || 0) + (s.adet || 1); });
-  });
-  const garsonSirali = Object.entries(garsonPerf)
+  // ── Garson performansı (eklemeler bazlı adil dağıtım) ──
+  const _gpAi = _garsonKatkiDagit(adisyonlar);
+  const garsonSirali = Object.entries(_gpAi)
     .map(([isim, d]) => ({
-      isim, ...d,
+      isim,
+      adisyon: d.adisyon,
+      ciro: d.ciro,
+      urun: Object.values(d.urunler).reduce((s, x) => s + x, 0),
       ortAdisyon: d.adisyon > 0 ? d.ciro / d.adisyon : 0,
       topUrunler: Object.entries(d.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([isim,adet])=>({isim,adet}))
     }))
@@ -16784,19 +16801,9 @@ async function haftalikRaporUret() {
       .sort((a,b) => b.adet - a.adet);
 
     // Garson performansı
-    const garsonPerf = {};
-    buAdisyonlar.forEach(a => {
-      let g = 'Belirtilmemiş';
-      if (a.garson && typeof a.garson === 'string' && a.garson.trim()) {
-        const raw = a.garson.trim();
-        g = raw.startsWith('{') ? (()=>{ try{ return JSON.parse(raw).isim||raw; }catch{return raw;} })() : raw;
-      }
-      if (!garsonPerf[g]) garsonPerf[g] = { adisyon:0, ciro:0 };
-      garsonPerf[g].adisyon++;
-      garsonPerf[g].ciro += parseFloat(a.toplam||0);
-    });
-    const garsonSirali = Object.entries(garsonPerf)
-      .map(([isim,d]) => ({isim,...d}))
+    const _gpAi2 = _garsonKatkiDagit(buAdisyonlar);
+    const garsonSirali = Object.entries(_gpAi2)
+      .map(([isim, d]) => ({ isim, adisyon: d.adisyon, ciro: d.ciro }))
       .sort((a,b) => b.ciro - a.ciro);
 
     // SKT uyarıları
