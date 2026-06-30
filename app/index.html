@@ -4061,6 +4061,8 @@ async function garsonGiris(isim, kafeData) {
   if (kafeData.app_tema) appTemaYukle(kafeData);
   // Adisyon yükle (garson kendi masalarını görsün)
   await adisyonVerisiYukle();
+  // En Çok Satanlar: 30 günlük JSONB verisini arka planda yükle (UI'yi bloklamaz)
+  ecsVerisiYukle().catch(() => {});
   // Garson modunda da aktif vardiyayı yükle — adisyonlar vardiya_id ile kayıtlansın
   await vardiyayukle();
   // Rezervasyonlu masaları yükle, sonra render et
@@ -4080,11 +4082,11 @@ async function garsonGiris(isim, kafeData) {
   }, 3000);
   // Garson polling — _yazimAktif ile korumalı, çakışma önlendi
   if (window._garsonSyncInterval) clearInterval(window._garsonSyncInterval);
-  let _garsonPolling = false; // Garson polling çakışma kilidi
+  window._garsonPollingLock = false;
   window._garsonSyncInterval = setInterval(async () => {
     if (!kafeId) return;
-    if (_garsonPolling) return; // Önceki polling bitmeden yeni başlatma
-    _garsonPolling = true;
+    if (window._garsonPollingLock) return; // Önceki polling bitmeden yeni başlatma
+    window._garsonPollingLock = true;
     try {
       const {data} = await sb.from('kafeler')
         .select('aktif_masalar, masalar')
@@ -4152,7 +4154,7 @@ async function garsonGiris(isim, kafeData) {
 
 
     } catch(e) { console.log('Garson sync hatası:', e); }
-    finally { _garsonPolling = false; }
+    finally { window._garsonPollingLock = false; }
   }, 5000); // 5000ms: daha seyrek polling = race condition azaltılır
 
   // Garson için realtime subscription — polling'e ek olarak anlık güncelleme
@@ -4230,6 +4232,8 @@ async function uygulamaBaslat(user) {
   document.getElementById('ayar-email').textContent = user.email;
   await kafeVerisiYukle();
   await kolaycafenVerisiYukle();
+  // En Çok Satanlar: 30 günlük JSONB verisini arka planda yükle (UI'yi bloklamaz)
+  ecsVerisiYukle().catch(() => {});
   // Offline kuyrukta bekleyen adisyon varsa gönder
   setTimeout(() => {
     const bekleyen = offlineKuyrukSayisi();
@@ -5087,9 +5091,97 @@ async function offlineKuyrukGonder() {
   }
 }
 
-window.addEventListener('online', () => { toast('🟢 İnternet bağlantısı kuruldu'); setTimeout(() => offlineKuyrukGonder(), 2000); });
+window.addEventListener('online', () => { toast('🟢 İnternet bağlantısı kuruldu'); setTimeout(() => { offlineKuyrukGonder(); _hizliMasaGuncelle(); }, 2000); });
 window.addEventListener('offline', () => { toast('🔴 İnternet kesildi — adisyonlar kaydediliyor'); setSyncOnline(false); });
 setInterval(() => { if (navigator.onLine && kafeId && offlineKuyrukSayisi() > 0) offlineKuyrukGonder(); }, 30000);
+
+// ════════════════════════════════════════
+// MOBİL BAĞLANTI KOPMA KORUMASI
+// iOS Safari + iOS Chrome (ikisi de WKWebView): arka planda WebSocket kesilir
+// Android Chrome + Desktop: uzun arka plan sonrası throttle / bağlantı kopması
+// ════════════════════════════════════════
+let _sonGorunurZaman = Date.now();
+let _hizliGuncKilit = false;
+
+async function _hizliMasaGuncelle() {
+  if (!kafeId || _hizliGuncKilit) return;
+  _hizliGuncKilit = true;
+  try {
+    const { data, error } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+    if (error || !data) { setSyncOnline(false); return; }
+    const aktif = data.aktif_masalar || [];
+    let degisti = false;
+    aktif.forEach(am => {
+      const m = masalar.find(x => x.id === am.id);
+      if (!m || _yazimAktif.has(m.id) || _syncQueue[m.id]) return;
+      const eskiJson = JSON.stringify(m.siparisler);
+      const yeniJson  = JSON.stringify(am.siparisler || []);
+      if (eskiJson !== yeniJson
+        || m.garson        !== (am.garson||'')
+        || m.indirim       !== (am.indirim||0)
+        || (m.kisi_sayisi||0)    !== (am.kisi_sayisi||0)
+        || (m.hesap_istendi||false) !== (am.hesap_istendi||false)) {
+        m.siparisler    = am.siparisler || [];
+        m.garson        = am.garson || '';
+        m.indirim       = am.indirim || 0;
+        m.kisi_sayisi   = am.kisi_sayisi || 0;
+        m.hesap_istendi = am.hesap_istendi || false;
+        if (am.not !== undefined) m.not = am.not || '';
+        degisti = true;
+      }
+    });
+    masalar.forEach(m => {
+      if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
+      if (m.siparisler.length > 0 && !aktif.find(x => x.id === m.id)) {
+        m.siparisler = []; m.garson = ''; m.indirim = 0; m.kisi_sayisi = 0; m.hesap_istendi = false;
+        degisti = true;
+      }
+    });
+    if (degisti) { masalarRender(); if (seciliMasa) siparisListeRender(); }
+    setSyncOnline(true);
+  } catch(e) {
+    setSyncOnline(false);
+  } finally {
+    _hizliGuncKilit = false;
+  }
+}
+
+// Sayfa arka plandan öne gelince (iOS Safari, iOS Chrome, Android Chrome, Desktop)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { _sonGorunurZaman = Date.now(); return; }
+  if (!kafeId) return;
+  const gizliMs = Date.now() - _sonGorunurZaman;
+  // Polling kilitlerini sıfırla — iOS async isteği yarıda kesince kilit sonsuza kalırdı
+  if (gizliMs > 5000) {
+    _isPolling = false;
+    window._garsonPollingLock = false;
+  }
+  // 8 saniyeden fazla arka planda kaldıysa WebSocket yenile + anlık veri çek
+  if (gizliMs > 8000) {
+    try {
+      sb.realtime.disconnect();
+      setTimeout(() => { try { sb.realtime.connect(); } catch(e) {} }, 500);
+    } catch(e) {}
+    setTimeout(() => _hizliMasaGuncelle(), 700);
+  } else if (gizliMs > 2000) {
+    // Kısa ayrılmada sadece HTTP güncelle, WebSocket kanalı sağlam
+    _hizliMasaGuncelle();
+  }
+  if (navigator.onLine && offlineKuyrukSayisi() > 0) setTimeout(() => offlineKuyrukGonder(), 1200);
+});
+
+// iOS bfcache: Safari ve Chrome geri/ileri tuşuyla önbellekten dönen sayfa
+// Bu olmadan sayfa tamamen donuyordu ve hiçbir şey güncellenmiyordu
+window.addEventListener('pageshow', e => {
+  if (!e.persisted || !kafeId) return;
+  _isPolling = false;
+  window._garsonPollingLock = false;
+  try {
+    sb.realtime.disconnect();
+    setTimeout(() => { try { sb.realtime.connect(); } catch(e) {} }, 500);
+  } catch(e) {}
+  setTimeout(() => _hizliMasaGuncelle(), 700);
+});
 
 async function kolaycafenKaydet(kolaycafen) {
   if (!kafeId) return;
@@ -5128,6 +5220,10 @@ async function kolaycafenKaydet(kolaycafen) {
     if (kolaycafen.toplam > 0) {
       sb.rpc('increment_ciro', { kafe_id_param: kafeId, miktar: kolaycafen.toplam }).then(()=>{}).catch(()=>{});
     }
+    // En Çok Satanlar önbelleğini anlık güncelle (DB'ye tekrar sorgu atmadan)
+    (kolaycafen.siparisler || []).forEach(s => {
+      if (s.isim) _ecsSayac[s.isim] = (_ecsSayac[s.isim] || 0) + (s.adet || 1);
+    });
     setSyncOnline(true);
   } catch(e) {
     // DB'ye yazılamadı — kuyruğa ekle, kayıp olmasın
@@ -5637,12 +5733,76 @@ function kolaycafenGuncelle() {
   }
   const gc = document.getElementById('garson-chip');
   gc.textContent = m.garson ? '👤 ' + m.garson : '👤 Garson';
+  // Farklı masaya geçilince En Çok Satanlar kategorisine dön
+  if (seciliMasa !== _oncekiSeciliMasa) {
+    _oncekiSeciliMasa = seciliMasa;
+    if (enCokSatanlariHesapla().length >= 2) mevcutKat = ECS_KAT;
+  }
   katTabsRender(); urunGridRender(); siparisListeRender();
+}
+
+// ════════════════════════════════════════
+// EN ÇOK SATANLAR — sanal kategori, URUNLER'e dokunulmaz, DB'ye kaydedilmez
+// Kaynak: son 30 günlük kolaycafenlar.siparisler JSONB kolonu
+// ════════════════════════════════════════
+const ECS_KAT = '⭐ En Çok Satanlar';
+let _oncekiSeciliMasa = null;
+let _ecsSayac = {};      // {isim: toplam_adet} — 30 günlük DB önbelleği
+let _ecsYuklendi = false;
+
+async function ecsVerisiYukle() {
+  if (!kafeId) return;
+  try {
+    const bas = new Date();
+    bas.setDate(bas.getDate() - 30);
+    bas.setHours(0, 0, 0, 0);
+    // Sadece siparisler JSONB kolonu çekiliyor — düşük veri boyutu
+    const { data } = await sb.from('kolaycafenlar')
+      .select('siparisler')
+      .eq('kafe_id', kafeId)
+      .neq('odeme_tipi', 'cari_tahsil')
+      .gte('created_at', bas.toISOString());
+    if (!data) return;
+    _ecsSayac = {};
+    data.forEach(a => {
+      (a.siparisler || []).forEach(s => {
+        if (s.isim) _ecsSayac[s.isim] = (_ecsSayac[s.isim] || 0) + (s.adet || 1);
+      });
+    });
+    _ecsYuklendi = true;
+  } catch(e) {}
+}
+
+function enCokSatanlariHesapla() {
+  // 30 günlük DB verisini temel al
+  const sayac = Object.assign({}, _ecsSayac);
+  // Üstüne aktif masaların anlık siparişlerini ekle
+  masalar.forEach(m => {
+    (m.siparisler || []).forEach(s => {
+      if (s.isim) sayac[s.isim] = (sayac[s.isim] || 0) + (s.adet || 1);
+    });
+  });
+  // Sadece hâlâ menüde var olan ürünleri göster (silinmiş ürünler çıkar)
+  const tumUrunler = {};
+  Object.values(URUNLER).forEach(arr => arr.forEach(u => { tumUrunler[u.isim] = u; }));
+  return Object.entries(sayac)
+    .filter(([isim]) => tumUrunler[isim])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([isim]) => tumUrunler[isim]);
 }
 
 function katTabsRender() {
   const tabs = document.getElementById('cat-tabs');
   tabs.innerHTML='';
+  // En Çok Satanlar — en az 2 ürün varsa ilk sıraya ekle
+  if (enCokSatanlariHesapla().length >= 2) {
+    const btn=document.createElement('button');
+    btn.className='cat-tab'+(mevcutKat===ECS_KAT?' active':'');
+    btn.textContent=ECS_KAT;
+    btn.addEventListener('click',()=>{mevcutKat=ECS_KAT;katTabsRender();urunGridRender();});
+    tabs.appendChild(btn);
+  }
   Object.keys(URUNLER).forEach(kat=>{
     const btn=document.createElement('button');
     btn.className='cat-tab'+(kat===mevcutKat?' active':'');
@@ -5737,7 +5897,9 @@ function katSil(kat) {
 function urunGridRender() {
   const grid=document.getElementById('urun-grid');
   grid.innerHTML='';
-  (URUNLER[mevcutKat]||[]).forEach((u,idx)=>{
+  const _ecsAktif = mevcutKat === ECS_KAT;
+  const _aktifUrunler = _ecsAktif ? enCokSatanlariHesapla() : (URUNLER[mevcutKat]||[]);
+  _aktifUrunler.forEach((u,idx)=>{
     const kart=document.createElement('div');
     kart.className='urun-kart';
     const resimHTML = u.resim
@@ -5760,7 +5922,13 @@ function urunGridRender() {
     kart.querySelector('.udel').addEventListener('click',e=>{
       e.stopPropagation();
       if(!confirm('"'+u.isim+'" silinsin mi?')) return;
-      URUNLER[mevcutKat].splice(idx,1);
+      if (_ecsAktif) {
+        // ECS modunda — orijinal kategorisinden bul ve sil
+        const origKat = Object.keys(URUNLER).find(k => URUNLER[k].some(x => x.isim === u.isim));
+        if (origKat) { const oi = URUNLER[origKat].findIndex(x => x.isim === u.isim); if(oi!==-1) URUNLER[origKat].splice(oi,1); }
+      } else {
+        URUNLER[mevcutKat].splice(idx,1);
+      }
       urunGridRender(); urunListesiRender(); bulutKaydet(); toast('Ürün silindi');
     });
     // Touch: scroll tespiti ile ürün ekleme

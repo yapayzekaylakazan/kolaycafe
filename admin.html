@@ -3030,6 +3030,50 @@ function csvIndir() {
 document.getElementById('detay-modal').addEventListener('click', function(e) { if(e.target===this) modalKapat(); });
 document.getElementById('adisyon-overlay').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('ac'); });
 window.ciroRaporYukle = ciroRaporYukle;
+
+// ════════════════════════════════════════
+// MOBİL BAĞLANTI KOPMA KORUMASI — admin panel
+// iOS Safari + iOS Chrome: arka planda sayfa donar, geri gelince taze veri yok
+// Supabase Realtime yok → sadece HTTP polling yenileme yeterli
+// ════════════════════════════════════════
+let _adminSonGorunurZaman = Date.now();
+let _adminYenilemeKilit = false;
+
+async function _adminHizliYenile() {
+  if (_adminYenilemeKilit || !tumKafeler) return;
+  _adminYenilemeKilit = true;
+  try {
+    const { data } = await sb.from('kafeler').select('*').order('created_at', { ascending: false });
+    if (data) {
+      tumKafeler = data;
+      topbarCanliBilgi();
+      kpiGuncelle();
+      tabloRender();
+    }
+    // Aktif olan özel sekmeleri de yenile
+    if (_canliOto)    canliYukle().catch(() => {});
+    if (_analitikOto) analitikYukle().catch(() => {});
+    if (_adisOto)     adisyonlarYukle().catch(() => {});
+  } catch(e) {}
+  finally { _adminYenilemeKilit = false; }
+}
+
+// Sayfa arka plandan öne gelince (iOS Safari, iOS Chrome, Android, Desktop)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { _adminSonGorunurZaman = Date.now(); return; }
+  if (!tumKafeler) return;
+  const gizliMs = Date.now() - _adminSonGorunurZaman;
+  if (gizliMs > 8000) {
+    setTimeout(() => _adminHizliYenile(), 400);
+  }
+});
+
+// iOS bfcache: Safari ve Chrome geri/ileri tuşuyla önbellekten dönen sayfa
+window.addEventListener('pageshow', e => {
+  if (e.persisted && tumKafeler) {
+    setTimeout(() => _adminHizliYenile(), 500);
+  }
+});
 </script>
 </body>
 </html>
