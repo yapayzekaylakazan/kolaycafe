@@ -1600,8 +1600,8 @@
     <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:12px;">
       <div style="font-size:0.78rem;color:var(--muted);font-weight:800;margin-bottom:10px;">👥 GARSON PERFORMANSI</div>
       <canvas id="grafik-garson" height="160"></canvas>
+      <div id="garson-rapor" style="margin-top:12px;"></div>
     </div>
-    <div id="garson-rapor"></div>
   </div>
 
   <!-- ADİSYON SEKMESİ -->
@@ -8614,14 +8614,14 @@ function raporRender_legacy(){
   Object.entries(_gpR1).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g, s]) => {
     const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
     const d = document.createElement('div');
-    d.style.cssText = 'background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:6px;';
+    d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
     d.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
         <span style="font-weight:800;">👤 ${g}</span>
         <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
       </div>
       <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
-      ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+      ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
     `;
     gr.appendChild(d);
   });
@@ -9321,14 +9321,14 @@ async function raporRenderTam() {
     Object.entries(_gpR2).sort((a,b) => b[1].ciro - a[1].ciro).forEach(([g,s]) => {
       const top3 = Object.entries(s.urunler).sort((a,b)=>b[1]-a[1]).slice(0,3);
       const d = document.createElement('div');
-      d.style.cssText = 'background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:6px;';
+      d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;';
       d.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
           <span style="font-weight:800;">👤 ${g}</span>
           <span style="font-weight:900;font-family:'Space Mono',monospace;color:var(--accent2);">${fmt(s.ciro)}</span>
         </div>
         <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:${top3.length?'7px':'0'};">${s.adisyon} masa · Ort: ${fmt(s.adisyon>0?s.ciro/s.adisyon:0)}</div>
-        ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface3);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
+        ${top3.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${top3.map(([isim,adet])=>`<span style="background:var(--surface2);border-radius:14px;padding:2px 8px;font-size:0.65rem;font-weight:700;">${isim} <strong style="color:var(--accent);">${adet}x</strong></span>`).join('')}</div>` : ''}
       `;
       gr.appendChild(d);
     });
