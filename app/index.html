@@ -4952,10 +4952,11 @@ async function _masaSyncYazHemen(masaId) {
 
         // KRITIK: READ async sürerken garson yeni ürün eklemiş olabilir
         // Lokal snapshot'tan daha yeniyse — en güncel lokal veriyi kullan
+        // RACE FIX: Masa READ sırasında tahsil/temizle ile sıfırlandıysa eski ürünleri GERİ YAZMA
         const sonrakiSnapshot = JSON.parse(JSON.stringify(m.siparisler));
-        const kullanilacakSnapshot = sonrakiSnapshot.length >= siparislerSnapshot.length
-          ? sonrakiSnapshot
-          : siparislerSnapshot;
+        const kullanilacakSnapshot = (sonrakiSnapshot.length === 0)
+          ? []
+          : (sonrakiSnapshot.length >= siparislerSnapshot.length ? sonrakiSnapshot : siparislerSnapshot);
 
         let aktif = data?.aktif_masalar || [];
 
