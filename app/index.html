@@ -883,6 +883,11 @@
 <!-- ── ANA UYGULAMA ── -->
 <div id="app" style="display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0;">
 
+<div id="admin-preview-banner" style="display:none;background:#7c3aed;color:#fff;font-size:0.78rem;font-weight:700;padding:6px 14px;text-align:center;letter-spacing:0.02em;flex-shrink:0;">
+  👁 Admin Görüntüleme: <span id="admin-preview-kafe-adi"></span>
+  <button onclick="window.close()" style="margin-left:12px;background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:0.72rem;font-weight:800;padding:2px 10px;border-radius:5px;cursor:pointer;">✕ Kapat</button>
+</div>
+
 <div class="header">
   <div class="header-left">
     <div>
@@ -4304,8 +4309,10 @@ async function uygulamaBaslat(user) {
   setSyncOnline(true);
   kuponYonetimGoster();
   setTimeout(() => vardiyayukle(), 600);
-  // Son giriş zamanını kaydet
-  if (kafeId) sb.from('kafeler').update({ son_giris: new Date().toISOString() }).eq('id', kafeId).then(()=>{}).catch(()=>{});
+  // Son giriş zamanını kaydet (admin önizlemede kafe sahibinin verisini kirletme)
+  if (kafeId && !new URLSearchParams(window.location.search).get('adminKafeId')) {
+    sb.from('kafeler').update({ son_giris: new Date().toISOString() }).eq('id', kafeId).then(()=>{}).catch(()=>{});
+  }
   // Admin banner mesajı varsa göster, sonra temizle
   setTimeout(async () => {
     if (!kafeId) return;
@@ -4599,32 +4606,49 @@ document.addEventListener('input', function(e) {
 window.appTemaUygula = appTemaUygula;
 window.appTemaKaydet = appTemaKaydet;
 
+const SUPER_ADMIN_EMAIL = 'yapayzekaylakazan@gmail.com';
+
 async function kafeVerisiYukle() {
-  const {data} = await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
+  const _adminKafeId = new URLSearchParams(window.location.search).get('adminKafeId');
+  const _isAdminPreview = _adminKafeId && kullanici?.email === SUPER_ADMIN_EMAIL;
+
+  const {data} = _isAdminPreview
+    ? await sb.from('kafeler').select('*').eq('id', _adminKafeId).single()
+    : await sb.from('kafeler').select('*').eq('user_id', kullanici.id).single();
+
+  if (_isAdminPreview && data) {
+    const banner = document.getElementById('admin-preview-banner');
+    if (banner) {
+      banner.style.display = 'flex';
+      banner.style.alignItems = 'center';
+      banner.style.justifyContent = 'center';
+      document.getElementById('admin-preview-kafe-adi').textContent = data.kafe_adi || data.id;
+    }
+  }
   window._kafeData = data; // Global olarak sakla
   if (data) {
-    // KRITIK: Pasif/kilitli kontrolü — sisteme girmeden önce yap
+    // KRITIK: Pasif/kilitli kontrolü — sisteme girmeden önce yap (admin önizlemede atla)
     const _simdi = new Date();
     const _bitis = data.plan_bitis ? new Date(data.plan_bitis) : null;
-    if (data.manuel_pasif) {
+    if (!_isAdminPreview && data.manuel_pasif) {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       kilitEkraniGoster('Hesabınız askıya alınmıştır.\n\nBilgi için: bilgi@kolaycafe.com');
       return;
     }
-    if (data.plan === 'kilitli') {
+    if (!_isAdminPreview && data.plan === 'kilitli') {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       kilitEkraniGoster('Hesabınız kilitlenmiştir. Bilgi için: bilgi@kolaycafe.com');
       return;
     }
-    if (data.plan !== 'deneme' && _bitis && _simdi > _bitis) {
+    if (!_isAdminPreview && data.plan !== 'deneme' && _bitis && _simdi > _bitis) {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       kilitEkraniGoster('Paket süreniz dolmuştur.\n\nDevam etmek için paketinizi yenileyin:\n📧 bilgi@kolaycafe.com');
       return;
     }
-    if (data.plan === 'deneme' && _bitis && _simdi > _bitis) {
+    if (!_isAdminPreview && data.plan === 'deneme' && _bitis && _simdi > _bitis) {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       kilitEkraniGoster('10 günlük deneme süreniz dolmuştur.\n\nDevam etmek için bir paket seçin:\n📧 bilgi@kolaycafe.com');

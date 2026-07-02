@@ -1287,6 +1287,7 @@ function tabloRender() {
       <td style="font-size:0.7rem;color:var(--text2);font-family:'Space Mono',monospace;">${tarihFmt(k.created_at)}</td>
       <td>
         <button class="abtn" onclick="detayAc('${k.id}')">🔍</button>
+        <button class="abtn" title="Admin olarak kafede gir" onclick="adminKafeGir('${k.id}')">👁</button>
         <button class="abtn ${k.manuel_pasif?'':'teh'}" title="${k.manuel_pasif?'Aktif et':'Pasife al'}" onclick="manuelToggle('${k.id}',${!k.manuel_pasif})">${k.manuel_pasif?'✅':'🔒'}</button>
       </td>`;
     tbody.appendChild(tr);
@@ -1303,6 +1304,11 @@ function tabloRender() {
 }
 
 function sayfaDegis(yeni) { sayfa = yeni; tabloRender(); window.scrollTo(0,0); }
+
+function adminKafeGir(kafeId) {
+  const url = 'https://yapayzekaylakazan.github.io/kolaycafe/app/index.html?adminKafeId=' + kafeId;
+  window.open(url, '_blank');
+}
 
 async function manuelToggle(kafeId, pasifYap) {
   const k = tumKafeler.find(x => x.id === kafeId); if (!k) return;
