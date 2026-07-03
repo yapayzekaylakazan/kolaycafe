@@ -3580,6 +3580,7 @@ let splitOdendi = [];
 let _syncYaziliyor = false;  // normal sipariş yazmaları
 const _syncQueue = {};       // masaId → timeout handle (debounce per masa)
 const _yazimAktif = new Set(); // Yazım kilidi — bu masaya polling/realtime dokunamaz
+const _sonKapatma = {};      // masaId → Date.now() — kapatma sonrası stale "açık" echo'ları 4sn boyunca reddetmek için
 let _isPolling = false;         // Polling çakışma koruması
 let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
@@ -4153,6 +4154,10 @@ async function garsonGiris(isim, kafeData) {
             // Garson ürün ekledi (700ms debounce) → polling tam bu sırada geldi
             // → DB'deki ESKİ veriyle lokali ezerse ürün siliniyor gibi görünüyor
             if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
+            // DEĞİŞİKLİK 2 (garson polling — 4 noktadan biri): masa 4sn içinde kapatıldıysa ve
+            // DB echo'su onu hâlâ "siparişli/açık" gösteriyorsa bu stale okumadır — reddet.
+            // Bu kanal daha önce _transferYapiliyor'u HİÇ kontrol etmiyordu (asıl bug buradaydı).
+            if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
 
             const eskiJson = JSON.stringify(m.siparisler);
             const yeniJson = JSON.stringify(am.siparisler);
@@ -4216,6 +4221,9 @@ async function garsonGiris(isim, kafeData) {
           // Garson ürün ekledi → 700ms sonra DB'ye yazılacak → o arada başka cihazdan
           // realtime gelip "eski" veriyi yazmaması lazım
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
+          // DEĞİŞİKLİK 2 (garson realtime — 4 noktadan biri): bu kanal _transferYapiliyor'u HİÇ
+          // kontrol etmiyordu — kapatma sonrası 4sn içinde gelen "açık" echo'ları reddet
+          if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
           if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0)) {
@@ -4384,6 +4392,10 @@ async function uygulamaBaslat(user) {
         // Yazım bekleyen masayı realtime ile ezme
         if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
         const am = aktif.find(x=>x.id===m.id);
+        // DEĞİŞİKLİK 2 (sahip realtime — 4 noktadan biri): yukarıdaki _transferYapiliyor kontrolü
+        // sadece KAPATMAYI YAPAN sekmeyi korur — aynı hesabın BAŞKA bir sekmesi/cihazı bu guard'ı
+        // görmez, kendi _transferYapiliyor'u false'dur. Masa bazlı damga bunu da kapatır.
+        if (am && _sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
         if (am) {
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
@@ -4426,6 +4438,9 @@ async function uygulamaBaslat(user) {
         if (m) {
           // Yazım bekleyen masayı polling ile ezme
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
+          // DEĞİŞİKLİK 2 (sahip polling — 4 noktadan biri): üstteki _transferYapiliyor kontrolü de
+          // sadece bu sekmeyi korur; başka sekme/cihazdan kapatılmış olabilir — damga ile de kapat
+          if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
           // Her zaman karşılaştır — sadece boş masa değil
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler || []);
@@ -4960,6 +4975,7 @@ async function _masaSyncYazHemen(masaId) {
   _yazimAktif.add(masaId);
   _syncYaziliyor = true;
 
+  let _yaziBasarili = false; // sadece gerçek DB yazması başarılı olursa true — _syncQueue temizliğini buna bağlıyoruz
   await _yazmaSirasindaCalistir(async () => {
     let deneme = 0;
     while (deneme < 3) {
@@ -5007,6 +5023,7 @@ async function _masaSyncYazHemen(masaId) {
           .update({aktif_masalar: aktif}).eq('id', kafeId);
         if (we) throw we;
 
+        _yaziBasarili = true;
         break; // başarılı
 
       } catch(e) {
@@ -5018,6 +5035,9 @@ async function _masaSyncYazHemen(masaId) {
   });
 
   _yazimAktif.delete(masaId);
+  // Yazma gerçekten başarılıysa kuyruk işaretini temizle — aksi halde setTimeout ID'si kalıcı truthy
+  // kalıp bu masayı polling/realtime guard'larında SONSUZA KADAR "yazım bekliyor" gibi gösteriyordu (bkz. analiz)
+  if (_yaziBasarili && _syncQueue[masaId]) delete _syncQueue[masaId];
   setTimeout(() => { if (_yazimAktif.size === 0) _syncYaziliyor = false; }, 1500);
 }
 
@@ -6825,6 +6845,9 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
   const siparislerKopya = m.siparisler.map(s=>({...s}));
   const garsonKopya = m.garson || '';
   m.siparisler=[]; m.indirim=0; m.garson=''; m.kisi_sayisi=0; m.hesap_istendi=false;
+  // DEĞİŞİKLİK 2: bu masa şimdi lokal olarak kapatıldı — sonraki 4sn içinde gelecek
+  // "açık" state'li stale realtime/polling echo'larını reddetmek için damga bırak
+  _sonKapatma[tahsilMasaId] = Date.now();
   kolaycafenGuncelle(); siparisListeRender(); masalarRender();
   const tipEtiket = {
     'salon-nakit':'🪑 Salon Nakit','salon-kart':'🪑 Salon Kart',
@@ -6837,8 +6860,36 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
     : '';
   toast('✓ '+m.ad+' — '+(tip==='ikram'?'İkram edildi':fmt(son)+' · '+tipEtiket+karmaOzet));
   // Önce boş masayı Supabase'e yaz, sonra adisyonu kaydet
+  // DEĞİŞİKLİK 1 (kök neden fix): _masaSyncYazHemen ARTIK ÇAĞRILMIYOR — o fonksiyon kendi içinde
+  // "if (_transferYapiliyor) return" kontrolü yapıyor ve biz birkaç satır üstte _transferYapiliyor'u
+  // true yaptığımız için kendi yazmasını görünmez şekilde erteleyip ~6-7sn "tekrar dene" döngüsüne
+  // giriyordu (masa ekranda kapalı görünüyor ama DB'de hâlâ açık kalıyordu — asıl bug buydu).
+  // Bunun yerine transferYap (satır ~7300) ile BİREBİR aynı doğrudan yazma deseni kullanılıyor:
+  // _yazmaSirasindaCalistir içinde read → filtrele → update, 3 deneme, aynı hata toast stili.
   try {
-    await _masaSyncYazHemen(tahsilMasaId);
+    await _yazmaSirasindaCalistir(async () => {
+      let deneme = 0;
+      while (deneme < 3) {
+        try {
+          // transferYap'taki gibi doğrudan oku — _masaSyncYazHemen'in ayrı snapshot/guard mantığına gerek yok
+          const {data, error: re} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+          if (re) throw re;
+
+          let aktif = data?.aktif_masalar || [];
+          // Kapatılan masayı listeden çıkar — transferYap'ın kaynak masayı kaldırmasıyla aynı satır
+          aktif = aktif.filter(x => x.id !== tahsilMasaId);
+
+          const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+          if (we) throw we;
+
+          break; // başarılı — DB artık gerçekten kapalı, gecikme yok
+        } catch(e) {
+          deneme++;
+          if (deneme < 3) await new Promise(r => setTimeout(r, 500 * deneme));
+          else toast('⚠️ Kapatma kaydedilemedi — ' + e.message);
+        }
+      }
+    });
     await kolaycafenKaydet(kolaycafen);
     // Karma ödemede cari kısım varsa müşteri bakiyesini güncelle
     if (tip === 'karma' && musteriAdi && cariTutar > 0) {
