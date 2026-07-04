@@ -3581,6 +3581,20 @@ let _syncYaziliyor = false;  // normal sipariş yazmaları
 const _syncQueue = {};       // masaId → timeout handle (debounce per masa)
 const _yazimAktif = new Set(); // Yazım kilidi — bu masaya polling/realtime dokunamaz
 const _sonKapatma = {};      // masaId → Date.now() — kapatma sonrası stale "açık" echo'ları 4sn boyunca reddetmek için
+// GÖZLEM AMAÇLI TANI LOGU — masa kapatma fix'inin canlıda gerçekten çalıştığını doğrulamak için geçici.
+// Mevcut hata_loglari insert deseniyle (bkz. window.onerror) birebir aynı — sadece mesaj içeriği farklı.
+function _diagLog(olayTipi, masaId, kanal, zamanFarkiMs) {
+  if (!kafeId) return;
+  try {
+    sb.from('hata_loglari').insert({
+      kafe_id: kafeId,
+      mesaj: `[DIAG] olay_tipi=${olayTipi} masaId=${masaId} kanal=${kanal} zaman_farki_ms=${zamanFarkiMs}`,
+      kaynak: 'masa-kapatma-diag',
+      browser: navigator.userAgent.slice(0,200),
+      url: location.href.slice(0,200)
+    }).then(()=>{}).catch(()=>{});
+  } catch(e) {}
+}
 let _isPolling = false;         // Polling çakışma koruması
 let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
@@ -4157,7 +4171,10 @@ async function garsonGiris(isim, kafeData) {
             // DEĞİŞİKLİK 2 (garson polling — 4 noktadan biri): masa 4sn içinde kapatıldıysa ve
             // DB echo'su onu hâlâ "siparişli/açık" gösteriyorsa bu stale okumadır — reddet.
             // Bu kanal daha önce _transferYapiliyor'u HİÇ kontrol etmiyordu (asıl bug buradaydı).
-            if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
+            if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) {
+              _diagLog('guard_red', m.id, 'garson-polling', Date.now() - _sonKapatma[m.id]); // GÖZLEM: sadece anlamlı red
+              return;
+            }
 
             const eskiJson = JSON.stringify(m.siparisler);
             const yeniJson = JSON.stringify(am.siparisler);
@@ -4223,7 +4240,10 @@ async function garsonGiris(isim, kafeData) {
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           // DEĞİŞİKLİK 2 (garson realtime — 4 noktadan biri): bu kanal _transferYapiliyor'u HİÇ
           // kontrol etmiyordu — kapatma sonrası 4sn içinde gelen "açık" echo'ları reddet
-          if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
+          if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) {
+            _diagLog('guard_red', m.id, 'garson-realtime', Date.now() - _sonKapatma[m.id]); // GÖZLEM: sadece anlamlı red
+            return;
+          }
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
           if (eskiJson !== yeniJson || m.garson !== (am.garson||'') || m.indirim !== (am.indirim||0)) {
@@ -4395,7 +4415,10 @@ async function uygulamaBaslat(user) {
         // DEĞİŞİKLİK 2 (sahip realtime — 4 noktadan biri): yukarıdaki _transferYapiliyor kontrolü
         // sadece KAPATMAYI YAPAN sekmeyi korur — aynı hesabın BAŞKA bir sekmesi/cihazı bu guard'ı
         // görmez, kendi _transferYapiliyor'u false'dur. Masa bazlı damga bunu da kapatır.
-        if (am && _sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
+        if (am && _sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) {
+          _diagLog('guard_red', m.id, 'sahip-realtime', Date.now() - _sonKapatma[m.id]); // GÖZLEM: sadece anlamlı red
+          return;
+        }
         if (am) {
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler||[]);
@@ -4440,7 +4463,10 @@ async function uygulamaBaslat(user) {
           if (_yazimAktif.has(m.id) || _syncQueue[m.id]) return;
           // DEĞİŞİKLİK 2 (sahip polling — 4 noktadan biri): üstteki _transferYapiliyor kontrolü de
           // sadece bu sekmeyi korur; başka sekme/cihazdan kapatılmış olabilir — damga ile de kapat
-          if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) return;
+          if (_sonKapatma[m.id] && (Date.now() - _sonKapatma[m.id] < 4000) && (am.siparisler||[]).length > 0) {
+            _diagLog('guard_red', m.id, 'sahip-polling', Date.now() - _sonKapatma[m.id]); // GÖZLEM: sadece anlamlı red
+            return;
+          }
           // Her zaman karşılaştır — sadece boş masa değil
           const eskiJson = JSON.stringify(m.siparisler);
           const yeniJson = JSON.stringify(am.siparisler || []);
@@ -6804,6 +6830,7 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
   if(!seciliMasa) return;
   const m = getMasa(); if(!m) return;
   if(m.siparisler.length===0){toast('KolayCafen boş!');return;}
+  const _kapatmaBaslangic = Date.now(); // GÖZLEM: kapatma süresi ölçümü buradan başlar
   _tahsilEdiliyor = true;
   // Realtime'ın eski veriyi geri yazmasını önle
   _transferYapiliyor = true;
@@ -6882,6 +6909,8 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
           const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
           if (we) throw we;
 
+          // GÖZLEM: kapatma DB'ye gerçekten ne kadar sürede yazıldı — fix öncesi ~6-7sn'ydi, hedef ~1sn
+          _diagLog('kapatma_suresi', tahsilMasaId, 'tahsilEt', Date.now() - _kapatmaBaslangic);
           break; // başarılı — DB artık gerçekten kapalı, gecikme yok
         } catch(e) {
           deneme++;
