@@ -3618,6 +3618,12 @@ window.addEventListener('beforeunload', e => {
     e.preventDefault();
     e.returnValue = 'Değişiklikler kaydediliyor, çıkmak istiyor musunuz?';
   }
+  // GÖZLEM: Semptom B kanıtı — sayfa kapanırken masaSyncYaz kuyruğunda (debounce/retry
+  // bekleyen) hâlâ yazılmamış masa var mı? Varsa o masanın son değişikliği DB'ye hiç
+  // ulaşmadan kayboluyor demektir. Mantığı değiştirmiyor, sadece tespit ediyor.
+  Object.keys(_syncQueue).forEach(masaId => {
+    if (_syncQueue[masaId]) _diagLog('kayip_riski_unload', masaId, 'beforeunload', 0);
+  });
 });
 
 // ════════════════════════════════════════
@@ -6911,6 +6917,17 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
 
           // GÖZLEM: kapatma DB'ye gerçekten ne kadar sürede yazıldı — fix öncesi ~6-7sn'ydi, hedef ~1sn
           _diagLog('kapatma_suresi', tahsilMasaId, 'tahsilEt', Date.now() - _kapatmaBaslangic);
+          // GÖZLEM: çok-cihazlı dirilme kanıtı — kapatma yazması başarılı olduktan 3sn sonra
+          // aynı masa DB'de hâlâ (yeniden) görünüyor mu diye TEK SEFER kontrol et. Başka bir
+          // cihazın stale "oku-değiştir-tümünü-yaz" yazması masayı geri getirmiş olabilir.
+          // Görünmüyorsa hiçbir şey loglama (gürültü olmasın).
+          setTimeout(async () => {
+            try {
+              const { data: vd } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+              const halaVar = (vd?.aktif_masalar || []).some(x => x.id === tahsilMasaId);
+              if (halaVar) _diagLog('resurrection_kanit', tahsilMasaId, 'post-write-verify', Date.now() - _kapatmaBaslangic);
+            } catch(e) {}
+          }, 3000);
           break; // başarılı — DB artık gerçekten kapalı, gecikme yok
         } catch(e) {
           deneme++;
