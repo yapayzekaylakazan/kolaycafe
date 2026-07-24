@@ -662,26 +662,6 @@ async function teslim(masaNo){
     const idx = aktifMasalar.findIndex(m=>String(m.id)===String(masaNo));
     if(idx>-1) aktifMasalar.splice(idx,1);
   } else {
-    // kolaycafenlar tablosuna yaz — mutfak teslim kaydı
-    try {
-      const mutfakSiparisler = (masa.siparisler||[]).filter(s=>s.musteri===true);
-      if(mutfakSiparisler.length > 0){
-        const toplam = mutfakSiparisler.reduce((t,s)=>t+(s.fiyat||0)*(s.adet||1),0);
-        const kayitliMasa = kayitliMasalar.find(m=>Number(m.id)===Number(masaNo));
-        const masaAdi = kayitliMasa?.ad || masa.ad || 'Masa '+masaNo;
-        await sb.from('kolaycafenlar').insert({
-          kafe_id: kafeId,
-          masa_no: Number(masaNo)||0,
-          masa_ad: masaAdi,
-          toplam: toplam,
-          garson: masa.garson||'',
-          masa_notu: masa.not||null,
-          siparisler: mutfakSiparisler,
-          odeme_tipi: 'mutfak-teslim',
-        });
-      }
-    } catch(e){ console.error('Teslim kayıt hatası:',e); }
-
     // Siparişleri teslim edildi olarak işaretle
     masa.siparisler=(masa.siparisler||[]).map(s=>s.musteri?{...s,musteri:false,mutfak_teslim:true}:s);
     masa.mutfak_durum=null; masa.mutfak_zaman=null;
