@@ -5373,6 +5373,29 @@ function garsonPerfRender(stats) {
         <div style="font-weight:900;font-size:0.82rem;font-family:'Space Mono',monospace;color:var(--accent2);white-space:nowrap;margin-left:10px;">${fmt(a.katkiCiro)}</div>
       </div>`;
     }).join('');
+    let hedefHtml = '';
+    if (_gpDonem === 'ay') {
+      const gAyar = (garsonlar||[]).find(x => x && x.isim === g.isim);
+      if (gAyar && gAyar.hedef > 0) {
+        const yuzde = Math.min(100, Math.round((g.ciro / gAyar.hedef) * 100));
+        const barRenk = yuzde >= 100 ? '#3db85a' : 'var(--accent)';
+        const primYuzdesi = gAyar.primYuzdesi > 0 ? gAyar.primYuzdesi : 0;
+        const hedefUstu = Math.max(0, g.ciro - gAyar.hedef);
+        const tahminiPrim = hedefUstu * (primYuzdesi / 100);
+        hedefHtml = `
+      <div style="margin-bottom:10px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);font-weight:800;margin-bottom:5px;">
+          <span>🎯 HEDEF: ${fmt(gAyar.hedef)}₺</span><span>%${yuzde}</span>
+        </div>
+        <div style="background:var(--surface3);border-radius:20px;height:8px;overflow:hidden;">
+          <div style="width:${yuzde}%;height:100%;background:${barRenk};border-radius:20px;"></div>
+        </div>
+        ${primYuzdesi > 0 ? (hedefUstu > 0
+          ? `<div style="font-size:0.7rem;color:#3db85a;font-weight:800;margin-top:6px;">💰 Tahmini Prim: ${fmt(tahminiPrim)}₺ (Hedef üstü: ${fmt(hedefUstu)}₺ × %${primYuzdesi})</div>`
+          : `<div style="font-size:0.7rem;color:var(--muted);font-weight:700;margin-top:6px;">💰 Tahmini Prim: —</div>`) : ''}
+      </div>`;
+      }
+    }
     const kart = document.createElement('div');
     kart.style.cssText = 'background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid var(--border);';
     kart.innerHTML = `
@@ -5389,6 +5412,7 @@ function garsonPerfRender(stats) {
           <div style="font-size:0.65rem;color:var(--muted);">toplam ciro</div>
         </div>
       </div>
+      ${hedefHtml}
       ${g.tumUrunler.length > 0 ? `
         <div style="margin-bottom:10px;border-top:1px solid var(--border);padding-top:10px;">
           <div style="font-size:0.62rem;color:var(--muted);font-weight:800;letter-spacing:0.5px;margin-bottom:7px;">SATTIĞI TÜM ÜRÜNLER — ${g.tumUrunler.length} çeşit</div>
@@ -10844,6 +10868,13 @@ function garsonAyarListeRender(){
           style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
         <button class="gb-pin-kaydet" data-i="${i}" style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">Kaydet</button>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <input type="number" class="gb-hedef" data-i="${i}" value="${g.hedef||''}" placeholder="🎯 Hedef (₺/ay)" min="0" inputmode="decimal"
+          style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
+        <input type="number" class="gb-prim" data-i="${i}" value="${g.primYuzdesi||''}" placeholder="% Prim" min="0" max="100" inputmode="decimal"
+          style="width:90px;background:var(--surface3);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
+        <button class="gb-hedef-kaydet" data-i="${i}" style="padding:7px 12px;border-radius:8px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">Kaydet</button>
+      </div>
       <div style="font-size:0.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🔐 Yetkiler</div>
       <div class="gb-yetkiler" data-i="${i}" style="display:flex;flex-wrap:wrap;gap:6px;">
         ${tumYetkiler.map(y => `
@@ -10884,6 +10915,17 @@ function garsonAyarListeRender(){
       const i=parseInt(btn.dataset.i);
       const pin=el.querySelector('.gb-pin[data-i="'+i+'"]').value.trim();
       garsonlar[i].pin=pin; bulutKaydet(); toast('✓ PIN güncellendi: '+garsonlar[i].isim);
+    });
+  });
+  el.querySelectorAll('.gb-hedef-kaydet').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const i=parseInt(btn.dataset.i);
+      const hedef=parseFloat(el.querySelector('.gb-hedef[data-i="'+i+'"]').value);
+      const prim=parseFloat(el.querySelector('.gb-prim[data-i="'+i+'"]').value);
+      garsonlar[i].hedef = (!isNaN(hedef) && hedef>0) ? hedef : null;
+      garsonlar[i].primYuzdesi = (!isNaN(prim) && prim>0) ? prim : null;
+      bulutKaydet();
+      toast('✓ Hedef/Prim güncellendi: '+garsonlar[i].isim);
     });
   });
   // Yetki checkbox değişince kaydet
