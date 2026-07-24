@@ -2639,7 +2639,10 @@
     </div>
 
     <div class="ayar-kart">
-      <h3>Garsonlar</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h3 style="margin:0;">Garsonlar</h3>
+        <button onclick="tumGarsonlariYenile()" title="Tüm garson ekranlarına yenileme sinyali gönder" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;">🔄 Tüm Garsonları Yenile</button>
+      </div>
       <div id="garson-ayar-liste"></div>
       <div style="display:flex;gap:7px;margin-top:8px;">
         <input type="text" id="yeni-garson-ayar" placeholder="Garson adı..." style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;">
@@ -4302,6 +4305,21 @@ async function garsonGiris(isim, kafeData) {
       await vardiyayukle();
     })
     .subscribe();
+
+  // Kumanda kanalı — sahip "Oturumu Kapat" / "Tüm Garsonları Yenile" gönderirse buradan alınır
+  if (window._kumandaKanal) { try { sb.removeChannel(window._kumandaKanal); } catch(e){} }
+  window._kumandaKanal = sb.channel('kumanda-'+kafeId)
+    .on('broadcast', {event:'zorla_cikis'}, ({payload}) => {
+      if (payload && payload.isim === aktifGarsonAdi) {
+        toast('⛔ Oturumunuz kapatıldı');
+        setTimeout(() => garsonCikis(), 800);
+      }
+    })
+    .on('broadcast', {event:'zorla_yenile'}, () => {
+      toast('🔄 Güncelleniyor...');
+      setTimeout(() => location.reload(), 500);
+    })
+    .subscribe();
 }
 
 // ════════════════════════════════════════
@@ -4537,6 +4555,10 @@ async function uygulamaBaslat(user) {
     } catch(e) {}
     finally { _isPolling = false; }
   }, 3000);
+
+  // Kumanda kanalı — "Oturumu Kapat" / "Tüm Garsonları Yenile" göndermek için
+  if (window._kumandaKanal) { try { sb.removeChannel(window._kumandaKanal); } catch(e){} }
+  window._kumandaKanal = sb.channel('kumanda-'+kafeId).subscribe();
 }
 
 
@@ -10746,6 +10768,17 @@ async function kuponKontrol() {
   }
 }
 
+function garsonZorlaCikis(isim){
+  if (!window._kumandaKanal) return;
+  window._kumandaKanal.send({type:'broadcast', event:'zorla_cikis', payload:{isim}});
+}
+function tumGarsonlariYenile(){
+  if (!window._kumandaKanal) return;
+  window._kumandaKanal.send({type:'broadcast', event:'zorla_yenile', payload:{}});
+  toast('🔄 Tüm garsonlara yenileme sinyali gönderildi');
+}
+window.tumGarsonlariYenile = tumGarsonlariYenile;
+
 function garsonAyarListeRender(){
   const el=document.getElementById('garson-ayar-liste'); el.innerHTML='';
   if (garsonModu) {
@@ -10785,6 +10818,7 @@ function garsonAyarListeRender(){
         <span style="font-weight:800;font-size:0.92rem;">${g.aktif ? '🟢' : '🔴'} ${g.isim}</span>
         <div style="display:flex;gap:6px;">
           <button class="gb-toggle" data-i="${i}" style="padding:4px 10px;border-radius:8px;border:none;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;background:${g.aktif ? '#3db85a22' : '#e0404022'};color:${g.aktif ? '#3db85a' : '#e04040'};">${g.aktif ? 'Pasif Yap' : 'Aktif Yap'}</button>
+          <button class="gb-oturum-kapat" data-i="${i}" title="Oturumu anlık kapat" style="padding:4px 10px;border-radius:8px;border:none;background:#7c3aed22;color:#7c3aed;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">🚪 Oturumu Kapat</button>
           <button class="gb-sil" data-i="${i}" style="padding:4px 10px;border-radius:8px;border:none;background:#e0404022;color:#e04040;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">Sil</button>
         </div>
       </div>
@@ -10809,8 +10843,16 @@ function garsonAyarListeRender(){
     btn.addEventListener('click',()=>{
       const i=parseInt(btn.dataset.i);
       garsonlar[i].aktif = !garsonlar[i].aktif;
+      if (!garsonlar[i].aktif) garsonZorlaCikis(garsonlar[i].isim);
       garsonAyarListeRender(); bulutKaydet();
       toast(garsonlar[i].aktif ? '✓ '+garsonlar[i].isim+' aktif edildi' : '⛔ '+garsonlar[i].isim+' pasif yapıldı');
+    });
+  });
+  el.querySelectorAll('.gb-oturum-kapat').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const i=parseInt(btn.dataset.i);
+      garsonZorlaCikis(garsonlar[i].isim);
+      toast('🚪 '+garsonlar[i].isim+' oturumu kapatma sinyali gönderildi');
     });
   });
   el.querySelectorAll('.gb-sil').forEach(btn=>{
@@ -11275,6 +11317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ['nav-recete', 'recete'],
     ['nav-ayarlar', 'ayarlar'],
     ['nav-ai', 'ai'],
+    ['nav-garsonperf', 'garsonperf'],
   ];
   navBtnler.forEach(([id, sayfa]) => {
     const btn = document.getElementById(id);
@@ -14953,8 +14996,16 @@ window.masaSilOnay = masaSilOnay;
         const _kafeData = JSON.parse(_ssGarsonData);
         const {data: tazeData} = await sb.from('kafeler')
           .select('*').eq('id', _kafeData.id).maybeSingle();
-        await garsonGiris(_ssGarsonIsim, tazeData || _kafeData);
-        return;
+        const _guncelVeri = tazeData || _kafeData;
+        const _guncelGarson = (_guncelVeri.garsonlar||[]).find(g => (typeof g==='string'?g:g.isim) === _ssGarsonIsim);
+        const _halaAktif = !_guncelGarson || typeof _guncelGarson === 'string' || _guncelGarson.aktif !== false;
+        if (_halaAktif) {
+          await garsonGiris(_ssGarsonIsim, _guncelVeri);
+          return;
+        }
+        sessionStorage.removeItem('kc_garson_isim');
+        sessionStorage.removeItem('kc_garson_kafe_id');
+        sessionStorage.removeItem('kc_garson_kafe_data');
       } catch(e) {
         sessionStorage.removeItem('kc_garson_isim');
         sessionStorage.removeItem('kc_garson_kafe_id');
