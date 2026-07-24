@@ -64,6 +64,9 @@
   .hstat span { color: var(--accent2); }
   /* Mobilede hstat'ları gizle */
   @media (max-width: 640px) { .hstat { display: none; } }
+  .hstat-mask { display: none; letter-spacing: 1px; }
+  .header-stats.tutar-gizli #hstat-acik, .header-stats.tutar-gizli #hstat-ciro { display: none; }
+  .header-stats.tutar-gizli .hstat-mask { display: inline; }
   .cikis-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; cursor: pointer; white-space: nowrap; }
   .vardiya-btn { display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid;font-family:'Nunito',sans-serif;font-size:0.7rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap; }
   .vardiya-btn.kapali { background:#e0404015;border-color:#e0404060;color:#e04040; }
@@ -896,12 +899,13 @@
       <div class="header-kafe" id="header-garson-adi" style="display:none;color:var(--accent);"></div>
     </div>
   </div>
-  <div class="header-stats">
+  <div class="header-stats tutar-gizli">
     <span id="header-plan-badge" onclick="sayfaGit('odeme')" style="display:none;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;font-family:'Space Mono',monospace;border:1px solid;margin-right:4px;cursor:pointer;"></span>
     <span id="kayit-durum" style="display:none;font-size:0.68rem;font-weight:700;color:var(--muted);font-family:'Space Mono',monospace;"></span>
     <div class="hstat">Dolu: <span id="hstat-dolu">0/—</span></div>
-    <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span></div>
-    <div class="hstat">Vardiya: <span id="hstat-ciro">0₺</span></div>
+    <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span><span class="hstat-mask" style="color:#3db85a;">•••₺</span></div>
+    <div class="hstat">Vardiya: <span id="hstat-ciro">0₺</span><span class="hstat-mask">•••₺</span></div>
+    <button class="cikis-btn" id="hstat-goz-btn" onclick="hstatGozToggle()" title="Tutarları göster/gizle">👁</button>
     <button class="vardiya-btn kapali" id="vardiya-btn" onclick="vardiyaToggle()">
       <span id="vardiya-dot">⏸</span><span id="vardiya-btn-text">Vardiya Başlat</span>
     </button>
@@ -3223,6 +3227,16 @@
     </div>
     <button onclick="indirimUygulaManuel()" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:7px;">✓ Uygula</button>
     <button onclick="indirimKaldir()" style="width:100%;padding:9px;border-radius:11px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:7px;">✕ İndirimi Kaldır</button>
+
+    <div style="border-top:1px solid var(--border);margin:4px 0 11px;padding-top:11px;">
+      <div style="font-size:0.7rem;color:var(--text2);font-weight:700;margin-bottom:7px;text-align:center;">veya ₺ TUTAR İNDİRİMİ</div>
+      <div style="display:flex;gap:7px;margin-bottom:11px;align-items:center;">
+        <span style="font-size:1rem;font-weight:900;color:var(--accent2);">₺</span>
+        <input type="number" id="indirim-tutar-input" min="0" step="0.01" placeholder="0" inputmode="decimal" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:800;outline:none;text-align:center;">
+      </div>
+      <button onclick="indirimTutarUygula()" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;">✓ ₺ İndirim Uygula</button>
+    </div>
+
     <button onclick="modalKapat('indirim-modal')" class="modal-kapat">İptal</button>
   </div>
 </div>
@@ -7318,10 +7332,33 @@ function masaHesapIste(masaId) {
   toast(m.hesap_istendi ? '💳 Hesap istendi işaretlendi' : 'Hesap istendi kaldırıldı');
 }
 
-function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=getMasa().indirim||'';modalAc('indirim-modal');}
-function indirimUygula(oran){if(!seciliMasa) return;getMasa().indirim=oran;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
+function indirimGoster(){if(!seciliMasa) return;document.getElementById('indirim-input').value=getMasa().indirim||'';document.getElementById('indirim-tutar-input').value='';modalAc('indirim-modal');}
+function indirimUygula(oran){if(!seciliMasa) return;const m=getMasa();if(!m)return;m.indirim=oran;masaSyncYaz(m.id);modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('✓ %'+oran+' indirim uygulandı');}
 function indirimUygulaManuel(){const v=parseInt(document.getElementById('indirim-input').value);if(isNaN(v)||v<0||v>100){toast('0-100 arası girin!');return;}indirimUygula(v);}
-function indirimKaldir(){if(!seciliMasa) return;getMasa().indirim=0;modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
+function indirimKaldir(){if(!seciliMasa) return;const m=getMasa();if(!m)return;m.indirim=0;masaSyncYaz(m.id);modalKapat('indirim-modal');kolaycafenGuncelle();siparisListeRender();toast('İndirim kaldırıldı');}
+function indirimTutarUygula(){
+  if(!seciliMasa) return;
+  const m=getMasa(); if(!m) return;
+  const tutar=parseFloat(document.getElementById('indirim-tutar-input').value);
+  const ham=masaToplam(m);
+  if(isNaN(tutar)||tutar<=0){ toast('Geçerli bir tutar girin!'); return; }
+  if(ham<=0){ toast('KolayCafen boş!'); return; }
+  if(tutar>ham){ toast('İndirim tutarı hesap toplamından büyük olamaz!'); return; }
+  m.indirim=(tutar/ham)*100;
+  masaSyncYaz(m.id);
+  modalKapat('indirim-modal');
+  kolaycafenGuncelle();
+  siparisListeRender();
+  toast('✓ '+fmt(tutar)+'₺ indirim uygulandı');
+}
+let _hstatTutarGizli = true;
+function hstatGozToggle(){
+  _hstatTutarGizli = !_hstatTutarGizli;
+  const wrap = document.querySelector('.header-stats');
+  if (wrap) wrap.classList.toggle('tutar-gizli', _hstatTutarGizli);
+  const btn = document.getElementById('hstat-goz-btn');
+  if (btn) btn.textContent = _hstatTutarGizli ? '👁' : '🙈';
+}
 
 function mutfagaGonderMasa() {
   const m = getMasa();
@@ -12495,6 +12532,8 @@ window.garsonEkleAyar = garsonEkleAyar;
 window.indirimUygula = indirimUygula;
 window.indirimUygulaManuel = indirimUygulaManuel;
 window.indirimKaldir = indirimKaldir;
+window.indirimTutarUygula = indirimTutarUygula;
+window.hstatGozToggle = hstatGozToggle;
 window.modalKapat = modalKapat;
 window.modalAc = modalAc;
 window.sayfaGit = sayfaGit;
