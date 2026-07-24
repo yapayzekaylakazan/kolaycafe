@@ -906,6 +906,7 @@
     <div class="hstat" title="Açık masalardaki toplam tutar">Açık: <span id="hstat-acik" style="color:#3db85a;">0₺</span><span class="hstat-mask" style="color:#3db85a;">•••₺</span></div>
     <div class="hstat">Vardiya: <span id="hstat-ciro">0₺</span><span class="hstat-mask">•••₺</span></div>
     <button class="cikis-btn" id="hstat-goz-btn" onclick="hstatGozToggle()" title="Tutarları göster/gizle">👁</button>
+    <button class="cikis-btn" id="izin-talep-btn" onclick="izinTalebiGoster()" title="İzin Talebi" style="display:none;">📅 İzin</button>
     <button class="vardiya-btn kapali" id="vardiya-btn" onclick="vardiyaToggle()">
       <span id="vardiya-dot">⏸</span><span id="vardiya-btn-text">Vardiya Başlat</span>
     </button>
@@ -2648,6 +2649,12 @@
         <input type="text" id="yeni-garson-ayar" placeholder="Garson adı..." style="flex:1;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:600;outline:none;">
         <button onclick="garsonEkleAyar()" style="padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">+</button>
       </div>
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px;">
+        <div style="font-size:0.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 İzin Talepleri</div>
+        <div id="izin-bekleyen-liste"></div>
+        <button onclick="izinGecmisToggle()" id="izin-gecmis-btn" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface3);color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.73rem;font-weight:800;cursor:pointer;margin-top:8px;">🕓 Geçmiş Talepler ▼</button>
+        <div id="izin-gecmis-liste" style="display:none;margin-top:8px;"></div>
+      </div>
     </div>
     <!-- Mutfak Ekranı -->
     <div class="ayar-kart">
@@ -3249,6 +3256,33 @@
     </div>
 
     <button onclick="modalKapat('indirim-modal')" class="modal-kapat">İptal</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="izin-talep-modal">
+  <div class="modal" style="max-width:360px;max-height:85vh;overflow-y:auto;">
+    <div class="modal-baslik">📅 İzin Talebi</div>
+    <div style="display:flex;gap:7px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:4px;">Başlangıç</div>
+        <input type="date" id="izin-baslangic" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-bottom:4px;">Bitiş</div>
+        <input type="date" id="izin-bitis" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;outline:none;">
+      </div>
+    </div>
+    <div style="display:flex;gap:7px;margin-bottom:10px;">
+      <button class="izin-tip-btn" data-tip="tam_gun" onclick="izinTipSec('tam_gun',this)" style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--accent);background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">Tam Gün</button>
+      <button class="izin-tip-btn" data-tip="yarim_gun" onclick="izinTipSec('yarim_gun',this)" style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;">Yarım Gün</button>
+    </div>
+    <textarea id="izin-aciklama" placeholder="Açıklama (opsiyonel)" rows="2" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:600;outline:none;resize:vertical;margin-bottom:10px;"></textarea>
+    <button onclick="izinTalebiGonder()" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:900;cursor:pointer;margin-bottom:12px;">✓ Talebi Gönder</button>
+
+    <div style="font-size:0.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;border-top:1px solid var(--border);padding-top:10px;">📋 Taleplerim</div>
+    <div id="izin-liste" style="max-height:220px;overflow-y:auto;"></div>
+
+    <button onclick="modalKapat('izin-talep-modal')" class="modal-kapat" style="margin-top:10px;">Kapat</button>
   </div>
 </div>
 
@@ -4127,6 +4161,9 @@ async function garsonGiris(isim, kafeData) {
   // Garson çıkış butonu her zaman göster
   const gCikis = document.getElementById('nav-garson-cikis');
   if (gCikis) gCikis.style.display = 'flex';
+  // İzin talebi butonu sadece garson modunda görünür
+  const izinBtn = document.getElementById('izin-talep-btn');
+  if (izinBtn) izinBtn.style.display = 'inline-block';
   // Header çıkış gizle
   const _hcBtn = document.getElementById('header-cikis-btn');
   if (_hcBtn) _hcBtn.style.display = 'none';
@@ -4564,9 +4601,17 @@ async function uygulamaBaslat(user) {
     finally { _isPolling = false; }
   }, 3000);
 
-  // Kumanda kanalı — "Oturumu Kapat" / "Tüm Garsonları Yenile" göndermek için
+  // Kumanda kanalı — "Oturumu Kapat" / "Tüm Garsonları Yenile" göndermek + yeni izin talebi bildirimi almak için
   if (window._kumandaKanal) { try { sb.removeChannel(window._kumandaKanal); } catch(e){} }
-  window._kumandaKanal = sb.channel('kumanda-'+kafeId).subscribe();
+  window._kumandaKanal = sb.channel('kumanda-'+kafeId)
+    .on('broadcast', {event:'yeni_izin_talebi'}, ({payload}) => {
+      toast('📅 ' + (payload?.garson_isim || 'Bir garson') + ' izin talebi gönderdi');
+      const ayarlarSayfa = document.getElementById('page-ayarlar');
+      if (ayarlarSayfa && ayarlarSayfa.classList.contains('active')) {
+        izinAyarListeYukle();
+      }
+    })
+    .subscribe();
 }
 
 
@@ -5657,7 +5702,7 @@ function sayfaGit(sayfa) {
   if (sayfa==='recete') { if(typeof receteListeRender==='function') receteListeRender(); }
   if (sayfa==='online') { onlineSiparisYukle(); onlineListeRender(); }
   if (sayfa==='kolaycafen') kolaycafenGuncelle();
-  if (sayfa==='ayarlar') { ayarlarRender(); masaGrupListeRender(); rezervasyonlariYukle(); }
+  if (sayfa==='ayarlar') { ayarlarRender(); masaGrupListeRender(); rezervasyonlariYukle(); izinAyarListeYukle(); }
   if (sayfa==='ai') aiSayfaAc();
   if (sayfa==='odeme') { odemeBaslangic(); return; }
   if (sayfa==='gelal') { gelAlTabSec('aktif'); gelAlRender(); }
@@ -7425,6 +7470,167 @@ function hstatGozToggle(){
   if (wrap) wrap.classList.toggle('tutar-gizli', _hstatTutarGizli);
   const btn = document.getElementById('hstat-goz-btn');
   if (btn) btn.textContent = _hstatTutarGizli ? '👁' : '🙈';
+}
+
+// ════════════════════════════════════════
+// İZİN TALEP/ONAY — GARSON TARAFI
+// ════════════════════════════════════════
+let _izinSeciliTip = 'tam_gun';
+
+function izinTipSec(tip, btn) {
+  _izinSeciliTip = tip;
+  document.querySelectorAll('.izin-tip-btn').forEach(b => {
+    const aktif = b.dataset.tip === tip;
+    b.style.background = aktif ? 'var(--accent)' : 'var(--surface2)';
+    b.style.color = aktif ? '#1a0f00' : 'var(--muted)';
+    b.style.borderColor = aktif ? 'var(--accent)' : 'var(--border)';
+  });
+}
+
+function izinTalebiGoster() {
+  document.getElementById('izin-baslangic').value = '';
+  document.getElementById('izin-bitis').value = '';
+  document.getElementById('izin-aciklama').value = '';
+  izinTipSec('tam_gun', document.querySelector('.izin-tip-btn[data-tip="tam_gun"]'));
+  modalAc('izin-talep-modal');
+  izinListesiYukle();
+}
+
+async function izinTalebiGonder() {
+  const bas = document.getElementById('izin-baslangic').value;
+  const bit = document.getElementById('izin-bitis').value;
+  const aciklama = document.getElementById('izin-aciklama').value.trim();
+  if (!bas || !bit) { toast('Başlangıç ve bitiş tarihi girin!'); return; }
+  if (bit < bas) { toast('Bitiş tarihi başlangıçtan önce olamaz!'); return; }
+  try {
+    const { error } = await sb.from('izin_talepleri').insert({
+      kafe_id: kafeId,
+      garson_isim: aktifGarsonAdi,
+      baslangic_tarih: bas,
+      bitis_tarih: bit,
+      tip: _izinSeciliTip,
+      aciklama: aciklama || null
+    });
+    if (error) throw error;
+    if (window._kumandaKanal) {
+      window._kumandaKanal.send({type:'broadcast', event:'yeni_izin_talebi', payload:{
+        garson_isim: aktifGarsonAdi, baslangic_tarih: bas, bitis_tarih: bit
+      }});
+    }
+    toast('✓ İzin talebiniz gönderildi');
+    document.getElementById('izin-baslangic').value = '';
+    document.getElementById('izin-bitis').value = '';
+    document.getElementById('izin-aciklama').value = '';
+    izinListesiYukle();
+  } catch(e) {
+    toast('Talep gönderilemedi: ' + e.message);
+  }
+}
+
+async function izinListesiYukle() {
+  const el = document.getElementById('izin-liste');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:0.78rem;">⏳ Yükleniyor...</div>';
+  try {
+    const { data, error } = await sb.from('izin_talepleri')
+      .select('*')
+      .eq('kafe_id', kafeId)
+      .eq('garson_isim', aktifGarsonAdi)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:0.78rem;">Henüz izin talebiniz yok.</div>';
+      return;
+    }
+    const durumRenk = { bekliyor:'#f0b940', onaylandi:'#3db85a', reddedildi:'#e04040' };
+    const durumEtiket = { bekliyor:'⏳ Bekliyor', onaylandi:'✓ Onaylandı', reddedildi:'✕ Reddedildi' };
+    el.innerHTML = data.map(t => `
+      <div style="background:var(--surface2);border-radius:9px;padding:9px 11px;margin-bottom:6px;border-left:3px solid ${durumRenk[t.durum]||'var(--border)'};">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:0.78rem;font-weight:800;">${t.baslangic_tarih} → ${t.bitis_tarih}</span>
+          <span style="font-size:0.65rem;font-weight:800;color:${durumRenk[t.durum]||'var(--muted)'};">${durumEtiket[t.durum]||t.durum}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);">${t.tip === 'yarim_gun' ? 'Yarım Gün' : 'Tam Gün'}${t.aciklama ? ' · ' + t.aciklama : ''}</div>
+        ${t.cevap_notu ? `<div style="font-size:0.66rem;color:var(--text2);margin-top:3px;">📝 ${t.cevap_notu}</div>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);font-size:0.78rem;padding:8px;">Yüklenemedi: ' + e.message + '</div>';
+  }
+}
+
+// ════════════════════════════════════════
+// İZİN TALEP/ONAY — SAHİP TARAFI
+// ════════════════════════════════════════
+function izinBekleyenSatir(t) {
+  return `<div style="background:var(--surface2);border-radius:9px;padding:9px 11px;margin-bottom:6px;border-left:3px solid #f0b940;">
+    <div style="font-size:0.78rem;font-weight:800;margin-bottom:2px;">👤 ${t.garson_isim}</div>
+    <div style="font-size:0.72rem;color:var(--text2);margin-bottom:2px;">${t.baslangic_tarih} → ${t.bitis_tarih} · ${t.tip==='yarim_gun'?'Yarım Gün':'Tam Gün'}</div>
+    ${t.aciklama ? `<div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">📝 ${t.aciklama}</div>` : ''}
+    <div style="display:flex;gap:6px;">
+      <button onclick="izinTalebiCevapla('${t.id}','onaylandi')" style="flex:1;padding:6px;border-radius:7px;border:none;background:#3db85a22;color:#3db85a;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;">✓ Onayla</button>
+      <button onclick="izinTalebiCevapla('${t.id}','reddedildi')" style="flex:1;padding:6px;border-radius:7px;border:none;background:#e0404022;color:#e04040;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;">✕ Reddet</button>
+    </div>
+  </div>`;
+}
+
+function izinGecmisSatir(t) {
+  const renk = t.durum === 'onaylandi' ? '#3db85a' : '#e04040';
+  const etiket = t.durum === 'onaylandi' ? '✓ Onaylandı' : '✕ Reddedildi';
+  return `<div style="background:var(--surface2);border-radius:9px;padding:8px 11px;margin-bottom:6px;border-left:3px solid ${renk};">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+      <span style="font-size:0.76rem;font-weight:800;">👤 ${t.garson_isim}</span>
+      <span style="font-size:0.65rem;font-weight:800;color:${renk};">${etiket}</span>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text2);">${t.baslangic_tarih} → ${t.bitis_tarih} · ${t.tip==='yarim_gun'?'Yarım Gün':'Tam Gün'}</div>
+  </div>`;
+}
+
+async function izinAyarListeYukle() {
+  const bekleyenEl = document.getElementById('izin-bekleyen-liste');
+  const gecmisEl = document.getElementById('izin-gecmis-liste');
+  if (!bekleyenEl || !kafeId) return;
+  try {
+    const { data, error } = await sb.from('izin_talepleri')
+      .select('*')
+      .eq('kafe_id', kafeId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const liste = data || [];
+    const bekleyen = liste.filter(t => t.durum === 'bekliyor');
+    const gecmis = liste.filter(t => t.durum !== 'bekliyor');
+    bekleyenEl.innerHTML = bekleyen.length > 0
+      ? bekleyen.map(izinBekleyenSatir).join('')
+      : '<div style="font-size:0.76rem;color:var(--muted);padding:6px 0;">Bekleyen izin talebi yok.</div>';
+    if (gecmisEl) {
+      gecmisEl.innerHTML = gecmis.length > 0
+        ? gecmis.map(izinGecmisSatir).join('')
+        : '<div style="font-size:0.76rem;color:var(--muted);padding:6px 0;">Geçmiş talep yok.</div>';
+    }
+  } catch(e) {
+    bekleyenEl.innerHTML = '<div style="color:var(--danger);font-size:0.76rem;">Yüklenemedi: ' + e.message + '</div>';
+  }
+}
+
+async function izinTalebiCevapla(id, durum) {
+  try {
+    const { error } = await sb.from('izin_talepleri')
+      .update({ durum, cevaplanma_tarihi: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    toast(durum === 'onaylandi' ? '✓ Talep onaylandı' : '✕ Talep reddedildi');
+    izinAyarListeYukle();
+  } catch(e) {
+    toast('İşlem başarısız: ' + e.message);
+  }
+}
+
+function izinGecmisToggle() {
+  const el = document.getElementById('izin-gecmis-liste');
+  const btn = document.getElementById('izin-gecmis-btn');
+  if (!el) return;
+  const acik = el.style.display !== 'none';
+  el.style.display = acik ? 'none' : 'block';
+  if (btn) btn.textContent = acik ? '🕓 Geçmiş Talepler ▼' : '🕓 Geçmiş Talepleri Gizle ▲';
 }
 
 function mutfagaGonderMasa() {
@@ -12640,6 +12846,11 @@ window.indirimUygulaManuel = indirimUygulaManuel;
 window.indirimKaldir = indirimKaldir;
 window.indirimTutarUygula = indirimTutarUygula;
 window.hstatGozToggle = hstatGozToggle;
+window.izinTalebiGoster = izinTalebiGoster;
+window.izinTalebiGonder = izinTalebiGonder;
+window.izinTipSec = izinTipSec;
+window.izinTalebiCevapla = izinTalebiCevapla;
+window.izinGecmisToggle = izinGecmisToggle;
 window.modalKapat = modalKapat;
 window.modalAc = modalAc;
 window.sayfaGit = sayfaGit;
