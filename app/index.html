@@ -9649,6 +9649,7 @@ async function raporRenderTam() {
     let q = sb.from('kolaycafenlar').select('*')
       .eq('kafe_id', kafeId)
       .neq('odeme_tipi', 'cari_tahsil')
+      .neq('garson', '🌐 Online')  // online_siparisler'den ayrıca çekiliyor — mükerrer sayımı önle
       .order('created_at', {ascending: false});
     // Vardiya seçiliyse: o vardiyaya ait VEYA vardiya başlangıcından sonra yapılmış adisyonlar
     // (vardiya_id ile atananlar + created_at ile yakalanacaklar birleşimi)
