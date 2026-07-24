@@ -3135,7 +3135,15 @@
       <button class="gp-donem-tab" data-donem="gun" onclick="gpDonemSec('gun')" style="flex:1;padding:7px 3px;border:1.5px solid var(--accent);border-radius:20px;background:var(--accent);color:#1a0f00;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Bugün</button>
       <button class="gp-donem-tab" data-donem="hafta" onclick="gpDonemSec('hafta')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Hafta</button>
       <button class="gp-donem-tab" data-donem="ay" onclick="gpDonemSec('ay')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Ay</button>
+      <button class="gp-donem-tab" data-donem="yil" onclick="gpDonemSec('yil')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Yıl</button>
       <button class="gp-donem-tab" data-donem="tum" onclick="gpDonemSec('tum')" style="flex:1;padding:7px 3px;border:1.5px solid var(--border);border-radius:20px;background:none;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;cursor:pointer;">Tümü</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+      <select id="gp-sirala-sec" onchange="gpSiralamaSec(this.value)" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text2);font-family:'Nunito',sans-serif;font-size:0.7rem;font-weight:700;">
+        <option value="ciro">Sırala: Ciro</option>
+        <option value="adisyon">Sırala: Adisyon Sayısı</option>
+        <option value="ortHesap">Sırala: Ort. Fiş</option>
+      </select>
     </div>
   </div>
   <div style="padding:12px;">
@@ -5283,6 +5291,11 @@ function _garsonKatkiDagit(adisyonlar) {
 }
 
 let _gpDonem = 'gun';
+let _gpSirala = 'ciro';
+function gpSiralamaSec(kriter) {
+  _gpSirala = kriter;
+  garsonPerfYukle();
+}
 
 function garsonPerfHesapla(adisyonlar) {
   const perf = _garsonKatkiDagit(adisyonlar);
@@ -5329,7 +5342,7 @@ function garsonPerfHesapla(adisyonlar) {
       tumUrunler: Object.entries(d.urunler).sort((a, b) => b[1] - a[1]).map(([isim, adet]) => ({ isim, adet })),
       adisyonListesi: (adisyonListe[isim] || []).sort((a, b) => b.ts - a.ts)
     }))
-    .sort((a, b) => b.ciro - a.ciro);
+    .sort((a, b) => b[_gpSirala] - a[_gpSirala]);
 }
 
 function garsonPerfRender(stats) {
@@ -5418,7 +5431,11 @@ async function garsonPerfYukle() {
         .order('created_at', { ascending: false });
       if (_gpDonem !== 'tum') {
         const bas = new Date();
-        bas.setDate(bas.getDate() - (_gpDonem === 'hafta' ? 7 : 30));
+        if (_gpDonem === 'yil') {
+          bas.setFullYear(bas.getFullYear() - 1);
+        } else {
+          bas.setDate(bas.getDate() - (_gpDonem === 'hafta' ? 7 : 30));
+        }
         bas.setHours(0, 0, 0, 0);
         sorgu = sorgu.gte('created_at', bas.toISOString());
       }
