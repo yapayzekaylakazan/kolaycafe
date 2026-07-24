@@ -6481,7 +6481,7 @@ function siparisListeRender() {
   }
   const ham=masaToplam(m), ind=m.indirim||0, son=ham*(1-ind/100);
   const oncEl=document.getElementById('toplam-onceki');
-  if(ind>0){oncEl.style.display='block';oncEl.textContent=fmt(ham);document.getElementById('toplam-tutar').textContent=fmt(son)+' (-%'+ind+')';}
+  if(ind>0){oncEl.style.display='block';oncEl.textContent=fmt(ham);document.getElementById('toplam-tutar').textContent=fmt(son)+' (-%'+indirimYuzdeStr(ind)+')';}
   else{oncEl.style.display='none';document.getElementById('toplam-tutar').textContent=fmt(ham);}
   // PC modda ürün kartlarındaki adet rozetlerini güncelle
   if (document.body.classList.contains('pc-mod')) {
@@ -7350,6 +7350,10 @@ function indirimTutarUygula(){
   kolaycafenGuncelle();
   siparisListeRender();
   toast('✓ '+fmt(tutar)+'₺ indirim uygulandı');
+}
+function indirimYuzdeStr(ind){
+  const y = Math.round((ind||0)*10)/10;
+  return (y % 1 === 0) ? String(y) : String(y);
 }
 let _hstatTutarGizli = true;
 function hstatGozToggle(){
@@ -8859,7 +8863,7 @@ function raporRender_legacy(){
         ${gelal ? '<div style="font-size:0.65rem;font-weight:800;color:var(--accent2);letter-spacing:1px;margin-bottom:4px;">🛍️ GEL-AL SİPARİŞİ</div>' : ''}
         <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
           <span style="font-weight:800;font-size:0.9rem;">${gelal?'👤':'🪑'} ${a.masaAd||'Masa '+a.masa} <span style="font-size:0.7rem;color:var(--muted);">· ${saat}</span></span>
-          <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${a.indirim}</span>`:''}</span>
+          <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${indirimYuzdeStr(a.indirim)}</span>`:''}</span>
         </div>
         ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 Garson: ${garsonAdiAl(a.garson)}</div>`:''}
         ${gelal&&a.not?`<div style="font-size:0.68rem;color:var(--muted);margin-bottom:2px;">📝 ${a.not}</div>`:''}
@@ -9570,7 +9574,7 @@ async function raporRenderTam() {
             ${gelal?'<div style="font-size:0.65rem;font-weight:800;color:var(--accent2);letter-spacing:1px;margin-bottom:4px;">🛍️ GEL-AL SİPARİŞİ</div>':''}
             <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
               <span style="font-weight:800;font-size:0.9rem;">${gelal?'👤':'🪑'} ${a.masaAd||'Masa '+a.masa} <span style="font-size:0.7rem;color:var(--muted);">· ${saat}</span></span>
-              <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${a.indirim}</span>`:''}</span>
+              <span style="font-weight:900;color:var(--accent2);">${fmt(a.toplam)}${a.indirim?`<span class="indirim-chip">-%${indirimYuzdeStr(a.indirim)}</span>`:''}</span>
             </div>
             ${a.garson?`<div style="font-size:0.68rem;color:var(--accent);font-weight:700;margin-bottom:2px;">👤 ${garsonAdiAl(a.garson)}</div>`:''}
             <div style="font-size:0.73rem;color:var(--text2);margin-bottom:4px;">${urunOzet}</div>
@@ -11013,7 +11017,7 @@ function fisGoster(masaNo,tarih,siparisler,toplam,garsonAdi='',indirim=0,masaAd=
     <div class="fis-row" style="font-size:10px;color:#888;"><span>ÜRÜN</span><span>TUTAR</span></div>
     ${satirlar}
     <div class="fis-line"></div>
-    ${indirim?`<div class="fis-row" style="font-size:10px;color:#888;"><span>İndirim</span><span>-%${indirim}</span></div>`:''}
+    ${indirim?`<div class="fis-row" style="font-size:10px;color:#888;"><span>İndirim</span><span>-%${indirimYuzdeStr(indirim)}</span></div>`:''}
     <div class="fis-row" style="font-size:13px;"><strong>TOPLAM</strong><strong>${fmt(toplam)}</strong></div>
     <div class="fis-line"></div>
     ${masaNotu?`<div class="fis-center" style="font-size:10px;color:#555;margin-bottom:4px;">📝 Not: ${masaNotu}</div>`:''}
