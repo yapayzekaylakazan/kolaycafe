@@ -3654,6 +3654,37 @@ function _diagLog(olayTipi, masaId, kanal, zamanFarkiMs) {
     }).then(()=>{}).catch(()=>{});
   } catch(e) {}
 }
+// Aşama 2 — optimistic lock: aktif_masalar'a yapılan tüm yazmalar bu fonksiyondan geçmeli.
+// mutateFn(mevcutMasalar) -> yeniMasalar imzasıyla çağrılır; okunan versiyon değişmemişse
+// koşullu UPDATE ile yazar, uyuşmazlıkta veriyi taze okuyup mutateFn'i yeniden uygulayarak retry eder.
+async function aktifMasalarYaz(kafeId, masaId, mutateFn) {
+  const MAX_DENEME = 3;
+  const baslangicZaman = Date.now();
+  for (let deneme = 0; deneme < MAX_DENEME; deneme++) {
+    const { data: mevcut, error: okumaHata } = await sb.from('kafeler')
+      .select('aktif_masalar, versiyon').eq('id', kafeId).single();
+    if (okumaHata) throw okumaHata;
+
+    const okunanVersiyon = mevcut.versiyon;
+    const yeniMasalar = mutateFn(mevcut.aktif_masalar || []);
+
+    const { data: yazilan, error: yazmaHata } = await sb.from('kafeler')
+      .update({ aktif_masalar: yeniMasalar, versiyon: okunanVersiyon + 1 })
+      .eq('id', kafeId)
+      .eq('versiyon', okunanVersiyon)
+      .select('versiyon');
+
+    if (yazmaHata) throw yazmaHata;
+    if (yazilan && yazilan.length > 0) return yazilan[0]; // başarılı
+
+    // versiyon uyuşmadı — başka bir cihaz araya yazdı; tekrar dene
+    _diagLog('versiyon_carpismasi', masaId, 'aktifMasalarYaz', Date.now() - baslangicZaman);
+    await new Promise(r => setTimeout(r, 150 + Math.random() * 150)); // 150-300ms jitter
+  }
+
+  toast('⚠️ Bu masa başka bir cihazdan güncellendi, lütfen sayfayı yenileyin');
+  throw new Error('aktifMasalarYaz: versiyon çakışması 3 denemeden sonra çözülemedi');
+}
 let _isPolling = false;         // Polling çakışma koruması
 let _garsonCagriSesCtx = null;
 let _oncekiCagriler = {}; // masa id -> son çağrı saati
@@ -5123,6 +5154,18 @@ async function _masaSyncYazHemen(masaId) {
 
         if (kullanilacakSnapshot.length > 0) {
           const idx = aktif.findIndex(x=>x.id===masaId);
+          // GÖZLEM: bu yazma, aktif[idx]'in mevcut (DB-taze) siparisler'ini yerel snapshot'la
+          // TAMAMEN DEĞİŞTİRECEK (merge değil, overwrite). Başka bir cihazın DB'ye yazdığı ama
+          // bu cihazın henüz görmediği ürünler varsa, bu satırda sessizce kaybolur. Davranışı
+          // değiştirmiyoruz — sadece kayıp olacak ürün sayısını tespit edip loglayoruz.
+          if (idx >= 0) {
+            const dbSiparisler = aktif[idx].siparisler || [];
+            const yereldeVarKey = new Set(kullanilacakSnapshot.map(s => s.isim + '|' + s.fiyat));
+            const kaybolacakUrunler = dbSiparisler.filter(s => !yereldeVarKey.has(s.isim + '|' + s.fiyat));
+            if (kaybolacakUrunler.length > 0) {
+              _diagLog('ezme_riski', masaId, '_masaSyncYazHemen', kaybolacakUrunler.length);
+            }
+          }
           const masaData = {
             id: m.id, ad: m.ad, not: m.not||'',
             siparisler: kullanilacakSnapshot,
@@ -7023,39 +7066,29 @@ async function tahsilEt(odemeTipi, odemeDetay, musteriAdi, musteriId, cariTutar)
   // _yazmaSirasindaCalistir içinde read → filtrele → update, 3 deneme, aynı hata toast stili.
   try {
     await _yazmaSirasindaCalistir(async () => {
-      let deneme = 0;
-      while (deneme < 3) {
-        try {
-          // transferYap'taki gibi doğrudan oku — _masaSyncYazHemen'in ayrı snapshot/guard mantığına gerek yok
-          const {data, error: re} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-          if (re) throw re;
+      try {
+        // Aşama 2: retry + optimistic-lock mantığı artık aktifMasalarYaz içinde —
+        // burada tek satırlık read→filtrele→koşullu-yaz mutateFn'i veriyoruz.
+        await aktifMasalarYaz(kafeId, tahsilMasaId, (aktif) => (aktif || []).filter(x => x.id !== tahsilMasaId));
 
-          let aktif = data?.aktif_masalar || [];
-          // Kapatılan masayı listeden çıkar — transferYap'ın kaynak masayı kaldırmasıyla aynı satır
-          aktif = aktif.filter(x => x.id !== tahsilMasaId);
-
-          const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-          if (we) throw we;
-
-          // GÖZLEM: kapatma DB'ye gerçekten ne kadar sürede yazıldı — fix öncesi ~6-7sn'ydi, hedef ~1sn
-          _diagLog('kapatma_suresi', tahsilMasaId, 'tahsilEt', Date.now() - _kapatmaBaslangic);
-          // GÖZLEM: çok-cihazlı dirilme kanıtı — kapatma yazması başarılı olduktan 3sn sonra
-          // aynı masa DB'de hâlâ (yeniden) görünüyor mu diye TEK SEFER kontrol et. Başka bir
-          // cihazın stale "oku-değiştir-tümünü-yaz" yazması masayı geri getirmiş olabilir.
-          // Görünmüyorsa hiçbir şey loglama (gürültü olmasın).
-          setTimeout(async () => {
-            try {
-              const { data: vd } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-              const halaVar = (vd?.aktif_masalar || []).some(x => x.id === tahsilMasaId);
-              if (halaVar) _diagLog('resurrection_kanit', tahsilMasaId, 'post-write-verify', Date.now() - _kapatmaBaslangic);
-            } catch(e) {}
-          }, 3000);
-          break; // başarılı — DB artık gerçekten kapalı, gecikme yok
-        } catch(e) {
-          deneme++;
-          if (deneme < 3) await new Promise(r => setTimeout(r, 500 * deneme));
-          else toast('⚠️ Kapatma kaydedilemedi — ' + e.message);
-        }
+        // GÖZLEM: kapatma DB'ye gerçekten ne kadar sürede yazıldı — fix öncesi ~6-7sn'ydi, hedef ~1sn
+        _diagLog('kapatma_suresi', tahsilMasaId, 'tahsilEt', Date.now() - _kapatmaBaslangic);
+        // GÖZLEM: çok-cihazlı dirilme kanıtı — kapatma yazması başarılı olduktan 3sn sonra
+        // aynı masa DB'de hâlâ (yeniden) görünüyor mu diye TEK SEFER kontrol et. Başka bir
+        // cihazın stale "oku-değiştir-tümünü-yaz" yazması masayı geri getirmiş olabilir.
+        // Görünmüyorsa hiçbir şey loglama (gürültü olmasın).
+        setTimeout(async () => {
+          try {
+            const { data: vd } = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
+            const halaVar = (vd?.aktif_masalar || []).some(x => x.id === tahsilMasaId);
+            if (halaVar) _diagLog('resurrection_kanit', tahsilMasaId, 'post-write-verify', Date.now() - _kapatmaBaslangic);
+          } catch(e) {}
+        }, 3000);
+      } catch(e) {
+        // versiyon çakışmasında aktifMasalarYaz kendi uyarısını zaten gösterdi — çift toast basma;
+        // diğer hatalarda (ağ/izin vb.) eskisi gibi genel uyarı göster. Eski davranış gibi burada
+        // rethrow etmiyoruz — kolaycafenKaydet lokal kayıt olarak yine de devam eder.
+        if (!/versiyon çakışması/.test(e.message)) toast('⚠️ Kapatma kaydedilemedi — ' + e.message);
       }
     });
     await kolaycafenKaydet(kolaycafen);
@@ -7726,16 +7759,13 @@ async function transferYap(hedefId){
   kolaycafenGuncelle();
 
   await _yazmaSirasindaCalistir(async () => {
-    let deneme = 0;
-    while (deneme < 3) {
-      try {
-        const {data, error: re} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-        if (re) throw re;
-
-        let aktif = data?.aktif_masalar || [];
-
-        // Kaynak masayı kaldır
-        aktif = aktif.filter(x => x.id !== kid);
+    try {
+      // Aşama 2: kaynak (kid) çıkarma + hedef (hedefId) güncelleme TEK aktifMasalarYaz
+      // çağrısında, tek mutateFn içinde yapılıyor — iki ayrı çağrı olsaydı biri versiyon
+      // çakışmasıyla başarısız olup diğeri geçebilirdi, bu da kaynak/hedef arasında
+      // tutarsızlık penceresi açardı (retry + optimistic-lock artık aktifMasalarYaz içinde).
+      await aktifMasalarYaz(kafeId, kid, (aktif) => {
+        aktif = (aktif || []).filter(x => x.id !== kid);
 
         // Hedef masayı snapshot ile güncelle (DB'deki eski veriyle değil)
         const hidx = aktif.findIndex(x => x.id === hedefId);
@@ -7750,17 +7780,13 @@ async function transferYap(hedefId){
           mutfak_zaman: h.mutfak_zaman||null,
         };
         if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
+        return aktif;
+      });
 
-        const {error: we} = await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
-        if (we) throw we;
-
-        toast('↔ Masa ' + kid + ' → Masa ' + hedefId + ' ✓');
-        break;
-      } catch(e) {
-        deneme++;
-        if (deneme < 3) await new Promise(r => setTimeout(r, 500 * deneme));
-        else toast('⚠️ Transfer kaydedilemedi — ' + e.message);
-      }
+      toast('↔ Masa ' + kid + ' → Masa ' + hedefId + ' ✓');
+    } catch(e) {
+      // versiyon çakışmasında aktifMasalarYaz kendi uyarısını zaten gösterdi — çift toast basma
+      if (!/versiyon çakışması/.test(e.message)) toast('⚠️ Transfer kaydedilemedi — ' + e.message);
     }
   });
 
@@ -7838,21 +7864,21 @@ async function birlestirYap(hedefId){
   kolaycafenGuncelle();
 
   try {
-    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
-    let aktif = data?.aktif_masalar || [];
+    // Aşama 2: kaynak (kaynakId) çıkarma + hedef (hedefId) güncelleme TEK aktifMasalarYaz
+    // çağrısında, tek mutateFn içinde — transferYap'taki aynı tutarlılık gerekçesiyle.
+    await aktifMasalarYaz(kafeId, kaynakId, (aktif) => {
+      aktif = (aktif || []).filter(x => x.id !== kaynakId);
 
-    // Kaynak masayı aktif listeden kaldır
-    aktif = aktif.filter(x => x.id !== kaynakId);
-
-    // Hedef masayı güncelle
-    const hidx = aktif.findIndex(x => x.id === hedefId);
-    const hData = {id:h.id, ad:h.ad, not:h.not||'', siparisler:[...h.siparisler], garson:h.garson||'', indirim:h.indirim||0, kisi_sayisi:h.kisi_sayisi||0, hesap_istendi:h.hesap_istendi||false};
-    if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
-
-    await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+      // Hedef masayı güncelle
+      const hidx = aktif.findIndex(x => x.id === hedefId);
+      const hData = {id:h.id, ad:h.ad, not:h.not||'', siparisler:[...h.siparisler], garson:h.garson||'', indirim:h.indirim||0, kisi_sayisi:h.kisi_sayisi||0, hesap_istendi:h.hesap_istendi||false};
+      if(hidx >= 0) aktif[hidx] = hData; else aktif.push(hData);
+      return aktif;
+    });
     toast(`🔗 ${kaynakAd} → ${hedefAd} birleştirildi ✓`);
   } catch(e){
-    toast('Kayıt hatası: ' + e.message);
+    // versiyon çakışmasında aktifMasalarYaz kendi uyarısını zaten gösterdi — çift toast basma
+    if (!/versiyon çakışması/.test(e.message)) toast('Kayıt hatası: ' + e.message);
   } finally {
     setTimeout(() => { _transferYapiliyor=false; _skipSubscriptionCount=0; }, 8000);
   }
@@ -7893,12 +7919,13 @@ function splitRender(){
     (async()=>{
       try {
         await kolaycafenKaydet(kolaycafen);
-        const {data:sd} = await sb.from('kafeler').select('aktif_masalar').eq('id',kafeId).single();
-        let saktif = sd?.aktif_masalar || [];
-        saktif = saktif.filter(x=>x.id!==splitMasaId);
-        await sb.from('kafeler').update({aktif_masalar:saktif}).eq('id',kafeId);
+        // Aşama 2: tek masa (splitMasaId) çıkarma — retry + optimistic-lock artık aktifMasalarYaz içinde
+        await aktifMasalarYaz(kafeId, splitMasaId, (aktif) => (aktif || []).filter(x=>x.id!==splitMasaId));
         toast('✓ '+sayi+' kişi ödedi — '+fmt(toplam));
-      } catch(e){ toast('Kayıt hatası!'); }
+      } catch(e){
+        // versiyon çakışmasında aktifMasalarYaz kendi uyarısını zaten gösterdi — çift toast basma
+        if (!/versiyon çakışması/.test(e.message)) toast('Kayıt hatası!');
+      }
       finally { setTimeout(()=>{ _transferYapiliyor=false; _skipSubscriptionCount=0; }, 8000); }
     })();
   }
@@ -11518,19 +11545,23 @@ async function garsonCagriKapat(masaId) {
   masalarRender();
   // Supabase güncelle
   try {
-    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-    const aktifMasalar = data?.aktif_masalar || [];
-    const am = aktifMasalar.find(x => Number(x.id) === Number(masaId));
-    if (am) {
-      am.garson_cagri = false;
-      am.garson_cagri_saat = null;
-      if (am.not) {
-        am.not = am.not.replace(/\s*\|\s*🔔 Garson çağrıldı \d{2}:\d{2}/g, '')
-                       .replace(/^🔔 Garson çağrıldı \d{2}:\d{2}\s*\|?\s*/g, '')
-                       .trim();
+    // Aşama 2: am, aktifMasalarYaz'ın kendi taze okumasından geliyor — _masaSyncYazHemen'deki
+    // gibi ayrı bir yerel state'ten üretilmiyor, doğrudan DB-taze nesne üzerinde mutasyon
+    // yapılıp geri döndürülüyor. Overwrite/merge riski yok.
+    await aktifMasalarYaz(kafeId, masaId, (aktifMasalar) => {
+      aktifMasalar = aktifMasalar || [];
+      const am = aktifMasalar.find(x => Number(x.id) === Number(masaId));
+      if (am) {
+        am.garson_cagri = false;
+        am.garson_cagri_saat = null;
+        if (am.not) {
+          am.not = am.not.replace(/\s*\|\s*🔔 Garson çağrıldı \d{2}:\d{2}/g, '')
+                         .replace(/^🔔 Garson çağrıldı \d{2}:\d{2}\s*\|?\s*/g, '')
+                         .trim();
+        }
       }
-    }
-    await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', kafeId);
+      return aktifMasalar;
+    });
   } catch(e) {}
   toast('✓ Garson çağrısı kapatıldı');
 }
@@ -14197,24 +14228,26 @@ async function gelAlSiparisVer() {
   // aktif_masalar'a gel-al kaydı ekle — mutfak görsün
   if (!kafeId) { toast('Bağlantı hatası, tekrar deneyin'); return; }
   try {
-    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-    let aktif = data?.aktif_masalar || [];
-    const gelAlKayit = {
-      id: sipId,
-      ad: '🛍️ Gel-Al: ' + adi,
-      not: siparis.not || '',
-      siparisler: gelAlSepet.map(u => ({
-        isim: u.isim, fiyat: u.fiyat, ikon: u.ikon||'🛍️', adet: u.adet,
-        ilkSaat: saat, musteri: true, mutfak_teslim: false
-      })),
-      garson: garson || '',
-      indirim: 0,
-      gelal: true,
-      mutfak_durum: 'bekliyor',
-      mutfak_zaman: simdi.toISOString()
-    };
-    aktif.push(gelAlKayit);
-    await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+    // Aşama 2: gelAlKayit tamamen yeni bir kayıt (var olan bir masanın siparisler'ine
+    // eklenmiyor) — mutateFn her çağrıldığında (retry dahil) o anki gelAlSepet'ten
+    // taze inşa ediliyor, aktifMasalarYaz'ın kendi taze okumasının üzerine push ediliyor.
+    await aktifMasalarYaz(kafeId, sipId, (aktif) => {
+      const gelAlKayit = {
+        id: sipId,
+        ad: '🛍️ Gel-Al: ' + adi,
+        not: siparis.not || '',
+        siparisler: gelAlSepet.map(u => ({
+          isim: u.isim, fiyat: u.fiyat, ikon: u.ikon||'🛍️', adet: u.adet,
+          ilkSaat: saat, musteri: true, mutfak_teslim: false
+        })),
+        garson: garson || '',
+        indirim: 0,
+        gelal: true,
+        mutfak_durum: 'bekliyor',
+        mutfak_zaman: simdi.toISOString()
+      };
+      return [...(aktif || []), gelAlKayit];
+    });
   } catch(e) { console.log('Gel-al mutfak sync hatası:', e); }
 
   // Müşteriyi kaydet/güncelle
@@ -14236,11 +14269,14 @@ async function gelAlDurumGuncelle(id, yeniDurum) {
   if (yeniDurum === 'hazir') toast('✅ ' + s.musteriAdi + ' siparişi hazır!');
   // aktif_masalar'da mutfak_durum güncelle
   try {
-    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-    let aktif = data?.aktif_masalar || [];
-    const idx = aktif.findIndex(x => x.id === id);
-    if (idx >= 0) { aktif[idx].mutfak_durum = yeniDurum; }
-    await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+    // Aşama 2: id ile bulunup güncelleniyor (index'e göre değil) — iki cihaz aynı anda
+    // farklı gel-al kayıtlarını güncellese bile birbirinin yerini karıştırmaz.
+    await aktifMasalarYaz(kafeId, id, (aktif) => {
+      aktif = aktif || [];
+      const idx = aktif.findIndex(x => x.id === id);
+      if (idx >= 0) aktif[idx].mutfak_durum = yeniDurum;
+      return aktif;
+    });
   } catch(e) {}
   gelAlRender();
 }
@@ -14297,9 +14333,10 @@ async function gelAlOdeTipi(tip) {
 
   // aktif_masalar'dan sil
   try {
-    const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-    let aktif = (data?.aktif_masalar || []).filter(x => x.id !== id);
-    await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+    // Aşama 2: filter-by-id doğası gereği idempotent — zaten silinmiş bir id için no-op.
+    // Ayrıca versiyon çakışmasında retry her zaman taze veri üzerinde çalışır (yarı-uygulanmış
+    // bir yazma asla olmaz), bu yüzden çift-silme riski yok.
+    await aktifMasalarYaz(kafeId, id, (aktif) => (aktif || []).filter(x => x.id !== id));
   } catch(e) {}
 
   // Fiş göster
@@ -14315,9 +14352,8 @@ function gelAlSil(id) {
   gelAlRender();
   (async () => {
     try {
-      const {data} = await sb.from('kafeler').select('aktif_masalar').eq('id', kafeId).single();
-      const aktif = (data?.aktif_masalar || []).filter(x => x.id !== id);
-      await sb.from('kafeler').update({aktif_masalar: aktif}).eq('id', kafeId);
+      // Aşama 2: aynı idempotent filter-by-id deseni — bkz. gelAlOdeTipi
+      await aktifMasalarYaz(kafeId, id, (aktif) => (aktif || []).filter(x => x.id !== id));
     } catch(e) { console.log('gelAl sil hata:', e); }
   })();
 }
@@ -16043,17 +16079,20 @@ async function mmSiparisGonder() {
 
 async function mmGarsonCagir() {
   const saat = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-  const {data: kafeData} = await sb.from('kafeler').select('aktif_masalar').eq('id', mmKafeId).single();
-  let aktifMasalar = kafeData?.aktif_masalar || [];
-  let masa = aktifMasalar.find(m => Number(m.id) === Number(mmMasaNo));
-  if (!masa) {
-    masa = {id:mmMasaNo, ad:mmMasaAdi, siparisler:[], not:'', garson:'', indirim:0};
-    aktifMasalar.push(masa);
-  }
-  masa.garson_cagri = true;
-  masa.garson_cagri_saat = saat;
-  masa.not = (masa.not ? masa.not + ' | ' : '') + '🔔 Garson çağrıldı ' + saat;
-  await sb.from('kafeler').update({aktif_masalar: aktifMasalar}).eq('id', mmKafeId);
+  // Aşama 2: masa/yeni-masa DB-taze aktifMasalar üzerinde bulunup/oluşturulup mutasyon
+  // yapılıyor — yerel bir ayrı state'ten overwrite yok, garsonCagriKapat ile aynı desen.
+  await aktifMasalarYaz(mmKafeId, mmMasaNo, (aktifMasalar) => {
+    aktifMasalar = aktifMasalar || [];
+    let masa = aktifMasalar.find(m => Number(m.id) === Number(mmMasaNo));
+    if (!masa) {
+      masa = {id:mmMasaNo, ad:mmMasaAdi, siparisler:[], not:'', garson:'', indirim:0};
+      aktifMasalar.push(masa);
+    }
+    masa.garson_cagri = true;
+    masa.garson_cagri_saat = saat;
+    masa.not = (masa.not ? masa.not + ' | ' : '') + '🔔 Garson çağrıldı ' + saat;
+    return aktifMasalar;
+  });
   // Müşteriye onay göster
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3db85a;color:#fff;padding:12px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-weight:800;z-index:99999;font-size:0.95rem;';
