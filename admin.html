@@ -1289,6 +1289,7 @@ function tabloRender() {
         <button class="abtn" onclick="detayAc('${k.id}')">🔍</button>
         <button class="abtn" title="Admin olarak kafede gir" onclick="adminKafeGir('${k.id}')">👁</button>
         <button class="abtn ${k.manuel_pasif?'':'teh'}" title="${k.manuel_pasif?'Aktif et':'Pasife al'}" onclick="manuelToggle('${k.id}',${!k.manuel_pasif})">${k.manuel_pasif?'✅':'🔒'}</button>
+        <button class="abtn teh" title="Kalıcı olarak sil" onclick="kafeSil('${k.id}')">🗑️</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -1316,6 +1317,16 @@ async function manuelToggle(kafeId, pasifYap) {
   if (error) { toast('❌ ' + error.message); return; }
   k.manuel_pasif = pasifYap;
   toast(pasifYap ? `🔒 ${k.kafe_adi} pasife alındı` : `✅ ${k.kafe_adi} aktif edildi`);
+  tabloRender();
+}
+
+async function kafeSil(kafeId) {
+  const k = tumKafeler.find(x => x.id === kafeId); if (!k) return;
+  if (!confirm(`${k.kafe_adi || 'Bu kafe'} kalıcı olarak silinecek. Emin misiniz?`)) return;
+  const { error } = await sb.from('kafeler').delete().eq('id', kafeId);
+  if (error) { toast('❌ ' + error.message); return; }
+  tumKafeler = tumKafeler.filter(x => x.id !== kafeId);
+  toast(`🗑️ ${k.kafe_adi} silindi`);
   tabloRender();
 }
 
