@@ -4,6 +4,45 @@ const corsHeaders = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Hea
 const CHECKOUT_URI = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
 const DETAIL_URI   = "/payment/iyzipos/checkoutform/auth/ecom/detail";
 
+// iyzico isteklerinde zaman aşımı + geçici ağ hatalarında (örn. "Connection reset by
+// peer") otomatik tekrar deneme. Her iki uç da (form oluşturma, sonuç sorgulama) kart
+// çekmez/idempotenttir, bu yüzden tekrar denemek mükerrer ödeme riski taşımaz.
+const IYZICO_TIMEOUT_MS = 15000;
+const IYZICO_MAX_DENEME = 3;
+const IYZICO_TEMEL_GECIKME_MS = 400;
+const GECICI_HATA_DESENLERI = [/connection reset/i, /reset by peer/i, /timed out/i, /timeout/i, /client error \(connect\)/i, /network/i, /EOF/i, /50[234]/];
+
+function gecikme(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+type IyzicoSonuc = { res?: Response; hata?: string; gecici: boolean; deneme: number };
+
+async function iyzicoIstegiGonder(url: string, init: RequestInit, islemAdi: string): Promise<IyzicoSonuc> {
+  let sonHata = "";
+  for (let deneme = 1; deneme <= IYZICO_MAX_DENEME; deneme++) {
+    try {
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(IYZICO_TIMEOUT_MS) });
+      if (res.status >= 500 && deneme < IYZICO_MAX_DENEME) {
+        console.warn(`[iyzico:${islemAdi}] deneme ${deneme}/${IYZICO_MAX_DENEME}: HTTP ${res.status}, tekrar denenecek`);
+        await gecikme(IYZICO_TEMEL_GECIKME_MS * 2 ** (deneme - 1));
+        continue;
+      }
+      return { res, gecici: false, deneme };
+    } catch (err) {
+      sonHata = err instanceof Error ? err.message : String(err);
+      const gecici = GECICI_HATA_DESENLERI.some(d => d.test(sonHata));
+      console.error(`[iyzico:${islemAdi}] deneme ${deneme}/${IYZICO_MAX_DENEME} hata (${gecici ? "geçici" : "kalıcı"}):`, sonHata);
+      if (!gecici || deneme === IYZICO_MAX_DENEME) return { hata: sonHata, gecici, deneme };
+      await gecikme(IYZICO_TEMEL_GECIKME_MS * 2 ** (deneme - 1));
+    }
+  }
+  return { hata: sonHata, gecici: true, deneme: IYZICO_MAX_DENEME };
+}
+
+async function hataLogla(sb: ReturnType<typeof createClient>, veri: Record<string, unknown>) {
+  try { await sb.from("iyzico_hata_loglari").insert({ olusturulma: new Date().toISOString(), ...veri }); }
+  catch (e) { console.error("[iyzico] hata log yazılamadı:", e instanceof Error ? e.message : e); }
+}
+
 async function iyzicoAuth(ak:string,sk:string,rnd:string,uri:string,body:object):Promise<string>{
   const enc=new TextEncoder();
   const k=await crypto.subtle.importKey("raw",enc.encode(sk),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
@@ -18,6 +57,19 @@ Deno.serve(async(req)=>{
   const BASE=Deno.env.get("IYZICO_BASE_URL")??"https://api.iyzipay.com";
   const sb=createClient(Deno.env.get("SB_URL")!,Deno.env.get("SB_SERVICE_KEY")!);
 
+  const url = new URL(req.url);
+  if (url.searchParams.get("action") === "ping") {
+    // iyzico'ya Supabase Edge Runtime'ın kendi ağından erişilebilirliği test eder —
+    // yerel makineden atılan curl/telnet farklı bir ağ yolundan gittiği için gerçek
+    // hatayı yakalamayabilir.
+    const t0 = Date.now();
+    const sonuc = await iyzicoIstegiGonder(BASE, { method: "GET" }, "ping");
+    return new Response(JSON.stringify({
+      ok: !sonuc.hata, sureMs: Date.now() - t0, deneme: sonuc.deneme,
+      httpStatus: sonuc.res?.status, hata: sonuc.hata, gecici: sonuc.gecici,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const contentType=req.headers.get("content-type")??"";
   if(req.method==="POST"&&contentType.includes("application/x-www-form-urlencoded")){
     const text=await req.text();
@@ -30,8 +82,22 @@ Deno.serve(async(req)=>{
     const convId=`kc_callback_${Date.now()}`;
     const reqObj={locale:"tr",conversationId:convId,token};
     const auth=await iyzicoAuth(AK,SK,rnd,DETAIL_URI,reqObj);
-    const r=await fetch(`${BASE}${DETAIL_URI}`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":auth,"x-iyzi-rnd":rnd,"x-iyzi-client-version":"iyzipay-node-2.0.65"},body:JSON.stringify(reqObj)});
-    const d=await r.json();
+
+    const sonuc = await iyzicoIstegiGonder(`${BASE}${DETAIL_URI}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": auth, "x-iyzi-rnd": rnd, "x-iyzi-client-version": "iyzipay-node-2.0.65" },
+      body: JSON.stringify(reqObj),
+    }, "callback-detail");
+
+    if (sonuc.hata) {
+      // Ödeme durumu doğrulanamadı: "başarılı" diye yönlendirip planı güncellemeden
+      // bırakmak yerine, kullanıcıyı "doğrulanıyor" ekranına gönderip destek/manuel
+      // kontrol için iz bırakıyoruz.
+      await hataLogla(sb, { conversation_id: convId, token, islem: "callback-detail", deneme_sayisi: sonuc.deneme, hata_mesaji: sonuc.hata, gecici_mi: sonuc.gecici });
+      return new Response(null, { status: 303, headers: { ...corsHeaders, "Location": "https://kolaycafe.com/app/index.html?odeme=dogrulaniyor" } });
+    }
+
+    const d=await sonuc.res!.json();
     console.log("sonuc tam:",JSON.stringify(d));
 
     if(d.paymentStatus==="SUCCESS"){
@@ -42,29 +108,32 @@ Deno.serve(async(req)=>{
       if(kafeId){
         // Mevcut kafe bilgilerini çek
         const{data:kafe}=await sb.from("kafeler")
-          .select("odeme_plan,odeme_donem,plan_bitis,plan_donem")
+          .select("odeme_plan,odeme_donem,plan_bitis,plan_donem,plan")
           .eq("id",kafeId).single();
 
         const yeniPlan  = kafe?.odeme_plan  ?? "start";
         const yeniDonem = kafe?.odeme_donem ?? "aylik";
         const gun       = yeniDonem === "yillik" ? 365 : 30;
         const eskiBitis = kafe?.plan_bitis ? new Date(kafe.plan_bitis) : null;
-        const eskiDonem = kafe?.plan_donem ?? "aylik";
+        const eskiPlan  = kafe?.plan ?? "deneme";
+        const simdi     = new Date();
 
-        // Aynı dönemde yenileme → mevcut bitiş üzerine ekle
-        // Dönem değişikliği veya süresi dolmuş → bugünden başlat
-        const baslangic = (eskiBitis && eskiBitis > new Date() && eskiDonem === yeniDonem)
-          ? new Date(eskiBitis)
-          : new Date();
+        // Bitiş tarihi hesaplama:
+        // Deneme planındaysa veya süresi dolmuşsa → bugünden başlat
+        // Aktif ücretli aboneyse → mevcut bitiş üzerine ekle (kalan günler korunur)
+        // Örnek: 3 ay kalan + 12 ay yenileme = 15 ay toplam
+        const aktifAbonelik = eskiPlan !== "deneme" && eskiBitis !== null && eskiBitis > simdi;
+        const baslangic = aktifAbonelik ? new Date(eskiBitis) : new Date();
         baslangic.setDate(baslangic.getDate() + gun);
 
-        console.log("Plan:",yeniPlan,"Dönem:",yeniDonem,"Eski dönem:",eskiDonem,"Yeni bitiş:",baslangic.toISOString());
+        console.log("Plan:",yeniPlan,"Dönem:",yeniDonem,"Eski plan:",eskiPlan,"Aktif abonelik:",aktifAbonelik,"Yeni bitiş:",baslangic.toISOString());
 
         const{error}=await sb.from("kafeler").update({
           plan:             yeniPlan,
           plan_bitis:       baslangic.toISOString(),
           plan_donem:       yeniDonem,
           odeme_bekliyor:   false,
+          odeme_bekliyor_zaman: null,
           odeme_conversation_id: null,
           son_odeme:        new Date().toISOString(),
           son_odeme_tutar:  parseFloat(d.paidPrice??"0"),
@@ -100,11 +169,26 @@ Deno.serve(async(req)=>{
         basketItems:[{id:`plan_${plan}`,name:`KolayCafe ${plan.toUpperCase()} ${donem==="yillik"?"Yillik":"Aylik"}`,category1:"Yazilim",itemType:"VIRTUAL",price:topStr}]};
       const auth=await iyzicoAuth(AK,SK,rnd,CHECKOUT_URI,reqObj);
       console.log("istek:",BASE+CHECKOUT_URI,"plan:",plan,"tutar:",topStr);
-      const iyziRes=await fetch(`${BASE}${CHECKOUT_URI}`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":auth,"x-iyzi-rnd":rnd,"x-iyzi-client-version":"iyzipay-node-2.0.65"},body:JSON.stringify(reqObj)});
-      const iyziData=await iyziRes.json();
+
+      const sonuc = await iyzicoIstegiGonder(`${BASE}${CHECKOUT_URI}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": auth, "x-iyzi-rnd": rnd, "x-iyzi-client-version": "iyzipay-node-2.0.65" },
+        body: JSON.stringify(reqObj),
+      }, "checkout-baslat");
+
+      if (sonuc.hata) {
+        await hataLogla(sb, { kafe_id: kafeId, conversation_id: convId, islem: "checkout-baslat", deneme_sayisi: sonuc.deneme, hata_mesaji: sonuc.hata, gecici_mi: sonuc.gecici });
+        const kullaniciMesaji = sonuc.gecici
+          ? "Ödeme sağlayıcısına şu an ulaşılamıyor, lütfen birkaç dakika sonra tekrar deneyin."
+          : "Ödeme başlatılamadı, lütfen tekrar deneyin.";
+        return new Response(JSON.stringify({ ok: false, hata: kullaniciMesaji, gecici: sonuc.gecici }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const iyziData=await sonuc.res!.json();
       console.log("yanit:",JSON.stringify(iyziData).substring(0,300));
       if(iyziData.status!=="success")return new Response(JSON.stringify({ok:false,hata:iyziData.errorMessage??"İyzico hatası",errorCode:iyziData.errorCode,detay:iyziData}),{status:400,headers:{...corsHeaders,"Content-Type":"application/json"}});
-      await sb.from("kafeler").update({odeme_conversation_id:convId,odeme_bekliyor:true,odeme_plan:plan,odeme_donem:donem}).eq("id",kafeId);
+      await sb.from("kafeler").update({odeme_conversation_id:convId,odeme_bekliyor:true,odeme_bekliyor_zaman:new Date().toISOString(),odeme_plan:plan,odeme_donem:donem}).eq("id",kafeId);
       return new Response(JSON.stringify({ok:true,checkoutFormContent:iyziData.checkoutFormContent,token:iyziData.token,conversationId:convId}),{headers:{...corsHeaders,"Content-Type":"application/json"}});
     }
     return new Response(JSON.stringify({ok:false,hata:"Geçersiz action: "+action}),{status:400,headers:{...corsHeaders,"Content-Type":"application/json"}});
