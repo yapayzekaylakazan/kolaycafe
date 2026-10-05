@@ -3694,6 +3694,7 @@ function _depolamaDiag(olay, gecikmeMs) {
     const ua = navigator.userAgent || '';
     const iosSurum = ((ua.match(/OS (\d+(?:_\d+)*) like Mac/) || [])[1] || '-').replace(/_/g, '.');
     const safariSurum = (ua.match(/Version\/([\d.]+)/) || [])[1] || '-';
+    const chromeSurum = (ua.match(/CriOS\/([\d.]+)/) || [])[1];
     let ekranStandalone = '-';
     try { ekranStandalone = String(window.matchMedia('(display-mode: standalone)').matches); } catch(e) {}
     const navStandalone = navigator.standalone === undefined ? '-' : String(navigator.standalone);
@@ -3719,7 +3720,7 @@ function _depolamaDiag(olay, gecikmeMs) {
           kafe_id: kafeId || isaretKafeId,
           mesaj: `[DEPOLAMA] olay=${olay} ls=${ls} isaret=${isaret ? 'var' : 'yok'} isaret_saat=${isaretSaat} sb_oturum_anahtari=${sbAnahtar} origin=${location.origin} nav_standalone=${navStandalone} display_standalone=${ekranStandalone} hcaptcha_tanimli=${hcTanimli} widget_id=${hcWidget} hc_iframe=${hcIframe} render_hatasi=${olay === 'giris_sonrasi' ? '-' : (window._hcHata || '-')} sb_cikardi=${sbCikis ? 'var' : 'yok'} sb_cikis_saat=${sbCikisSaat}`,
           kaynak: 'depolama-diag',
-          browser: `ios=${iosSurum} safari=${safariSurum}`,
+          browser: `ios=${iosSurum} safari=${safariSurum}` + (chromeSurum ? ` chrome=${chromeSurum}` : ''),
           url: (location.origin + location.pathname).slice(0, 200)
         }).then(()=>{}).catch(()=>{});
       } catch(e) {}
@@ -3934,9 +3935,6 @@ async function kayitOl() {
   // 1. Honeypot kontrolü — bot doldurmuşsa sessizce dur
   if (document.getElementById('kayit-website')?.value) return;
 
-  // 2. Rate limit
-  if (!_kayitRateLimitKontrol()) return;
-
   const kafe = document.getElementById('kayit-kafe').value.trim();
   const email = document.getElementById('kayit-email').value.trim();
   const tel = document.getElementById('kayit-tel').value.trim();
@@ -3968,6 +3966,9 @@ async function kayitOl() {
     if (!_hcaptchaHazirMi('hcaptcha-widget', window._hcKayitId)) { _hcaptchaYuklenemediGoster('hcaptcha-kayit-yuklenemedi'); authHata('Robot doğrulaması yüklenemedi. Aşağıdaki "Tekrar dene" butonunu kullanın.'); return; }
     authHata('Lütfen robot doğrulamasını tamamlayın!'); return;
   }
+
+  // Rate limit — sayaç yalnızca sunucuya gerçekten istek gidecekken artar (form/captcha hataları saymaz)
+  if (!_kayitRateLimitKontrol()) return;
 
   const {data, error} = await sb.auth.signUp({
     email,
