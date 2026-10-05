@@ -810,6 +810,10 @@
       <input class="auth-inp" id="giris-email" type="email" placeholder="E-posta" autocomplete="email">
       <input class="auth-inp" id="giris-sifre" type="password" placeholder="Şifre" autocomplete="current-password">
       <div id="hcaptcha-giris" style="margin-bottom:10px;"></div>
+      <div id="hcaptcha-yuklenemedi" style="display:none;margin-bottom:10px;padding:12px;border-radius:12px;border:1.5px solid #e0a05066;background:var(--surface2);color:var(--text2);font-size:0.8rem;font-weight:700;line-height:1.45;">
+        ⚠️ Doğrulama yüklenemedi. Safari'de "Tüm Çerezleri Engelle" ayarını ve içerik engelleyicileri kapatıp sayfayı yenileyin.
+        <button type="button" class="auth-btn" style="margin-top:10px;" onclick="_hcaptchaTekrarDene()">🔄 Tekrar dene</button>
+      </div>
       <button class="auth-btn" id="btn-giris-yap">Giriş Yap</button>
       <button type="button" id="btn-sifre-unut" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
@@ -875,6 +879,10 @@
       <input type="text" id="kayit-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true">
       <!-- hCaptcha widget -->
       <div id="hcaptcha-widget" style="margin-bottom:10px;"></div>
+      <div id="hcaptcha-kayit-yuklenemedi" style="display:none;margin-bottom:10px;padding:12px;border-radius:12px;border:1.5px solid #e0a05066;background:var(--surface2);color:var(--text2);font-size:0.8rem;font-weight:700;line-height:1.45;">
+        ⚠️ Doğrulama yüklenemedi. Safari'de "Tüm Çerezleri Engelle" ayarını ve içerik engelleyicileri kapatıp sayfayı yenileyin.
+        <button type="button" class="auth-btn" style="margin-top:10px;" onclick="_hcaptchaTekrarDene()">🔄 Tekrar dene</button>
+      </div>
       <button class="auth-btn" id="btn-kayit-ol">Hesap Oluştur</button>
       <button type="button" id="btn-sifre-unut-kayit" style="background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;">Şifremi Unuttum</button>
     </div>
@@ -3654,6 +3662,79 @@ function _diagLog(olayTipi, masaId, kanal, zamanFarkiMs) {
     }).then(()=>{}).catch(()=>{});
   } catch(e) {}
 }
+// GEÇİCİ TANI LOGU — iOS'ta "uygulamaya dönünce tekrar şifre isteniyor" sorununun nedenini bulmak için.
+// "İşaret var + Supabase oturum anahtarı yok" = oturum silinmiş; "işaret yok" = depolama tamamen boş gelmiş.
+// E-posta/token/şifre YAZILMAZ: Supabase anahtarına sadece var/yok diye bakılır. Hata olursa sessizce geçer.
+const _DEPOLAMA_ISARET_ANAHTAR = 'kc_son_giris_zamani';
+const _SB_OTURUM_ANAHTAR = 'sb-sjfcdthwlwmbdmcevobv-auth-token';
+const _SB_CIKIS_ANAHTAR = 'kc_sb_cikis';
+const _depolamaDiagGonderildi = {};
+function _depolamaDiag(olay, gecikmeMs) {
+  try {
+    // Sekme oturumu başına her olay tipinden en fazla 1 kayıt (sessionStorage çalışmıyorsa sayfa belleğiyle)
+    if (_depolamaDiagGonderildi[olay]) return;
+    _depolamaDiagGonderildi[olay] = true;
+    const bayrak = 'kc_depolama_diag_' + olay;
+    try { if (sessionStorage.getItem(bayrak)) return; sessionStorage.setItem(bayrak, '1'); } catch(e) {}
+
+    let ls = 'yok';
+    try {
+      localStorage.setItem('kc_ls_test', '1');
+      ls = localStorage.getItem('kc_ls_test') === '1' ? 'ok' : 'okunamadi';
+      localStorage.removeItem('kc_ls_test');
+    } catch(e) {}
+    let isaret = null;
+    try { isaret = JSON.parse(localStorage.getItem(_DEPOLAMA_ISARET_ANAHTAR) || 'null'); } catch(e) {}
+    let sbAnahtar = 'yok';
+    try { if (localStorage.getItem(_SB_OTURUM_ANAHTAR) !== null) sbAnahtar = 'var'; } catch(e) {}
+    let sbCikis = null;
+    try { sbCikis = JSON.parse(localStorage.getItem(_SB_CIKIS_ANAHTAR) || 'null'); } catch(e) {}
+    const sbCikisSaat = (sbCikis && sbCikis.t) ? ((Date.now() - sbCikis.t) / 3600000).toFixed(1) : '-';
+
+    const ua = navigator.userAgent || '';
+    const iosSurum = ((ua.match(/OS (\d+(?:_\d+)*) like Mac/) || [])[1] || '-').replace(/_/g, '.');
+    const safariSurum = (ua.match(/Version\/([\d.]+)/) || [])[1] || '-';
+    let ekranStandalone = '-';
+    try { ekranStandalone = String(window.matchMedia('(display-mode: standalone)').matches); } catch(e) {}
+    const navStandalone = navigator.standalone === undefined ? '-' : String(navigator.standalone);
+    const isaretSaat = (isaret && isaret.t) ? ((Date.now() - isaret.t) / 3600000).toFixed(1) : '-';
+    const isaretKafeId = (isaret && /^[0-9a-f-]{36}$/i.test(isaret.k || '')) ? isaret.k : null;
+
+    // Depolama yukarıda HEMEN ölçüldü; hCaptcha durumu yüklenmesine süre tanımak için gecikmeden sonra ölçülür
+    setTimeout(() => {
+      try {
+        // Giriş başarılıysa captcha zaten çalışmıştır — ölçme
+        let hcTanimli = '-', hcWidget = '-', hcIframe = '-';
+        if (olay !== 'giris_sonrasi') {
+          hcTanimli = typeof hcaptcha !== 'undefined' ? 'evet' : 'hayir';
+          hcWidget = window._hcGirisId !== null ? 'var' : 'yok';
+          if (!_panelGorunur('auth-screen') || !_panelGorunur('auth-giris')) {
+            hcIframe = 'ekran_kapali';
+          } else {
+            hcIframe = 'yok';
+            try { const ifr = document.querySelector('#hcaptcha-giris iframe'); if (ifr) hcIframe = ifr.offsetHeight > 0 ? 'gorunur' : 'gizli'; } catch(e) {}
+          }
+        }
+        sb.from('hata_loglari').insert({
+          kafe_id: kafeId || isaretKafeId,
+          mesaj: `[DEPOLAMA] olay=${olay} ls=${ls} isaret=${isaret ? 'var' : 'yok'} isaret_saat=${isaretSaat} sb_oturum_anahtari=${sbAnahtar} origin=${location.origin} nav_standalone=${navStandalone} display_standalone=${ekranStandalone} hcaptcha_tanimli=${hcTanimli} widget_id=${hcWidget} hc_iframe=${hcIframe} render_hatasi=${olay === 'giris_sonrasi' ? '-' : (window._hcHata || '-')} sb_cikardi=${sbCikis ? 'var' : 'yok'} sb_cikis_saat=${sbCikisSaat}`,
+          kaynak: 'depolama-diag',
+          browser: `ios=${iosSurum} safari=${safariSurum}`,
+          url: (location.origin + location.pathname).slice(0, 200)
+        }).then(()=>{}).catch(()=>{});
+      } catch(e) {}
+    }, gecikmeMs || 0);
+  } catch(e) {}
+}
+function _depolamaIsaretBirak() {
+  try { localStorage.setItem(_DEPOLAMA_ISARET_ANAHTAR, JSON.stringify({ t: Date.now(), k: kafeId || null })); } catch(e) {}
+}
+// SIGNED_OUT geldiğinde işaret hâlâ duruyorsa çıkışı kullanıcı değil Supabase yaptı (ör. token yenileme reddedildi).
+// Bilerek çıkışta cikisYap işareti signOut'tan ÖNCE sildiği için buraya düşmez.
+sb.auth.onAuthStateChange((olay) => {
+  if (olay !== 'SIGNED_OUT') return;
+  try { if (localStorage.getItem(_DEPOLAMA_ISARET_ANAHTAR) !== null) localStorage.setItem(_SB_CIKIS_ANAHTAR, JSON.stringify({ t: Date.now() })); } catch(e) {}
+});
 // Aşama 2 — optimistic lock: aktif_masalar'a yapılan tüm yazmalar bu fonksiyondan geçmeli.
 // mutateFn(mevcutMasalar) -> yeniMasalar imzasıyla çağrılır; okunan versiyon değişmemişse
 // koşullu UPDATE ile yazar, uyuşmazlıkta veriyi taze okuyup mutateFn'i yeniden uygulayarak retry eder.
@@ -3748,21 +3829,87 @@ async function girisYap() {
   if (!email||!sifre) { authHata('E-posta ve şifre girin!'); return; }
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
-  const captchaToken = hcaptcha.getResponse(window._hcGirisId);
-  if (!captchaToken) { authHata('Lütfen robot doğrulamasını tamamlayın!'); return; }
+  let captchaToken = '';
+  try { if (typeof hcaptcha !== 'undefined' && window._hcGirisId !== null) captchaToken = hcaptcha.getResponse(window._hcGirisId); } catch(e) {}
+  if (!captchaToken) {
+    if (!_hcaptchaHazirMi('hcaptcha-giris', window._hcGirisId)) { _hcaptchaYuklenemediGoster('hcaptcha-yuklenemedi'); authHata('Robot doğrulaması yüklenemedi. Aşağıdaki "Tekrar dene" butonunu kullanın.'); return; }
+    authHata('Lütfen robot doğrulamasını tamamlayın!'); return;
+  }
   const {data, error} = await sb.auth.signInWithPassword({email, password: sifre, options: { captchaToken }});
-  if (error) { hcaptcha.reset(window._hcGirisId); authHata(error.message==='Invalid login credentials'?'E-posta veya şifre hatalı!':error.message); return; }
+  if (error) { try { hcaptcha.reset(window._hcGirisId); } catch(e) {} authHata(error.message==='Invalid login credentials'?'E-posta veya şifre hatalı!':error.message); return; }
   await uygulamaBaslat(data.user);
+  // Önce önceki girişin işaretini logla, sonra yenisini bırak
+  _depolamaDiag('giris_sonrasi');
+  _depolamaIsaretBirak();
+  try { localStorage.removeItem(_SB_CIKIS_ANAHTAR); } catch(e) {}
 }
 
 // hCaptcha widget ID'lerini kaydet — token almak için gerekli
 window._hcGirisId = null;
 window._hcKayitId = null;
+window._hcHata = '';
 function _hcaptchaOnload() {
   try {
-    window._hcGirisId = hcaptcha.render('hcaptcha-giris', { sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa' });
-    window._hcKayitId = hcaptcha.render('hcaptcha-widget', { sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa' });
+    // Tekrar çağrılabilir: zaten render edilmiş widget'ı ikinci kez render etme
+    if (window._hcGirisId === null) {
+      window._hcGirisId = hcaptcha.render('hcaptcha-giris', {
+        sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa',
+        'error-callback': kod => { window._hcHata = String(kod || 'bilinmiyor').slice(0, 40); }
+      });
+    }
+    if (window._hcKayitId === null) {
+      window._hcKayitId = hcaptcha.render('hcaptcha-widget', { sitekey: 'dd22c300-011e-426a-af1a-1790ba5cabfa' });
+    }
+  } catch(e) { window._hcHata = 'render:' + String((e && e.message) || e).slice(0, 40); }
+}
+// hCaptcha script'i (async) bu satırdan ÖNCE çalıştıysa onload callback'ini tanımsız bulup bir daha çağırmaz — şimdi render et
+if (typeof hcaptcha !== 'undefined' && window._hcGirisId === null) _hcaptchaOnload();
+
+function _panelGorunur(id) {
+  const el = document.getElementById(id);
+  return !!el && getComputedStyle(el).display !== 'none';
+}
+// hCaptcha kutusu gerçekten kullanılabilir mi? (script yok / widget yok / iframe engelleyiciyle gizlenmiş)
+function _hcaptchaHazirMi(kapId, widgetId) {
+  if (typeof hcaptcha === 'undefined' || widgetId === null) return false;
+  const ifr = document.querySelector('#' + kapId + ' iframe');
+  return !!(ifr && ifr.offsetHeight > 0);
+}
+function _hcaptchaYuklenemediGoster(kutuId) {
+  const kutu = document.getElementById(kutuId);
+  if (kutu) kutu.style.display = 'block';
+}
+// Giriş ekranı açıkken hCaptcha'nın yüklenip yüklenmediğini kontrol eder (yalnızca görünen panele bakar)
+function _hcaptchaKontrol() {
+  try {
+    if (!_panelGorunur('auth-screen')) return;
+    // Script yüklü ama widget yoksa (kaçan onload) BİR KEZ render dene, 2 sn sonra yeniden bak
+    if (typeof hcaptcha !== 'undefined' && (window._hcGirisId === null || window._hcKayitId === null) && !_hcaptchaKontrol.denendi) {
+      _hcaptchaKontrol.denendi = true;
+      _hcaptchaOnload();
+      setTimeout(_hcaptchaKontrol, 2000);
+      return;
+    }
+    if (_panelGorunur('auth-giris') && !_hcaptchaHazirMi('hcaptcha-giris', window._hcGirisId)) _hcaptchaYuklenemediGoster('hcaptcha-yuklenemedi');
+    if (_panelGorunur('auth-kayit') && !_hcaptchaHazirMi('hcaptcha-widget', window._hcKayitId)) _hcaptchaYuklenemediGoster('hcaptcha-kayit-yuklenemedi');
   } catch(e) {}
+}
+function _hcaptchaTekrarDene() {
+  ['hcaptcha-yuklenemedi', 'hcaptcha-kayit-yuklenemedi'].forEach(id => {
+    const kutu = document.getElementById(id);
+    if (kutu) kutu.style.display = 'none';
+  });
+  window._hcHata = '';
+  _hcaptchaKontrol.denendi = false;
+  if (typeof hcaptcha !== 'undefined') {
+    _hcaptchaOnload();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://js.hcaptcha.com/1/api.js?onload=_hcaptchaOnload&render=explicit';
+    s.async = true;
+    document.head.appendChild(s);
+  }
+  setTimeout(_hcaptchaKontrol, 6000);
 }
 
 // ── BOT KORUMASI: Kayıt rate limit (localStorage ile) ──
@@ -3815,15 +3962,19 @@ async function kayitOl() {
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-err').style.display = 'none';
   // hCaptcha token al
-  const captchaToken = hcaptcha.getResponse(window._hcKayitId);
-  if (!captchaToken) { authHata('Lütfen robot doğrulamasını tamamlayın!'); return; }
+  let captchaToken = '';
+  try { if (typeof hcaptcha !== 'undefined' && window._hcKayitId !== null) captchaToken = hcaptcha.getResponse(window._hcKayitId); } catch(e) {}
+  if (!captchaToken) {
+    if (!_hcaptchaHazirMi('hcaptcha-widget', window._hcKayitId)) { _hcaptchaYuklenemediGoster('hcaptcha-kayit-yuklenemedi'); authHata('Robot doğrulaması yüklenemedi. Aşağıdaki "Tekrar dene" butonunu kullanın.'); return; }
+    authHata('Lütfen robot doğrulamasını tamamlayın!'); return;
+  }
 
   const {data, error} = await sb.auth.signUp({
     email,
     password: sifre,
     options: { captchaToken }
   });
-  if (error) { hcaptcha.reset(window._hcKayitId); authHata(error.message); return; }
+  if (error) { try { hcaptcha.reset(window._hcKayitId); } catch(e) {} authHata(error.message); return; }
   
   // Kupon kodu kontrolü
   const kuponKodu = document.getElementById('kayit-kupon').value.trim().toUpperCase();
@@ -4041,6 +4192,8 @@ async function cikisYap() {
   if (kafeId) {
     try { await sb.from('kafeler').update({ son_cikis: new Date().toISOString() }).eq('id', kafeId); } catch(e) {}
   }
+  // Bilerek çıkış: tanı logunda "oturum silindi" diye görünmesin
+  try { localStorage.removeItem(_DEPOLAMA_ISARET_ANAHTAR); } catch(e) {}
   await sb.auth.signOut();
   location.reload();
 }
@@ -15382,10 +15535,14 @@ window.masaSilOnay = masaSilOnay;
       }
     } else {
       document.getElementById('auth-screen').style.display = 'flex';
+      setTimeout(_hcaptchaKontrol, 8000);
+      _depolamaDiag('acilis_oturum_yok', 8500);
     }
   } catch(e) {
     console.log('Session hatası:', e);
     document.getElementById('auth-screen').style.display = 'flex';
+    setTimeout(_hcaptchaKontrol, 8000);
+    _depolamaDiag('acilis_session_hatasi', 8500);
   }
 })();
 
