@@ -541,6 +541,28 @@
 </div>
 
 <!-- DETAY MODAL -->
+<div class="overlay" id="sil-modal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-tit" style="color:var(--red);">🗑️ Kafeyi Kalıcı Sil — <span id="sil-adim-no">1</span>/3</div>
+    <div id="sil-adim-1">
+      <div style="font-size:0.85rem;margin-bottom:10px;"><strong id="sil-kafe-adi-1"></strong> ve ona ait <b>tüm veriler</b> kalıcı olarak silinecek. Bu işlem geri alınamaz.</div>
+      <div id="sil-onizleme" style="font-size:0.78rem;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:14px;">Yükleniyor…</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="abtn" onclick="kafeSilKapat()">Vazgeç</button><button class="abtn teh" onclick="kafeSilAdim(2)">Devam →</button></div>
+    </div>
+    <div id="sil-adim-2" style="display:none;">
+      <div style="font-size:0.85rem;margin-bottom:8px;">Onaylamak için kafe adını <b>aynen</b> yaz:<br><code id="sil-kafe-adi-2" style="color:var(--red);"></code></div>
+      <input id="sil-ad-input" autocomplete="off" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;" oninput="document.getElementById('sil-btn-2').disabled = this.value.trim() !== (window._silKafe?.kafe_adi||'').trim()">
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="abtn" onclick="kafeSilKapat()">Vazgeç</button><button class="abtn teh" id="sil-btn-2" disabled onclick="kafeSilAdim(3)">Devam →</button></div>
+    </div>
+    <div id="sil-adim-3" style="display:none;">
+      <div style="font-size:0.85rem;margin-bottom:8px;">Son adım: <b>admin şifreni</b> gir.</div>
+      <input id="sil-sifre-input" type="password" autocomplete="off" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:10px;">
+      <label style="font-size:0.78rem;display:flex;gap:6px;align-items:center;margin-bottom:12px;"><input type="checkbox" id="sil-auth-cb" checked> Kafenin giriş hesabını (e-posta) da sil</label>
+      <div id="sil-hata" style="display:none;color:var(--red);font-size:0.8rem;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="abtn" onclick="kafeSilKapat()">Vazgeç</button><button class="abtn teh" id="sil-btn-3" onclick="kafeSilUygula()">🗑️ KALICI OLARAK SİL</button></div>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="detay-modal">
   <div class="modal">
     <div class="modal-tit" id="modal-kafe-adi">Kafe Detayı</div>
@@ -1322,11 +1344,58 @@ async function manuelToggle(kafeId, pasifYap) {
 
 async function kafeSil(kafeId) {
   const k = tumKafeler.find(x => x.id === kafeId); if (!k) return;
-  if (!confirm(`${k.kafe_adi || 'Bu kafe'} kalıcı olarak silinecek. Emin misiniz?`)) return;
-  const { error } = await sb.from('kafeler').delete().eq('id', kafeId);
-  if (error) { toast('❌ ' + error.message); return; }
-  tumKafeler = tumKafeler.filter(x => x.id !== kafeId);
-  toast(`🗑️ ${k.kafe_adi} silindi`);
+  window._silKafe = k;
+  document.getElementById('sil-kafe-adi-1').textContent = k.kafe_adi || '—';
+  document.getElementById('sil-kafe-adi-2').textContent = k.kafe_adi || '';
+  document.getElementById('sil-ad-input').value = '';
+  document.getElementById('sil-sifre-input').value = '';
+  document.getElementById('sil-btn-2').disabled = true;
+  document.getElementById('sil-hata').style.display = 'none';
+  document.getElementById('sil-auth-cb').checked = true;
+  kafeSilAdim(1);
+  document.getElementById('sil-modal').classList.add('ac');
+  const on = document.getElementById('sil-onizleme');
+  on.textContent = 'Yükleniyor…';
+  const { data, error } = await sb.rpc('admin_kafe_sil_onizle', { p_kafe_id: kafeId });
+  if (error || !data) { on.textContent = 'Önizleme alınamadı: ' + (error?.message || ''); return; }
+  on.innerHTML = '';
+  [['Adisyon', data.adisyon], ['Gelir/Gider', data.gelir_gider], ['Vardiya', data.vardiya], ['Müşteri', data.musteri], ['Ödeme', data.odeme], ['Giriş hesabı', data.giris_hesabi || 'yok']]
+    .forEach(([a, v]) => { const d = document.createElement('div'); d.textContent = a + ': ' + v; on.appendChild(d); });
+}
+
+function kafeSilAdim(n) {
+  [1,2,3].forEach(i => document.getElementById('sil-adim-' + i).style.display = (i === n ? 'block' : 'none'));
+  document.getElementById('sil-adim-no').textContent = n;
+  if (n === 2) setTimeout(() => document.getElementById('sil-ad-input').focus(), 50);
+  if (n === 3) setTimeout(() => document.getElementById('sil-sifre-input').focus(), 50);
+}
+
+function kafeSilKapat() {
+  document.getElementById('sil-modal').classList.remove('ac');
+  document.getElementById('sil-sifre-input').value = '';
+  window._silKafe = null;
+}
+
+async function kafeSilUygula() {
+  const k = window._silKafe; if (!k) return;
+  const hata = document.getElementById('sil-hata');
+  const btn = document.getElementById('sil-btn-3');
+  hata.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Siliniyor…';
+  const { data, error } = await sb.rpc('admin_kafe_sil', {
+    p_kafe_id: k.id,
+    p_kafe_adi: document.getElementById('sil-ad-input').value,
+    p_sifre: document.getElementById('sil-sifre-input').value,
+    p_auth_sil: document.getElementById('sil-auth-cb').checked
+  });
+  btn.disabled = false; btn.textContent = '🗑️ KALICI OLARAK SİL';
+  if (error) { hata.textContent = '❌ ' + error.message; hata.style.display = 'block'; return; }
+  // Gerçekten silindi mi? Veritabanından tekrar kontrol et
+  const { data: kalan } = await sb.from('kafeler').select('id').eq('id', k.id);
+  if (kalan && kalan.length) { hata.textContent = '❌ Kafe hâlâ duruyor, silinemedi.'; hata.style.display = 'block'; return; }
+  tumKafeler = tumKafeler.filter(x => x.id !== k.id);
+  kafeSilKapat();
+  toast(`🗑️ ${k.kafe_adi} silindi (${data?.kolaycafenlar ?? 0} adisyon, giriş hesabı: ${data?.giris_hesabi || '-'})`, 6000);
   tabloRender();
 }
 
